@@ -24,14 +24,14 @@ static void xad_exit(void)
 }
 
 /* returns 0 on success */
-ULONG xad_extract(char *file, char *dest)
+long xad_extract(char *file, char *dest)
 {
 	char destfile[1024];
 	ULONG err = 0;
 	BPTR dir;
 	struct xadFileInfo *fi;
 	xad_init();
-	if(xadMasterBase == NULL) return 1;
+	if(xadMasterBase == NULL) return -1;
 
 	struct xadArchiveInfo *ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 

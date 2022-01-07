@@ -18,8 +18,10 @@
 #include <proto/button.h>
 #include <proto/getfile.h>
 #include <proto/layout.h>
+#include <proto/requester.h>
 #include <proto/window.h>
 
+#include <classes/requester.h>
 #include <classes/window.h>
 #include <gadgets/getfile.h>
 #include <workbench/startup.h>
@@ -51,6 +53,7 @@ enum
 enum
 {
 	OID_MAIN=0,
+	OID_REQ,
 	OID_LAST
 };
 
@@ -61,6 +64,8 @@ static char *archive = NULL;
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
 
+/** Useful functions **/
+
 char *strdup(const char *s)
 {
   size_t len = strlen (s) + 1;
@@ -68,6 +73,40 @@ char *strdup(const char *s)
   if (result == (char*) 0)
     return (char*) 0;
   return (char*) memcpy (result, s, len);
+}
+
+ULONG OpenRequesterTags(Object *obj, struct Window *win, ULONG Tag1, ...)
+{
+	struct orRequest msg[1];
+	msg->MethodID = RM_OPENREQ;
+	msg->or_Window = win;	/* window OR screen is REQUIRED */
+	msg->or_Screen = NULL;
+	msg->or_Attrs = (struct TagItem *)&Tag1;
+
+	return(DoMethodA(obj, (Msg)msg));
+}
+
+
+/** Private functions **/
+static void show_error(Object *obj, struct Window *win, long code)
+{
+	char message[100];
+
+	if(code == -1) {
+		sprintf(message, "Unable to open xadmaster.library");
+	} else {
+		sprintf(message, "Error %d", code);
+	}
+
+	if(obj) {
+		OpenRequesterTags(obj, win, 
+			REQ_Type, REQTYPE_INFO,
+			REQ_Image, REQIMAGE_ERROR, 
+			REQ_BodyText, message,
+			REQ_GadgetText, "OK", TAG_DONE);
+	} else {
+		printf("Unable to open requester to show error;\n%s\n", message);
+	}
 }
 
 static void free_archive_path(void)
@@ -87,19 +126,16 @@ static void free_dest_path(void)
 static void gui(void)
 {
 	struct MsgPort *AppPort;
-
 	struct Window *windows[WID_LAST];
-
 	struct Gadget *gadgets[GID_LAST];
-
 	Object *objects[OID_LAST];
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
 		 */
 		objects[OID_MAIN] = WindowObject,
-			WA_ScreenTitle, "Avalanche",
-			WA_Title, "Avalanche",
+			WA_ScreenTitle, VERS,
+			WA_Title, VERS,
 			WA_Activate, TRUE,
 			WA_DepthGadget, TRUE,
 			WA_DragBar, TRUE,
@@ -140,6 +176,10 @@ static void gui(void)
 			EndGroup,
 		EndWindow;
 
+		objects[OID_REQ] = RequesterObject,
+			REQ_TitleText, VERS,
+		End;
+
 	 	/*  Object creation sucessful?
 	 	 */
 		if (objects[OID_MAIN])
@@ -152,6 +192,7 @@ static void gui(void)
 				ULONG done = FALSE;
 				ULONG result;
 				UWORD code;
+				long ret = 0;
 
 			 	/* Obtain the window wait signal mask.
 				 */
@@ -198,10 +239,13 @@ static void gui(void)
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, TRUE,
 													TAG_DONE);
-												xad_extract(archive, dest);
+												ret = xad_extract(archive, dest);
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, FALSE,
 													TAG_DONE);
+
+												if(ret != 0) show_error(objects[OID_REQ],
+																 windows[WID_MAIN], ret);
 											}
 										break;
 									}
