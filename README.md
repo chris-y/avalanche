@@ -1,2 +1,2 @@
-# avalanche
+# Avalanche
 Simple ReAction GUI for XAD
