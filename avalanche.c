@@ -29,6 +29,7 @@
 #include <reaction/reaction.h>
 #include <reaction/reaction_macros.h>
 
+#include "libs.h"
 #include "xad.h"
 
 #include "avalanche_rev.h"
@@ -71,7 +72,7 @@ char *strdup(const char *s)
   size_t len = strlen (s) + 1;
   char *result = (char*) malloc (len);
   if (result == (char*) 0)
-    return (char*) 0;
+  return (char*) 0;
   return (char*) memcpy (result, s, len);
 }
 
@@ -133,7 +134,7 @@ static void gui(void)
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
 		 */
-		objects[OID_MAIN] = WindowObject,
+		objects[OID_MAIN] = WindowObj,
 			WA_ScreenTitle, VERS,
 			WA_Title, VERS,
 			WA_Activate, TRUE,
@@ -145,20 +146,20 @@ static void gui(void)
 			WINDOW_IconTitle, "Avalanche",
 			WINDOW_AppPort, AppPort,
 			WINDOW_Position, WPOS_CENTERSCREEN,
-			WINDOW_ParentGroup, gadgets[GID_MAIN] = VGroupObject,
+			WINDOW_ParentGroup, gadgets[GID_MAIN] = LayoutVObj,
 				LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
 
-				LAYOUT_AddChild, VGroupObject,
+				LAYOUT_AddChild, LayoutVObj,
 					LAYOUT_EvenSize, TRUE,
-					LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObject,
+					LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObj,
 						GA_ID, GID_ARCHIVE,
 						GA_RelVerify, TRUE,
 						GETFILE_TitleText, "Select Archive",
 						GETFILE_FullFile, archive,
 						GETFILE_ReadOnly, TRUE,
 					End,
-					LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObject,
+					LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObj,
 						GA_ID, GID_DEST,
 						GA_RelVerify, TRUE,
 						GETFILE_TitleText, "Select Destination",
@@ -167,7 +168,7 @@ static void gui(void)
 						GETFILE_DrawersOnly, TRUE,
 						GETFILE_ReadOnly, TRUE,
 					End,
-					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObject,
+					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObj,
 						GA_ID, GID_EXTRACT,
 						GA_RelVerify, TRUE,
 						GA_Text, "E_xtract",
@@ -176,7 +177,7 @@ static void gui(void)
 			EndGroup,
 		EndWindow;
 
-		objects[OID_REQ] = RequesterObject,
+		objects[OID_REQ] = RequesterObj,
 			REQ_TitleText, VERS,
 		End;
 
@@ -293,6 +294,10 @@ static void gettooltypes(UBYTE **tooltypes)
 int main(int argc, char **argv)
 {
 
+	if(libs_open() == FALSE) {
+		return 10;
+	}
+
 	if(argc == 0) {
 		/* Started from WB */
 		struct WBStartup *WBenchMsg = (struct WBStartup *)argv;
@@ -321,5 +326,7 @@ int main(int argc, char **argv)
 	if(archive_needs_free) free_archive_path();
 	if(dest_needs_free) free_dest_path();
 	
+	libs_close();
+
 	return 0;
 }

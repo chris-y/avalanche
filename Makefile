@@ -1,9 +1,9 @@
 CC := vc +aos68k
 CFLAGS := -c99
-LIBS := -lamiga -lauto -lreaction
+LIBS := -lamiga
 
-OBJS := avalanche.o xad.o
-DEPS := avalanche_rev.h xad.h
+OBJS := avalanche.o libs.o xad.o
+DEPS := avalanche_rev.h libs.h xad.h
 
 all: Avalanche
 

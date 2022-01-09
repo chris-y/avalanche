@@ -4,6 +4,8 @@
 
 #include <proto/dos.h>
 #include <proto/xadmaster.h>
+
+#include "libs.h"
 #include "xad.h"
 
 struct Library *xadMasterBase = NULL;
