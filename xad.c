@@ -51,15 +51,10 @@ long xad_extract(char *file, char *dest)
 			while(fi) {
 				strcpy(destfile, dest);
 				if(AddPart(destfile, fi->xfi_FileName, 1024)) {
-					//printf("%d: %s\n", fi->xfi_EntryNumber, destfile);
-					if(fi->xfi_Flags & XADFIF_DIRECTORY) {
-						if(dir = CreateDir(destfile))
-							UnLock(dir);
-					} else {
-						err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+					err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+							XAD_MAKEDIRECTORY, TRUE,
 							XAD_OUTFILENAME, destfile,
 							TAG_DONE);
-					}
 				}
 				fi = fi->xfi_Next;
 			}
