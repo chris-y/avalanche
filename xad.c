@@ -17,12 +17,17 @@ static void xad_init(void)
 	}
 }
 
-static void xad_exit(void)
+void xad_exit(void)
 {
 	if(xadMasterBase != NULL) {
 		CloseLibrary((struct Library *)xadMasterBase);
 		xadMasterBase = NULL;
 	}
+}
+
+char *xad_error(long code)
+{
+	return xadGetErrorText((ULONG)code);
 }
 
 /* returns 0 on success */
@@ -38,7 +43,10 @@ long xad_extract(char *file, char *dest)
 	struct xadArchiveInfo *ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
 	if(ai) {
-		if(err = xadGetInfo(ai, XAD_INFILENAME, file, TAG_DONE) == 0) {
+		if(err = xadGetInfo(ai,
+				XAD_INFILENAME, file,
+				XAD_IGNOREFLAGS, XADAIF_DISKARCHIVE,
+				TAG_DONE) == 0) {
 			fi = ai->xai_FileInfo;
 			while(fi) {
 				strcpy(destfile, dest);
@@ -61,6 +69,5 @@ long xad_extract(char *file, char *dest)
 
 	xadFreeObjectA(ai, NULL);
 
-	xad_exit();
 	return err;
 }

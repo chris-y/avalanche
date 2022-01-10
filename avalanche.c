@@ -96,7 +96,7 @@ static void show_error(Object *obj, struct Window *win, long code)
 	if(code == -1) {
 		sprintf(message, "Unable to open xadmaster.library");
 	} else {
-		sprintf(message, "Error %d", code);
+		sprintf(message, "%s", xad_error(code));
 	}
 
 	if(obj) {
@@ -326,6 +326,7 @@ int main(int argc, char **argv)
 	if(archive_needs_free) free_archive_path();
 	if(dest_needs_free) free_dest_path();
 	
+	xad_exit();
 	libs_close();
 
 	return 0;
