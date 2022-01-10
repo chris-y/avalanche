@@ -171,8 +171,11 @@ static void gui(void)
 		{-1, NULL, 0}
 	};
 
+printf("gui\n");
+
 	NewList(&lblist);
 
+printf("list\n");
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
@@ -202,6 +205,7 @@ static void gui(void)
 						GETFILE_FullFile, archive,
 						GETFILE_ReadOnly, TRUE,
 					End,
+					CHILD_WeightedHeight, 0,
 					LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObj,
 						GA_ID, GID_DEST,
 						GA_RelVerify, TRUE,
@@ -211,6 +215,7 @@ static void gui(void)
 						GETFILE_DrawersOnly, TRUE,
 						GETFILE_ReadOnly, TRUE,
 					End,
+					CHILD_WeightedHeight, 0,
 					LAYOUT_AddChild, gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
 						LISTBROWSER_ColumnInfo, &lbci,
@@ -227,9 +232,13 @@ static void gui(void)
 			EndGroup,
 		EndWindow;
 
+printf("winobj\n");
+
 		objects[OID_REQ] = RequesterObj,
 			REQ_TitleText, VERS,
 		End;
+
+printf("reqobj\n");
 
 	 	/*  Object creation sucessful?
 	 	 */
@@ -239,6 +248,9 @@ static void gui(void)
 			 */
 			if (windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]))
 			{
+
+printf("winopen\n");
+
 				ULONG wait, signal, app = (1L << AppPort->mp_SigBit);
 				ULONG done = FALSE;
 				ULONG result;
@@ -333,6 +345,7 @@ static void gui(void)
 			}
 
 			DisposeObject(objects[OID_MAIN]);
+			DisposeObject(objects[OID_REQ]);
 		}
 
 		DeleteMsgPort(AppPort);
@@ -350,7 +363,6 @@ static void gettooltypes(UBYTE **tooltypes)
 /** Main program **/
 int main(int argc, char **argv)
 {
-
 	if(libs_open() == FALSE) {
 		return 10;
 	}
