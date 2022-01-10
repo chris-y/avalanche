@@ -69,7 +69,7 @@ BOOL libs_open(void)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE)
 	CLASS_OPEN("images/label.image",           41, Label,         LABEL)
 	CLASS_OPEN("gadgets/layout.gadget",        43, Layout,        LAYOUT)
-	CLASS_OPEN("gadgets/listbrowser.gadget",   41, ListBrowser,   LISTBROWSER)
+	CLASS_OPEN("gadgets/listbrowser.gadget",   45, ListBrowser,   LISTBROWSER)
 	CLASS_OPEN("requester.class",              42, Requester,     REQUESTER)
 	CLASS_OPEN("window.class",                 42, Window,        WINDOW)
 

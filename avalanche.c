@@ -18,12 +18,14 @@
 #include <proto/button.h>
 #include <proto/getfile.h>
 #include <proto/layout.h>
+#include <proto/listbrowser.h>
 #include <proto/requester.h>
 #include <proto/window.h>
 
 #include <classes/requester.h>
 #include <classes/window.h>
 #include <gadgets/getfile.h>
+#include <gadgets/listbrowser.h>
 #include <workbench/startup.h>
 
 #include <reaction/reaction.h>
@@ -32,7 +34,7 @@
 #include "libs.h"
 #include "xad.h"
 
-#include "avalanche_rev.h"
+#include "Avalanche_rev.h"
 
 const char *version = VERSTAG;
 
@@ -41,6 +43,7 @@ enum
 	GID_MAIN=0,
 	GID_ARCHIVE,
 	GID_DEST,
+	GID_LIST,
 	GID_EXTRACT,
 	GID_LAST
 };
@@ -64,6 +67,8 @@ static char *archive = NULL;
 
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
+
+struct List lblist;
 
 /** Useful functions **/
 
@@ -124,12 +129,50 @@ static void free_dest_path(void)
 	dest_needs_free = FALSE;
 }
 
+static void addlbnode(char *name, LONG *size, void *userdata)
+{
+	struct Node *node = AllocListBrowserNode(2,
+		LBNA_UserData, userdata,
+		LBNA_CheckBox, TRUE,
+		LBNA_Checked, TRUE,
+		LBNA_Column, 0,
+			LBNCA_Text, name,
+		LBNA_Column, 1,
+			LBNCA_Integer, size,
+		TAG_DONE);
+
+	AddTail(&lblist, node);
+}
+
+static void *getlbnode(struct Node *node)
+{
+	void *userdata = NULL;
+	ULONG checked = FALSE;
+
+	GetListBrowserNodeAttrs(node,
+			LBNA_Checked, &checked,
+			LBNA_UserData, &userdata,
+		TAG_DONE);
+
+	if(checked == FALSE) return NULL;
+	return userdata;
+}
+
 static void gui(void)
 {
 	struct MsgPort *AppPort;
 	struct Window *windows[WID_LAST];
 	struct Gadget *gadgets[GID_LAST];
 	Object *objects[OID_LAST];
+
+	struct ColumnInfo lbci[3] = {
+		{90, "Name", CIF_WEIGHTED | CIF_DRAGGABLE},
+		{10, "Size", CIF_WEIGHTED | CIF_DRAGGABLE},
+		{-1, NULL, 0}
+	};
+
+	NewList(&lblist);
+
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
@@ -168,11 +211,18 @@ static void gui(void)
 						GETFILE_DrawersOnly, TRUE,
 						GETFILE_ReadOnly, TRUE,
 					End,
+					LAYOUT_AddChild, gadgets[GID_LIST] = ListBrowserObj,
+						GA_ID, GID_LIST,
+						LISTBROWSER_ColumnInfo, &lbci,
+						LISTBROWSER_Labels, &lblist,
+						LISTBROWSER_ColumnTitles, TRUE,
+					ListBrowserEnd,
 					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObj,
 						GA_ID, GID_EXTRACT,
 						GA_RelVerify, TRUE,
 						GA_Text, "E_xtract",
 					ButtonEnd,
+					CHILD_WeightedHeight, 0,
 				LayoutEnd,
 			EndGroup,
 		EndWindow;
@@ -227,6 +277,13 @@ static void gui(void)
 											if(archive_needs_free) free_archive_path();
 											DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
 											GetAttr(GETFILE_FullFile, gadgets[GID_ARCHIVE], &archive);
+
+											SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
+												LISTBROWSER_Labels, ~0, TAG_DONE);
+											FreeListBrowserList(&lblist);
+											xad_info(archive, addlbnode);
+											SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
+												LISTBROWSER_Labels, &lblist, TAG_DONE);
 										break;
 										
 										case GID_DEST:
@@ -240,7 +297,7 @@ static void gui(void)
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, TRUE,
 													TAG_DONE);
-												ret = xad_extract(archive, dest);
+												ret = xad_extract(archive, dest, &lblist, getlbnode);
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, FALSE,
 													TAG_DONE);
@@ -326,6 +383,7 @@ int main(int argc, char **argv)
 	if(archive_needs_free) free_archive_path();
 	if(dest_needs_free) free_dest_path();
 	
+	FreeListBrowserList(&lblist);
 	xad_exit();
 	libs_close();
 
