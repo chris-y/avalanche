@@ -184,6 +184,7 @@ static void gui(void)
 	};
 
 	NewList(&lblist);
+	if(archive) xad_info(archive, addlbnode);
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
