@@ -1,0 +1,85 @@
+(procedure p_setdeftool #type
+	(set #def (cat "def_" #type))
+	(tooltype
+		(prompt "Setting default tool for " #type)
+		(help @tooltype-help)
+		(dest (tackon "ENVARC:Sys/" #def))
+		(setdefaulttool (tackon @default-dest "Avalanche"))
+	)
+)
+
+; START
+
+(set #os-vernum (getversion "libs:version.library"))
+(set #os-ver (/ #os-vernum 65536))
+
+(transcript "Running on OS v" #os-ver)
+
+(if (< #os-ver 50)
+	(
+		(set #tools-dir "SYS:Tools")
+	)
+	; else
+	(
+		; OS4 doesn't have Tools.
+		; This program isn't intended for OS4 but let's at least set a sensible default.
+		(set #tools-dir "SYS:Utilities")
+	)
+)
+
+(set #xad-ver (getversion "libs:xadmaster.library"))
+
+(if (= #xad-ver 0)
+	(
+		(message "Please note that this program requires xadmaster.library!\n\n"
+			"You will need to install it before running Avalanche. "
+			"It can be downloaded from Aminet util/arc" (all))
+	)
+)
+
+(welcome)
+
+(set @default-dest
+	(askdir
+		(prompt "Please select where you would like Avalanche to be installed"
+				" (a drawer will NOT be created)")
+		(help @askdir-help)
+		(default #tools-dir)
+	)
+)
+
+(set #doc-dest
+	(askdir
+		(prompt "Please select where you would like the Avalanche "
+				"documentation to be installed (a drawer will NOT be created)")
+		(help @askdir-help)
+		(default "LOCALE:Help")
+	)
+)
+
+(copyfiles
+	(prompt "Copying Avalanche")
+	(help @copyfiles-help)
+	(source "Avalanche")
+	(dest @default-dest)
+	(infos)
+)
+
+(copyfiles
+	(prompt "Copying Avalanche Guide")
+	(help @copyfiles-help)
+	(source "Avalanche.guide")
+	(dest #doc-dest)
+)
+
+(set #def-icons
+	(askoptions
+		(prompt "Set default tool for the following filetypes:")
+		(help "AmigaOS 3.2 by default has one default icon for all archives. "
+				"Selecting \"archive\" here will set Avalanche as the default tool "
+				"for all archives.")
+		(choices 	"archive")
+	)
+)
+
+(if (BITAND #def-icons 1)   (p_setdeftool "archive"))
