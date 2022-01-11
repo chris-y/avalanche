@@ -17,6 +17,7 @@
 
 #include <proto/button.h>
 #include <proto/getfile.h>
+#include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
 #include <proto/requester.h>
@@ -26,6 +27,7 @@
 #include <classes/window.h>
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
+#include <images/label.h>
 #include <workbench/startup.h>
 
 #include <reaction/reaction.h>
@@ -171,11 +173,7 @@ static void gui(void)
 		{-1, NULL, 0}
 	};
 
-printf("gui\n");
-
 	NewList(&lblist);
-
-printf("list\n");
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
@@ -195,7 +193,6 @@ printf("list\n");
 			WINDOW_ParentGroup, gadgets[GID_MAIN] = LayoutVObj,
 				LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
-
 				LAYOUT_AddChild, LayoutVObj,
 					LAYOUT_EvenSize, TRUE,
 					LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObj,
@@ -205,7 +202,9 @@ printf("list\n");
 						GETFILE_FullFile, archive,
 						GETFILE_ReadOnly, TRUE,
 					End,
-					CHILD_WeightedHeight, 0,
+					CHILD_Label, LabelObj,
+						LABEL_Text, "_Archive",
+					LabelEnd,
 					LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObj,
 						GA_ID, GID_DEST,
 						GA_RelVerify, TRUE,
@@ -215,7 +214,9 @@ printf("list\n");
 						GETFILE_DrawersOnly, TRUE,
 						GETFILE_ReadOnly, TRUE,
 					End,
-					CHILD_WeightedHeight, 0,
+					CHILD_Label, LabelObj,
+						LABEL_Text, "_Destination",
+					LabelEnd,
 					LAYOUT_AddChild, gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
 						LISTBROWSER_ColumnInfo, &lbci,
@@ -232,13 +233,9 @@ printf("list\n");
 			EndGroup,
 		EndWindow;
 
-printf("winobj\n");
-
 		objects[OID_REQ] = RequesterObj,
 			REQ_TitleText, VERS,
 		End;
-
-printf("reqobj\n");
 
 	 	/*  Object creation sucessful?
 	 	 */
@@ -248,8 +245,6 @@ printf("reqobj\n");
 			 */
 			if (windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]))
 			{
-
-printf("winopen\n");
 
 				ULONG wait, signal, app = (1L << AppPort->mp_SigBit);
 				ULONG done = FALSE;
