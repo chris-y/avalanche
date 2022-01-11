@@ -15,3 +15,12 @@ Avalanche: $(OBJS)
 
 install: Avalanche
 	copy Avalanche /
+
+distrib: install
+	makedir RAM:Avalanche
+	copy //Avalanche.info RAM:
+	copy /Avalanche#? RAM:Avalanche
+	copy /avalanche.readme#? RAM:Avalanche
+	copy /Install#? RAM:Avalanche
+	copy /LICENSE RAM:Avalanche
+	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info
