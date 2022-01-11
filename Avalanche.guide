@@ -1,0 +1,62 @@
+@database "Avalanche.guide"
+@wordwrap
+
+@node Main "Avalanche"
+@{b}Avalanche@{ub}
+
+@{"Introduction " link intro}
+@{"Installation " link install}
+@{"Configuration" link config}
+@{"Usage        " link usage}
+@{"Changelog    " link history}
+@{"Contact      " link contact}
+@endnode
+
+@node intro "Introduction"
+This is a simple ReAction based GUI for xadmaster.library.
+
+It was written as everything similar on Aminet appears to require MUI, and the ones included with the OS over the years are not freely distributable.  AmigaOS 3.2 does not include such a tool, so Avalanche was born out of boredom of opening a shell and typing "lha x archive.lha".
+
+@endnode
+
+@node install "Installation"
+Please use the included Installer script.
+
+If you must install manually, you can copy the program anywhere on your hard drive.
+The install script additionally modifies the default tool for "archive" type files to be Avalanche.  In a standard install of OS3.2 this is used for all subtypes.
+
+@endnode
+
+@node config "Configuration"
+Configuration is done via ToolTypes.  Currently the following are recognised:
+
+@{b}DEST@{ub} Destination to extract the archive to. (default = RAM:)
+@endnode
+
+@node usage "Usage"
+Avalanche can be started as a default tool for an archive, or manually.  If started manually an archive can be selected using the button next to Archive.
+
+The Destination can also be changed here.  To make this change permanent, see @{"configuration" link config}.
+
+When a valid archive is loaded, the contents will be displayed.  Unchecked items will not be extracted.
+
+Clicking Extract will extract the archive to the chosen destination.
+
+
+@{b}Limitations@{ub}:
+* Only file archives are supported.
+* Encrypted archives are not currently supported
+* xadmaster.library v12 has some bugs relating to certain LhA archives.  The fix is to use v13 - however nobody has compiled it for 68k to my knowledge.
+
+@endnode
+
+@node history "Changelog"
+@{u}1.1 (11.01.2022)@{uu}
+First release
+
+@endnode
+
+@node contact "Contact"
+The best way to report bugs and request features is to submit them to the issue tracker at https://github.com/chris-y/avalanche
+
+@endnode

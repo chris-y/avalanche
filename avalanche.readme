@@ -1,0 +1,17 @@
+Short: Simple ReAction GUI for xadmaster
+Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
+Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
+Type: util/arc
+Version: 1.1
+Architecture: m68k-amigaos >= 3.2.0
+Requires: util/arc/xadmaster000.lha
+
+This is a simple GUI for xadmaster.library using the ReAction
+gadget set, written as all the others on Aminet appear to
+require MUI.
+
+This is designed for AmigaOS 3.2 (and tested on that and OS4).
+It may work on older versions but hasn't been tested.  All
+use is at your own risk.
+
+GPL licence, source code available on website.

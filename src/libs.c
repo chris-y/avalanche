@@ -1,6 +1,16 @@
 /* Avalanche
  * (c) 2022 Chris Young
- */
+ * 
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+*/
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -65,13 +75,13 @@ BOOL libs_open(void)
 	ALIB_OPEN("intuition.library",    40, Intuition)
 	ALIB_OPEN("workbench.library",    40, Workbench)
 
-	CLASS_OPEN("gadgets/button.gadget",        42, Button,        BUTTON)
+	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE)
 	CLASS_OPEN("images/label.image",           41, Label,         LABEL)
-	CLASS_OPEN("gadgets/layout.gadget",        43, Layout,        LAYOUT)
-	CLASS_OPEN("gadgets/listbrowser.gadget",   45, ListBrowser,   LISTBROWSER)
-	CLASS_OPEN("requester.class",              42, Requester,     REQUESTER)
-	CLASS_OPEN("window.class",                 42, Window,        WINDOW)
+	CLASS_OPEN("gadgets/layout.gadget",        41, Layout,        LAYOUT)
+	CLASS_OPEN("gadgets/listbrowser.gadget",   41, ListBrowser,   LISTBROWSER)
+	CLASS_OPEN("requester.class",              41, Requester,     REQUESTER)
+	CLASS_OPEN("window.class",                 41, Window,        WINDOW)
 
 	return TRUE;
 }
