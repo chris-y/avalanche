@@ -38,6 +38,8 @@
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
+#include <intuition/intuition.h>
+#include <libraries/gadtools.h>
 #include <workbench/startup.h>
 
 #include <reaction/reaction.h>
@@ -50,9 +52,8 @@
 
 const char *version = VERSTAG;
 
-enum
-{
-	GID_MAIN=0,
+enum {
+	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
 	GID_LIST,
@@ -60,17 +61,35 @@ enum
 	GID_LAST
 };
 
-enum
-{
-	WID_MAIN=0,
+enum {
+	WID_MAIN = 0,
 	WID_LAST
 };
 
-enum
-{
-	OID_MAIN=0,
+enum {
+	OID_MAIN = 0,
 	OID_REQ,
 	OID_LAST
+};
+
+/** Menu **/
+
+struct NewMenu menu[] = {
+	{NM_TITLE, "Project",           0,  0, 0, 0,}, // 0
+	{NM_ITEM,   "Open...",         "O", 0, 0, 0,}, // 0
+	{NM_ITEM,   "About...",        "?", 0, 0, 0,}, // 1
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 2
+	{NM_ITEM,   "Quit",            "Q", 0, 0, 0,}, // 3
+
+	{NM_TITLE, "Edit",              0,  0, 0, 0,}, // 1
+	{NM_ITEM,   "Select all",      "A", 0, 0, 0,}, // 0
+	{NM_ITEM,   "Clear Selection", "Z", 0, 0, 0,}, // 1
+
+	{NM_TITLE, "Settings",              0,  0, 0, 0,}, // 2
+	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE | CHECKED, 0, 0,}, // 0
+	{NM_ITEM,   "Save settings",        0, NM_ITEMDISABLED, 0, 0,}, // 1
+
+	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
 /** Global config **/
@@ -79,6 +98,8 @@ static char *archive = NULL;
 
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
+
+static BOOL save_win_posn = TRUE;
 
 struct List lblist;
 
@@ -170,6 +191,38 @@ static void *getlbnode(struct Node *node)
 	return userdata;
 }
 
+static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct Gadget *list_gad)
+{
+	if(archive_needs_free) free_archive_path();
+
+	DoMethod(arc_gad, GFILE_REQUEST, win);
+	GetAttr(GETFILE_FullFile, arc_gad, &archive);
+
+	SetGadgetAttrs(list_gad, win, NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+	FreeListBrowserList(&lblist);
+
+	xad_info(archive, addlbnode);
+
+	SetGadgetAttrs(list_gad, win, NULL,
+			LISTBROWSER_Labels, &lblist, TAG_DONE);
+}
+
+static void modify_all_list(struct Window *win, struct Gadget *list_gad, BOOL select)
+{
+	struct Node *node;
+
+	SetGadgetAttrs(list_gad, win, NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	for(node = lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
+		SetListBrowserNodeAttrs(node, LBNA_Checked, select, TAG_DONE);
+	}
+
+	SetGadgetAttrs(list_gad, win, NULL,
+			LISTBROWSER_Labels, &lblist, TAG_DONE);
+}
+
 static void gui(void)
 {
 	struct MsgPort *AppPort;
@@ -197,6 +250,7 @@ static void gui(void)
 			WA_DragBar, TRUE,
 			WA_CloseGadget, TRUE,
 			WA_SizeGadget, TRUE,
+			WINDOW_NewMenu, menu,
 			WINDOW_IconifyGadget, TRUE,
 			WINDOW_IconTitle, "Avalanche",
 			WINDOW_AppPort, AppPort,
@@ -250,12 +304,10 @@ static void gui(void)
 
 	 	/*  Object creation sucessful?
 	 	 */
-		if (objects[OID_MAIN])
-		{
+		if (objects[OID_MAIN]) {
 			/*  Open the window.
 			 */
-			if (windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]))
-			{
+			if (windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN])) {
 
 				ULONG wait, signal, app = (1L << AppPort->mp_SigBit);
 				ULONG done = FALSE;
@@ -269,39 +321,23 @@ static void gui(void)
 
 				/* Input Event Loop
 				 */
-				while (!done)
-				{
+				while (!done) {
 					wait = Wait( signal | SIGBREAKF_CTRL_C | app );
 
-					if ( wait & SIGBREAKF_CTRL_C )
-					{
+					if ( wait & SIGBREAKF_CTRL_C ) {
 						done = TRUE;
-					}
-					else
-					{
-						while ( (result = RA_HandleInput(objects[OID_MAIN], &code) ) != WMHI_LASTMSG )
-						{
-							switch (result & WMHI_CLASSMASK)
-							{
+					} else {
+						while ( (result = RA_HandleInput(objects[OID_MAIN], &code) ) != WMHI_LASTMSG ) {
+							switch (result & WMHI_CLASSMASK) {
 								case WMHI_CLOSEWINDOW:
 									windows[WID_MAIN] = NULL;
 									done = TRUE;
 									break;
 
 								case WMHI_GADGETUP:
-									switch (result & WMHI_GADGETMASK)
-									{
+									switch (result & WMHI_GADGETMASK) {
 										case GID_ARCHIVE:
-											if(archive_needs_free) free_archive_path();
-											DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
-											GetAttr(GETFILE_FullFile, gadgets[GID_ARCHIVE], &archive);
-
-											SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-												LISTBROWSER_Labels, ~0, TAG_DONE);
-											FreeListBrowserList(&lblist);
-											xad_info(archive, addlbnode);
-											SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-												LISTBROWSER_Labels, &lblist, TAG_DONE);
+											open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST]);
 										break;
 										
 										case GID_DEST:
@@ -335,15 +371,65 @@ static void gui(void)
 								case WMHI_UNICONIFY:
 									windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
 
-									if (windows[WID_MAIN])
-									{
+									if (windows[WID_MAIN]) {
 										GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-									}
-									else
-									{
+									} else {
 										done = TRUE;	// error re-opening window!
 									}
-								 	break;
+							 	break;
+								 	
+								 case WMHI_MENUPICK:
+									while((code != MENUNULL) && (done == FALSE)) {
+										struct MenuItem *item = ItemAddress(windows[WID_MAIN]->MenuStrip, code);
+
+										switch(MENUNUM(code)) {
+											case 0: //project
+												switch(ITEMNUM(code)) {
+													case 0: //open
+														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST]);
+													break;
+												
+													case 1: //about
+														OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
+															REQ_Type, REQTYPE_INFO,
+															REQ_Image, REQIMAGE_INFO,
+															REQ_BodyText, VERS "\nhttps://github.com/chris-y/avalanche",
+															REQ_GadgetText, "OK", TAG_DONE);
+													break;
+												
+													case 3: //quit
+														done = TRUE;
+													break;
+												}
+											break;
+										
+											case 1: //edit
+												switch(ITEMNUM(code)) {
+													case 0: //select all
+														modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], TRUE);
+													break;
+												
+													case 1: //clear selection
+														modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], FALSE);
+													break;
+												}
+											break;
+										
+											case 2: //settings
+												switch(ITEMNUM(code)) {
+													case 0: //save window position
+														save_win_posn = !save_win_posn;
+														printf("%d\n", save_win_posn);
+													break;
+												
+													case 1: //save settings
+													break;
+												}
+											break;				
+										}
+										code = item->NextSelect;
+									}
+								break; //WMHI_MENUPICK
 							}
 						}
 					}
