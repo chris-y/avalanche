@@ -393,7 +393,16 @@ static void gui(void)
 														OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
 															REQ_Type, REQTYPE_INFO,
 															REQ_Image, REQIMAGE_INFO,
-															REQ_BodyText, VERS "\nhttps://github.com/chris-y/avalanche",
+															REQ_BodyText, 	VERS " (" DATE ")\n"
+																			"(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
+																			"This program is free software; you can redistribute it and/or modify\n"
+																			"it under the terms of the GNU General Public License as published by\n"
+																			"the Free Software Foundation; either version 2 of the License, or\n"
+																			"(at your option) any later version.\n\n"
+																			"This program is distributed in the hope that it will be useful,\n"
+																			"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+																			"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+																			"GNU General Public License for more details.",
 															REQ_GadgetText, "OK", TAG_DONE);
 													break;
 												
