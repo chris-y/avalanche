@@ -195,8 +195,8 @@ static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct 
 {
 	if(archive_needs_free) free_archive_path();
 
-	DoMethod(arc_gad, GFILE_REQUEST, win);
-	GetAttr(GETFILE_FullFile, arc_gad, &archive);
+	DoMethod((Object *)arc_gad, GFILE_REQUEST, win);
+	GetAttr(GETFILE_FullFile, arc_gad, (APTR)&archive);
 
 	SetGadgetAttrs(list_gad, win, NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -259,7 +259,6 @@ static void gui(void)
 				LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
 				LAYOUT_AddChild, LayoutVObj,
-					LAYOUT_EvenSize, TRUE,
 					LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObj,
 						GA_ID, GID_ARCHIVE,
 						GA_RelVerify, TRUE,
@@ -267,6 +266,7 @@ static void gui(void)
 						GETFILE_FullFile, archive,
 						GETFILE_ReadOnly, TRUE,
 					End,
+					CHILD_WeightedHeight, 0,
 					CHILD_Label, LabelObj,
 						LABEL_Text, "_Archive",
 					LabelEnd,
@@ -279,6 +279,7 @@ static void gui(void)
 						GETFILE_DrawersOnly, TRUE,
 						GETFILE_ReadOnly, TRUE,
 					End,
+					CHILD_WeightedHeight, 0,
 					CHILD_Label, LabelObj,
 						LABEL_Text, "_Destination",
 					LabelEnd,
@@ -342,8 +343,8 @@ static void gui(void)
 										
 										case GID_DEST:
 											if(dest_needs_free) free_dest_path();
-											DoMethod(gadgets[GID_DEST], GFILE_REQUEST, windows[WID_MAIN]);
-											GetAttr(GETFILE_Drawer, gadgets[GID_DEST], &dest);
+											DoMethod((Object *)gadgets[GID_DEST], GFILE_REQUEST, windows[WID_MAIN]);
+											GetAttr(GETFILE_Drawer, gadgets[GID_DEST], (APTR)&dest);
 										break;
 
 										case GID_EXTRACT:
