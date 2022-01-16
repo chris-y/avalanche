@@ -100,6 +100,7 @@ static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
 
 static BOOL save_win_posn = TRUE;
+static BOOL h_browser = FALSE;
 
 struct List lblist;
 
@@ -162,12 +163,28 @@ static void free_dest_path(void)
 	dest_needs_free = FALSE;
 }
 
-static void addlbnode(char *name, LONG *size, void *userdata)
+static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 {
+	ULONG flags = 0;
+	ULONG gen = 0;
+	int i = 0;
+
+	if(h) {
+		gen = 1;
+		if (dir) flags = LBFLG_HASCHILDREN;
+
+		while(name[i]) {
+			if(name[i] == '/') gen++;
+			i++;
+		}
+	}
+
 	struct Node *node = AllocListBrowserNode(2,
 		LBNA_UserData, userdata,
 		LBNA_CheckBox, TRUE,
 		LBNA_Checked, TRUE,
+		LBNA_Flags, flags,
+		LBNA_Generation, gen,
 		LBNA_Column, 0,
 			LBNCA_Text, name,
 		LBNA_Column, 1,
@@ -175,6 +192,11 @@ static void addlbnode(char *name, LONG *size, void *userdata)
 		TAG_DONE);
 
 	AddTail(&lblist, node);
+}
+
+static void *addlbnode_cb(char *name, LONG *size, BOOL dir, void *userdata)
+{
+	addlbnode(name, size, dir, userdata, h_browser);
 }
 
 static void *getlbnode(struct Node *node)
@@ -202,7 +224,7 @@ static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct 
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 	FreeListBrowserList(&lblist);
 
-	xad_info(archive, addlbnode);
+	xad_info(archive, addlbnode_cb);
 
 	SetGadgetAttrs(list_gad, win, NULL,
 			LISTBROWSER_Labels, &lblist, TAG_DONE);
@@ -237,7 +259,7 @@ static void gui(void)
 	};
 
 	NewList(&lblist);
-	if(archive) xad_info(archive, addlbnode);
+	if(archive) xad_info(archive, addlbnode_cb);
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
@@ -288,6 +310,7 @@ static void gui(void)
 						LISTBROWSER_ColumnInfo, &lbci,
 						LISTBROWSER_Labels, &lblist,
 						LISTBROWSER_ColumnTitles, TRUE,
+						LISTBROWSER_Hierarchical, h_browser,
 					ListBrowserEnd,
 					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObj,
 						GA_ID, GID_EXTRACT,
@@ -460,6 +483,8 @@ static void gettooltypes(UBYTE **tooltypes)
 	
 	dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
 	dest_needs_free = TRUE;
+
+	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
 }
 
 /** Main program **/

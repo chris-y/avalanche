@@ -54,7 +54,7 @@ char *xad_error(long code)
 	return xadGetErrorText((ULONG)code);
 }
 
-long xad_info(char *file, void(*addnode)(char *name, LONG *size, void *userdata))
+long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, void *userdata))
 {
 	long err = 0;
 	struct xadFileInfo *fi;
@@ -73,7 +73,8 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, void *userdata)
 				TAG_DONE) == 0) {
 			fi = ai->xai_FileInfo;
 			while(fi) {
-				addnode(fi->xfi_FileName, &fi->xfi_Size, fi);
+				addnode(fi->xfi_FileName, &fi->xfi_Size,
+					(fi->xfi_Flags & XADFIF_DIRECTORY), fi);
 				fi = fi->xfi_Next;
 			}
 		}
