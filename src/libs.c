@@ -71,7 +71,7 @@ CLASS_STRUCT(Window)
 
 BOOL libs_open(void)
 {
-	ALIB_OPEN("icon.library",         40, Icon)
+	ALIB_OPEN("icon.library",         44, Icon)
 	ALIB_OPEN("intuition.library",    40, Intuition)
 	ALIB_OPEN("workbench.library",    40, Workbench)
 

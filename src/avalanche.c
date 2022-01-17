@@ -103,8 +103,13 @@ static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
 static BOOL dir_seen = FALSE;
 
-static BOOL save_win_posn = TRUE;
+static BOOL save_win_posn = FALSE;
 static BOOL h_browser = FALSE;
+
+static ULONG win_x = 0;
+static ULONG win_y = 0;
+static ULONG win_w = 0;
+static ULONG win_h = 0;
 
 struct List lblist;
 
@@ -165,6 +170,82 @@ static void free_dest_path(void)
 	if(dest) free(dest);
 	dest = NULL;
 	dest_needs_free = FALSE;
+}
+
+void savesettings(Object *win)
+{
+	struct DiskObject *dobj;
+	UBYTE **oldtooltypes;
+	UBYTE *newtooltypes[8];
+	char tt_dest[100];
+	char tt_winx[15];
+	char tt_winy[15];
+	char tt_winh[15];
+	char tt_winw[15];
+
+	if(dobj = GetIconTagList(progname, NULL)) {
+		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
+
+		if(dest) {
+			strcpy(tt_dest, "DEST=");
+			newtooltypes[0] = strcat(tt_dest, dest);
+		} else {
+			newtooltypes[0] = "(DEST=RAM:)";
+		}
+
+		if(h_browser) {
+			newtooltypes[1] = "HBROWSER";
+		} else {
+			newtooltypes[1] = "(HBROWSER)";
+		}
+
+		if(save_win_posn) {
+			newtooltypes[2] = "SAVEWINPOSN";
+
+			/* fetch current win posn */
+			GetAttr(WA_Top, win, (APTR)&win_x);
+			GetAttr(WA_Left, win, (APTR)&win_y);
+			GetAttr(WA_Width, win, (APTR)&win_w);
+			GetAttr(WA_Height, win, (APTR)&win_h);
+		} else {
+			newtooltypes[2] = "(SAVEWINPOSN)";
+		}
+
+		if(win_x) {
+			sprintf(tt_winx, "WINX=%d", win_x);
+			newtooltypes[3] = tt_winx;
+		} else {
+			newtooltypes[3] = "(WINX=0)";
+		}
+
+		if(win_y) {
+			sprintf(tt_winy, "WINY=%d", win_y);
+			newtooltypes[4] = tt_winy;
+		} else {
+			newtooltypes[4] = "(WINY=0)";
+		}
+
+		if(win_w) {
+			sprintf(tt_winw, "WINW=%d", win_w);
+			newtooltypes[5] = tt_winw;
+		} else {
+			newtooltypes[5] = "(WINW=0)";
+		}
+
+		if(win_h) {
+			sprintf(tt_winh, "WINH=%d", win_h);
+			newtooltypes[6] = tt_winh;
+		} else {
+			newtooltypes[6] = "(WINH=0)";
+		}
+
+		newtooltypes[7] = NULL;
+
+		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
+		PutIconTags(progname, dobj, NULL);
+		dobj->do_ToolTypes = (STRPTR *)oldtooltypes;
+		FreeDiskObject(dobj);
+	}
 }
 
 static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
@@ -301,6 +382,8 @@ static void gui(void)
 	struct AppMessage *appmsg = NULL;
 	ULONG appwin_sig = 0;
 
+	ULONG tag_default_position = WINDOW_Position;
+
 	struct ColumnInfo lbci[3] = {
 		{90, "Name", CIF_WEIGHTED | CIF_DRAGGABLE},
 		{10, "Size", CIF_WEIGHTED | CIF_DRAGGABLE},
@@ -314,6 +397,8 @@ static void gui(void)
 	if(save_win_posn) menu[10].nm_Flags |= CHECKED;
 	if(progname == NULL) menu[12].nm_Flags |= NM_ITEMDISABLED;
 
+	if(win_x && win_y) tag_default_position = TAG_IGNORE;
+
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
 		 */
@@ -325,11 +410,15 @@ static void gui(void)
 			WA_DragBar, TRUE,
 			WA_CloseGadget, TRUE,
 			WA_SizeGadget, TRUE,
+			WA_Top, win_x,
+			WA_Left, win_y,
+			WA_Width, win_w,
+			WA_Height, win_h,
 			WINDOW_NewMenu, menu,
 			WINDOW_IconifyGadget, TRUE,
 			WINDOW_IconTitle, "Avalanche",
 			WINDOW_AppPort, AppPort,
-			WINDOW_Position, WPOS_CENTERSCREEN,
+			tag_default_position, WPOS_CENTERSCREEN,
 			WINDOW_ParentGroup, gadgets[GID_MAIN] = LayoutVObj,
 				LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
@@ -544,6 +633,7 @@ static void gui(void)
 													break;
 												
 													case 3: //save settings
+														savesettings(objects[OID_MAIN]);
 													break;
 												}
 											break;				
@@ -575,6 +665,12 @@ static void gettooltypes(UBYTE **tooltypes)
 	dest_needs_free = TRUE;
 
 	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
+	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
+
+	win_x = ArgInt(tooltypes, "WINX", 0);
+	win_y = ArgInt(tooltypes, "WINY", 0);
+	win_w = ArgInt(tooltypes, "WINW", 0);
+	win_h = ArgInt(tooltypes, "WINH", 0);
 }
 
 /** Main program **/
