@@ -294,6 +294,11 @@ static void gui(void)
 	struct Gadget *gadgets[GID_LAST];
 	Object *objects[OID_LAST];
 
+	struct MsgPort *appwin_mp = NULL;
+	struct AppWindow *appwin = NULL;
+	struct AppMessage *appmsg = NULL;
+	ULONG appwin_sig = 0;
+
 	struct ColumnInfo lbci[3] = {
 		{90, "Name", CIF_WEIGHTED | CIF_DRAGGABLE},
 		{10, "Size", CIF_WEIGHTED | CIF_DRAGGABLE},
@@ -388,13 +393,36 @@ static void gui(void)
 				 */
 				GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
 
+				if(appwin_mp = CreateMsgPort()) {
+					if(appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL)) {
+						appwin_sig = 1L << appwin_mp->mp_SigBit;
+					}
+				}
+
 				/* Input Event Loop
 				 */
 				while (!done) {
-					wait = Wait( signal | SIGBREAKF_CTRL_C | app );
+					wait = Wait( signal | SIGBREAKF_CTRL_C | app | appwin_sig );
 
 					if ( wait & SIGBREAKF_CTRL_C ) {
 						done = TRUE;
+					} else if(wait & appwin_sig) {
+						while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
+							struct WBArg *wbarg = appmsg->am_ArgList;
+							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+								if(archive_needs_free) free_archive_path();
+								if(archive = AllocVec(512, MEMF_CLEAR)) {
+									NameFromLock(wbarg->wa_Lock, archive, 512);
+									AddPart(archive, wbarg->wa_Name, 512);
+									SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
+													GETFILE_FullFile, archive, TAG_DONE);
+									FreeVec(archive);
+									open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], TRUE);		
+								}
+							} 
+
+							ReplyMsg((struct Message *)appmsg);
+						}
 					} else {
 						while ( (result = RA_HandleInput(objects[OID_MAIN], &code) ) != WMHI_LASTMSG ) {
 							switch (result & WMHI_CLASSMASK) {
@@ -433,6 +461,7 @@ static void gui(void)
 									break;
 
 								case WMHI_ICONIFY:
+									RemoveAppWindow(appwin);
 									RA_Iconify(objects[OID_MAIN]);
 									windows[WID_MAIN] = NULL;
 									break;
@@ -442,6 +471,9 @@ static void gui(void)
 
 									if (windows[WID_MAIN]) {
 										GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
+										if(appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL)) {
+											appwin_sig = 1L << appwin_mp->mp_SigBit;
+										}
 									} else {
 										done = TRUE;	// error re-opening window!
 									}
@@ -527,6 +559,8 @@ static void gui(void)
 			DisposeObject(objects[OID_REQ]);
 		}
 
+		RemoveAppWindow(appwin);
+		if(appwin_mp) DeleteMsgPort(appwin_mp);
 		DeleteMsgPort(AppPort);
 	}
 }
