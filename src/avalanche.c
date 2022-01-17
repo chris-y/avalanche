@@ -99,6 +99,7 @@ static char *archive = NULL;
 
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
+static BOOL dir_seen = FALSE;
 
 static BOOL save_win_posn = TRUE;
 static BOOL h_browser = FALSE;
@@ -155,6 +156,7 @@ static void free_archive_path(void)
 	if(archive) FreeVec(archive);
 	archive = NULL;
 	archive_needs_free = FALSE;
+	dir_seen = FALSE;
 }
 
 static void free_dest_path(void)
@@ -172,14 +174,22 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 
 	if(h) {
 		gen = 1;
-		if (dir) flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+		if (dir) {
+			dir_seen = TRUE;
+			flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+		}
 
 		while(name[i]) {
 			if(name[i] == '/') gen++;
 			i++;
 		}
 
-		name = FilePart(name);
+		if((gen > 1) && (dir_seen == FALSE)) {
+			/* Probably we have an archive which doesn't have directory nodes */
+			gen = 1;
+		} else {
+			name = FilePart(name);
+		}
 	}
 
 	struct Node *node = AllocListBrowserNode(2,
@@ -237,11 +247,11 @@ static void *getlbnode(struct Node *node)
 	return userdata;
 }
 
-static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct Gadget *list_gad)
+static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct Gadget *list_gad, BOOL refresh_only)
 {
 	if(archive_needs_free) free_archive_path();
 
-	DoMethod((Object *)arc_gad, GFILE_REQUEST, win);
+	if(refresh_only == FALSE) DoMethod((Object *)arc_gad, GFILE_REQUEST, win);
 	GetAttr(GETFILE_FullFile, arc_gad, (APTR)&archive);
 
 	SetWindowPointer(win,
@@ -396,7 +406,7 @@ static void gui(void)
 								case WMHI_GADGETUP:
 									switch (result & WMHI_GADGETMASK) {
 										case GID_ARCHIVE:
-											open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST]);
+											open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], FALSE);
 										break;
 										
 										case GID_DEST:
@@ -445,7 +455,7 @@ static void gui(void)
 											case 0: //project
 												switch(ITEMNUM(code)) {
 													case 0: //open
-														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST]);
+														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], FALSE);
 													break;
 												
 													case 1: //about
@@ -490,6 +500,8 @@ static void gui(void)
 														
 														SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 																LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
+
+														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], TRUE);
 													break;
 													
 													case 1: //save window position

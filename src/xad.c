@@ -102,6 +102,8 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 							XAD_MAKEDIRECTORY, TRUE,
 							XAD_OUTFILENAME, destfile,
 							TAG_DONE);
+							
+					SetComment(destfile, fi->xfi_Comment);
 				}
 				fi = fi->xfi_Next;
 			}
