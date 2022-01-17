@@ -189,7 +189,6 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 		LBNA_Flags, flags,
 		LBNA_Generation, gen,
 		LBNA_Column, 0,
-			LBNCA_CopyText, h,
 			LBNCA_Text, name,
 		LBNA_Column, 1,
 			LBNCA_Integer, size,
