@@ -86,8 +86,9 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   "Clear Selection", "Z", 0, 0, 0,}, // 1
 
 	{NM_TITLE, "Settings",              0,  0, 0, 0,}, // 2
-	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE | CHECKED, 0, 0,}, // 0
-	{NM_ITEM,   "Save settings",        0, NM_ITEMDISABLED, 0, 0,}, // 1
+	{NM_ITEM,	"Hierarchical browser (experimental)", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
+	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1
+	{NM_ITEM,   "Save settings",        0, NM_ITEMDISABLED, 0, 0,}, // 2
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -171,12 +172,14 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 
 	if(h) {
 		gen = 1;
-		if (dir) flags = LBFLG_HASCHILDREN;
+		if (dir) flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 
 		while(name[i]) {
 			if(name[i] == '/') gen++;
 			i++;
 		}
+
+		name = FilePart(name);
 	}
 
 	struct Node *node = AllocListBrowserNode(2,
@@ -186,6 +189,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 		LBNA_Flags, flags,
 		LBNA_Generation, gen,
 		LBNA_Column, 0,
+			LBNCA_CopyText, h,
 			LBNCA_Text, name,
 		LBNA_Column, 1,
 			LBNCA_Integer, size,
@@ -194,8 +198,29 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 	AddTail(&lblist, node);
 }
 
-static void *addlbnode_cb(char *name, LONG *size, BOOL dir, void *userdata)
+static void addlbnode_cb(char *name, LONG *size, BOOL dir, void *userdata)
 {
+#if 0
+	/* This section tries to add directory nodes when they don't exist in the file */
+	static LONG zero = 0;
+	static char *prev_path = NULL;
+	char *path;
+
+	if(h_browser) {
+		ULONG path_len = PathPart(name) - name;
+		if(path_len > 0) {
+			if(path = AllocVec(path_len + 1, MEMF_CLEAR)) {
+				strncpy(path, name, path_len);
+				if(prev_path == NULL) prev_path = AllocVec(1, MEMF_CLEAR);
+				printf("%s prev:%s\n", path, prev_path);
+				if(strcmp(path, prev_path) != 0) addlbnode(path, &zero, TRUE, NULL, h_browser);
+				FreeVec(prev_path);
+				prev_path = path;
+			}
+		}
+	}
+#endif
+
 	addlbnode(name, size, dir, userdata, h_browser);
 }
 
@@ -220,6 +245,10 @@ static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct 
 	DoMethod((Object *)arc_gad, GFILE_REQUEST, win);
 	GetAttr(GETFILE_FullFile, arc_gad, (APTR)&archive);
 
+	SetWindowPointer(win,
+					WA_BusyPointer, TRUE,
+					TAG_DONE);
+
 	SetGadgetAttrs(list_gad, win, NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 	FreeListBrowserList(&lblist);
@@ -228,6 +257,10 @@ static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct 
 
 	SetGadgetAttrs(list_gad, win, NULL,
 			LISTBROWSER_Labels, &lblist, TAG_DONE);
+
+	SetWindowPointer(win,
+					WA_BusyPointer, FALSE,
+					TAG_DONE);
 }
 
 static void modify_all_list(struct Window *win, struct Gadget *list_gad, BOOL select)
@@ -260,6 +293,9 @@ static void gui(void)
 
 	NewList(&lblist);
 	if(archive) xad_info(archive, addlbnode_cb);
+
+	if(h_browser) menu[9].nm_Flags |= CHECKED;
+	if(save_win_posn) menu[10].nm_Flags |= CHECKED;
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
@@ -450,12 +486,19 @@ static void gui(void)
 										
 											case 2: //settings
 												switch(ITEMNUM(code)) {
-													case 0: //save window position
+													case 0: //browser mode
+														h_browser = !h_browser;
+														
+														SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
+																LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
+													break;
+													
+													case 1: //save window position
 														save_win_posn = !save_win_posn;
 														printf("%d\n", save_win_posn);
 													break;
 												
-													case 1: //save settings
+													case 2: //save settings
 													break;
 												}
 											break;				
