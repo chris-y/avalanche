@@ -156,7 +156,6 @@ static void free_archive_path(void)
 	if(archive) FreeVec(archive);
 	archive = NULL;
 	archive_needs_free = FALSE;
-	dir_seen = FALSE;
 }
 
 static void free_dest_path(void)
@@ -250,6 +249,7 @@ static void *getlbnode(struct Node *node)
 static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct Gadget *list_gad, BOOL refresh_only)
 {
 	if(archive_needs_free) free_archive_path();
+	dir_seen = FALSE;
 
 	if(refresh_only == FALSE) DoMethod((Object *)arc_gad, GFILE_REQUEST, win);
 	GetAttr(GETFILE_FullFile, arc_gad, (APTR)&archive);
