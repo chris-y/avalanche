@@ -88,12 +88,14 @@ struct NewMenu menu[] = {
 	{NM_TITLE, "Settings",              0,  0, 0, 0,}, // 2
 	{NM_ITEM,	"Hierarchical browser (experimental)", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
 	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1
-	{NM_ITEM,   "Save settings",        0, NM_ITEMDISABLED, 0, 0,}, // 2
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
+	{NM_ITEM,   "Save settings",        0,  0, 0, 0,}, // 3
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
 /** Global config **/
+static char *progname = NULL;
 static char *dest;
 static char *archive = NULL;
 
@@ -310,6 +312,7 @@ static void gui(void)
 
 	if(h_browser) menu[9].nm_Flags |= CHECKED;
 	if(save_win_posn) menu[10].nm_Flags |= CHECKED;
+	if(progname == NULL) menu[12].nm_Flags |= NM_ITEMDISABLED;
 
 	if ( AppPort = CreateMsgPort() ) {
 		/* Create the window object.
@@ -538,10 +541,9 @@ static void gui(void)
 													
 													case 1: //save window position
 														save_win_posn = !save_win_posn;
-														printf("%d\n", save_win_posn);
 													break;
 												
-													case 2: //save settings
+													case 3: //save settings
 													break;
 												}
 											break;				
@@ -585,8 +587,15 @@ int main(int argc, char **argv)
 	if(argc == 0) {
 		/* Started from WB */
 		struct WBStartup *WBenchMsg = (struct WBStartup *)argv;
-		struct WBArg *wbarg = NULL;
- 
+		struct WBArg *wbarg = WBenchMsg->sm_ArgList;
+
+		if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+			if(progname = AllocVec(40, MEMF_CLEAR)) {
+				strcpy(progname, "PROGDIR:");
+				AddPart(progname, wbarg->wa_Name, 40);
+			}
+		}
+
 		if(WBenchMsg->sm_NumArgs > 0) {
 			/* Started as default tool, get the path+filename of the (first) project */
 			wbarg = WBenchMsg->sm_ArgList + 1;
@@ -607,6 +616,7 @@ int main(int argc, char **argv)
 
 	gui();
 
+	if(progname != NULL) FreeVec(progname);
 	if(archive_needs_free) free_archive_path();
 	if(dest_needs_free) free_dest_path();
 	
