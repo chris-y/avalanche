@@ -298,12 +298,17 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 	AddTail(&lblist, node);
 }
 
+int sort(const char *a, const char *b)
+{
+	return StrnCmp(locale, a, b, -1, SC_COLLATE2);
+}
+
 int sort_array(const void *a, const void *b)
 {
 	struct arc_entries *c = *(struct arc_entries **)a;
 	struct arc_entries *d = *(struct arc_entries **)b;
 
-	return StrnCmp(locale, c->name, d->name, -1, SC_COLLATE2);
+	return sort(c->name, d->name);
 }
 
 static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata)
@@ -394,6 +399,13 @@ static void modify_all_list(struct Window *win, struct Gadget *list_gad, BOOL se
 			LISTBROWSER_Labels, &lblist, TAG_DONE);
 }
 
+#if 0
+static ULONG __saveds lbsort(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
+{
+	return sort(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
+}
+#endif
+
 static void gui(void)
 {
 	struct MsgPort *AppPort;
@@ -406,13 +418,25 @@ static void gui(void)
 	struct AppMessage *appmsg = NULL;
 	ULONG appwin_sig = 0;
 
+#if 0
+	struct Hook lbsorthook;
+	lbsorthook.h_Entry = lbsort;
+	lbsorthook.h_SubEntry = NULL;
+	lbsorthook.h_Data = &lblist;
+#endif
+
 	ULONG tag_default_position = WINDOW_Position;
 
-	struct ColumnInfo lbci[3] = {
-		{90, "Name", CIF_WEIGHTED | CIF_DRAGGABLE},
-		{10, "Size", CIF_WEIGHTED | CIF_DRAGGABLE},
-		{-1, NULL, 0}
-	};
+	struct ColumnInfo *lbci = AllocLBColumnInfo(2, 
+		LBCIA_Column, 0,
+			LBCIA_Title, "Name",
+			LBCIA_Weight, 80,
+			LBCIA_Flags, CIF_DRAGGABLE,
+		LBCIA_Column, 1,
+			LBCIA_Title, "Size",
+			LBCIA_Weight, 20,
+			LBCIA_Flags, CIF_DRAGGABLE | CIF_RIGHT,
+		TAG_DONE);
 
 	NewList(&lblist);
 	if(archive) xad_info(archive, addlbnode_cb);
@@ -473,7 +497,7 @@ static void gui(void)
 					LabelEnd,
 					LAYOUT_AddChild, gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
-						LISTBROWSER_ColumnInfo, &lbci,
+						LISTBROWSER_ColumnInfo, lbci,
 						LISTBROWSER_Labels, &lblist,
 						LISTBROWSER_ColumnTitles, TRUE,
 						LISTBROWSER_Hierarchical, h_browser,
@@ -675,6 +699,7 @@ static void gui(void)
 			DisposeObject(objects[OID_REQ]);
 		}
 
+		if(lbci) FreeLBColumnInfo(lbci);
 		RemoveAppWindow(appwin);
 		if(appwin_mp) DeleteMsgPort(appwin_mp);
 		DeleteMsgPort(AppPort);
