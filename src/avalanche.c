@@ -16,13 +16,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <proto/intuition.h>
-#include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/graphics.h>
+#include <proto/icon.h>
+#include <proto/intuition.h>
+#include <proto/locale.h>
 #include <proto/utility.h>
 #include <proto/wb.h>
-#include <proto/icon.h>
 #include <clib/alib_protos.h>
 
 #include <proto/button.h>
@@ -51,6 +52,13 @@
 #include "Avalanche_rev.h"
 
 const char *version = VERSTAG;
+
+struct arc_entries {
+	char *name;
+	ULONG *size;
+	BOOL dir;
+	void *userdata;
+};
 
 enum {
 	GID_MAIN = 0,
@@ -112,6 +120,7 @@ static ULONG win_w = 0;
 static ULONG win_h = 0;
 
 struct List lblist;
+struct Locale *locale = NULL;
 
 /** Useful functions **/
 
@@ -289,30 +298,44 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 	AddTail(&lblist, node);
 }
 
-static void addlbnode_cb(char *name, LONG *size, BOOL dir, void *userdata)
+int sort_array(const void *a, const void *b)
 {
-#if 0
-	/* This section tries to add directory nodes when they don't exist in the file */
-	static LONG zero = 0;
-	static char *prev_path = NULL;
-	char *path;
+	struct arc_entries *c = *(struct arc_entries **)a;
+	struct arc_entries *d = *(struct arc_entries **)b;
+
+	return StrnCmp(locale, c->name, d->name, -1, SC_COLLATE2);
+}
+
+static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata)
+{
+	static struct arc_entries **arc_array = NULL;
 
 	if(h_browser) {
-		ULONG path_len = PathPart(name) - name;
-		if(path_len > 0) {
-			if(path = AllocVec(path_len + 1, MEMF_CLEAR)) {
-				strncpy(path, name, path_len);
-				if(prev_path == NULL) prev_path = AllocVec(1, MEMF_CLEAR);
-				printf("%s prev:%s\n", path, prev_path);
-				if(strcmp(path, prev_path) != 0) addlbnode(path, &zero, TRUE, NULL, h_browser);
-				FreeVec(prev_path);
-				prev_path = path;
+		if(item == 0) {
+			arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
+		}
+
+		if(arc_array) {
+			arc_array[item] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+			
+			arc_array[item]->name = name;
+			arc_array[item]->size = size;
+			arc_array[item]->dir = dir;
+			arc_array[item]->userdata = userdata;
+			
+			if(item == (total - 1)) {
+				//qsort(arc_array, total, sizeof(struct arc_entries *), sort_array);
+				for(int i=0; i<total; i++) {
+					addlbnode(arc_array[i]->name, arc_array[i]->size, arc_array[i]->dir, arc_array[i]->userdata, h_browser);
+					FreeVec(arc_array[i]);
+				}
+				FreeVec(arc_array);
+				arc_array = NULL;
 			}
 		}
+	} else {
+		addlbnode(name, size, dir, userdata, h_browser);
 	}
-#endif
-
-	addlbnode(name, size, dir, userdata, h_browser);
 }
 
 static void *getlbnode(struct Node *node)
@@ -329,7 +352,7 @@ static void *getlbnode(struct Node *node)
 	return userdata;
 }
 
-static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct Gadget *list_gad, BOOL refresh_only)
+static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct Gadget *list_gad, Object *req_obj, BOOL refresh_only)
 {
 	if(archive_needs_free) free_archive_path();
 	dir_seen = FALSE;
@@ -345,7 +368,8 @@ static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct 
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 	FreeListBrowserList(&lblist);
 
-	xad_info(archive, addlbnode_cb);
+	long ret = xad_info(archive, addlbnode_cb);
+	if((refresh_only == FALSE) && (ret != 0)) show_error(req_obj, win, ret);
 
 	SetGadgetAttrs(list_gad, win, NULL,
 			LISTBROWSER_Labels, &lblist, TAG_DONE);
@@ -509,7 +533,7 @@ static void gui(void)
 									SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
 													GETFILE_FullFile, archive, TAG_DONE);
 									FreeVec(archive);
-									open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], TRUE);		
+									open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], TRUE);		
 								}
 							} 
 
@@ -526,7 +550,7 @@ static void gui(void)
 								case WMHI_GADGETUP:
 									switch (result & WMHI_GADGETMASK) {
 										case GID_ARCHIVE:
-											open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], FALSE);
+											open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], FALSE);
 										break;
 										
 										case GID_DEST:
@@ -579,7 +603,7 @@ static void gui(void)
 											case 0: //project
 												switch(ITEMNUM(code)) {
 													case 0: //open
-														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], FALSE);
+														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], FALSE);
 													break;
 												
 													case 1: //about
@@ -625,7 +649,7 @@ static void gui(void)
 														SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 																LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
 
-														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], TRUE);
+														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], TRUE);
 													break;
 													
 													case 1: //save window position
@@ -710,7 +734,11 @@ int main(int argc, char **argv)
 	gettooltypes(tooltypes);
 	ArgArrayDone();
 
+	locale = OpenLocale(NULL);
+
 	gui();
+
+	CloseLocale(locale);
 
 	if(progname != NULL) FreeVec(progname);
 	if(archive_needs_free) free_archive_path();

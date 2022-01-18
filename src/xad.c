@@ -54,10 +54,12 @@ char *xad_error(long code)
 	return xadGetErrorText((ULONG)code);
 }
 
-long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, void *userdata))
+long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
 {
 	long err = 0;
 	struct xadFileInfo *fi;
+	ULONG total = 0;
+	ULONG i = 0;
 
 	xad_init();
 	if(xadMasterBase == NULL) return -1;
@@ -67,14 +69,24 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, void 
 	ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
 	if(ai) {
-		if(err = xadGetInfo(ai,
+		if((err = xadGetInfo(ai,
 				XAD_INFILENAME, file,
 				XAD_IGNOREFLAGS, XADAIF_DISKARCHIVE,
-				TAG_DONE) == 0) {
+				TAG_DONE)) == 0) {
+					
+			/* Count entries */
+			fi = ai->xai_FileInfo;
+			while(fi) {
+				total++;
+				fi = fi->xfi_Next;
+			}
+					
+			/* Add to list */
 			fi = ai->xai_FileInfo;
 			while(fi) {
 				addnode(fi->xfi_FileName, &fi->xfi_Size,
-					(fi->xfi_Flags & XADFIF_DIRECTORY), fi);
+					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi);
+				i++;
 				fi = fi->xfi_Next;
 			}
 		}
