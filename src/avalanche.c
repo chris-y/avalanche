@@ -36,6 +36,7 @@
 
 #include <classes/requester.h>
 #include <classes/window.h>
+#include <gadgets/fuelgauge.h>
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
@@ -66,6 +67,7 @@ enum {
 	GID_DEST,
 	GID_LIST,
 	GID_EXTRACT,
+	GID_PROGRESS,
 	GID_LAST
 };
 
@@ -103,6 +105,8 @@ struct NewMenu menu[] = {
 };
 
 /** Global config **/
+#define PROGRESS_SIZE_DEFAULT 20
+
 static char *progname = NULL;
 static char *dest;
 static char *archive = NULL;
@@ -118,9 +122,17 @@ static ULONG win_x = 0;
 static ULONG win_y = 0;
 static ULONG win_w = 0;
 static ULONG win_h = 0;
+static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
 
-struct List lblist;
-struct Locale *locale = NULL;
+/** Shared variables **/
+static struct List lblist;
+static struct Locale *locale = NULL;
+static ULONG current_item = 0;
+
+static struct Window *windows[WID_LAST];
+static struct Gadget *gadgets[GID_LAST];
+static Object *objects[OID_LAST];
+
 
 /** Useful functions **/
 
@@ -185,17 +197,18 @@ void savesettings(Object *win)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[8];
+	UBYTE *newtooltypes[9];
 	char tt_dest[100];
 	char tt_winx[15];
 	char tt_winy[15];
 	char tt_winh[15];
 	char tt_winw[15];
+	char tt_progresssize[20];
 
 	if(dobj = GetIconTagList(progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
 
-		if(dest) {
+		if(dest && (strcmp("RAM:", dest) != 0)) {
 			strcpy(tt_dest, "DEST=");
 			newtooltypes[0] = strcat(tt_dest, dest);
 		} else {
@@ -248,7 +261,15 @@ void savesettings(Object *win)
 			newtooltypes[6] = "(WINH=0)";
 		}
 
-		newtooltypes[7] = NULL;
+		if(progress_size != PROGRESS_SIZE_DEFAULT) {
+			sprintf(tt_progresssize, "PROGRESSSIZE=%d", progress_size);
+		} else {
+			sprintf(tt_progresssize, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
+		}
+
+		newtooltypes[7] = tt_progresssize;
+
+		newtooltypes[8] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(progname, dobj, NULL);
@@ -315,6 +336,16 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 {
 	static struct arc_entries **arc_array = NULL;
 
+	if(item == 0) {
+		current_item = 0;
+		if(gadgets[GID_PROGRESS]) {
+			SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
+				FUELGAUGE_Max, total,
+				FUELGAUGE_Level, 0,
+				TAG_DONE);
+		}
+	}
+
 	if(h_browser) {
 		if(item == 0) {
 			arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
@@ -353,33 +384,38 @@ static void *getlbnode(struct Node *node)
 			LBNA_UserData, &userdata,
 		TAG_DONE);
 
+	current_item++;
+	SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
+			FUELGAUGE_Level, current_item,
+			TAG_DONE);
+
 	if(checked == FALSE) return NULL;
 	return userdata;
 }
 
-static void open_archive_req(struct Window *win, struct Gadget *arc_gad, struct Gadget *list_gad, Object *req_obj, BOOL refresh_only)
+static void open_archive_req(BOOL refresh_only)
 {
 	if(archive_needs_free) free_archive_path();
 	dir_seen = FALSE;
 
-	if(refresh_only == FALSE) DoMethod((Object *)arc_gad, GFILE_REQUEST, win);
-	GetAttr(GETFILE_FullFile, arc_gad, (APTR)&archive);
+	if(refresh_only == FALSE) DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
+	GetAttr(GETFILE_FullFile, gadgets[GID_ARCHIVE], (APTR)&archive);
 
-	SetWindowPointer(win,
+	SetWindowPointer(windows[WID_MAIN],
 					WA_BusyPointer, TRUE,
 					TAG_DONE);
 
-	SetGadgetAttrs(list_gad, win, NULL,
+	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 	FreeListBrowserList(&lblist);
 
 	long ret = xad_info(archive, addlbnode_cb);
-	if((refresh_only == FALSE) && (ret != 0)) show_error(req_obj, win, ret);
+	if((refresh_only == FALSE) && (ret != 0)) show_error(objects[OID_REQ], windows[WID_MAIN], ret);
 
-	SetGadgetAttrs(list_gad, win, NULL,
+	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &lblist, TAG_DONE);
 
-	SetWindowPointer(win,
+	SetWindowPointer(windows[WID_MAIN],
 					WA_BusyPointer, FALSE,
 					TAG_DONE);
 }
@@ -408,11 +444,7 @@ static ULONG __saveds lbsort(__reg("a0") struct Hook *h, __reg("a2") APTR obj, _
 
 static void gui(void)
 {
-	struct MsgPort *AppPort;
-	struct Window *windows[WID_LAST];
-	struct Gadget *gadgets[GID_LAST];
-	Object *objects[OID_LAST];
-
+	struct MsgPort *AppPort = NULL;
 	struct MsgPort *appwin_mp = NULL;
 	struct AppWindow *appwin = NULL;
 	struct AppMessage *appmsg = NULL;
@@ -435,11 +467,10 @@ static void gui(void)
 		LBCIA_Column, 1,
 			LBCIA_Title, "Size",
 			LBCIA_Weight, 20,
-			LBCIA_Flags, CIF_DRAGGABLE | CIF_RIGHT,
+			LBCIA_Flags, CIF_DRAGGABLE,
 		TAG_DONE);
 
 	NewList(&lblist);
-	if(archive) xad_info(archive, addlbnode_cb);
 
 	if(h_browser) menu[9].nm_Flags |= CHECKED;
 	if(save_win_posn) menu[10].nm_Flags |= CHECKED;
@@ -447,7 +478,7 @@ static void gui(void)
 
 	if(win_x && win_y) tag_default_position = TAG_IGNORE;
 
-	if ( AppPort = CreateMsgPort() ) {
+	if(AppPort = CreateMsgPort()) {
 		/* Create the window object.
 		 */
 		objects[OID_MAIN] = WindowObj,
@@ -468,33 +499,43 @@ static void gui(void)
 			WINDOW_AppPort, AppPort,
 			tag_default_position, WPOS_CENTERSCREEN,
 			WINDOW_ParentGroup, gadgets[GID_MAIN] = LayoutVObj,
-				LAYOUT_DeferLayout, TRUE,
+				//LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
+				LAYOUT_AddChild, LayoutHObj,
+					LAYOUT_AddChild, LayoutVObj,
+						LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObj,
+							GA_ID, GID_ARCHIVE,
+							GA_RelVerify, TRUE,
+							GETFILE_TitleText, "Select Archive",
+							GETFILE_FullFile, archive,
+							GETFILE_ReadOnly, TRUE,
+						End,
+						CHILD_WeightedHeight, 0,
+						CHILD_Label, LabelObj,
+							LABEL_Text, "_Archive",
+						LabelEnd,
+						LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObj,
+							GA_ID, GID_DEST,
+							GA_RelVerify, TRUE,
+							GETFILE_TitleText, "Select Destination",
+							GETFILE_Drawer, dest,
+							GETFILE_DoSaveMode, TRUE,
+							GETFILE_DrawersOnly, TRUE,
+							GETFILE_ReadOnly, TRUE,
+						End,
+						CHILD_WeightedHeight, 0,
+						CHILD_Label, LabelObj,
+							LABEL_Text, "_Destination",
+						LabelEnd,
+					LayoutEnd,
+					LAYOUT_WeightBar, TRUE,
+					LAYOUT_AddChild, gadgets[GID_PROGRESS] = FuelGaugeObj,
+						GA_ID, GID_PROGRESS,
+					FuelGaugeEnd,
+					CHILD_WeightedWidth, progress_size,
+				LayoutEnd,
+				CHILD_WeightedHeight, 0,
 				LAYOUT_AddChild, LayoutVObj,
-					LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObj,
-						GA_ID, GID_ARCHIVE,
-						GA_RelVerify, TRUE,
-						GETFILE_TitleText, "Select Archive",
-						GETFILE_FullFile, archive,
-						GETFILE_ReadOnly, TRUE,
-					End,
-					CHILD_WeightedHeight, 0,
-					CHILD_Label, LabelObj,
-						LABEL_Text, "_Archive",
-					LabelEnd,
-					LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObj,
-						GA_ID, GID_DEST,
-						GA_RelVerify, TRUE,
-						GETFILE_TitleText, "Select Destination",
-						GETFILE_Drawer, dest,
-						GETFILE_DoSaveMode, TRUE,
-						GETFILE_DrawersOnly, TRUE,
-						GETFILE_ReadOnly, TRUE,
-					End,
-					CHILD_WeightedHeight, 0,
-					CHILD_Label, LabelObj,
-						LABEL_Text, "_Destination",
-					LabelEnd,
 					LAYOUT_AddChild, gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
 						LISTBROWSER_ColumnInfo, lbci,
@@ -519,6 +560,9 @@ static void gui(void)
 	 	/*  Object creation sucessful?
 	 	 */
 		if (objects[OID_MAIN]) {
+			
+			if(archive) xad_info(archive, addlbnode_cb); /* open initial archive, if there is one */
+			
 			/*  Open the window.
 			 */
 			if (windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN])) {
@@ -557,7 +601,7 @@ static void gui(void)
 									SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
 													GETFILE_FullFile, archive, TAG_DONE);
 									FreeVec(archive);
-									open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], TRUE);		
+									open_archive_req(TRUE);		
 								}
 							} 
 
@@ -574,7 +618,7 @@ static void gui(void)
 								case WMHI_GADGETUP:
 									switch (result & WMHI_GADGETMASK) {
 										case GID_ARCHIVE:
-											open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], FALSE);
+											open_archive_req(FALSE);
 										break;
 										
 										case GID_DEST:
@@ -588,6 +632,7 @@ static void gui(void)
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, TRUE,
 													TAG_DONE);
+												current_item = 0;
 												ret = xad_extract(archive, dest, &lblist, getlbnode);
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, FALSE,
@@ -627,7 +672,7 @@ static void gui(void)
 											case 0: //project
 												switch(ITEMNUM(code)) {
 													case 0: //open
-														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], FALSE);
+														open_archive_req(FALSE);
 													break;
 												
 													case 1: //about
@@ -673,7 +718,7 @@ static void gui(void)
 														SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 																LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
 
-														open_archive_req(windows[WID_MAIN], gadgets[GID_ARCHIVE], gadgets[GID_LIST], objects[OID_REQ], TRUE);
+														open_archive_req(TRUE);
 													break;
 													
 													case 1: //save window position
@@ -715,6 +760,8 @@ static void gettooltypes(UBYTE **tooltypes)
 
 	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
 	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
+
+	progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
 
 	win_x = ArgInt(tooltypes, "WINX", 0);
 	win_y = ArgInt(tooltypes, "WINY", 0);

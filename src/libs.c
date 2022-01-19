@@ -16,6 +16,7 @@
 #include <proto/intuition.h>
 
 #include <proto/button.h>
+#include <proto/fuelgauge.h>
 #include <proto/getfile.h>
 #include <proto/label.h>
 #include <proto/layout.h>
@@ -63,6 +64,7 @@ ALIB_STRUCT(Locale)
 ALIB_STRUCT(Workbench)
 
 CLASS_STRUCT(Button)
+CLASS_STRUCT(FuelGauge)
 CLASS_STRUCT(GetFile)
 CLASS_STRUCT(Label)
 CLASS_STRUCT(Layout)
@@ -78,6 +80,7 @@ BOOL libs_open(void)
 	ALIB_OPEN("workbench.library",    40, Workbench)
 
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON)
+	CLASS_OPEN("gadgets/fuelgauge.gadget",     41, FuelGauge,     FUELGAUGE)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE)
 	CLASS_OPEN("images/label.image",           41, Label,         LABEL)
 	CLASS_OPEN("gadgets/layout.gadget",        41, Layout,        LAYOUT)
@@ -91,6 +94,7 @@ BOOL libs_open(void)
 void libs_close(void)
 {
 	CLASS_CLOSE(Button)
+	CLASS_CLOSE(FuelGauge)
 	CLASS_CLOSE(GetFile)
 	CLASS_CLOSE(Label)
 	CLASS_CLOSE(Layout)

@@ -18,6 +18,7 @@
 #include <intuition/classes.h>
 
 extern Class *ButtonClass;
+extern Class *FuelGaugeClass;
 extern Class *GetFileClass;
 extern Class *LabelClass;
 extern Class *LayoutClass;
@@ -26,6 +27,7 @@ extern Class *RequesterClass;
 extern Class *WindowClass;
 
 #define ButtonObj		NewObject(ButtonClass, NULL
+#define FuelGaugeObj	NewObject(FuelGaugeClass, NULL
 #define GetFileObj		NewObject(GetFileClass, NULL
 #define LabelObj		NewObject(LabelClass, NULL
 #define LayoutHObj		NewObject(LayoutClass, NULL, LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ
