@@ -117,6 +117,7 @@ static BOOL dir_seen = FALSE;
 
 static BOOL save_win_posn = FALSE;
 static BOOL h_browser = FALSE;
+static BOOL debug = FALSE;
 
 static ULONG win_x = 0;
 static ULONG win_y = 0;
@@ -288,7 +289,8 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 		gen = 1;
 		if (dir) {
 			dir_seen = TRUE;
-			flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+			flags = LBFLG_HASCHILDREN;
+			if(debug) flags |= LBFLG_SHOWCHILDREN;
 		}
 
 		while(name[i]) {
@@ -300,7 +302,10 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 			/* Probably we have an archive which doesn't have directory nodes */
 			gen = 1;
 		} else {
-			name = FilePart(name);
+			if(debug == FALSE) {
+				if(gen > 1) flags |= LBFLG_HIDDEN;
+				name = FilePart(name);
+			}
 		}
 	}
 
@@ -760,6 +765,7 @@ static void gettooltypes(UBYTE **tooltypes)
 
 	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
 	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
+	if(FindToolType(tooltypes, "DEBUG")) debug = TRUE;
 
 	progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
 
