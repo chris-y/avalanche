@@ -42,6 +42,7 @@
 #include <images/label.h>
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
+#include <utility/date.h>
 #include <workbench/startup.h>
 
 #include <reaction/reaction.h>
@@ -317,7 +318,13 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 		}
 	}
 
-	struct Node *node = AllocListBrowserNode(2,
+	char datestr[20];
+	struct ClockData cd;
+	xad_get_filedate(userdata, &cd);
+
+	sprintf(datestr, "%04d-%02d-%02d %02d:%02d:%02d", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+
+	struct Node *node = AllocListBrowserNode(3,
 		LBNA_UserData, userdata,
 		LBNA_CheckBox, TRUE,
 		LBNA_Checked, TRUE,
@@ -327,6 +334,9 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 			LBNCA_Text, name,
 		LBNA_Column, 1,
 			LBNCA_Integer, size,
+		LBNA_Column, 2,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, datestr,
 		TAG_DONE);
 
 	AddTail(&lblist, node);
@@ -487,13 +497,17 @@ static void gui(void)
 
 	ULONG tag_default_position = WINDOW_Position;
 
-	struct ColumnInfo *lbci = AllocLBColumnInfo(2, 
+	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
 		LBCIA_Column, 0,
 			LBCIA_Title, "Name",
-			LBCIA_Weight, 80,
+			LBCIA_Weight, 65,
 			LBCIA_Flags, CIF_DRAGGABLE,
 		LBCIA_Column, 1,
 			LBCIA_Title, "Size",
+			LBCIA_Weight, 15,
+			LBCIA_Flags, CIF_DRAGGABLE,
+		LBCIA_Column, 2,
+			LBCIA_Title, "Date",
 			LBCIA_Weight, 20,
 			LBCIA_Flags, CIF_DRAGGABLE,
 		TAG_DONE);

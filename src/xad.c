@@ -54,6 +54,16 @@ char *xad_error(long code)
 	return xadGetErrorText((ULONG)code);
 }
 
+ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
+{
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+	return xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
+				XAD_GETDATECLOCKDATA, cd,
+				XAD_MAKELOCALDATE, TRUE,
+				TAG_DONE);
+}
+
 long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
 {
 	long err = 0;
@@ -101,6 +111,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 	long err = 0;
 	struct xadFileInfo *fi;
 	struct Node *node;
+	struct DateStamp ds;
 
 	if(ai) {
 		
@@ -114,7 +125,17 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 							XAD_MAKEDIRECTORY, TRUE,
 							XAD_OUTFILENAME, destfile,
 							TAG_DONE);
-							
+
+					if(err != XADERR_OK) return err;
+
+					err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
+								XAD_GETDATEDATESTAMP, &ds,
+								XAD_MAKELOCALDATE, TRUE,
+								TAG_DONE);
+
+					if(err != XADERR_OK) return err;
+
+					SetFileDate(destfile, &ds);
 					SetComment(destfile, fi->xfi_Comment);
 				}
 				fi = fi->xfi_Next;
