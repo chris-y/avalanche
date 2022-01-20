@@ -54,6 +54,12 @@ char *xad_error(long code)
 	return xadGetErrorText((ULONG)code);
 }
 
+ULONG get_xad_ver(void)
+{
+	struct Library *lib = (struct Library *)xadMasterBase;
+	return lib->lib_Version;
+}
+
 static ULONG xad_get_fileprotection(void *xfi)
 {
 	ULONG protbits;

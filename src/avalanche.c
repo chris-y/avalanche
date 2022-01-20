@@ -294,13 +294,15 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 			if(name[i] == '/') gen++;
 			i++;
 		}
-#if 0
-		/* In xadmaster.library 12, sometimes directories aren't marked as such */
-		if(name[i] == '/') {
-			dir = TRUE;
-			name[i] = '\0';
+
+		if(get_xad_ver == 12) {
+			/* In xadmaster.library 12, sometimes directories aren't marked as such */
+			if(name[i] == '/') {
+				dir = TRUE;
+				name[i] = '\0';
+			}
 		}
-#endif		
+
 		if (dir) {
 			dir_seen = TRUE;
 			flags = LBFLG_HASCHILDREN;
