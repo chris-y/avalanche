@@ -54,6 +54,18 @@ char *xad_error(long code)
 	return xadGetErrorText((ULONG)code);
 }
 
+static ULONG xad_get_fileprotection(void *xfi)
+{
+	ULONG protbits;
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+	xadConvertProtection(XAD_PROTFILEINFO, fi,
+				XAD_GETPROTAMIGA, &protbits,
+				TAG_DONE);
+
+	return protbits;
+}
+
 ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 {
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
@@ -135,6 +147,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 
 					if(err != XADERR_OK) return err;
 
+					SetProtection(destfile, xad_get_fileprotection(fi));
 					SetFileDate(destfile, &ds);
 					SetComment(destfile, fi->xfi_Comment);
 				}
