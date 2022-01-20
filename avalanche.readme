@@ -2,7 +2,7 @@ Short: Simple ReAction GUI for xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 1.1
+Version: 1.2
 Architecture: m68k-amigaos >= 3.2.0
 Requires: util/arc/xadmaster000.lha
 
@@ -10,8 +10,18 @@ This is a simple GUI for xadmaster.library using the ReAction
 gadget set, written as all the others on Aminet appear to
 require MUI.
 
-This is designed for AmigaOS 3.2 (and tested on that and OS4).
-It may work on older versions but hasn't been tested.  All
-use is at your own risk.
+This is designed for AmigaOS 3.2 (and tested on that and OS4). It
+probably won't work on older versions as it needs a new window.class :)
+All use is at your own risk.
 
 GPL licence, source code available on website.
+
+Changes in this version:
+* Added options to select/clear all items
+* Added option to save window size/position
+* Added experimental hierarchical browser mode
+* Added Date column to the archive view
+* Added progress bar
+* Window now accepts icons dropped on it
+* Now correctly sets file protection bits, date and comments
+* Fixed some layout issues

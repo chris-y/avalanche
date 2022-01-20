@@ -28,20 +28,27 @@ The install script additionally modifies the default tool for "archive" type fil
 @endnode
 
 @node config "Configuration"
-Configuration is done via ToolTypes.  Currently the following are recognised:
+Configuration is done via ToolTypes or through the equivalent options in the GUI.  Currently the following ToolTypes are recognised:
 
 @{b}DEST@{ub} Destination to extract the archive to. (default = RAM:)
+@{b}HBROWSER@{ub} Enable @{"hierarchical browser" link hbrowser} mode
+@{b}SAVEWINPOSN@{ub} Enables the "save window position" option
+@{b}WINX@{ub}/@{b}WINY@{ub}/@{b}WINW@{ub}/@{b}WINH@{ub} Window position/width/height
+@{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
 @endnode
 
 @node usage "Usage"
-Avalanche can be started as a default tool for an archive, or manually.  If started manually an archive can be selected using the button next to Archive.
+Avalanche can be started as a default tool for an archive, or manually.  If started manually an archive can be selected using the button next to Archive, or by dragging it into the window.
 
-The Destination can also be changed here.  To make this change permanent, see @{"configuration" link config}.
+The Destination can also be changed here.  To make this change permanent, select Save settings from the Settings menu.  If "Save window position" is checked when Save settings is selected, then the current window position and size will also be saved.
 
 When a valid archive is loaded, the contents will be displayed.  Unchecked items will not be extracted.
 
+The state of checkboxes can be toggled by clicking on them, or by choosing "Select all" or "Clear selection" from the Edit menu.
+
 Clicking Extract will extract the archive to the chosen destination.
 
+The browser can be put into a @{"hierarchical" link hbrowser} mode through the menu.  This is experimental - see the associated page for details.
 
 @{b}Limitations@{ub}:
 * Only file archives are supported.
@@ -50,10 +57,31 @@ Clicking Extract will extract the archive to the chosen destination.
 
 @endnode
 
-@node history "Changelog"
-@{u}1.1 (11.01.2022)@{uu}
-First release
+@node hbrowser "Hierarchical browser"
+Hierarchical mode switches the archive view from a flat list to a hierarchical view, where the directories and files are nested.
 
+This is experimental.  Known issues:
+* The internal list of files in the archive must be in the correct order
+* The archive must contain directory node stubs
+
+If no directory stubs are found, the browser will fall back to a flat list.
+
+For feedback on this feature, please see https://github.com/chris-y/avalanche/issues/6
+@endnode
+
+@node history "Changelog"
+@{u}1.2 (20.01.2022)@{uu}
+* Added options to select/clear all items
+* Added option to save window size/position
+* Added experimental hierarchical browser mode
+* Added Date column to the archive view
+* Added progress bar
+* Window now accepts icons dropped on it
+* Now correctly sets file protection bits, date and comments
+* Fixed some layout issues
+
+@{u}1.1 (11.01.2022)@{uu}
+* First release
 @endnode
 
 @node contact "Contact"
