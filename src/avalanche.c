@@ -334,7 +334,22 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 
 int sort(const char *a, const char *b)
 {
-	return StrnCmp(locale, a, b, -1, SC_COLLATE2);
+	ULONG i;
+	
+	while ((a[i] != 0) && (b[i] != 0)) {
+		if(a[i] != b[i]) {
+			if(a[i] == '/') return -1;
+			if(b[i] == '/') return 1;
+			return StrnCmp(locale, a, b, 1, SC_COLLATE2);
+		}
+		i++;
+	}
+	
+	if((a[i] == 0) && (b[i] == 0)) return 0;
+	if((a[i] == 0) && (b[i] != 0)) return -1;
+	if((a[i] != 0) && (b[i] == 0)) return 1;
+
+	return 0; /* shouldn't get here */
 }
 
 int sort_array(const void *a, const void *b)
@@ -373,7 +388,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			arc_array[item]->userdata = userdata;
 			
 			if(item == (total - 1)) {
-				//qsort(arc_array, total, sizeof(struct arc_entries *), sort_array);
+				if(debug) qsort(arc_array, total, sizeof(struct arc_entries *), sort_array);
 				for(int i=0; i<total; i++) {
 					addlbnode(arc_array[i]->name, arc_array[i]->size, arc_array[i]->dir, arc_array[i]->userdata, h_browser);
 					FreeVec(arc_array[i]);
