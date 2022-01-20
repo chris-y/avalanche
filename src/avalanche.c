@@ -287,15 +287,23 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 
 	if(h) {
 		gen = 1;
+		
+		/* Count the slashes to find directory level */
+		while(name[i+1]) { /* ignore any trailing slash */
+			if(name[i] == '/') gen++;
+			i++;
+		}
+
+		/* In xadmaster.library 12, sometimes directories aren't marked as such */
+		if(name[i] == '/') {
+			dir = TRUE;
+			name[i] = '\0';
+		}
+		
 		if (dir) {
 			dir_seen = TRUE;
 			flags = LBFLG_HASCHILDREN;
 			if(debug) flags |= LBFLG_SHOWCHILDREN;
-		}
-
-		while(name[i]) {
-			if(name[i] == '/') gen++;
-			i++;
 		}
 
 		if((gen > 1) && (dir_seen == FALSE)) {
