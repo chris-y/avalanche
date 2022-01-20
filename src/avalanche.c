@@ -334,9 +334,9 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 
 int sort(const char *a, const char *b)
 {
-	ULONG i;
+	ULONG i = 0;
 	
-	while ((a[i] != 0) && (b[i] != 0)) {
+	while ((a[i]) && (b[i])) {
 		if(a[i] != b[i]) {
 			if(a[i] == '/') return -1;
 			if(b[i] == '/') return 1;
