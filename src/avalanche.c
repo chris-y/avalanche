@@ -285,6 +285,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 	ULONG flags = 0;
 	ULONG gen = 0;
 	int i = 0;
+	char *name_copy = NULL;
 
 	if(h) {
 		gen = 1;
@@ -299,7 +300,8 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 			/* In xadmaster.library 12, sometimes directories aren't marked as such */
 			if(name[i] == '/') {
 				dir = TRUE;
-				name[i] = '\0';
+				name_copy = strdup(name);
+				name_copy[i] = '\0';
 			}
 		}
 
@@ -315,7 +317,12 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 		} else {
 			if(debug == FALSE) {
 				if(gen > 1) flags |= LBFLG_HIDDEN;
-				name = FilePart(name);
+				if(name_copy == NULL) {
+					name = FilePart(name);
+				} else {
+					name = name + (FilePart(name_copy) - name_copy);
+					free(name_copy);
+				}
 			}
 		}
 	}
@@ -645,7 +652,17 @@ static void gui(void)
 									SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
 													GETFILE_FullFile, archive, TAG_DONE);
 									FreeVec(archive);
-									open_archive_req(TRUE);		
+									open_archive_req(TRUE);
+
+									if(progname && (appmsg->am_NumArgs > 1)) {
+										for(int i = 1; i < appmsg->am_NumArgs; i++) {
+											wbarg++;
+											OpenWorkbenchObject(progname+8,
+												WBOPENA_ArgLock, wbarg->wa_Lock,
+												WBOPENA_ArgName, wbarg->wa_Name,
+												TAG_DONE);
+										}
+									}
 								}
 							} 
 
@@ -843,7 +860,17 @@ int main(int argc, char **argv)
 					NameFromLock(wbarg->wa_Lock, archive, 512);
 					AddPart(archive, wbarg->wa_Name, 512);
 				}
-			} 
+			}
+
+			if(progname && (WBenchMsg->sm_NumArgs > 2)) {
+				for(int i = 2; i < WBenchMsg->sm_NumArgs; i++) {
+					wbarg++;
+					OpenWorkbenchObject(progname+8,
+						WBOPENA_ArgLock, wbarg->wa_Lock,
+						WBOPENA_ArgName, wbarg->wa_Name,
+						TAG_DONE);
+				}
+			}
         }
 	}
 	
