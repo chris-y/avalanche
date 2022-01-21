@@ -139,23 +139,25 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 			if(fi) {
 				strcpy(destfile, dest);
 				if(AddPart(destfile, fi->xfi_FileName, 1024)) {
-					err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
-							XAD_MAKEDIRECTORY, TRUE,
-							XAD_OUTFILENAME, destfile,
-							TAG_DONE);
-
-					if(err != XADERR_OK) return err;
-
-					err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
-								XAD_GETDATEDATESTAMP, &ds,
-								XAD_MAKELOCALDATE, TRUE,
+					if(!(fi->xfi_Flags & XADFIF_DIRECTORY)) {
+						err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+								XAD_MAKEDIRECTORY, TRUE,
+								XAD_OUTFILENAME, destfile,
 								TAG_DONE);
 
-					if(err != XADERR_OK) return err;
+						if(err != XADERR_OK) return err;
 
-					SetProtection(destfile, xad_get_fileprotection(fi));
-					SetFileDate(destfile, &ds);
-					SetComment(destfile, fi->xfi_Comment);
+						err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
+									XAD_GETDATEDATESTAMP, &ds,
+									XAD_MAKELOCALDATE, TRUE,
+									TAG_DONE);
+
+						if(err != XADERR_OK) return err;
+
+						SetProtection(destfile, xad_get_fileprotection(fi));
+						SetFileDate(destfile, &ds);
+						SetComment(destfile, fi->xfi_Comment);
+					}
 				}
 				fi = fi->xfi_Next;
 			}
