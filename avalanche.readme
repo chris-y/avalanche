@@ -2,7 +2,7 @@ Short: Simple ReAction GUI for xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 1.2
+Version: 1.3
 Architecture: m68k-amigaos >= 3.2.0
 Requires: util/arc/xadmaster000.lha
 
@@ -17,6 +17,10 @@ All use is at your own risk.
 GPL licence, source code available on website.
 
 Changes in this version:
+* Due to a last minute error handling change, v1.2 won't extract many archives, oops.
+* Added ability to drag or extended select more than one file
+
+Changes in v1.2:
 * Added options to select/clear all items
 * Added option to save window size/position
 * Added experimental hierarchical browser mode
