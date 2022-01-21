@@ -60,6 +60,14 @@ ULONG get_xad_ver(void)
 	return lib->lib_Version;
 }
 
+static BOOL xad_is_dir(struct xadFileInfo *fi)
+{
+	if(fi->xfi_Flags & XADFIF_DIRECTORY) return TRUE;
+	if((get_xad_ver() == 12) && (fi->xfi_FileName[strlen(fi->xfi_FileName)-1] == '/')) return TRUE;
+	return FALSE;
+}
+
+
 static ULONG xad_get_fileprotection(void *xfi)
 {
 	ULONG protbits;
@@ -139,7 +147,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 			if(fi) {
 				strcpy(destfile, dest);
 				if(AddPart(destfile, fi->xfi_FileName, 1024)) {
-					if(!(fi->xfi_Flags & XADFIF_DIRECTORY)) {
+					if(!xad_is_dir(fi)) {
 						err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
 								XAD_MAKEDIRECTORY, TRUE,
 								XAD_OUTFILENAME, destfile,
