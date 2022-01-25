@@ -503,6 +503,29 @@ static void modify_all_list(struct Window *win, struct Gadget *list_gad, BOOL se
 			LISTBROWSER_Labels, &lblist, TAG_DONE);
 }
 
+static void disable_gadgets(BOOL disable)
+{
+	if(disable) {
+		SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
+				GA_Text, "_Stop",
+			TAG_DONE);
+	} else {
+		SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
+				GA_Text, GID_EXTRACT_TEXT,
+			TAG_DONE);
+	}
+
+	SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(gadgets[GID_DEST], windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+}
+
 #if 0
 static ULONG __saveds lbsort(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
 {
@@ -736,15 +759,11 @@ static void gui(void)
 													TAG_DONE);
 												current_item = 0;
 
-												SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
-													GA_Text, "_Stop",
-												TAG_DONE);
+												disable_gadgets(TRUE);
 
 												ret = xad_extract(archive, dest, &lblist, getlbnode);
 
-												SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
-													GA_Text, GID_EXTRACT_TEXT,
-												TAG_DONE);
+												disable_gadgets(FALSE);
 
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, FALSE,
