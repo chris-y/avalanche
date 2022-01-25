@@ -18,6 +18,7 @@
 
 #include <string.h>
 
+#include "avalanche.h"
 #include "libs.h"
 #include "xad.h"
 
@@ -67,7 +68,6 @@ static BOOL xad_is_dir(struct xadFileInfo *fi)
 	return FALSE;
 }
 
-
 static ULONG xad_get_fileprotection(void *xfi)
 {
 	ULONG protbits;
@@ -88,6 +88,21 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 				XAD_GETDATECLOCKDATA, cd,
 				XAD_MAKELOCALDATE, TRUE,
 				TAG_DONE);
+}
+
+static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct xadProgressInfo *xpi)
+{
+	switch(xpi->xpi_Mode) {
+		case XADPMODE_ERROR:
+			show_error(xpi->xpi_Error);
+		break;
+
+		default:
+			//printf("%d\n", xpi->xpi_Mode);
+		break;
+	}
+	
+	return XADPIF_OK;
 }
 
 long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
@@ -138,6 +153,12 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 	struct xadFileInfo *fi;
 	struct Node *node;
 	struct DateStamp ds;
+	ULONG pud = 0;
+
+	struct Hook progress_hook;
+	progress_hook.h_Entry = xad_progress;
+	progress_hook.h_SubEntry = NULL;
+	progress_hook.h_Data = &pud;
 
 	if(ai) {
 		
@@ -148,12 +169,11 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 				strcpy(destfile, dest);
 				if(AddPart(destfile, fi->xfi_FileName, 1024)) {
 					if(!xad_is_dir(fi)) {
-						err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+						xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
 								XAD_MAKEDIRECTORY, TRUE,
 								XAD_OUTFILENAME, destfile,
+								XAD_PROGRESSHOOK, &progress_hook,
 								TAG_DONE);
-
-						if(err != XADERR_OK) return err;
 
 						err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
 									XAD_GETDATEDATESTAMP, &ds,

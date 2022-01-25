@@ -48,6 +48,7 @@
 #include <reaction/reaction.h>
 #include <reaction/reaction_macros.h>
 
+#include "avalanche.h"
 #include "libs.h"
 #include "xad.h"
 
@@ -158,9 +159,7 @@ ULONG OpenRequesterTags(Object *obj, struct Window *win, ULONG Tag1, ...)
 	return(DoMethodA(obj, (Msg)msg));
 }
 
-
-/** Private functions **/
-static void show_error(Object *obj, struct Window *win, long code)
+void show_error(long code)
 {
 	char message[100];
 
@@ -170,8 +169,8 @@ static void show_error(Object *obj, struct Window *win, long code)
 		sprintf(message, "%s", xad_error(code));
 	}
 
-	if(obj) {
-		OpenRequesterTags(obj, win, 
+	if(objects[OID_REQ]) {
+		OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
 			REQ_Type, REQTYPE_INFO,
 			REQ_Image, REQIMAGE_ERROR, 
 			REQ_BodyText, message,
@@ -181,6 +180,7 @@ static void show_error(Object *obj, struct Window *win, long code)
 	}
 }
 
+/** Private functions **/
 static void free_archive_path(void)
 {
 	if(archive) FreeVec(archive);
@@ -457,7 +457,7 @@ static void open_archive_req(BOOL refresh_only)
 	FreeListBrowserList(&lblist);
 
 	long ret = xad_info(archive, addlbnode_cb);
-	if((refresh_only == FALSE) && (ret != 0)) show_error(objects[OID_REQ], windows[WID_MAIN], ret);
+	if((refresh_only == FALSE) && (ret != 0)) show_error(ret);
 
 	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &lblist, TAG_DONE);
@@ -639,7 +639,7 @@ static void gui(void)
 				while (!done) {
 					wait = Wait( signal | SIGBREAKF_CTRL_C | app | appwin_sig );
 
-					if ( wait & SIGBREAKF_CTRL_C ) {
+					if (wait & SIGBREAKF_CTRL_C) {
 						done = TRUE;
 					} else if(wait & appwin_sig) {
 						while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
@@ -699,8 +699,7 @@ static void gui(void)
 													WA_BusyPointer, FALSE,
 													TAG_DONE);
 
-												if(ret != 0) show_error(objects[OID_REQ],
-																 windows[WID_MAIN], ret);
+												if(ret != 0) show_error(ret);
 											}
 										break;
 									}
