@@ -526,6 +526,30 @@ static void disable_gadgets(BOOL disable)
 		TAG_DONE);
 }
 
+static long extract(void)
+{
+	long ret = 0;
+
+	if(archive && dest) {
+		SetWindowPointer(windows[WID_MAIN],
+				WA_PointerType, POINTERTYPE_PROGRESS,
+			TAG_DONE);
+		current_item = 0;
+
+		disable_gadgets(TRUE);
+
+		ret = xad_extract(archive, dest, &lblist, getlbnode);
+
+		disable_gadgets(FALSE);
+
+		SetWindowPointer(windows[WID_MAIN],
+				WA_BusyPointer, FALSE,
+			TAG_DONE);
+	}
+
+	return ret;
+}
+
 #if 0
 static ULONG __saveds lbsort(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
 {
@@ -544,6 +568,14 @@ BOOL check_abort(void)
 			case WMHI_GADGETUP:
 				switch (result & WMHI_GADGETMASK) {
 					case GID_EXTRACT:
+						return TRUE;
+					break;
+				}
+			break;
+
+			case WMHI_RAWKEY:
+				switch(result & WMHI_GADGETMASK) {
+					case RAWKEY_ESC:
 						return TRUE;
 					break;
 				}
@@ -753,33 +785,30 @@ static void gui(void)
 										break;
 
 										case GID_EXTRACT:
-											if(archive && dest) {
-												SetWindowPointer(windows[WID_MAIN],
-													WA_PointerType, POINTERTYPE_PROGRESS,
-													TAG_DONE);
-												current_item = 0;
-
-												disable_gadgets(TRUE);
-
-												ret = xad_extract(archive, dest, &lblist, getlbnode);
-
-												disable_gadgets(FALSE);
-
-												SetWindowPointer(windows[WID_MAIN],
-													WA_BusyPointer, FALSE,
-													TAG_DONE);
-
-												if(ret != 0) show_error(ret);
-											}
+											ret = extract();
+											if(ret != 0) show_error(ret);
 										break;
 									}
 									break;
+
+								case WMHI_RAWKEY:
+									switch(result & WMHI_GADGETMASK) {
+										case RAWKEY_ESC:
+											done = TRUE;
+										break;
+
+										case RAWKEY_RETURN:
+											ret = extract();
+											if(ret != 0) show_error(ret);
+										break;
+									}
+								break;
 
 								case WMHI_ICONIFY:
 									RemoveAppWindow(appwin);
 									RA_Iconify(objects[OID_MAIN]);
 									windows[WID_MAIN] = NULL;
-									break;
+								break;
 
 								case WMHI_UNICONIFY:
 									windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
