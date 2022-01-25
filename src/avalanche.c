@@ -41,6 +41,7 @@
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
 #include <intuition/intuition.h>
+#include <intuition/pointerclass.h>
 #include <libraries/gadtools.h>
 #include <utility/date.h>
 #include <workbench/startup.h>
@@ -83,6 +84,8 @@ enum {
 	OID_REQ,
 	OID_LAST
 };
+
+#define GID_EXTRACT_TEXT "E_xtract"
 
 /** Menu **/
 
@@ -489,6 +492,26 @@ static ULONG __saveds lbsort(__reg("a0") struct Hook *h, __reg("a2") APTR obj, _
 }
 #endif
 
+/* Check if abort button is pressed - only called from xad hook */
+BOOL check_abort(void)
+{
+	ULONG result;
+	UWORD code;
+
+	while((result = RA_HandleInput(objects[OID_MAIN], &code)) != WMHI_LASTMSG ) {
+		switch (result & WMHI_CLASSMASK) {
+			case WMHI_GADGETUP:
+				switch (result & WMHI_GADGETMASK) {
+					case GID_EXTRACT:
+						return TRUE;
+					break;
+				}
+			break;
+		}
+	}
+	return FALSE;
+}
+
 static void gui(void)
 {
 	struct MsgPort *AppPort = NULL;
@@ -597,7 +620,7 @@ static void gui(void)
 					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObj,
 						GA_ID, GID_EXTRACT,
 						GA_RelVerify, TRUE,
-						GA_Text, "E_xtract",
+						GA_Text, GID_EXTRACT_TEXT,
 					ButtonEnd,
 					CHILD_WeightedHeight, 0,
 				LayoutEnd,
@@ -691,10 +714,20 @@ static void gui(void)
 										case GID_EXTRACT:
 											if(archive && dest) {
 												SetWindowPointer(windows[WID_MAIN],
-													WA_BusyPointer, TRUE,
+													WA_PointerType, POINTERTYPE_PROGRESS,
 													TAG_DONE);
 												current_item = 0;
+
+												SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
+													GA_Text, "_Stop",
+												TAG_DONE);
+
 												ret = xad_extract(archive, dest, &lblist, getlbnode);
+
+												SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
+													GA_Text, GID_EXTRACT_TEXT,
+												TAG_DONE);
+
 												SetWindowPointer(windows[WID_MAIN],
 													WA_BusyPointer, FALSE,
 													TAG_DONE);

@@ -16,4 +16,5 @@
 #define AVALANCHE_H 1
 
 void show_error(long code);
+BOOL check_abort(void);
 #endif

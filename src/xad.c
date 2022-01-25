@@ -23,8 +23,14 @@
 #include "xad.h"
 
 struct xadMasterBase *xadMasterBase = NULL;
-
 struct xadArchiveInfo *ai = NULL;
+
+enum {
+	PUD_NONE = 0,
+	PUD_ABORT = 1,
+	PUD_SKIP = 2,
+	PUD_OVER = 3
+};
 
 static void xad_init(void)
 {
@@ -92,6 +98,8 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 
 static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct xadProgressInfo *xpi)
 {
+	ULONG *pud = h->h_Data;
+
 	switch(xpi->xpi_Mode) {
 		case XADPMODE_ERROR:
 			show_error(xpi->xpi_Error);
@@ -101,7 +109,12 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 			//printf("%d\n", xpi->xpi_Mode);
 		break;
 	}
-	
+
+	if(check_abort()) {
+		*pud = PUD_ABORT;
+		return 0;
+	}
+
 	return XADPIF_OK;
 }
 
@@ -169,11 +182,13 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 				strcpy(destfile, dest);
 				if(AddPart(destfile, fi->xfi_FileName, 1024)) {
 					if(!xad_is_dir(fi)) {
-						xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+						err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
 								XAD_MAKEDIRECTORY, TRUE,
 								XAD_OUTFILENAME, destfile,
 								XAD_PROGRESSHOOK, &progress_hook,
 								TAG_DONE);
+
+						if(pud == PUD_ABORT) return 0;
 
 						err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
 									XAD_GETDATEDATESTAMP, &ds,
