@@ -99,10 +99,38 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct xadProgressInfo *xpi)
 {
 	ULONG *pud = h->h_Data;
+	ULONG res;
 
 	switch(xpi->xpi_Mode) {
+		case XADPMODE_ASK:
+			if(xpi->xpi_Status & XADPIF_OVERWRITE) {
+				if(*pud == PUD_SKIP) return (XADPIF_OK | XADPIF_SKIP);
+				if(*pud == PUD_OVER) return (XADPIF_OK | XADPIF_OVERWRITE);
+				res = ask_question("%s already exists, overwrite?", xpi->xpi_FileName);
+				switch(res) {
+					case 0: // Abort
+						*pud = PUD_ABORT;
+						return 0;	
+					break;
+
+					case 2: // Yes to all
+						*pud = PUD_OVER;
+					case 1: // Yes
+						return (XADPIF_OK | XADPIF_OVERWRITE);
+					break;
+
+					case 4: // No to all
+						*pud = PUD_SKIP;
+					case 3: // No
+						return (XADPIF_OK | XADPIF_SKIP);
+					break;
+				}
+			}
+		break;
+
 		case XADPMODE_ERROR:
-			show_error(xpi->xpi_Error);
+			if(xpi->xpi_Error != XADERR_SKIP)
+				show_error(xpi->xpi_Error);
 		break;
 
 		default:

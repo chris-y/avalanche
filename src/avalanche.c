@@ -177,9 +177,27 @@ void show_error(long code)
 			REQ_Type, REQTYPE_INFO,
 			REQ_Image, REQIMAGE_ERROR, 
 			REQ_BodyText, message,
-			REQ_GadgetText, "OK", TAG_DONE);
+			REQ_GadgetText, "_OK", TAG_DONE);
 	} else {
 		printf("Unable to open requester to show error;\n%s\n", message);
+	}
+}
+
+ULONG ask_question(char *q, char *f)
+{
+	char message[200];
+
+	sprintf(message, q, f);
+
+	if(objects[OID_REQ]) {
+		return OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
+			REQ_Type, REQTYPE_INFO,
+			REQ_Image, REQIMAGE_QUESTION, 
+			REQ_BodyText, message,
+			REQ_GadgetText, "_Yes|Yes to _all|_No|N_o to all|Abort", TAG_DONE);
+	} else {
+		printf("Unable to open requester to show error;\n%s\n", message);
+		return 0;
 	}
 }
 

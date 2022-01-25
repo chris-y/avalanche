@@ -3,7 +3,7 @@ CFLAGS := -c99
 LIBS := -lamiga
 
 OBJS := avalanche.o libs.o xad.o
-DEPS := avalanche_rev.h libs.h xad.h
+DEPS := avalanche_rev.h avalanche.h libs.h xad.h
 
 all: Avalanche install
 

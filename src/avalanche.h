@@ -15,6 +15,7 @@
 #ifndef AVALANCHE_H
 #define AVALANCHE_H 1
 
+ULONG ask_question(char *q, char *f);
 void show_error(long code);
 BOOL check_abort(void);
 #endif
