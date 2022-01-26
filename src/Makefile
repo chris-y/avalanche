@@ -5,13 +5,17 @@ LIBS := -lamiga
 OBJS := avalanche.o libs.o xad.o
 DEPS := avalanche_rev.h avalanche.h libs.h xad.h
 
-all: Avalanche install
+all: Avalanche AvalanchePPC install
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 Avalanche: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+
+AvalanchePPC: $(OBJS)
+	make -i -f Makefile.OS4 clean
+	make -f Makefile.OS4
 
 install: Avalanche
 	copy Avalanche /
@@ -27,4 +31,4 @@ distrib: install
 
 clean:
 	delete #?.o
-	delete AvalanchePPC
+	delete Avalanche

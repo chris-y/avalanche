@@ -5,7 +5,7 @@ LIBS := -lamiga
 OBJS := avalanche.o libs.o xad.o
 DEPS := avalanche_rev.h avalanche.h libs.h xad.h
 
-all: AvalanchePPC
+all: AvalanchePPC install
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -13,17 +13,8 @@ all: AvalanchePPC
 AvalanchePPC: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-install: Avalanche
+install: AvalanchePPC
 	copy AvalanchePPC /
-
-distrib: install
-	makedir RAM:Avalanche
-	copy //Avalanche.info RAM:
-	copy /Avalanche#? RAM:Avalanche
-	copy /avalanche.readme#? RAM:Avalanche
-	copy /Install#? RAM:Avalanche
-	copy /LICENSE RAM:Avalanche
-	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info
 
 clean:
 	delete #?.o
