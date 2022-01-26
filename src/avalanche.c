@@ -207,7 +207,7 @@ ULONG ask_quit(void)
 	Object *obj = RequesterObj,
 			REQ_TitleText, VERS,
 			REQ_Type, REQTYPE_INFO,
-			REQ_Image, REQIMAGE_QUESTION,
+			REQ_Image, REQIMAGE_WARNING,
 			REQ_BodyText, "Are you sure you want to exit?",
 			REQ_GadgetText, "_Yes|_No",
 		End;
