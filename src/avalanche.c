@@ -81,7 +81,6 @@ enum {
 
 enum {
 	OID_MAIN = 0,
-	OID_REQ,
 	OID_LAST
 };
 
@@ -152,15 +151,29 @@ char *strdup(const char *s)
   return (char*) memcpy (result, s, len);
 }
 
-ULONG OpenRequesterTags(Object *obj, struct Window *win, ULONG Tag1, ...)
+void show_about(void)
 {
-	struct orRequest msg[1];
-	msg->MethodID = RM_OPENREQ;
-	msg->or_Window = win;	/* window OR screen is REQUIRED */
-	msg->or_Screen = NULL;
-	msg->or_Attrs = (struct TagItem *)&Tag1;
+	Object *obj = RequesterObj,
+					REQ_TitleText, VERS,
+					REQ_Type, REQTYPE_INFO,
+					REQ_Image, REQIMAGE_INFO,
+					REQ_BodyText, 	VERS " (" DATE ")\n"
+									"(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
+									"This program is free software; you can redistribute it and/or modify\n"
+									"it under the terms of the GNU General Public License as published by\n"
+									"the Free Software Foundation; either version 2 of the License, or\n"
+									"(at your option) any later version.\n\n"
+									"This program is distributed in the hope that it will be useful,\n"
+									"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+									"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+									"GNU General Public License for more details.",
+					REQ_GadgetText, "_OK",
+				End;
 
-	return(DoMethodA(obj, (Msg)msg));
+	if(obj) {
+		OpenRequester(obj, windows[WID_MAIN]);
+		DisposeObject(obj);
+	}
 }
 
 void show_error(long code)
@@ -173,12 +186,17 @@ void show_error(long code)
 		sprintf(message, "%s", xad_error(code));
 	}
 
-	if(objects[OID_REQ]) {
-		OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
 			REQ_Type, REQTYPE_INFO,
 			REQ_Image, REQIMAGE_ERROR, 
 			REQ_BodyText, message,
-			REQ_GadgetText, "_OK", TAG_DONE);
+			REQ_GadgetText, "_OK",
+		End;
+
+	if(obj) {
+		OpenRequester(obj, windows[WID_MAIN]);
+		DisposeObject(obj);
 	} else {
 		printf("Unable to open requester to show error;\n%s\n", message);
 	}
@@ -190,12 +208,16 @@ ULONG ask_question(char *q, char *f)
 
 	sprintf(message, q, f);
 
-	if(objects[OID_REQ]) {
-		return OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
 			REQ_Type, REQTYPE_INFO,
 			REQ_Image, REQIMAGE_QUESTION,
 			REQ_BodyText, message,
-			REQ_GadgetText, "_Yes|Yes to _all|_No|N_o to all|Abort", TAG_DONE);
+			REQ_GadgetText, "_Yes|Yes to _all|_No|N_o to all|Abort",
+		End;
+
+	if(obj) {
+		return OpenRequester(obj, windows[WID_MAIN]); 
 	} else {
 		printf("Unable to open requester to show error;\n%s\n", message);
 		return 0;
@@ -712,10 +734,6 @@ static void gui(void)
 			EndGroup,
 		EndWindow;
 
-		objects[OID_REQ] = RequesterObj,
-			REQ_TitleText, VERS,
-		End;
-
 	 	/*  Object creation sucessful?
 	 	 */
 		if (objects[OID_MAIN]) {
@@ -847,20 +865,7 @@ static void gui(void)
 													break;
 												
 													case 1: //about
-														OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
-															REQ_Type, REQTYPE_INFO,
-															REQ_Image, REQIMAGE_INFO,
-															REQ_BodyText, 	VERS " (" DATE ")\n"
-																			"(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
-																			"This program is free software; you can redistribute it and/or modify\n"
-																			"it under the terms of the GNU General Public License as published by\n"
-																			"the Free Software Foundation; either version 2 of the License, or\n"
-																			"(at your option) any later version.\n\n"
-																			"This program is distributed in the hope that it will be useful,\n"
-																			"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-																			"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-																			"GNU General Public License for more details.",
-															REQ_GadgetText, "OK", TAG_DONE);
+														show_about();
 													break;
 												
 													case 3: //quit
@@ -916,7 +921,6 @@ static void gui(void)
 			}
 
 			DisposeObject(objects[OID_MAIN]);
-			DisposeObject(objects[OID_REQ]);
 		}
 
 		if(lbci) FreeLBColumnInfo(lbci);

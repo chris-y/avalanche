@@ -24,3 +24,7 @@ distrib: install
 	copy /Install#? RAM:Avalanche
 	copy /LICENSE RAM:Avalanche
 	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info
+
+clean:
+	delete #?.o
+	delete AvalanchePPC
