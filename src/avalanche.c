@@ -96,9 +96,10 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 2
 	{NM_ITEM,   "Quit",            "Q", 0, 0, 0,}, // 3
 
-	{NM_TITLE, "Edit",              0,  0, 0, 0,}, // 1
-	{NM_ITEM,   "Select all",      "A", 0, 0, 0,}, // 0
-	{NM_ITEM,   "Clear Selection", "Z", 0, 0, 0,}, // 1
+	{NM_TITLE, "Edit",               0,  0, 0, 0,}, // 1
+	{NM_ITEM,   "Select all",       "A", 0, 0, 0,}, // 0
+	{NM_ITEM,   "Clear selection",  "Z", 0, 0, 0,}, // 1
+	{NM_ITEM,   "Invert selection", "I", 0, 0, 0,}, // 2
 
 	{NM_TITLE, "Settings",              0,  0, 0, 0,}, // 2
 	{NM_ITEM,	"Hierarchical browser (experimental)", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
@@ -488,15 +489,26 @@ static void open_archive_req(BOOL refresh_only)
 					TAG_DONE);
 }
 
-static void modify_all_list(struct Window *win, struct Gadget *list_gad, BOOL select)
+static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG select)
 {
 	struct Node *node;
+	BOOL selected;
+
+	if(select == 0) selected = FALSE;
+	if(select == 1) selected = TRUE;
 
 	SetGadgetAttrs(list_gad, win, NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
 	for(node = lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
-		SetListBrowserNodeAttrs(node, LBNA_Checked, select, TAG_DONE);
+
+		if(select == 2) {
+			ULONG current;
+			GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
+			selected = !current;
+		}
+
+		SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
 	}
 
 	SetGadgetAttrs(list_gad, win, NULL,
@@ -619,9 +631,9 @@ static void gui(void)
 
 	NewList(&lblist);
 
-	if(h_browser) menu[9].nm_Flags |= CHECKED;
-	if(save_win_posn) menu[10].nm_Flags |= CHECKED;
-	if(progname == NULL) menu[12].nm_Flags |= NM_ITEMDISABLED;
+	if(h_browser) menu[10].nm_Flags |= CHECKED;
+	if(save_win_posn) menu[11].nm_Flags |= CHECKED;
+	if(progname == NULL) menu[13].nm_Flags |= NM_ITEMDISABLED;
 
 	if(win_x && win_y) tag_default_position = TAG_IGNORE;
 
@@ -860,11 +872,15 @@ static void gui(void)
 											case 1: //edit
 												switch(ITEMNUM(code)) {
 													case 0: //select all
-														modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], TRUE);
+														modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 1);
 													break;
 												
 													case 1: //clear selection
-														modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], FALSE);
+														modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 0);
+													break;
+
+													case 2: //invert selection
+														modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 2);
 													break;
 												}
 											break;
