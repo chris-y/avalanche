@@ -93,7 +93,7 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   "Open...",         "O", 0, 0, 0,}, // 0
 	{NM_ITEM,   "About...",        "?", 0, 0, 0,}, // 1
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 2
-	{NM_ITEM,   "Quit",            "Q", 0, 0, 0,}, // 3
+	{NM_ITEM,   "Quit...",            "Q", 0, 0, 0,}, // 3
 
 	{NM_TITLE, "Edit",               0,  0, 0, 0,}, // 1
 	{NM_ITEM,   "Select all",       "A", 0, 0, 0,}, // 0
@@ -199,6 +199,23 @@ void show_error(long code)
 		DisposeObject(obj);
 	} else {
 		printf("Unable to open requester to show error;\n%s\n", message);
+	}
+}
+
+ULONG ask_quit(void)
+{
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
+			REQ_Type, REQTYPE_INFO,
+			REQ_Image, REQIMAGE_QUESTION,
+			REQ_BodyText, "Are you sure you want to exit?",
+			REQ_GadgetText, "_Yes|_No",
+		End;
+
+	if(obj) {
+		return OpenRequester(obj, windows[WID_MAIN]); 
+	} else {
+		return 1; /* If we can't open, quit anyway */
 	}
 }
 
@@ -763,11 +780,9 @@ static void gui(void)
 				/* Input Event Loop
 				 */
 				while (!done) {
-					wait = Wait( signal | SIGBREAKF_CTRL_C | app | appwin_sig );
+					wait = Wait( signal | app | appwin_sig );
 
-					if (wait & SIGBREAKF_CTRL_C) {
-						done = TRUE;
-					} else if(wait & appwin_sig) {
+					if(wait & appwin_sig) {
 						while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
 							struct WBArg *wbarg = appmsg->am_ArgList;
 							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
@@ -798,9 +813,11 @@ static void gui(void)
 						while ( (result = RA_HandleInput(objects[OID_MAIN], &code) ) != WMHI_LASTMSG ) {
 							switch (result & WMHI_CLASSMASK) {
 								case WMHI_CLOSEWINDOW:
-									windows[WID_MAIN] = NULL;
-									done = TRUE;
-									break;
+									if(ask_quit()) {
+										windows[WID_MAIN] = NULL;
+										done = TRUE;
+									}
+								break;
 
 								case WMHI_GADGETUP:
 									switch (result & WMHI_GADGETMASK) {
@@ -824,7 +841,9 @@ static void gui(void)
 								case WMHI_RAWKEY:
 									switch(result & WMHI_GADGETMASK) {
 										case RAWKEY_ESC:
-											done = TRUE;
+											if(ask_quit()) {
+												done = TRUE;
+											}
 										break;
 
 										case RAWKEY_RETURN:
@@ -869,7 +888,9 @@ static void gui(void)
 													break;
 												
 													case 3: //quit
-														done = TRUE;
+														if(ask_quit()) {
+															done = TRUE;
+														}
 													break;
 												}
 											break;
