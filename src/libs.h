@@ -38,4 +38,7 @@ extern Class *WindowClass;
 
 BOOL libs_open(void);
 void libs_close(void);
+
+BOOL libs_xad_init(void);
+void libs_xad_exit(void);
 #endif

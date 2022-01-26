@@ -193,7 +193,7 @@ ULONG ask_question(char *q, char *f)
 	if(objects[OID_REQ]) {
 		return OpenRequesterTags(objects[OID_REQ], windows[WID_MAIN], 
 			REQ_Type, REQTYPE_INFO,
-			REQ_Image, REQIMAGE_QUESTION, 
+			REQ_Image, REQIMAGE_QUESTION,
 			REQ_BodyText, message,
 			REQ_GadgetText, "_Yes|Yes to _all|_No|N_o to all|Abort", TAG_DONE);
 	} else {

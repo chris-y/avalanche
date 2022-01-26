@@ -22,7 +22,11 @@
 #include "libs.h"
 #include "xad.h"
 
-struct xadMasterBase *xadMasterBase = NULL;
+#ifdef __amigaos4__
+#define SetFileDate SetDate
+#define xadMasterBase XadMasterBase
+#endif
+
 struct xadArchiveInfo *ai = NULL;
 
 enum {
@@ -31,13 +35,6 @@ enum {
 	PUD_SKIP = 2,
 	PUD_OVER = 3
 };
-
-static void xad_init(void)
-{
-	if(xadMasterBase == NULL) {
-		xadMasterBase = (struct xadMasterBase *)OpenLibrary("xadmaster.library", 12);
-	}
-}
 
 void xad_free(void)
 {
@@ -49,11 +46,7 @@ void xad_free(void)
 void xad_exit(void)
 {
 	if(ai) xad_free();
-
-	if(xadMasterBase != NULL) {
-		CloseLibrary((struct Library *)xadMasterBase);
-		xadMasterBase = NULL;
-	}
+	libs_xad_exit();
 }
 
 char *xad_error(long code)
@@ -96,7 +89,11 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 				TAG_DONE);
 }
 
+#ifdef __amigaos4__
+static ULONG xad_progress(struct Hook *h, APTR obj, struct xadProgressInfo *xpi)
+#else
 static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct xadProgressInfo *xpi)
+#endif
 {
 	ULONG *pud = h->h_Data;
 	ULONG res;
@@ -153,7 +150,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	ULONG total = 0;
 	ULONG i = 0;
 
-	xad_init();
+	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
 
 	if(ai) xad_free();
