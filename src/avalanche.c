@@ -139,6 +139,9 @@ static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_LAST];
 static Object *objects[OID_LAST];
 
+#ifndef __amigaos4__
+#define LISTBROWSER_SortColumn TAG_IGNORE
+#endif
 
 /** Useful functions **/
 
@@ -357,7 +360,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 			i++;
 		}
 
-		if(get_xad_ver == 12) {
+		if(get_xad_ver() == 12) {
 			/* In xadmaster.library 12, sometimes directories aren't marked as such */
 			if(name[i] == '/') {
 				dir = TRUE;
@@ -521,7 +524,9 @@ static void open_archive_req(BOOL refresh_only)
 	if((refresh_only == FALSE) && (ret != 0)) show_error(ret);
 
 	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, &lblist, TAG_DONE);
+				LISTBROWSER_Labels, &lblist,
+				LISTBROWSER_SortColumn, 0,
+			TAG_DONE);
 
 	SetWindowPointer(windows[WID_MAIN],
 					WA_BusyPointer, FALSE,
@@ -551,7 +556,9 @@ static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG s
 	}
 
 	SetGadgetAttrs(list_gad, win, NULL,
-			LISTBROWSER_Labels, &lblist, TAG_DONE);
+				LISTBROWSER_Labels, &lblist,
+				LISTBROWSER_SortColumn, 0,
+			TAG_DONE);
 }
 
 static void disable_gadgets(BOOL disable)
@@ -602,9 +609,13 @@ static long extract(void)
 }
 
 #if 0
+#ifdef __amigaos4__
+static ULONG lbsort(struct Hook *h, APTR obj, struct LBSortMsg *msg)
+#else
 static ULONG __saveds lbsort(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
+#endif
 {
-	return sort(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
+	return Stricmp(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
 }
 #endif
 
@@ -653,6 +664,32 @@ static void gui(void)
 
 	ULONG tag_default_position = WINDOW_Position;
 
+#ifdef __amigaos4__
+	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
+		LBCIA_Column, 0,
+			LBCIA_Title, "Name",
+			LBCIA_Weight, 65,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+		LBCIA_Column, 1,
+			LBCIA_Title, "Size",
+			LBCIA_Weight, 15,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+		LBCIA_Column, 2,
+			LBCIA_Title, "Date",
+			LBCIA_Weight, 20,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+		TAG_DONE);
+
+#else
 	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
 		LBCIA_Column, 0,
 			LBCIA_Title, "Name",
@@ -667,6 +704,7 @@ static void gui(void)
 			LBCIA_Weight, 20,
 			LBCIA_Flags, CIF_DRAGGABLE,
 		TAG_DONE);
+#endif
 
 	NewList(&lblist);
 
@@ -739,6 +777,8 @@ static void gui(void)
 						LISTBROWSER_ColumnInfo, lbci,
 						LISTBROWSER_Labels, &lblist,
 						LISTBROWSER_ColumnTitles, TRUE,
+						LISTBROWSER_TitleClickable, TRUE,
+						LISTBROWSER_SortColumn, 0,
 						LISTBROWSER_Hierarchical, h_browser,
 					ListBrowserEnd,
 					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObj,
