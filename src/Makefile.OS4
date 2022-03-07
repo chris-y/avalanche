@@ -1,4 +1,5 @@
-CC := gcc -std=c99
+CC := vc +aosppc
+#CC := gcc -std=c99
 CFLAGS := -D__USE_INLINE__
 LIBS := -lamiga
 
