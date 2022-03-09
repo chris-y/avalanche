@@ -4,7 +4,7 @@
 		(prompt "Setting default tool for " #type)
 		(help @tooltype-help)
 		(dest (tackon "ENVARC:Sys/" #def))
-		(setdefaulttool (tackon @default-dest "Avalanche"))
+		(setdefaulttool (tackon @default-dest #Avalanche))
 	)
 )
 
@@ -18,12 +18,13 @@
 (if (< #os-ver 50)
 	(
 		(set #tools-dir "SYS:Tools")
+		(set #avalanche "Avalanche")
 	)
 	; else
 	(
 		; OS4 doesn't have Tools.
-		; This program isn't intended for OS4 but let's at least set a sensible default.
 		(set #tools-dir "SYS:Utilities")
+		(set #avalanche "AvalanchePPC")
 	)
 )
 
@@ -60,7 +61,7 @@
 (copyfiles
 	(prompt "Copying Avalanche")
 	(help @copyfiles-help)
-	(source "Avalanche")
+	(source #Avalanche)
 	(dest @default-dest)
 	(infos)
 )
