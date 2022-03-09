@@ -32,3 +32,6 @@ distrib: install
 clean:
 	delete #?.o
 	delete Avalanche
+
+version:
+	bumprev 1 Avalanche
