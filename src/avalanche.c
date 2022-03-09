@@ -139,10 +139,6 @@ static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_LAST];
 static Object *objects[OID_LAST];
 
-#ifndef __amigaos4__
-#define LISTBROWSER_SortColumn TAG_IGNORE
-#endif
-
 /** Useful functions **/
 
 char *strdup(const char *s)
@@ -664,7 +660,6 @@ static void gui(void)
 
 	ULONG tag_default_position = WINDOW_Position;
 
-#ifdef __amigaos4__
 	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
 		LBCIA_Column, 0,
 			LBCIA_Title, "Name",
@@ -689,7 +684,7 @@ static void gui(void)
 			LBCIA_AutoSort, TRUE,
 		TAG_DONE);
 
-#else
+#if 0
 	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
 		LBCIA_Column, 0,
 			LBCIA_Title, "Name",
