@@ -544,7 +544,6 @@ static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node
 
 	SetGadgetAttrs(list_gad, win, NULL,
 				LISTBROWSER_Labels, &lblist,
-				LISTBROWSER_SortColumn, 0,
 			TAG_DONE);
 }
 
@@ -572,7 +571,6 @@ static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG s
 
 	SetGadgetAttrs(list_gad, win, NULL,
 				LISTBROWSER_Labels, &lblist,
-				LISTBROWSER_SortColumn, 0,
 			TAG_DONE);
 }
 
