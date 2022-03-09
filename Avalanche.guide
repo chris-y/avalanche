@@ -79,6 +79,7 @@ For feedback on this feature, please see https://github.com/chris-y/avalanche/is
 * Clicking anywhere on the line now toggles the checkbox
 * Now confirms quit
 * Added option to invert selection to menu
+* Striped listbrowser
 
 @{u}1.3 (21.01.2022)@{uu}
 * Due to a last minute error handling change, v1.2 won't extract many archives, oops.

@@ -25,5 +25,6 @@ Changes in this version:
 * Clicking anywhere on the line now toggles the checkbox
 * Now confirms quit
 * Added option to invert selection to menu
+* Striped listbrowser
 
 For full history see documentation inside the archive.
