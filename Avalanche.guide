@@ -70,6 +70,16 @@ For feedback on this feature, please see https://github.com/chris-y/avalanche/is
 @endnode
 
 @node history "Changelog"
+@{u}1.4 (09.03.2022)@{uu}
+* Now includes OS4 native build
+* Allow abort during extraction (button or ESC)
+* Now asks whether to overwrite files
+* ESC can now be used to quit, and Enter to start extraction
+* List of files can now be sorted by clicking on the column header
+* Clicking anywhere on the line now toggles the checkbox
+* Now confirms quit
+* Added option to invert selection to menu
+
 @{u}1.3 (21.01.2022)@{uu}
 * Due to a last minute error handling change, v1.2 won't extract many archives, oops.
 * Added ability to drag or extended select more than one file
