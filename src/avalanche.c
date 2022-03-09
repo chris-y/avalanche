@@ -774,6 +774,8 @@ static void gui(void)
 						LISTBROWSER_ColumnTitles, TRUE,
 						LISTBROWSER_TitleClickable, TRUE,
 						LISTBROWSER_SortColumn, 0,
+						LISTBROWSER_Striping, LBS_ROWS,
+						LISTBROWSER_FastRender, TRUE,
 						LISTBROWSER_Hierarchical, h_browser,
 					ListBrowserEnd,
 					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObj,
