@@ -529,6 +529,25 @@ static void open_archive_req(BOOL refresh_only)
 					TAG_DONE);
 }
 
+static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node *node)
+{
+	SetGadgetAttrs(list_gad, win, NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	ULONG current;
+	ULONG selected;
+
+	GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
+	selected = !current;
+
+	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
+
+	SetGadgetAttrs(list_gad, win, NULL,
+				LISTBROWSER_Labels, &lblist,
+				LISTBROWSER_SortColumn, 0,
+			TAG_DONE);
+}
+
 static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG select)
 {
 	struct Node *node;
@@ -684,23 +703,6 @@ static void gui(void)
 			LBCIA_AutoSort, TRUE,
 		TAG_DONE);
 
-#if 0
-	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
-		LBCIA_Column, 0,
-			LBCIA_Title, "Name",
-			LBCIA_Weight, 65,
-			LBCIA_Flags, CIF_DRAGGABLE,
-		LBCIA_Column, 1,
-			LBCIA_Title, "Size",
-			LBCIA_Weight, 15,
-			LBCIA_Flags, CIF_DRAGGABLE,
-		LBCIA_Column, 2,
-			LBCIA_Title, "Date",
-			LBCIA_Weight, 20,
-			LBCIA_Flags, CIF_DRAGGABLE,
-		TAG_DONE);
-#endif
-
 	NewList(&lblist);
 
 	if(h_browser) menu[10].nm_Flags |= CHECKED;
@@ -769,6 +771,7 @@ static void gui(void)
 				LAYOUT_AddChild, LayoutVObj,
 					LAYOUT_AddChild, gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
+						GA_RelVerify, TRUE,
 						LISTBROWSER_ColumnInfo, lbci,
 						LISTBROWSER_Labels, &lblist,
 						LISTBROWSER_ColumnTitles, TRUE,
@@ -803,6 +806,8 @@ static void gui(void)
 				ULONG result;
 				UWORD code;
 				long ret = 0;
+				ULONG tmp = 0;
+				struct Node *node;
 
 			 	/* Obtain the window wait signal mask.
 				 */
@@ -872,6 +877,17 @@ static void gui(void)
 											ret = extract();
 											if(ret != 0) show_error(ret);
 										break;
+
+										case GID_LIST:
+											GetAttr(LISTBROWSER_RelEvent, gadgets[GID_LIST], (APTR)&tmp);
+											switch(tmp) {
+												case LBRE_NORMAL:
+													GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
+													toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node);
+												break;
+											}
+										break;
+
 									}
 									break;
 
