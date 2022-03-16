@@ -6,7 +6,7 @@ LIBS := -lamiga
 OBJS := avalanche.o libs.o xad.o
 DEPS := avalanche_rev.h avalanche.h libs.h xad.h
 
-all: AvalanchePPC install
+all: AvalanchePPC
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<

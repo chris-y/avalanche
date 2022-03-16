@@ -5,7 +5,7 @@ LIBS := -lamiga
 OBJS := avalanche.o libs.o xad.o
 DEPS := avalanche_rev.h avalanche.h libs.h xad.h
 
-all: Avalanche AvalanchePPC install
+all: install
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -17,8 +17,9 @@ AvalanchePPC: $(OBJS)
 	make -i -f Makefile.OS4 clean
 	make -f Makefile.OS4
 
-install: Avalanche
+install: Avalanche AvalanchePPC
 	copy Avalanche /
+	copy AvalanchePPC /
 
 distrib: install
 	makedir RAM:Avalanche
