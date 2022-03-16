@@ -19,12 +19,39 @@
 	(
 		(set #tools-dir "SYS:Tools")
 		(set #avalanche "Avalanche")
+
+		(set #arc-7zip  "")
+		(set #arc-arj   "")
+		(set #arc-bz2   "")
+		(set #arc-gzip  "")
+		(set #arc-lha   "")
+		(set #arc-lharc "")
+		(set #arc-lzx   "")
+		(set #arc-pkzip "")
+		(set #arc-rar   "")
+		(set #arc-tar   "")
+		(set #arc-zip   "")
+		(set #arc-zoo   "")
 	)
 	; else
 	(
 		; OS4 doesn't have Tools.
 		(set #tools-dir "SYS:Utilities")
 		(set #avalanche "AvalanchePPC")
+
+		(set #arc-7zip  "7zip")
+		(set #arc-arj   "arj")
+		(set #arc-bz2   "bz2")
+		(set #arc-gzip  "gzip")
+		(set #arc-lha   "lha")
+		(set #arc-lharc "lharc")
+		(set #arc-lzx   "lzx")
+		(set #arc-pkzip "pkzip")
+		(set #arc-rar   "rar")
+		(set #arc-tar   "tar")
+		(set #arc-zip   "zip")
+		(set #arc-zoo   "zoo")
+
 	)
 )
 
@@ -79,7 +106,19 @@
 		(help "AmigaOS 3.2 by default has one default icon for all archives. "
 				"Selecting \"archive\" here will set Avalanche as the default tool "
 				"for all archives.")
-		(choices 	"archive")
+		(choices 	"archive"
+					#arc-7zip
+					#arc-arj
+					#arc-bz2
+					#arc-gzip
+					#arc-lha
+					#arc-lharc
+					#arc-lzx
+					#arc-pkzip
+					#arc-rar
+					#arc-tar
+					#arc-zip
+					#arc-zoo)
 	)
 )
 
