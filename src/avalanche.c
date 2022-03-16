@@ -502,10 +502,13 @@ static void *getlbnode(struct Node *node)
 
 static void open_archive_req(BOOL refresh_only)
 {
-	if(archive_needs_free) free_archive_path();
 	dir_seen = FALSE;
 
-	if(refresh_only == FALSE) DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
+	if(refresh_only == FALSE) {
+		if(archive_needs_free) free_archive_path();
+		DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
+	}
+
 	GetAttr(GETFILE_FullFile, gadgets[GID_ARCHIVE], (APTR)&archive);
 
 	SetWindowPointer(windows[WID_MAIN],
@@ -832,9 +835,7 @@ static void gui(void)
 									AddPart(archive, wbarg->wa_Name, 512);
 									SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
 													GETFILE_FullFile, archive, TAG_DONE);
-									FreeVec(archive);
 									open_archive_req(TRUE);
-
 									if(progname && (appmsg->am_NumArgs > 1)) {
 										for(int i = 1; i < appmsg->am_NumArgs; i++) {
 											wbarg++;
