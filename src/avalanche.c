@@ -203,6 +203,8 @@ void show_error(long code)
 
 ULONG ask_quit(void)
 {
+	int ret = 1;
+
 	Object *obj = RequesterObj,
 			REQ_TitleText, VERS,
 			REQ_Type, REQTYPE_INFO,
@@ -212,15 +214,16 @@ ULONG ask_quit(void)
 		End;
 
 	if(obj) {
-		return OpenRequester(obj, windows[WID_MAIN]); 
-	} else {
-		return 1; /* If we can't open, quit anyway */
+		ret = OpenRequester(obj, windows[WID_MAIN]);
+		DisposeObject(obj);
 	}
+	return ret;
 }
 
 ULONG ask_question(char *q, char *f)
 {
 	char message[200];
+	int ret = 0;
 
 	sprintf(message, q, f);
 
@@ -233,11 +236,13 @@ ULONG ask_question(char *q, char *f)
 		End;
 
 	if(obj) {
-		return OpenRequester(obj, windows[WID_MAIN]); 
+		ret = OpenRequester(obj, windows[WID_MAIN]); 
+		DisposeObject(obj);
 	} else {
 		printf("Unable to open requester to show error;\n%s\n", message);
-		return 0;
 	}
+
+	return ret;
 }
 
 /** Private functions **/
