@@ -15,7 +15,12 @@
 #ifndef AVALANCHE_H
 #define AVALANCHE_H 1
 
+#ifndef MEMF_PRIVATE
+#define MEMF_PRIVATE 0L
+#endif
+
 ULONG ask_question(char *q, char *f);
 void show_error(long code);
+void open_error_req(char *message, char *button);
 BOOL check_abort(void);
 #endif

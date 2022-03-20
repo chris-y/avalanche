@@ -85,12 +85,26 @@
 	)
 )
 
+(set #full-path (tackon @default-dest #Avalanche))
+(set #icon-exists (exists (cat #full-path ".info")))
+
 (copyfiles
 	(prompt "Copying Avalanche")
 	(help @copyfiles-help)
 	(source #Avalanche)
 	(dest @default-dest)
-	(infos)
+)
+
+; Don't overwrite existing icon
+(if (= #icon-exists 0)
+	(
+		(copyfiles
+			(prompt "Copying Avalanche icon")
+			(help @copyfiles-help)
+			(source (cat #Avalanche ".info"))
+			(dest @default-dest)
+		)
+	)
 )
 
 (copyfiles

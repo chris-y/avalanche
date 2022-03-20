@@ -41,4 +41,6 @@ void libs_close(void);
 
 BOOL libs_xad_init(void);
 void libs_xad_exit(void);
+
+BOOL libs_xvs_init(void);
 #endif

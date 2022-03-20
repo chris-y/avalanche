@@ -35,6 +35,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}SAVEWINPOSN@{ub} Enables the "save window position" option
 @{b}WINX@{ub}/@{b}WINY@{ub}/@{b}WINW@{ub}/@{b}WINH@{ub} Window position/width/height
 @{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
+@{b}VIRUSSCAN@{ub} Use xvs.library to @{"scan files" link vscan} after extraction
 @endnode
 
 @node usage "Usage"
@@ -46,7 +47,7 @@ When a valid archive is loaded, the contents will be displayed.  Unchecked items
 
 The state of checkboxes can be toggled by clicking on them, or by choosing "Select all" or "Clear selection" from the Edit menu.
 
-Clicking Extract will extract the archive to the chosen destination.
+Clicking Extract will extract the archive to the chosen destination.  If "scan for viruses" is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
 
 The browser can be put into a @{"hierarchical" link hbrowser} mode through the menu.  This is experimental - see the associated page for details.
 
@@ -69,7 +70,22 @@ If no directory stubs are found, the browser will fall back to a flat list.
 For feedback on this feature, please see https://github.com/chris-y/avalanche/issues/6
 @endnode
 
+@node vscan "Virus scanning"
+Avalanche can use xvs.library to scan files for viruses on extraction.
+xvs.library can be downloaded from https://www.vht-dk.dk/
+
+Limitations:
+Due to the way xvs.library works, files which do not completely fit into memory cannot be scanned.
+Only Amiga viruses will be detected.
+Virus scanning currently only works on the 68k build.
+Infected files will be deleted without warning.
+Files will not be further extracted in order to be scanned, so infected files that are individually compressed inside the archive will not be picked up.  It is recommended to run a scan with a full featured virus checker over any archives of concern.  
+@endnode
+
 @node history "Changelog"
+@{u}1.5 (??.??.????)@{uu}
+* Add option to use xvs.library to scan the extracted files for viruses
+
 @{u}1.4 (09.03.2022)@{uu}
 * Now includes OS4 native build
 * Allow abort during extraction (button or ESC)

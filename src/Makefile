@@ -2,8 +2,8 @@ CC := vc +aos68k
 CFLAGS := -c99
 LIBS := -lamiga
 
-OBJS := avalanche.o libs.o xad.o
-DEPS := avalanche_rev.h avalanche.h libs.h xad.h
+OBJS := avalanche.o libs.o xad.o xvs.o
+DEPS := avalanche_rev.h avalanche.h libs.h xad.h xvs.h
 
 all: install
 

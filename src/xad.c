@@ -184,7 +184,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 }
 
 /* returns 0 on success */
-long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node))
+long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, ULONG len))
 {
 	char destfile[1024];
 	long err = 0;
@@ -214,6 +214,10 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 								TAG_DONE);
 
 						if(pud == PUD_ABORT) return 0;
+
+						if(err == XADERR_OK) {
+							scan(destfile, fi->xfi_Size);
+						}
 
 						err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
 									XAD_GETDATEDATESTAMP, &ds,

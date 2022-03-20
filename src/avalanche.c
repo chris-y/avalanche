@@ -53,6 +53,10 @@
 #include "libs.h"
 #include "xad.h"
 
+#ifndef __amigaos4__
+#include "xvs.h"
+#endif
+
 #include "Avalanche_rev.h"
 
 const char *version = VERSTAG;
@@ -101,10 +105,11 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   "Invert selection", "I", 0, 0, 0,}, // 2
 
 	{NM_TITLE, "Settings",              0,  0, 0, 0,}, // 2
-	{NM_ITEM,	"Hierarchical browser (experimental)", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
-	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
-	{NM_ITEM,   "Save settings",        0,  0, 0, 0,}, // 3
+	{NM_ITEM,	"Scan for viruses",     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
+	{NM_ITEM,	"Hierarchical browser (experimental)", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1
+	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
+	{NM_ITEM,   "Save settings",        0,  0, 0, 0,}, // 4
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -122,6 +127,7 @@ static BOOL dir_seen = FALSE;
 
 static BOOL save_win_posn = FALSE;
 static BOOL h_browser = FALSE;
+static BOOL virus_scan = FALSE;
 static BOOL debug = FALSE;
 
 static ULONG win_x = 0;
@@ -175,6 +181,24 @@ void show_about(void)
 	}
 }
 
+void open_error_req(char *message, char *button)
+{
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
+			REQ_Type, REQTYPE_INFO,
+			REQ_Image, REQIMAGE_ERROR, 
+			REQ_BodyText, message,
+			REQ_GadgetText, button,
+		End;
+
+	if(obj) {
+		OpenRequester(obj, windows[WID_MAIN]);
+		DisposeObject(obj);
+	} else {
+		printf("Unable to open requester to show error;\n%s [%s]\n", message, button);
+	}
+}
+
 void show_error(long code)
 {
 	char message[100];
@@ -185,20 +209,7 @@ void show_error(long code)
 		sprintf(message, "%s", xad_error(code));
 	}
 
-	Object *obj = RequesterObj,
-			REQ_TitleText, VERS,
-			REQ_Type, REQTYPE_INFO,
-			REQ_Image, REQIMAGE_ERROR, 
-			REQ_BodyText, message,
-			REQ_GadgetText, "_OK",
-		End;
-
-	if(obj) {
-		OpenRequester(obj, windows[WID_MAIN]);
-		DisposeObject(obj);
-	} else {
-		printf("Unable to open requester to show error;\n%s\n", message);
-	}
+	open_error_req(message, "_OK");
 }
 
 ULONG ask_quit(void)
@@ -264,7 +275,7 @@ void savesettings(Object *win)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[9];
+	UBYTE *newtooltypes[10];
 	char tt_dest[100];
 	char tt_winx[15];
 	char tt_winy[15];
@@ -336,7 +347,17 @@ void savesettings(Object *win)
 
 		newtooltypes[7] = tt_progresssize;
 
+#ifndef __amigaos4__
+		if(virus_scan) {
+			newtooltypes[8] = "VIRUSSCAN";
+		} else {
+			newtooltypes[8] = "(VIRUSSCAN)";
+		}
+#else
 		newtooltypes[8] = NULL;
+#endif
+
+		newtooltypes[9] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(progname, dobj, NULL);
@@ -605,6 +626,23 @@ static void disable_gadgets(BOOL disable)
 		TAG_DONE);
 }
 
+static ULONG vscan(char *file, ULONG len)
+{
+#ifndef __amigaos4__
+	long res = 0;
+
+	if(virus_scan) {
+		res = xvs_scan(file, len);
+
+		if((res == -1) || (res == -3)) {
+			virus_scan = FALSE;
+			OffMenu(windows[WID_MAIN], FULLMENUNUM(2,0,0));
+		}
+	}
+#endif
+	return 0;
+}
+
 static long extract(void)
 {
 	long ret = 0;
@@ -617,7 +655,7 @@ static long extract(void)
 
 		disable_gadgets(TRUE);
 
-		ret = xad_extract(archive, dest, &lblist, getlbnode);
+		ret = xad_extract(archive, dest, &lblist, getlbnode, vscan);
 
 		disable_gadgets(FALSE);
 
@@ -711,9 +749,15 @@ static void gui(void)
 
 	NewList(&lblist);
 
-	if(h_browser) menu[10].nm_Flags |= CHECKED;
-	if(save_win_posn) menu[11].nm_Flags |= CHECKED;
-	if(progname == NULL) menu[13].nm_Flags |= NM_ITEMDISABLED;
+#ifndef __amigaos4__
+	if(virus_scan) menu[10].nm_Flags |= CHECKED;
+#else
+	menu[10].nm_Flags |= NM_ITEMDISABLED;
+#endif
+
+	if(h_browser) menu[11].nm_Flags |= CHECKED;
+	if(save_win_posn) menu[12].nm_Flags |= CHECKED;
+	if(progname == NULL) menu[14].nm_Flags |= NM_ITEMDISABLED;
 
 	if(win_x && win_y) tag_default_position = TAG_IGNORE;
 
@@ -970,7 +1014,11 @@ static void gui(void)
 										
 											case 2: //settings
 												switch(ITEMNUM(code)) {
-													case 0: //browser mode
+													case 0: //virus scan
+														virus_scan = !virus_scan;
+													break;
+
+													case 1: //browser mode
 														h_browser = !h_browser;
 														
 														SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
@@ -979,11 +1027,11 @@ static void gui(void)
 														open_archive_req(TRUE);
 													break;
 													
-													case 1: //save window position
+													case 2: //save window position
 														save_win_posn = !save_win_posn;
 													break;
 												
-													case 3: //save settings
+													case 4: //save settings
 														savesettings(objects[OID_MAIN]);
 													break;
 												}
@@ -1016,6 +1064,9 @@ static void gettooltypes(UBYTE **tooltypes)
 	dest_needs_free = TRUE;
 
 	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
+#ifndef __amigaos4__
+	if(FindToolType(tooltypes, "VIRUSSCAN")) virus_scan = TRUE;
+#endif
 	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
 	if(FindToolType(tooltypes, "DEBUG")) debug = TRUE;
 

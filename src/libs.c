@@ -124,6 +124,7 @@ ALIB_STRUCT(Workbench)
 ALIB_STRUCT(XadMaster)
 #else
 ALIB_STRUCT(xadMaster)
+ALIB_STRUCT(xvs)
 #endif
 
 CLASS_STRUCT(Button)
@@ -134,6 +135,25 @@ CLASS_STRUCT(Layout)
 CLASS_STRUCT(ListBrowser)
 CLASS_STRUCT(Requester)
 CLASS_STRUCT(Window)
+
+#ifndef __amigaos4__
+BOOL libs_xvs_init(void)
+{
+	if(xvsBase == NULL) {
+		ALIB_OPEN("xvs.library", 33, xvs);
+	}
+
+	return TRUE;
+}
+
+static void libs_xvs_exit(void)
+{
+	if(xvsBase != NULL) {
+		ALIB_CLOSE(xvs);
+	}
+}
+#endif
+
 
 BOOL libs_open(void)
 {
@@ -156,6 +176,10 @@ BOOL libs_open(void)
 
 void libs_close(void)
 {
+#ifndef __amigaos4__
+	libs_xvs_exit();
+#endif
+
 	CLASS_CLOSE(Button)
 	CLASS_CLOSE(FuelGauge)
 	CLASS_CLOSE(GetFile)
@@ -183,7 +207,7 @@ BOOL libs_xad_init(void)
 	}
 #endif
 
-return TRUE;
+	return TRUE;
 }
 
 void libs_xad_exit(void)
