@@ -20,6 +20,7 @@
 #endif
 
 ULONG ask_question(char *q, char *f);
+ULONG ask_password(char *pw);
 void show_error(long code);
 void open_error_req(char *message, char *button);
 BOOL check_abort(void);

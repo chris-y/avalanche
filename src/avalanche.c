@@ -256,6 +256,30 @@ ULONG ask_question(char *q, char *f)
 	return ret;
 }
 
+ULONG ask_password(char *pw)
+{
+	int ret = 0;
+
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
+			REQ_Type, REQTYPE_STRING,
+			REQ_Image, REQIMAGE_QUESTION,
+			REQS_Invisible, TRUE,
+			REQS_Buffer, pw,
+			REQ_BodyText, "Archive is encrypted, please enter password.",
+			REQ_GadgetText, "_OK|_Cancel",
+		End;
+
+	if(obj) {
+		ret = OpenRequester(obj, windows[WID_MAIN]); 
+		DisposeObject(obj);
+	} else {
+		printf("Unable to open requester to ask password\n");
+	}
+
+	return ret;
+}
+
 /** Private functions **/
 static void free_archive_path(void)
 {

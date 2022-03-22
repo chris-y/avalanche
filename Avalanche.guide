@@ -85,6 +85,8 @@ Files will not be further extracted in order to be scanned, so infected files th
 @node history "Changelog"
 @{u}1.5 (??.??.????)@{uu}
 * Add option to use xvs.library to scan the extracted files for viruses
+* Support encrypted archive entries
+* Installer no longer overwrites existing icon on update
 
 @{u}1.4 (09.03.2022)@{uu}
 * Now includes OS4 native build

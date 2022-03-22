@@ -192,6 +192,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 	struct Node *node;
 	struct DateStamp ds;
 	ULONG pud = 0;
+	char *pw = NULL;
 
 	struct Hook progress_hook;
 	progress_hook.h_Entry = xad_progress;
@@ -207,13 +208,26 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 				strcpy(destfile, dest);
 				if(AddPart(destfile, fi->xfi_FileName, 1024)) {
 					if(!xad_is_dir(fi)) {
+						if((fi->xfi_Flags & XADFIF_CRYPTED) && (pw == NULL)) {
+							pw = AllocVec(100, MEMF_CLEAR);
+							err = ask_password(pw);
+							if(err == 0) {
+								FreeVec(pw);
+								pw = NULL;
+							}
+						}
+
 						err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
 								XAD_MAKEDIRECTORY, TRUE,
 								XAD_OUTFILENAME, destfile,
+								XAD_PASSWORD, pw,
 								XAD_PROGRESSHOOK, &progress_hook,
 								TAG_DONE);
 
-						if(pud == PUD_ABORT) return 0;
+						if(pud == PUD_ABORT) {
+							if(pw) FreeVec(pw);
+							return 0;
+						}
 
 						if(err == XADERR_OK) {
 							scan(destfile, fi->xfi_Size);
@@ -224,7 +238,10 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 									XAD_MAKELOCALDATE, TRUE,
 									TAG_DONE);
 
-						if(err != XADERR_OK) return err;
+						if(err != XADERR_OK) {
+							if(pw) FreeVec(pw);
+							return err;
+						}
 
 						SetProtection(destfile, xad_get_fileprotection(fi));
 						SetFileDate(destfile, &ds);
@@ -235,5 +252,6 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 			}
 		}
 	}
+	if(pw) FreeVec(pw);
 	return err;
 }
