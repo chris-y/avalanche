@@ -42,6 +42,7 @@
 #include <images/label.h>
 #include <intuition/intuition.h>
 #include <intuition/pointerclass.h>
+#include <libraries/asl.h>
 #include <libraries/gadtools.h>
 #include <utility/date.h>
 #include <workbench/startup.h>
@@ -691,16 +692,18 @@ static long extract(void)
 	return ret;
 }
 
-#if 0
 #ifdef __amigaos4__
-static ULONG lbsort(struct Hook *h, APTR obj, struct LBSortMsg *msg)
+static ULONG aslfilterfunc(struct Hook *h, struct FileRequester *fr, struct AnchorPathOld *ap)
 #else
-static ULONG __saveds lbsort(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
+static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") struct FileRequester *fr, __reg("a1") struct AnchorPath *ap)
 #endif
 {
-	return Stricmp(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
+	char fullfilename[256];
+	strcpy(fullfilename, fr->fr_Drawer);
+	AddPart(fullfilename, ap->ap_Info.fib_FileName, 256);
+
+	return xad_recog(fullfilename);
 }
-#endif
 
 /* Check if abort button is pressed - only called from xad hook */
 BOOL check_abort(void)
@@ -738,12 +741,10 @@ static void gui(void)
 	struct AppMessage *appmsg = NULL;
 	ULONG appwin_sig = 0;
 
-#if 0
-	struct Hook lbsorthook;
-	lbsorthook.h_Entry = lbsort;
-	lbsorthook.h_SubEntry = NULL;
-	lbsorthook.h_Data = &lblist;
-#endif
+	struct Hook aslfilterhook;
+	aslfilterhook.h_Entry = aslfilterfunc;
+	aslfilterhook.h_SubEntry = NULL;
+	aslfilterhook.h_Data = NULL;
 
 	ULONG tag_default_position = WINDOW_Position;
 
@@ -816,6 +817,7 @@ static void gui(void)
 							GETFILE_TitleText, "Select Archive",
 							GETFILE_FullFile, archive,
 							GETFILE_ReadOnly, TRUE,
+							GETFILE_FilterFunc, &aslfilterhook,
 						End,
 						CHILD_WeightedHeight, 0,
 						CHILD_Label, LabelObj,

@@ -143,6 +143,39 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 	return XADPIF_OK;
 }
 
+BOOL xad_recog(char *file)
+{
+	BPTR fh = 0;
+	ULONG len = 0;
+	struct xadClient *xc = NULL;
+
+	libs_xad_init();
+	if(xadMasterBase == NULL) return FALSE;
+
+#ifndef __amigaos4__
+	ULONG xadrs = xadMasterBase->xmb_RecogSize;
+#else
+	struct xadSystemInfo *xadsi = xadGetSystemInfo();
+	ULONG xadrs = xadsi->xsi_RecogSize;
+#endif
+
+	UBYTE *buf = AllocVec(xadrs, MEMF_ANY);
+	if(buf == NULL) return FALSE;
+
+	if(fh = Open(file, MODE_OLDFILE)) {
+		len = Read(fh, buf, xadrs);
+		Close(fh);
+
+		xc = xadRecogFile(len, buf, XAD_IGNOREFLAGS, XADAIF_DISKARCHIVE, TAG_DONE);
+	}
+
+	FreeVec(buf);
+
+	if(xc == NULL) return FALSE;
+
+	return TRUE;
+}
+
 long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
 {
 	long err = 0;
