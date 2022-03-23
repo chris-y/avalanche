@@ -31,10 +31,8 @@
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
-#include <proto/requester.h>
 #include <proto/window.h>
 
-#include <classes/requester.h>
 #include <classes/window.h>
 #include <gadgets/fuelgauge.h>
 #include <gadgets/getfile.h>
@@ -51,6 +49,7 @@
 #include <reaction/reaction_macros.h>
 
 #include "avalanche.h"
+#include "req.h"
 #include "libs.h"
 #include "xad.h"
 
@@ -89,6 +88,11 @@ enum {
 	OID_LAST
 };
 
+enum {
+	ARC_NONE = 0,
+	ARC_XAD
+};
+
 #define GID_EXTRACT_TEXT "E_xtract"
 
 /** Menu **/
@@ -96,9 +100,11 @@ enum {
 struct NewMenu menu[] = {
 	{NM_TITLE, "Project",           0,  0, 0, 0,}, // 0
 	{NM_ITEM,   "Open...",         "O", 0, 0, 0,}, // 0
-	{NM_ITEM,   "About...",        "?", 0, 0, 0,}, // 1
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 2
-	{NM_ITEM,   "Quit...",            "Q", 0, 0, 0,}, // 3
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 1
+	{NM_ITEM,   "Archive Info...", "!", NM_ITEMDISABLED, 0, 0,}, // 2
+	{NM_ITEM,   "About...",        "?", 0, 0, 0,}, // 3
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 4
+	{NM_ITEM,   "Quit...",         "Q", 0, 0, 0,}, // 5
 
 	{NM_TITLE, "Edit",               0,  0, 0, 0,}, // 1
 	{NM_ITEM,   "Select all",       "A", 0, 0, 0,}, // 0
@@ -146,6 +152,8 @@ static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_LAST];
 static Object *objects[OID_LAST];
 
+ULONG archiver = ARC_NONE;
+
 /** Useful functions **/
 
 char *strdup(const char *s)
@@ -157,128 +165,9 @@ char *strdup(const char *s)
   return (char*) memcpy (result, s, len);
 }
 
-void show_about(void)
+void *get_window(void)
 {
-	Object *obj = RequesterObj,
-					REQ_TitleText, VERS,
-					REQ_Type, REQTYPE_INFO,
-					REQ_Image, REQIMAGE_INFO,
-					REQ_BodyText, 	VERS " (" DATE ")\n"
-									"(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
-									"This program is free software; you can redistribute it and/or modify\n"
-									"it under the terms of the GNU General Public License as published by\n"
-									"the Free Software Foundation; either version 2 of the License, or\n"
-									"(at your option) any later version.\n\n"
-									"This program is distributed in the hope that it will be useful,\n"
-									"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-									"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-									"GNU General Public License for more details.",
-					REQ_GadgetText, "_OK",
-				End;
-
-	if(obj) {
-		OpenRequester(obj, windows[WID_MAIN]);
-		DisposeObject(obj);
-	}
-}
-
-void open_error_req(char *message, char *button)
-{
-	Object *obj = RequesterObj,
-			REQ_TitleText, VERS,
-			REQ_Type, REQTYPE_INFO,
-			REQ_Image, REQIMAGE_ERROR, 
-			REQ_BodyText, message,
-			REQ_GadgetText, button,
-		End;
-
-	if(obj) {
-		OpenRequester(obj, windows[WID_MAIN]);
-		DisposeObject(obj);
-	} else {
-		printf("Unable to open requester to show error;\n%s [%s]\n", message, button);
-	}
-}
-
-void show_error(long code)
-{
-	char message[100];
-
-	if(code == -1) {
-		sprintf(message, "Unable to open xadmaster.library");
-	} else {
-		sprintf(message, "%s", xad_error(code));
-	}
-
-	open_error_req(message, "_OK");
-}
-
-ULONG ask_quit(void)
-{
-	int ret = 1;
-
-	Object *obj = RequesterObj,
-			REQ_TitleText, VERS,
-			REQ_Type, REQTYPE_INFO,
-			REQ_Image, REQIMAGE_WARNING,
-			REQ_BodyText, "Are you sure you want to exit?",
-			REQ_GadgetText, "_Yes|_No",
-		End;
-
-	if(obj) {
-		ret = OpenRequester(obj, windows[WID_MAIN]);
-		DisposeObject(obj);
-	}
-	return ret;
-}
-
-ULONG ask_question(char *q, char *f)
-{
-	char message[200];
-	int ret = 0;
-
-	sprintf(message, q, f);
-
-	Object *obj = RequesterObj,
-			REQ_TitleText, VERS,
-			REQ_Type, REQTYPE_INFO,
-			REQ_Image, REQIMAGE_QUESTION,
-			REQ_BodyText, message,
-			REQ_GadgetText, "_Yes|Yes to _all|_No|N_o to all|Abort",
-		End;
-
-	if(obj) {
-		ret = OpenRequester(obj, windows[WID_MAIN]); 
-		DisposeObject(obj);
-	} else {
-		printf("Unable to open requester to show error;\n%s\n", message);
-	}
-
-	return ret;
-}
-
-ULONG ask_password(char *pw)
-{
-	int ret = 0;
-
-	Object *obj = RequesterObj,
-			REQ_TitleText, VERS,
-			REQ_Type, REQTYPE_STRING,
-			REQ_Image, REQIMAGE_QUESTION,
-			REQS_Invisible, TRUE,
-			REQS_Buffer, pw,
-			REQ_BodyText, "Archive is encrypted, please enter password.",
-			REQ_GadgetText, "_OK|_Cancel",
-		End;
-
-	if(obj) {
-		ret = OpenRequester(obj, windows[WID_MAIN]); 
-		DisposeObject(obj);
-	} else {
-		printf("Unable to open requester to ask password\n");
-	}
-
-	return ret;
+	return windows[WID_MAIN];
 }
 
 /** Private functions **/
@@ -571,7 +460,15 @@ static void open_archive_req(BOOL refresh_only)
 	FreeListBrowserList(&lblist);
 
 	long ret = xad_info(archive, addlbnode_cb);
-	if((refresh_only == FALSE) && (ret != 0)) show_error(ret);
+	if(ret != 0) show_error(ret);
+
+	if(ret == 0) {
+		archiver = ARC_XAD;
+		OnMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+	} else {
+		archiver = ARC_NONE;
+		OffMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+	}
 
 	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, &lblist,
@@ -775,14 +672,14 @@ static void gui(void)
 	NewList(&lblist);
 
 #ifndef __amigaos4__
-	if(virus_scan) menu[10].nm_Flags |= CHECKED;
+	if(virus_scan) menu[12].nm_Flags |= CHECKED;
 #else
-	menu[10].nm_Flags |= NM_ITEMDISABLED;
+	menu[12].nm_Flags |= NM_ITEMDISABLED;
 #endif
 
-	if(h_browser) menu[11].nm_Flags |= CHECKED;
-	if(save_win_posn) menu[12].nm_Flags |= CHECKED;
-	if(progname == NULL) menu[14].nm_Flags |= NM_ITEMDISABLED;
+	if(h_browser) menu[13].nm_Flags |= CHECKED;
+	if(save_win_posn) menu[14].nm_Flags |= CHECKED;
+	if(progname == NULL) menu[16].nm_Flags |= NM_ITEMDISABLED;
 
 	if(win_x && win_y) tag_default_position = TAG_IGNORE;
 
@@ -871,7 +768,16 @@ static void gui(void)
 	 	 */
 		if (objects[OID_MAIN]) {
 			
-			if(archive) xad_info(archive, addlbnode_cb); /* open initial archive, if there is one */
+			if(archive) {
+				long ret = 0;
+				ret = xad_info(archive, addlbnode_cb); /* open initial archive, if there is one */
+				if(ret == 0) {
+					menu[3].nm_Flags = 0; /* Clear disabled flag from Arc Info */
+					archiver = ARC_XAD;
+				} else {
+					show_error(ret);
+				}
+			}
 			
 			/*  Open the window.
 			 */
@@ -1010,11 +916,15 @@ static void gui(void)
 														open_archive_req(FALSE);
 													break;
 												
-													case 1: //about
+													case 2: //info
+														if(archiver == ARC_XAD) xad_show_arc_info();
+													break;
+
+													case 3: //about
 														show_about();
 													break;
 												
-													case 3: //quit
+													case 5: //quit
 														if(ask_quit()) {
 															done = TRUE;
 														}

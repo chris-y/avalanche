@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 
-#include "avalanche.h"
+#include "req.h"
 #include "libs.h"
 #include "xvs.h"
 
@@ -42,7 +42,7 @@ long xvs_scan(char *file, ULONG len)
 		return -3;
 	}
 
-	buffer = AllocVec(len, MEMF_PRIVATE);
+	buffer = AllocVec(len, MEMF_ANY);
 	if(buffer == NULL) {
 		open_error_req("Out of memory scanning file", "_OK");
 		return -2;

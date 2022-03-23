@@ -20,6 +20,7 @@
 
 #include "avalanche.h"
 #include "libs.h"
+#include "req.h"
 #include "xad.h"
 
 #ifdef __amigaos4__
@@ -141,6 +142,17 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 	}
 
 	return XADPIF_OK;
+}
+
+void xad_show_arc_info(void)
+{
+	char message[100];
+
+	if(!ai) return;
+
+	sprintf(message, "%s archive", ai->xai_Client->xc_ArchiverName);	
+
+	open_info_req(message, "_OK");
 }
 
 BOOL xad_recog(char *file)

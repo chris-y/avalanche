@@ -12,13 +12,14 @@
  * GNU General Public License for more details.
 */
 
-#ifndef AVALANCHE_H
-#define AVALANCHE_H 1
+#ifndef REQ_H
+#define REQ_H 1
 
-#ifndef MEMF_PRIVATE
-#define MEMF_PRIVATE 0L
-#endif
-
-BOOL check_abort(void);
-void *get_window(void);
+ULONG ask_question(char *q, char *f);
+ULONG ask_password(char *pw);
+ULONG ask_quit(void);
+void show_error(long code);
+void show_about(void);
+void open_error_req(char *message, char *button);
+void open_info_req(char *message, char *buttons);
 #endif
