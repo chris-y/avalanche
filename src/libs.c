@@ -121,12 +121,12 @@ ALIB_STRUCT(Locale)
 ALIB_STRUCT(Workbench)
 
 ALIB_STRUCT(xfdMaster)
+ALIB_STRUCT(xvs)
 
 #ifdef __amigaos4__
 ALIB_STRUCT(XadMaster)
 #else
 ALIB_STRUCT(xadMaster)
-ALIB_STRUCT(xvs)
 #endif
 
 CLASS_STRUCT(Button)
@@ -138,7 +138,6 @@ CLASS_STRUCT(ListBrowser)
 CLASS_STRUCT(Requester)
 CLASS_STRUCT(Window)
 
-#ifndef __amigaos4__
 BOOL libs_xvs_init(void)
 {
 	if(xvsBase == NULL) {
@@ -154,7 +153,6 @@ static void libs_xvs_exit(void)
 		ALIB_CLOSE(xvs);
 	}
 }
-#endif
 
 
 BOOL libs_open(void)
@@ -178,9 +176,7 @@ BOOL libs_open(void)
 
 void libs_close(void)
 {
-#ifndef __amigaos4__
 	libs_xvs_exit();
-#endif
 
 	CLASS_CLOSE(Button)
 	CLASS_CLOSE(FuelGauge)

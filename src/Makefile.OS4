@@ -3,8 +3,8 @@ CC := vc +aosppc
 CFLAGS := -D__USE_INLINE__ -ISDK:local/common/include
 LIBS := -lamiga
 
-OBJS := avalanche.o libs.o req.o xad.o xfd.o
-DEPS := avalanche_rev.h avalanche.h libs.h req.h xad.h xfd.h
+OBJS := avalanche.o libs.o req.o xad.o xfd.o xvs.o
+DEPS := avalanche_rev.h avalanche.h libs.h req.h xad.h xfd.h xvs.h
 
 all: AvalanchePPC
 

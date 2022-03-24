@@ -28,6 +28,8 @@ distrib: install
 	copy /avalanche.readme#? RAM:Avalanche
 	copy /Install#? RAM:Avalanche
 	copy /LICENSE RAM:Avalanche
+	makedir RAM:Avalanche/libs
+	copy /libs/#? RAM:Avalanche/libs
 	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info
 
 clean:

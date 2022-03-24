@@ -77,7 +77,7 @@ xvs.library can be downloaded from https://www.vht-dk.dk/
 Limitations:
 Due to the way xvs.library works, files which do not completely fit into memory cannot be scanned.
 Only Amiga viruses will be detected.
-Virus scanning currently only works on the 68k build.
+On OS4 the file xvs.l.main needs to be copied to libs: alongside the main library.
 Infected files will be deleted without warning.
 Files will not be further extracted in order to be scanned, so infected files that are individually compressed inside the archive will not be picked up.  It is recommended to run a scan with a full featured virus checker over any archives of concern.  
 @endnode

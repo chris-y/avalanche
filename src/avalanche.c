@@ -53,10 +53,7 @@
 #include "libs.h"
 #include "xad.h"
 #include "xfd.h"
-
-#ifndef __amigaos4__
 #include "xvs.h"
-#endif
 
 #include "Avalanche_rev.h"
 
@@ -597,9 +594,8 @@ static void disable_gadgets(BOOL disable)
 
 static ULONG vscan(char *file, UBYTE *buf, ULONG len)
 {
-long res = 0;
+	long res = 0;
 
-#ifndef __amigaos4__
 	if(virus_scan) {
 		if(buf == NULL) {
 			res = xvs_scan(file, len);
@@ -612,7 +608,7 @@ long res = 0;
 			OffMenu(windows[WID_MAIN], FULLMENUNUM(2,0,0));
 		}
 	}
-#endif
+
 	return res;
 }
 
@@ -736,12 +732,7 @@ static void gui(void)
 
 	NewList(&lblist);
 
-#ifndef __amigaos4__
 	if(virus_scan) menu[12].nm_Flags |= CHECKED;
-#else
-	menu[12].nm_Flags |= NM_ITEMDISABLED;
-#endif
-
 	if(h_browser) menu[13].nm_Flags |= CHECKED;
 	if(save_win_posn) menu[14].nm_Flags |= CHECKED;
 	if(progname == NULL) menu[16].nm_Flags |= NM_ITEMDISABLED;
