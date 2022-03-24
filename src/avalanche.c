@@ -640,6 +640,9 @@ static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") stru
 {
 	BOOL found = FALSE;
 	char fullfilename[256];
+
+	if(ap->ap_Info.fib_DirEntryType > 0) return(TRUE); /* Drawer */
+
 	strcpy(fullfilename, fr->fr_Drawer);
 	AddPart(fullfilename, ap->ap_Info.fib_FileName, 256);
 
