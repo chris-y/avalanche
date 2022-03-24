@@ -366,8 +366,8 @@ static void addlbnodesinglefile(char *name, LONG *size, void *userdata)
 		LBNA_Column, 1,
 			LBNCA_Integer, size,
 		LBNA_Column, 2,
-			LBNCA_CopyText, TRUE,
-			LBNCA_Text, "-",
+			//LBNCA_CopyText, TRUE,
+			LBNCA_Text, NULL,
 		TAG_DONE);
 
 	AddTail(&lblist, node);
@@ -400,6 +400,21 @@ int sort_array(const void *a, const void *b)
 
 	return sort(c->name, d->name);
 }
+
+static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata)
+{
+	static struct arc_entries **arc_array = NULL;
+
+	if(gadgets[GID_PROGRESS]) {
+		SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
+			FUELGAUGE_Max, total,
+			FUELGAUGE_Level, 0,
+			TAG_DONE);
+	}
+
+	return addlbnodesinglefile(name, size, userdata);
+}
+
 
 static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata)
 {
@@ -487,7 +502,7 @@ static void open_archive_req(BOOL refresh_only)
 
 	ret = xad_info(archive, addlbnode_cb);
 	if(ret != 0) { /* if xad failed try xfd */
-		retxfd = xfd_info(archive, addlbnode_cb);
+		retxfd = xfd_info(archive, addlbnodexfd_cb);
 		if(retxfd != 0) show_error(ret);
 	}
 
@@ -582,9 +597,9 @@ static void disable_gadgets(BOOL disable)
 
 static ULONG vscan(char *file, UBYTE *buf, ULONG len)
 {
-#ifndef __amigaos4__
-	long res = 0;
+long res = 0;
 
+#ifndef __amigaos4__
 	if(virus_scan) {
 		if(buf == NULL) {
 			res = xvs_scan(file, len);
@@ -598,7 +613,7 @@ static ULONG vscan(char *file, UBYTE *buf, ULONG len)
 		}
 	}
 #endif
-	return 0;
+	return res;
 }
 
 static long extract(void)
@@ -826,7 +841,7 @@ static void gui(void)
 					menu[3].nm_Flags = 0; /* Clear disabled flag from Arc Info */
 					archiver = ARC_XAD;
 				} else {
-					retxfd = xfd_info(archive, addlbnode_cb);
+					retxfd = xfd_info(archive, addlbnodexfd_cb);
 					if(retxfd == 0) {
 						menu[3].nm_Flags = 0; /* Clear disabled flag from Arc Info */
 						archiver = ARC_XFD;

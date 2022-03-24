@@ -124,7 +124,7 @@ long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	if(res == TRUE) {
 		fn = strdup(FilePart(file));
 		/* Add to list */
-		addnode(FilePart(file), &bi->xfdbi_FinalTargetLen, 0, 0, 1, fn);
+		addnode(fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, fn);
 
 		return 0;
 	}
@@ -139,6 +139,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 	char *pw = NULL;
 	ULONG pwlen = 100;
 	ULONG err = 0;
+	ULONG res = 1;
 
 	if(bi->xfdbi_PackerFlags & XFDPFB_PASSWORD) {
 		if(bi->xfdbi_MaxSpecialLen != -1)
@@ -157,9 +158,16 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 		if(scan(NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen) < 4) {
 			strcpy(destfile, dest);
 			if(AddPart(destfile, fn, 1024)) {
-				if(fh = Open(destfile, MODE_NEWFILE)) {
-					Write(fh, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen);
+				if(fh = Open(destfile, MODE_OLDFILE)) {
+					res = ask_question("%s already exists, overwrite?", fn);
 					Close(fh);
+				}
+
+				if((res == 1) || (res == 2)) {
+					if(fh = Open(destfile, MODE_NEWFILE)) {
+						Write(fh, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen);
+						Close(fh);
+					}
 				}
 			}
 		}
