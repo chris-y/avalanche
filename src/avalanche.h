@@ -21,4 +21,5 @@
 
 BOOL check_abort(void);
 void *get_window(void);
+char *strdup(const char *s);
 #endif

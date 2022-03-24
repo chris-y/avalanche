@@ -85,6 +85,7 @@ Files will not be further extracted in order to be scanned, so infected files th
 @node history "Changelog"
 @{u}1.5 (??.??.????)@{uu}
 * Add option to use xvs.library to scan the extracted files for viruses
+* Fallback to xfdmaster.library if file not recognised
 * Support encrypted archive entries
 * Installer no longer overwrites existing icon on update
 

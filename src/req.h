@@ -16,7 +16,7 @@
 #define REQ_H 1
 
 ULONG ask_question(char *q, char *f);
-ULONG ask_password(char *pw);
+ULONG ask_password(char *pw, ULONG pwlen);
 ULONG ask_quit(void);
 void show_error(long code);
 void show_about(void);

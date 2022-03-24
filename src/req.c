@@ -135,7 +135,7 @@ ULONG ask_question(char *q, char *f)
 	return ret;
 }
 
-ULONG ask_password(char *pw)
+ULONG ask_password(char *pw, ULONG pwlen)
 {
 	int ret = 0;
 
@@ -145,6 +145,7 @@ ULONG ask_password(char *pw)
 			REQ_Image, REQIMAGE_QUESTION,
 			REQS_Invisible, TRUE,
 			REQS_Buffer, pw,
+			REQS_MaxChars, pwlen,
 			REQ_BodyText, "Archive is encrypted, please enter password.",
 			REQ_GadgetText, "_OK|_Cancel",
 		End;

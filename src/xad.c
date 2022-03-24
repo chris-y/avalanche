@@ -229,7 +229,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 }
 
 /* returns 0 on success */
-long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, ULONG len))
+long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
 {
 	char destfile[1024];
 	long err = 0;
@@ -255,7 +255,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 					if(!xad_is_dir(fi)) {
 						if((fi->xfi_Flags & XADFIF_CRYPTED) && (pw == NULL)) {
 							pw = AllocVec(100, MEMF_CLEAR);
-							err = ask_password(pw);
+							err = ask_password(pw, 100);
 							if(err == 0) {
 								FreeVec(pw);
 								pw = NULL;
@@ -275,7 +275,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 						}
 
 						if(err == XADERR_OK) {
-							scan(destfile, fi->xfi_Size);
+							scan(destfile, NULL, fi->xfi_Size);
 						}
 
 						err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,

@@ -120,6 +120,8 @@ ALIB_STRUCT(Intuition)
 ALIB_STRUCT(Locale)
 ALIB_STRUCT(Workbench)
 
+ALIB_STRUCT(xfdMaster)
+
 #ifdef __amigaos4__
 ALIB_STRUCT(XadMaster)
 #else
@@ -221,4 +223,20 @@ void libs_xad_exit(void)
 		ALIB_CLOSE(xadMaster);
 	}
 #endif
+}
+
+BOOL libs_xfd_init(void)
+{
+	if(xfdMasterBase == NULL) {
+		ALIB_OPEN("xfdmaster.library", 36, xfdMaster);
+	}
+
+	return TRUE;
+}
+
+void libs_xfd_exit(void)
+{
+	if(xfdMasterBase != NULL) {
+		ALIB_CLOSE(xfdMaster);
+	}
 }

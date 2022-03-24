@@ -52,6 +52,7 @@
 #include "req.h"
 #include "libs.h"
 #include "xad.h"
+#include "xfd.h"
 
 #ifndef __amigaos4__
 #include "xvs.h"
@@ -90,7 +91,8 @@ enum {
 
 enum {
 	ARC_NONE = 0,
-	ARC_XAD
+	ARC_XAD,
+	ARC_XFD
 };
 
 #define GID_EXTRACT_TEXT "E_xtract"
@@ -351,6 +353,26 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 	AddTail(&lblist, node);
 }
 
+static void addlbnodesinglefile(char *name, LONG *size, void *userdata)
+{
+	struct Node *node = AllocListBrowserNode(3,
+		LBNA_UserData, userdata,
+		LBNA_CheckBox, TRUE,
+		LBNA_Checked, TRUE,
+		LBNA_Flags, 0,
+		LBNA_Generation, 0,
+		LBNA_Column, 0,
+			LBNCA_Text, name,
+		LBNA_Column, 1,
+			LBNCA_Integer, size,
+		LBNA_Column, 2,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, "-",
+		TAG_DONE);
+
+	AddTail(&lblist, node);
+}
+
 int sort(const char *a, const char *b)
 {
 	ULONG i = 0;
@@ -392,6 +414,8 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 				TAG_DONE);
 		}
 	}
+
+	if(archiver == ARC_XFD) return addlbnodesinglefile(name, size, userdata);
 
 	if(h_browser) {
 		if(item == 0) {
@@ -443,6 +467,8 @@ static void *getlbnode(struct Node *node)
 static void open_archive_req(BOOL refresh_only)
 {
 	dir_seen = FALSE;
+	long ret = 0;
+	long retxfd = 0;
 
 	if(refresh_only == FALSE) {
 		if(archive_needs_free) free_archive_path();
@@ -459,11 +485,17 @@ static void open_archive_req(BOOL refresh_only)
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 	FreeListBrowserList(&lblist);
 
-	long ret = xad_info(archive, addlbnode_cb);
-	if(ret != 0) show_error(ret);
+	ret = xad_info(archive, addlbnode_cb);
+	if(ret != 0) { /* if xad failed try xfd */
+		retxfd = xfd_info(archive, addlbnode_cb);
+		if(retxfd != 0) show_error(ret);
+	}
 
 	if(ret == 0) {
 		archiver = ARC_XAD;
+		OnMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+	} else if(retxfd == 0) {
+		archiver = ARC_XFD;
 		OnMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
 	} else {
 		archiver = ARC_NONE;
@@ -548,13 +580,17 @@ static void disable_gadgets(BOOL disable)
 		TAG_DONE);
 }
 
-static ULONG vscan(char *file, ULONG len)
+static ULONG vscan(char *file, UBYTE *buf, ULONG len)
 {
 #ifndef __amigaos4__
 	long res = 0;
 
 	if(virus_scan) {
-		res = xvs_scan(file, len);
+		if(buf == NULL) {
+			res = xvs_scan(file, len);
+		} else {
+			res = xvs_scan_buffer(buf, len);
+		}
 
 		if((res == -1) || (res == -3)) {
 			virus_scan = FALSE;
@@ -577,7 +613,14 @@ static long extract(void)
 
 		disable_gadgets(TRUE);
 
-		ret = xad_extract(archive, dest, &lblist, getlbnode, vscan);
+		switch(archiver) {
+			case ARC_XAD:
+				ret = xad_extract(archive, dest, &lblist, getlbnode, vscan);
+			break;
+			case ARC_XFD:
+				ret = xfd_extract(archive, dest, vscan);
+			break;
+		}
 
 		disable_gadgets(FALSE);
 
@@ -595,11 +638,15 @@ static ULONG aslfilterfunc(struct Hook *h, struct FileRequester *fr, struct Anch
 static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") struct FileRequester *fr, __reg("a1") struct AnchorPath *ap)
 #endif
 {
+	BOOL found = FALSE;
 	char fullfilename[256];
 	strcpy(fullfilename, fr->fr_Drawer);
 	AddPart(fullfilename, ap->ap_Info.fib_FileName, 256);
 
-	return xad_recog(fullfilename);
+	found = xad_recog(fullfilename);
+	if(found == FALSE) found = xfd_recog(fullfilename);
+
+	return found;
 }
 
 /* Check if abort button is pressed - only called from xad hook */
@@ -770,12 +817,19 @@ static void gui(void)
 			
 			if(archive) {
 				long ret = 0;
+				long retxfd = 0;
 				ret = xad_info(archive, addlbnode_cb); /* open initial archive, if there is one */
 				if(ret == 0) {
 					menu[3].nm_Flags = 0; /* Clear disabled flag from Arc Info */
 					archiver = ARC_XAD;
 				} else {
-					show_error(ret);
+					retxfd = xfd_info(archive, addlbnode_cb);
+					if(retxfd == 0) {
+						menu[3].nm_Flags = 0; /* Clear disabled flag from Arc Info */
+						archiver = ARC_XFD;
+					} else {
+						show_error(ret);
+					}
 				}
 			}
 			
@@ -917,7 +971,14 @@ static void gui(void)
 													break;
 												
 													case 2: //info
-														if(archiver == ARC_XAD) xad_show_arc_info();
+														switch(archiver) {
+															case ARC_XAD:
+																xad_show_arc_info();
+															break;
+															case ARC_XFD:
+																xfd_show_arc_info();
+															break;
+														}
 													break;
 
 													case 3: //about
@@ -1073,6 +1134,7 @@ int main(int argc, char **argv)
 	
 	FreeListBrowserList(&lblist);
 	xad_exit();
+	xfd_exit();
 	libs_close();
 
 	return 0;

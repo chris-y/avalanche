@@ -12,17 +12,12 @@
  * GNU General Public License for more details.
 */
 
-#ifndef XAD_H
-#define XAD_H 1
+#ifndef XFD_H
+#define XFD_H 1
 
-#include <utility/date.h>
-
-ULONG get_xad_ver(void);
-ULONG xad_get_filedate(void *xfi, struct ClockData *cd);
-BOOL xad_recog(char *file);
-long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata));
-long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len));
-char *xad_error(long code);
-void xad_show_arc_info(void);
-void xad_exit(void);
+BOOL xfd_recog(char *file);
+void xfd_show_arc_info(void);
+long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata));
+long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, ULONG len));
+void xfd_exit(void);
 #endif
