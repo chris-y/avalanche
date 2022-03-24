@@ -98,12 +98,6 @@ long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	bi = xfdAllocObject(XFDOBJ_BUFFERINFO);
 	if(bi == NULL) return -2;
 
-	buffer = AllocVec(xfdmb->xfdm_MinBufferSize, MEMF_ANY);
-	if(buffer == NULL) {
-		xfdFreeObject(bi);
-		return -2;
-	}
-
 	if(fh = Open(file, MODE_OLDFILE)) {
 #ifdef __amigaos4__
 		len = (ULONG)GetFileSize(fh);
@@ -111,6 +105,14 @@ long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 		len = Seek(fh, 0, OFFSET_END);
 		len = Seek(fh, 0, OFFSET_BEGINNING);
 #endif
+
+		buffer = AllocVec(len, MEMF_ANY);
+		if(buffer == NULL) {
+			Close(fh);
+			xfdFreeObject(bi);
+			return -2;
+		}
+
 		len = Read(fh, buffer, len);
 		Close(fh);
 
