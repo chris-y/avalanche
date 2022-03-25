@@ -1,14 +1,15 @@
-Short: Simple ReAction GUI for xadmaster
+Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 1.4
+Version: 1.5
 Architecture: m68k-amigaos >= 3.2.0; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
 This is a simple GUI for xadmaster.library using the ReAction
 gadget set, written as all the others on Aminet appear to
-require MUI.
+require MUI.  It also supports decrunching with xfdmaster.library,
+and scanning for viruses with xvs.library.
 
 This is designed for AmigaOS 3.2 (and tested on that and OS4). It
 probably won't work on older versions as it needs a new window.class :)
@@ -17,14 +18,10 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Now includes OS4 native build
-* Allow abort during extraction (button or ESC)
-* Now asks whether to overwrite files
-* ESC can now be used to quit, and Enter to start extraction
-* List of files can now be sorted by clicking on the column header
-* Clicking anywhere on the line now toggles the checkbox
-* Now confirms quit
-* Added option to invert selection to menu
-* Striped listbrowser
+* Add option to use xvs.library to scan the extracted files for viruses
+* Fallback to xfdmaster.library if file not recognised
+* Support encrypted archive entries
+* Installer no longer overwrites existing icon on update
+* Add Archive Info menu option - currently shows the filetype only
 
 For full history see documentation inside the archive.
