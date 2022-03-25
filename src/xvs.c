@@ -83,7 +83,6 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len)
 	}
 
 	xvsFreeObject(xvsfi);
-	FreeVec(buf);
 
 	return result;
 }
@@ -97,6 +96,7 @@ long xvs_scan(char *file, ULONG len)
 {
 	UBYTE *buffer = NULL;
 	BPTR fh = 0;
+	long res = 0;
 
 	buffer = AllocVec(len, MEMF_ANY);
 	if(buffer == NULL) {
@@ -109,5 +109,9 @@ long xvs_scan(char *file, ULONG len)
 		Close(fh);
 	}
 
-	return xvs_scan_virus(file, buffer, len);
+	res = xvs_scan_virus(file, buffer, len);
+
+	FreeVec(buffer);
+
+	return res;
 }
