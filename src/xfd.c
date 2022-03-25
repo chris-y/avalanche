@@ -143,8 +143,8 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 	ULONG err = 0;
 	ULONG res = 1;
 
-	if(bi->xfdbi_PackerFlags & XFDPFB_PASSWORD) {
-		if(bi->xfdbi_MaxSpecialLen != -1)
+	if(bi->xfdbi_PackerFlags & XFDPFF_PASSWORD) {
+		if(bi->xfdbi_MaxSpecialLen > 0)
 			pwlen = bi->xfdbi_MaxSpecialLen;
 		pw = AllocVec(pwlen, MEMF_CLEAR);
 		err = ask_password(pw, pwlen);
@@ -157,7 +157,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 	}
 
 	if(xfdDecrunchBuffer(bi) == TRUE) {
-		if(scan(NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen) < 4) {
+		if(scan(NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen) < 4) {
 			strcpy(destfile, dest);
 			if(AddPart(destfile, fn, 1024)) {
 				if(fh = Open(destfile, MODE_OLDFILE)) {
@@ -167,7 +167,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 
 				if((res == 1) || (res == 2)) {
 					if(fh = Open(destfile, MODE_NEWFILE)) {
-						Write(fh, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen);
+						Write(fh, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen);
 						Close(fh);
 					}
 				}
