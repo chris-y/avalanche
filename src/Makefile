@@ -28,9 +28,10 @@ distrib: install
 	copy /avalanche.readme#? RAM:Avalanche
 	copy /Install#? RAM:Avalanche
 	copy /LICENSE RAM:Avalanche
+	copy /AutoInstall RAM:
 	makedir RAM:Avalanche/libs
 	copy /libs/#? RAM:Avalanche/libs
-	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info
+	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info ram:AutoInstall
 
 clean:
 	delete #?.o

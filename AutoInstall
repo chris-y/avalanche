@@ -1,0 +1,4 @@
+.bra {
+.ket }
+
+CopyStore AvalanchePPC ${AppDir/AvalanchePPC}
