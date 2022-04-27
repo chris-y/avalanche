@@ -908,7 +908,7 @@ static void gui(void)
 							ReplyMsg((struct Message *)appmsg);
 						}
 					} else {
-						while ( (result = RA_HandleInput(objects[OID_MAIN], &code) ) != WMHI_LASTMSG ) {
+						while((done == FALSE) && ((result = RA_HandleInput(objects[OID_MAIN], &code) ) != WMHI_LASTMSG)) {
 							switch (result & WMHI_CLASSMASK) {
 								case WMHI_CLOSEWINDOW:
 									if(ask_quit()) {
