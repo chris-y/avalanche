@@ -91,7 +91,7 @@ void show_error(long code)
 	open_error_req(message, "_OK");
 }
 
-ULONG ask_quit(void)
+ULONG ask_quit_req(void)
 {
 	int ret = 1;
 

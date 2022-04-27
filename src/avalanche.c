@@ -114,8 +114,9 @@ struct NewMenu menu[] = {
 	{NM_ITEM,	"Scan for viruses",     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
 	{NM_ITEM,	"Hierarchical browser (experimental)", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1
 	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
-	{NM_ITEM,   "Save settings",        0,  0, 0, 0,}, // 4
+	{NM_ITEM,   "Confirm quit",         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 3
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 4
+	{NM_ITEM,   "Save settings",        0,  0, 0, 0,}, // 5
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -135,6 +136,7 @@ static BOOL save_win_posn = FALSE;
 static BOOL h_browser = FALSE;
 static BOOL virus_scan = FALSE;
 static BOOL debug = FALSE;
+static BOOL confirmquit = FALSE;
 
 static ULONG win_x = 0;
 static ULONG win_y = 0;
@@ -188,7 +190,7 @@ void savesettings(Object *win)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[10];
+	UBYTE *newtooltypes[11];
 	char tt_dest[100];
 	char tt_winx[15];
 	char tt_winy[15];
@@ -260,23 +262,34 @@ void savesettings(Object *win)
 
 		newtooltypes[7] = tt_progresssize;
 
-#ifndef __amigaos4__
 		if(virus_scan) {
 			newtooltypes[8] = "VIRUSSCAN";
 		} else {
 			newtooltypes[8] = "(VIRUSSCAN)";
 		}
-#else
-		newtooltypes[8] = NULL;
-#endif
 
-		newtooltypes[9] = NULL;
+		if(confirmquit) {
+			newtooltypes[9] = "CONFIRMQUIT";
+		} else {
+			newtooltypes[9] = "(CONFIRMQUIT)";
+		}
+
+		newtooltypes[10] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(progname, dobj, NULL);
 		dobj->do_ToolTypes = (STRPTR *)oldtooltypes;
 		FreeDiskObject(dobj);
 	}
+}
+
+static ULONG ask_quit(void)
+{
+	if(confirmquit) {
+		return ask_quit_req();
+	}
+
+	return 1;
 }
 
 static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
@@ -1036,8 +1049,12 @@ static void gui(void)
 													case 2: //save window position
 														save_win_posn = !save_win_posn;
 													break;
+
+													case 3: //save window position
+														confirmquit = !confirmquit;
+													break;
 												
-													case 4: //save settings
+													case 5: //save settings
 														savesettings(objects[OID_MAIN]);
 													break;
 												}
@@ -1070,10 +1087,9 @@ static void gettooltypes(UBYTE **tooltypes)
 	dest_needs_free = TRUE;
 
 	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
-#ifndef __amigaos4__
 	if(FindToolType(tooltypes, "VIRUSSCAN")) virus_scan = TRUE;
-#endif
 	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
+	if(FindToolType(tooltypes, "CONFIRMQUIT")) confirmquit = TRUE;
 	if(FindToolType(tooltypes, "DEBUG")) debug = TRUE;
 
 	progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
