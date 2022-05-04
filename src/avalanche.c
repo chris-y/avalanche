@@ -496,10 +496,10 @@ static void open_archive_req(BOOL refresh_only)
 	long retxfd = 0;
 
 	if(refresh_only == FALSE) {
-		if(archive_needs_free) free_archive_path();
 		DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
 	}
 
+	if(archive_needs_free) free_archive_path();
 	GetAttr(GETFILE_FullFile, gadgets[GID_ARCHIVE], (APTR)&archive);
 
 	SetWindowPointer(windows[WID_MAIN],
@@ -508,6 +508,7 @@ static void open_archive_req(BOOL refresh_only)
 
 	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
+
 	FreeListBrowserList(&lblist);
 
 	ret = xad_info(archive, addlbnode_cb);
@@ -837,27 +838,12 @@ static void gui(void)
 	 	 */
 		if (objects[OID_MAIN]) {
 			
-			if(archive) {
-				long ret = 0;
-				long retxfd = 0;
-				ret = xad_info(archive, addlbnode_cb); /* open initial archive, if there is one */
-				if(ret == 0) {
-					menu[3].nm_Flags = 0; /* Clear disabled flag from Arc Info */
-					archiver = ARC_XAD;
-				} else {
-					retxfd = xfd_info(archive, addlbnodexfd_cb);
-					if(retxfd == 0) {
-						menu[3].nm_Flags = 0; /* Clear disabled flag from Arc Info */
-						archiver = ARC_XFD;
-					} else {
-						show_error(ret);
-					}
-				}
-			}
-			
 			/*  Open the window.
 			 */
 			if (windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN])) {
+
+				/* Open initial archive, if there is one. */
+				if(archive) open_archive_req(TRUE);
 
 				ULONG wait, signal, app = (1L << AppPort->mp_SigBit);
 				ULONG done = FALSE;
