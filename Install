@@ -36,7 +36,10 @@
 	; else
 	(
 		; OS4 doesn't have Tools.
-		(set #tools-dir "SYS:Utilities")
+
+		(set #tools-dir (getenv "AppDir/AvalanchePPC"))
+
+		(if (= #tools-dir "") (set #tools-dir "SYS:Utilities"))
 		(set #avalanche "AvalanchePPC")
 
 		(set #arc-7zip  "7zip")
