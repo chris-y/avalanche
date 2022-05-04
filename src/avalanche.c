@@ -106,9 +106,9 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   "Quit...",         "Q", 0, 0, 0,}, // 5
 
 	{NM_TITLE, "Edit",               0,  0, 0, 0,}, // 1
-	{NM_ITEM,   "Select all",       "A", 0, 0, 0,}, // 0
-	{NM_ITEM,   "Clear selection",  "Z", 0, 0, 0,}, // 1
-	{NM_ITEM,   "Invert selection", "I", 0, 0, 0,}, // 2
+	{NM_ITEM,   "Select all",       "A", NM_ITEMDISABLED, 0, 0,}, // 0
+	{NM_ITEM,   "Clear selection",  "Z", NM_ITEMDISABLED, 0, 0,}, // 1
+	{NM_ITEM,   "Invert selection", "I", NM_ITEMDISABLED, 0, 0,}, // 2
 
 	{NM_TITLE, "Settings",              0,  0, 0, 0,}, // 2
 	{NM_ITEM,	"Scan for viruses",     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
@@ -489,6 +489,22 @@ static void *getlbnode(struct Node *node)
 	return userdata;
 }
 
+/* Activate/disable menus related to an open archive */
+static void menu_activation(BOOL enable)
+{
+	if(enable) {
+		OnMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		OnMenu(windows[WID_MAIN], FULLMENUNUM(1,0,0));
+		OnMenu(windows[WID_MAIN], FULLMENUNUM(1,1,0));
+		OnMenu(windows[WID_MAIN], FULLMENUNUM(1,2,0));
+	} else {
+		OffMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,0,0));
+		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,1,0));
+		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,2,0));
+	}
+}
+
 static void open_archive_req(BOOL refresh_only)
 {
 	dir_seen = FALSE;
@@ -519,13 +535,13 @@ static void open_archive_req(BOOL refresh_only)
 
 	if(ret == 0) {
 		archiver = ARC_XAD;
-		OnMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		menu_activation(TRUE);
 	} else if(retxfd == 0) {
 		archiver = ARC_XFD;
-		OnMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		menu_activation(TRUE);
 	} else {
 		archiver = ARC_NONE;
-		OffMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		menu_activation(FALSE);
 	}
 
 	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
