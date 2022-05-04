@@ -28,14 +28,21 @@
 #define xadMasterBase XadMasterBase
 #endif
 
-struct xadArchiveInfo *ai = NULL;
-
 enum {
 	PUD_NONE = 0,
 	PUD_ABORT = 1,
 	PUD_SKIP = 2,
 	PUD_OVER = 3
 };
+
+enum {
+	XNONE = 0,
+	XFILE,
+	XDISK
+};
+
+static struct xadArchiveInfo *ai = NULL;
+static int arctype = XNONE;
 
 void xad_free(void)
 {
@@ -82,6 +89,8 @@ static ULONG xad_get_fileprotection(void *xfi)
 
 ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 {
+	if(arctype == XDISK) return 0;
+
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
 	return xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
@@ -150,7 +159,7 @@ void xad_show_arc_info(void)
 
 	if(!ai) return;
 
-	sprintf(message, "%s archive", ai->xai_Client->xc_ArchiverName);	
+	sprintf(message, "%s %s archive", ai->xai_Client->xc_ArchiverName, (arctype == XFILE) ? "file" : "disk");	
 
 	open_info_req(message, "_OK");
 }
@@ -178,7 +187,9 @@ BOOL xad_recog(char *file)
 		len = Read(fh, buf, xadrs);
 		Close(fh);
 
-		xc = xadRecogFile(len, buf, XAD_IGNOREFLAGS, XADAIF_DISKARCHIVE, TAG_DONE);
+		xc = xadRecogFile(len, buf,
+				//XAD_IGNOREFLAGS, XADAIF_DISKARCHIVE,
+				TAG_DONE);
 	}
 
 	FreeVec(buf);
@@ -192,8 +203,10 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 {
 	long err = 0;
 	struct xadFileInfo *fi;
+	struct xadDiskInfo *di;
 	ULONG total = 0;
 	ULONG i = 0;
+	ULONG size = 0;
 
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
@@ -202,13 +215,14 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 
 	ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
+	arctype = XNONE;
+
 	if(ai) {
 		if((err = xadGetInfo(ai,
 				XAD_INFILENAME, file,
-				XAD_IGNOREFLAGS, XADAIF_DISKARCHIVE,
 				TAG_DONE)) == 0) {
-					
-			/* Count entries */
+				
+			/* Count entries (files) */
 			fi = ai->xai_FileInfo;
 			while(fi) {
 				total++;
@@ -223,8 +237,33 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 				i++;
 				fi = fi->xfi_Next;
 			}
+
+			if(total == 0) {
+				/* Count entries (disks) */
+				/* We only support archives which have disks or files, not mixed */
+				di = ai->xai_DiskInfo;
+				while(di) {
+					total++;
+					di = di->xdi_Next;
+				}
+					
+				/* Add to list */
+				di = ai->xai_DiskInfo;
+				while(di) {
+					size = di->xdi_SectorSize * di->xdi_TotalSectors;
+					addnode("disk.img", &size,
+						0, i, total, di);
+					i++;
+					di = di->xdi_Next;
+				}
+
+				arctype = XDISK;
+			} else {
+				arctype = XFILE;
+			}
 		}
 	}
+
 	return err;
 }
 
@@ -234,6 +273,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 	char destfile[1024];
 	long err = 0;
 	struct xadFileInfo *fi;
+	struct xadDiskInfo *di;
 	struct Node *node;
 	struct DateStamp ds;
 	ULONG pud = 0;
@@ -247,13 +287,63 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 	if(ai) {
 		
 		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-			fi = (struct xadFileInfo *)getnode(node);
+			if(arctype == XFILE) {
+				fi = (struct xadFileInfo *)getnode(node);
 
-			if(fi) {
-				strcpy(destfile, dest);
-				if(AddPart(destfile, fi->xfi_FileName, 1024)) {
-					if(!xad_is_dir(fi)) {
-						if((fi->xfi_Flags & XADFIF_CRYPTED) && (pw == NULL)) {
+				if(fi) {
+					strcpy(destfile, dest);
+					if(AddPart(destfile, fi->xfi_FileName, 1024)) {
+						if(!xad_is_dir(fi)) {
+							if((fi->xfi_Flags & XADFIF_CRYPTED) && (pw == NULL)) {
+								pw = AllocVec(100, MEMF_CLEAR);
+								err = ask_password(pw, 100);
+								if(err == 0) {
+									FreeVec(pw);
+									pw = NULL;
+								}
+							}
+
+							err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+									XAD_MAKEDIRECTORY, TRUE,
+									XAD_OUTFILENAME, destfile,
+									XAD_PASSWORD, pw,
+									XAD_PROGRESSHOOK, &progress_hook,
+									TAG_DONE);
+
+							if(pud == PUD_ABORT) {
+								if(pw) FreeVec(pw);
+								return 0;
+							}
+
+							if(err == XADERR_OK) {
+								scan(destfile, NULL, fi->xfi_Size);
+							}
+
+							err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
+										XAD_GETDATEDATESTAMP, &ds,
+										XAD_MAKELOCALDATE, TRUE,
+										TAG_DONE);
+
+							if(err != XADERR_OK) {
+								if(pw) FreeVec(pw);
+								return err;
+							}
+
+							SetProtection(destfile, xad_get_fileprotection(fi));
+							SetFileDate(destfile, &ds);
+							SetComment(destfile, fi->xfi_Comment);
+						}
+					}
+					fi = fi->xfi_Next;
+				}
+			} else if(arctype == XDISK) {
+				di = (struct xadDiskInfo *)getnode(node);
+
+				if(di) {
+					strcpy(destfile, dest);
+					if(AddPart(destfile, "disk.img", 1024)) {
+
+						if((di->xdi_Flags & XADDIF_CRYPTED) && (pw == NULL)) {
 							pw = AllocVec(100, MEMF_CLEAR);
 							err = ask_password(pw, 100);
 							if(err == 0) {
@@ -262,12 +352,11 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 							}
 						}
 
-						err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
-								XAD_MAKEDIRECTORY, TRUE,
-								XAD_OUTFILENAME, destfile,
-								XAD_PASSWORD, pw,
-								XAD_PROGRESSHOOK, &progress_hook,
-								TAG_DONE);
+						err = xadDiskUnArc(ai, XAD_ENTRYNUMBER, di->xdi_EntryNumber,
+									XAD_OUTFILENAME, destfile,
+									XAD_PASSWORD, pw,
+									XAD_PROGRESSHOOK, &progress_hook,
+									TAG_DONE);
 
 						if(pud == PUD_ABORT) {
 							if(pw) FreeVec(pw);
@@ -275,25 +364,13 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 						}
 
 						if(err == XADERR_OK) {
-							scan(destfile, NULL, fi->xfi_Size);
+							scan(destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
 						}
 
-						err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
-									XAD_GETDATEDATESTAMP, &ds,
-									XAD_MAKELOCALDATE, TRUE,
-									TAG_DONE);
-
-						if(err != XADERR_OK) {
-							if(pw) FreeVec(pw);
-							return err;
-						}
-
-						SetProtection(destfile, xad_get_fileprotection(fi));
-						SetFileDate(destfile, &ds);
-						SetComment(destfile, fi->xfi_Comment);
 					}
+					di = di->xdi_Next;
 				}
-				fi = fi->xfi_Next;
+
 			}
 		}
 	}

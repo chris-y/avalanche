@@ -55,8 +55,8 @@ Clicking Extract will extract the archive to the chosen destination.  If "scan f
 The browser can be put into a @{"hierarchical" link hbrowser} mode through the menu.  This is experimental - see the associated page for details.
 
 @{b}Limitations@{ub}:
-* Only file archives are supported.
-* Encrypted archives are not fully supported
+* Disk archives are not fully supported.
+* Encrypted archives are not fully supported.
 * xadmaster.library v12 has some bugs relating to certain LhA archives.  The fix is to use v13 - however nobody has compiled it for 68k to my knowledge.
 
 @endnode
@@ -87,8 +87,10 @@ Files will not be further extracted in order to be scanned, so infected files th
 
 @node history "Changelog"
 @{U}1.6 (??.??.????)@{UU}
+* Add ability to extract disk archives to images
 * Add option to enable/disable the quit confirmation requester
 * Fix loading/saving of virusscan pref on OS4
+* Fix unchecking of files in archive
 
 @{u}1.5 (25.03.2022)@{uu}
 * Add option to use xvs.library to scan the extracted files for viruses

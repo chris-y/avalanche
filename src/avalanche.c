@@ -343,6 +343,9 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 	struct ClockData cd;
 	xad_get_filedate(userdata, &cd);
 
+	if(CheckDate(&cd) == 0)
+		Amiga2Date(0, &cd);
+
 	sprintf(datestr, "%04d-%02d-%02d %02d:%02d:%02d", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
 
 	struct Node *node = AllocListBrowserNode(3,
