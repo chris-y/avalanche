@@ -981,8 +981,6 @@ static void gui(void)
 												break;
 #endif
 												case LBRE_DOUBLECLICK:
-printf("double bunny\n");
-													
 													GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
 													toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 1); /* ensure selected */
 													char fn[1024];
