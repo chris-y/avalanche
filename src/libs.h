@@ -17,6 +17,10 @@
 
 #include <intuition/classes.h>
 
+#ifdef __amigaos4__
+#define DeleteFile Delete
+#endif
+
 extern Class *ButtonClass;
 extern Class *FuelGaugeClass;
 extern Class *GetFileClass;

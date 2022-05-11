@@ -88,7 +88,10 @@ Files will not be further extracted in order to be scanned, so infected files th
 @node history "Changelog"
 @{U}1.6 (??.??.????)@{UU}
 * Add ability to extract disk archives to images
-* Add option to enable/disable the quit confirmation requester
+* Double-clicking now extracts the clicked file to a temporary location and opens it.
+  NB: This has required the previous "single click to select/deselect" to be disabled,
+      as the functionality was incompatible.
+  * Add option to enable/disable the quit confirmation requester
 * Fix loading/saving of virusscan pref on OS4
 * Fix unchecking of files in archive
 

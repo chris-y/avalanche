@@ -127,6 +127,7 @@ struct NewMenu menu[] = {
 static char *progname = NULL;
 static char *dest;
 static char *archive = NULL;
+static char *tmpdir = NULL;
 
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
@@ -557,7 +558,7 @@ static void open_archive_req(BOOL refresh_only)
 					TAG_DONE);
 }
 
-static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node *node)
+static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node *node, ULONG select)
 {
 	SetGadgetAttrs(list_gad, win, NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -565,13 +566,17 @@ static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node
 	ULONG current;
 	ULONG selected;
 
-	GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
-	selected = !current;
+	if(select == 2) {
+		GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
+		selected = !current;
+	} else {
+		selected = select;
+	}
 
 	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
 
 	SetGadgetAttrs(list_gad, win, NULL,
-				LISTBROWSER_Labels, &lblist,
+			LISTBROWSER_Labels, &lblist,
 			TAG_DONE);
 }
 
@@ -580,6 +585,7 @@ static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG s
 	struct Node *node;
 	BOOL selected;
 
+	/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
 	if(select == 0) selected = FALSE;
 	if(select == 1) selected = TRUE;
 
@@ -645,11 +651,32 @@ static ULONG vscan(char *file, UBYTE *buf, ULONG len)
 	return res;
 }
 
-static long extract(void)
+static const char *get_item_filename(struct Node *node)
+{
+	void *userdata = NULL;
+	const char *fn = NULL;
+
+	GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
+
+	switch(archiver) {
+		case ARC_XAD:
+			fn = xad_get_filename(userdata);
+		break;
+		case ARC_XFD:
+			fn = xfd_get_filename(userdata);
+		break;
+	}
+
+	return fn;
+}
+
+static long extract(char *newdest, struct Node *node)
 {
 	long ret = 0;
 
-	if(archive && dest) {
+	if(newdest == NULL) newdest = dest;
+
+	if(archive && newdest) {
 		SetWindowPointer(windows[WID_MAIN],
 				WA_PointerType, POINTERTYPE_PROGRESS,
 			TAG_DONE);
@@ -659,10 +686,14 @@ static long extract(void)
 
 		switch(archiver) {
 			case ARC_XAD:
-				ret = xad_extract(archive, dest, &lblist, getlbnode, vscan);
+				if(node == NULL) {
+					ret = xad_extract(archive, newdest, &lblist, getlbnode, vscan);
+				} else {
+					ret = xad_extract_file(archive, newdest, node, getlbnode, vscan);
+				}
 			break;
 			case ARC_XFD:
-				ret = xfd_extract(archive, dest, vscan);
+				ret = xfd_extract(archive, newdest, vscan);
 			break;
 		}
 
@@ -935,16 +966,34 @@ static void gui(void)
 										break;
 
 										case GID_EXTRACT:
-											ret = extract();
+											ret = extract(NULL, NULL);
 											if(ret != 0) show_error(ret);
 										break;
 
 										case GID_LIST:
 											GetAttr(LISTBROWSER_RelEvent, gadgets[GID_LIST], (APTR)&tmp);
 											switch(tmp) {
+#if 0 /* This selects items when single-clicked off the checkbox -
+         it's incompatible with doube-clicking as it resets the listview */
 												case LBRE_NORMAL:
 													GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
-													toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node);
+													toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 2);
+												break;
+#endif
+												case LBRE_DOUBLECLICK:
+printf("double bunny\n");
+													
+													GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
+													toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 1); /* ensure selected */
+													char fn[1024];
+													strcpy(fn, tmpdir);
+													ret = extract(fn, node);
+													if(ret == 0) {
+														AddPart(fn, get_item_filename(node), 1024);
+														OpenWorkbenchObjectA(fn, NULL);
+													} else {
+														show_error(ret);
+													}
 												break;
 											}
 										break;
@@ -961,7 +1010,7 @@ static void gui(void)
 										break;
 
 										case RAWKEY_RETURN:
-											ret = extract();
+											ret = extract(NULL, NULL);
 											if(ret != 0) show_error(ret);
 										break;
 									}
@@ -1154,10 +1203,17 @@ int main(int argc, char **argv)
 
 	locale = OpenLocale(NULL);
 
+	tmpdir = AllocVec(20, MEMF_CLEAR);
+	sprintf(tmpdir, "T:Avalanche.%x", GetUniqueID());
+	UnLock(CreateDir(tmpdir));
+
 	gui();
 
 	CloseLocale(locale);
 
+	DeleteFile(tmpdir);
+
+	if(tmpdir) FreeVec(tmpdir);
 	if(progname != NULL) FreeVec(progname);
 	if(archive_needs_free) free_archive_path();
 	if(dest_needs_free) free_dest_path();

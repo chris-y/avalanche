@@ -23,10 +23,6 @@
 #include "libs.h"
 #include "xvs.h"
 
-#ifdef __amigaos4__
-#define DeleteFile Delete
-#endif
-
 static long xvs_init(void)
 {
 	if(xvsBase == NULL) {

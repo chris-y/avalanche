@@ -28,6 +28,11 @@ struct xfdBufferInfo *bi = NULL;
 char *fn = NULL;
 UBYTE *buffer = NULL;
 
+const char *xfd_get_filename(void *userdata)
+{
+	return fn;
+}
+
 void xfd_show_arc_info(void)
 {
 	char message[100];

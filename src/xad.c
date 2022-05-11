@@ -43,6 +43,7 @@ enum {
 
 static struct xadArchiveInfo *ai = NULL;
 static int arctype = XNONE;
+static char *pw = NULL;
 
 void xad_free(void)
 {
@@ -97,6 +98,15 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 				XAD_GETDATECLOCKDATA, cd,
 				XAD_MAKELOCALDATE, TRUE,
 				TAG_DONE);
+}
+
+const char *xad_get_filename(void *userdata)
+{
+	if(arctype == XDISK) return "disk.img";
+
+	struct xadFileInfo *fi = (struct xadFileInfo *)userdata;
+
+	return fi->xfi_FileName;
 }
 
 #ifdef __amigaos4__
@@ -267,113 +277,125 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	return err;
 }
 
-/* returns 0 on success */
-long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
 {
-	char destfile[1024];
 	long err = 0;
+	char destfile[1024];
 	struct xadFileInfo *fi;
 	struct xadDiskInfo *di;
-	struct Node *node;
 	struct DateStamp ds;
 	ULONG pud = 0;
-	char *pw = NULL;
 
 	struct Hook progress_hook;
 	progress_hook.h_Entry = xad_progress;
 	progress_hook.h_SubEntry = NULL;
 	progress_hook.h_Data = &pud;
 
-	if(ai) {
-		
-		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-			if(arctype == XFILE) {
-				fi = (struct xadFileInfo *)getnode(node);
+	if(arctype == XFILE) {
+		fi = (struct xadFileInfo *)getnode(node);
 
-				if(fi) {
-					strcpy(destfile, dest);
-					if(AddPart(destfile, fi->xfi_FileName, 1024)) {
-						if(!xad_is_dir(fi)) {
-							if((fi->xfi_Flags & XADFIF_CRYPTED) && (pw == NULL)) {
-								pw = AllocVec(100, MEMF_CLEAR);
-								err = ask_password(pw, 100);
-								if(err == 0) {
-									FreeVec(pw);
-									pw = NULL;
-								}
-							}
+		if(fi) {
+			strcpy(destfile, dest);
+			if(AddPart(destfile, fi->xfi_FileName, 1024)) {
+				if(!xad_is_dir(fi)) {
+					if((fi->xfi_Flags & XADFIF_CRYPTED) && (pw == NULL)) {
+						pw = AllocVec(100, MEMF_CLEAR);
+						err = ask_password(pw, 100);
+						if(err == 0) {
+							FreeVec(pw);
+							pw = NULL;
+						}
+					}
 
-							err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
-									XAD_MAKEDIRECTORY, TRUE,
-									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, pw,
-									XAD_PROGRESSHOOK, &progress_hook,
-									TAG_DONE);
+					err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+										XAD_MAKEDIRECTORY, TRUE,
+										XAD_OUTFILENAME, destfile,
+										XAD_PASSWORD, pw,
+										XAD_PROGRESSHOOK, &progress_hook,
+										TAG_DONE);
 
-							if(pud == PUD_ABORT) {
-								if(pw) FreeVec(pw);
-								return 0;
-							}
+					if(pud == PUD_ABORT) {
+						if(pw) FreeVec(pw);
+						pw = NULL;
+						return 0;
+					}
 
-							if(err == XADERR_OK) {
-								scan(destfile, NULL, fi->xfi_Size);
-							}
+					if(err == XADERR_OK) {
+						scan(destfile, NULL, fi->xfi_Size);
+					}
 
-							err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
+					err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
 										XAD_GETDATEDATESTAMP, &ds,
 										XAD_MAKELOCALDATE, TRUE,
 										TAG_DONE);
 
-							if(err != XADERR_OK) {
-								if(pw) FreeVec(pw);
-								return err;
-							}
-
-							SetProtection(destfile, xad_get_fileprotection(fi));
-							SetFileDate(destfile, &ds);
-							SetComment(destfile, fi->xfi_Comment);
-						}
+					if(err != XADERR_OK) {
+						if(pw) FreeVec(pw);
+						pw = NULL;
+						return err;
 					}
-					fi = fi->xfi_Next;
+
+					SetProtection(destfile, xad_get_fileprotection(fi));
+					SetFileDate(destfile, &ds);
+					SetComment(destfile, fi->xfi_Comment);
 				}
-			} else if(arctype == XDISK) {
-				di = (struct xadDiskInfo *)getnode(node);
+			}
+			fi = fi->xfi_Next;
+		}
+	} else if(arctype == XDISK) {
+		di = (struct xadDiskInfo *)getnode(node);
 
-				if(di) {
-					strcpy(destfile, dest);
-					if(AddPart(destfile, "disk.img", 1024)) {
+		if(di) {
+			strcpy(destfile, dest);
+			if(AddPart(destfile, "disk.img", 1024)) {
 
-						if((di->xdi_Flags & XADDIF_CRYPTED) && (pw == NULL)) {
-							pw = AllocVec(100, MEMF_CLEAR);
-							err = ask_password(pw, 100);
-							if(err == 0) {
-								FreeVec(pw);
-								pw = NULL;
-							}
-						}
+				if((di->xdi_Flags & XADDIF_CRYPTED) && (pw == NULL)) {
+					pw = AllocVec(100, MEMF_CLEAR);
+					err = ask_password(pw, 100);
+					if(err == 0) {
+						FreeVec(pw);
+						pw = NULL;
+					}
+				}
 
-						err = xadDiskUnArc(ai, XAD_ENTRYNUMBER, di->xdi_EntryNumber,
+				err = xadDiskUnArc(ai, XAD_ENTRYNUMBER, di->xdi_EntryNumber,
 									XAD_OUTFILENAME, destfile,
 									XAD_PASSWORD, pw,
 									XAD_PROGRESSHOOK, &progress_hook,
 									TAG_DONE);
 
-						if(pud == PUD_ABORT) {
-							if(pw) FreeVec(pw);
-							return 0;
-						}
+				if(pud == PUD_ABORT) {
+					if(pw) FreeVec(pw);
+					pw = NULL;
+					return 0;
+				}
 
-						if(err == XADERR_OK) {
-							scan(destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
-						}
-
-					}
-					di = di->xdi_Next;
+				if(err == XADERR_OK) {
+					scan(destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
 				}
 
 			}
+			di = di->xdi_Next;
 		}
+
 	}
 	if(pw) FreeVec(pw);
+	pw = NULL;
+	return err;
+}
+
+/* returns 0 on success */
+long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+{
+	long err = XADERR_OK;
+	struct Node *node;
+
+	if(ai) {
+		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
+			err = xad_extract_file(file, dest, node, getnode, scan);
+			if(err != XADERR_OK) return err;
+		}
+	}
+
 	return err;
 }
