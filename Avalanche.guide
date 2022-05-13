@@ -55,7 +55,8 @@ Clicking Extract will extract the archive to the chosen destination.  If "scan f
 The browser can be put into a @{"hierarchical" link hbrowser} mode through the menu.  This is experimental - see the associated page for details.
 
 @{b}Limitations@{ub}:
-* Disk archives are not fully supported.
+* Mixed file/disk archives are not supported.
+* Disk images containing multiple filesystems are not currently supported.
 * Encrypted archives are not fully supported.
 * xadmaster.library v12 has some bugs relating to certain LhA archives.  The fix is to use v13 - however nobody has compiled it for 68k to my knowledge.
 
@@ -88,6 +89,7 @@ Files will not be further extracted in order to be scanned, so infected files th
 @node history "Changelog"
 @{U}1.6 (??.??.????)@{UU}
 * Add ability to extract disk archives to images
+* Add ability to extract files from disk images
 * Double-clicking now extracts the clicked file to a temporary location and opens it.
   NB: This has required the previous "single click to select/deselect" to be disabled,
       as the functionality was incompatible.

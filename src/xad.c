@@ -38,23 +38,29 @@ enum {
 enum {
 	XNONE = 0,
 	XFILE,
-	XDISK
+	XDISK,
+	XDISKFILE
 };
 
 static struct xadArchiveInfo *ai = NULL;
 static int arctype = XNONE;
 static char *pw = NULL;
 
+static void xad_free_ai(struct xadArchiveInfo *a)
+{
+	xadFreeInfo(a);
+	xadFreeObjectA(a, NULL);
+}
+
 void xad_free(void)
 {
-	xadFreeInfo(ai);
-	xadFreeObjectA(ai, NULL);
+	if(ai) xad_free_ai(ai);
 	ai = NULL;
 }
 
 void xad_exit(void)
 {
-	if(ai) xad_free();
+	xad_free();
 	libs_xad_exit();
 }
 
@@ -166,10 +172,26 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 void xad_show_arc_info(void)
 {
 	char message[100];
+	char *type;
 
 	if(!ai) return;
 
-	sprintf(message, "%s %s archive", ai->xai_Client->xc_ArchiverName, (arctype == XFILE) ? "file" : "disk");	
+	switch(arctype) {
+		case XFILE:
+			type = "file archive";
+		break;
+		case XDISK:
+			type = "disk archive";
+		break;
+		case XDISKFILE:
+			type = "disk image";
+		break;
+		default:
+			type = "unknown";
+		break;
+	}
+
+	sprintf(message, "%s %s", ai->xai_Client->xc_ArchiverName, type);	
 
 	open_info_req(message, "_OK");
 }
@@ -221,8 +243,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
 
-	if(ai) xad_free();
-
+	xad_free();
 	ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
 	arctype = XNONE;
@@ -271,6 +292,32 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 			} else {
 				arctype = XFILE;
 			}
+		} else {
+			xad_free();
+			ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
+			if((err = xadGetDiskInfo(ai,
+						XAD_INFILENAME, file,
+						TAG_DONE)) == 0) {
+				
+				/* Count entries (files) */
+				fi = ai->xai_FileInfo;
+				while(fi) {
+					total++;
+					fi = fi->xfi_Next;
+				}
+					
+				/* Add to list */
+				fi = ai->xai_FileInfo;
+				while(fi) {
+					addnode(fi->xfi_FileName, &fi->xfi_Size,
+						(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi);
+					i++;
+					fi = fi->xfi_Next;
+				}
+
+				if(total != 0) arctype = XDISKFILE;
+
+			}
 		}
 	}
 
@@ -281,9 +328,10 @@ long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)
 {
 	long err = 0;
 	char destfile[1024];
-	struct xadFileInfo *fi;
-	struct xadDiskInfo *di;
+	struct xadFileInfo *fi = NULL;
+	struct xadDiskInfo *di = NULL;
 	struct DateStamp ds;
+	char *fn = NULL;
 	ULONG pud = 0;
 
 	struct Hook progress_hook;
@@ -291,39 +339,74 @@ long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)
 	progress_hook.h_SubEntry = NULL;
 	progress_hook.h_Data = &pud;
 
-	if(arctype == XFILE) {
+	if(arctype == XDISK) {
+		di = (struct xadDiskInfo *)getnode(node);
+	} else {
 		fi = (struct xadFileInfo *)getnode(node);
+	}
+
+	if(fi || di) {
+		strcpy(destfile, dest);
 
 		if(fi) {
-			strcpy(destfile, dest);
-			if(AddPart(destfile, fi->xfi_FileName, 1024)) {
-				if(!xad_is_dir(fi)) {
-					if((fi->xfi_Flags & XADFIF_CRYPTED) && (pw == NULL)) {
-						pw = AllocVec(100, MEMF_CLEAR);
-						err = ask_password(pw, 100);
-						if(err == 0) {
-							FreeVec(pw);
-							pw = NULL;
-						}
-					}
+			fn = fi->xfi_FileName;
+		} else {
+			fn = "disk.img";
+		}
 
-					err = xadFileUnArc(ai, XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
-										XAD_MAKEDIRECTORY, TRUE,
-										XAD_OUTFILENAME, destfile,
-										XAD_PASSWORD, pw,
-										XAD_PROGRESSHOOK, &progress_hook,
-										TAG_DONE);
-
-					if(pud == PUD_ABORT) {
-						if(pw) FreeVec(pw);
+		if(AddPart(destfile, fn, 1024)) {
+			if((di) || (!xad_is_dir(fi))) {
+				if(((fi && (fi->xfi_Flags & XADFIF_CRYPTED)) || (di && (di->xdi_Flags & XADDIF_CRYPTED))) && (pw == NULL)) {
+					pw = AllocVec(100, MEMF_CLEAR);
+					err = ask_password(pw, 100);
+					if(err == 0) {
+						FreeVec(pw);
 						pw = NULL;
-						return 0;
 					}
+				}
 
-					if(err == XADERR_OK) {
-						scan(destfile, NULL, fi->xfi_Size);
-					}
+				switch(arctype) {
+					case XFILE:
+						err = xadFileUnArc(ai,
+									XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+									XAD_MAKEDIRECTORY, TRUE,
+									XAD_OUTFILENAME, destfile,
+									XAD_PASSWORD, pw,
+									XAD_PROGRESSHOOK, &progress_hook,
+									TAG_DONE);
+						break;
 
+					case XDISK:
+						err = xadDiskUnArc(ai, XAD_ENTRYNUMBER, di->xdi_EntryNumber,
+									XAD_OUTFILENAME, destfile,
+									XAD_PASSWORD, pw,
+									XAD_PROGRESSHOOK, &progress_hook,
+									TAG_DONE);
+						break;
+
+					case XDISKFILE:
+						err = xadDiskFileUnArc(ai,
+									XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
+									XAD_MAKEDIRECTORY, TRUE,
+									XAD_OUTFILENAME, destfile,
+									XAD_PASSWORD, pw,
+									XAD_PROGRESSHOOK, &progress_hook,
+									TAG_DONE);
+						break;
+				}
+
+				if(pud == PUD_ABORT) {
+					if(pw) FreeVec(pw);
+					pw = NULL;
+					return 0;
+				}
+
+				if(err == XADERR_OK) {
+					if(fi) scan(destfile, NULL, fi->xfi_Size);
+					if(di) scan(destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
+				}
+
+				if(fi) {
 					err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
 										XAD_GETDATEDATESTAMP, &ds,
 										XAD_MAKELOCALDATE, TRUE,
@@ -340,45 +423,11 @@ long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)
 					SetComment(destfile, fi->xfi_Comment);
 				}
 			}
-			fi = fi->xfi_Next;
 		}
-	} else if(arctype == XDISK) {
-		di = (struct xadDiskInfo *)getnode(node);
-
-		if(di) {
-			strcpy(destfile, dest);
-			if(AddPart(destfile, "disk.img", 1024)) {
-
-				if((di->xdi_Flags & XADDIF_CRYPTED) && (pw == NULL)) {
-					pw = AllocVec(100, MEMF_CLEAR);
-					err = ask_password(pw, 100);
-					if(err == 0) {
-						FreeVec(pw);
-						pw = NULL;
-					}
-				}
-
-				err = xadDiskUnArc(ai, XAD_ENTRYNUMBER, di->xdi_EntryNumber,
-									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, pw,
-									XAD_PROGRESSHOOK, &progress_hook,
-									TAG_DONE);
-
-				if(pud == PUD_ABORT) {
-					if(pw) FreeVec(pw);
-					pw = NULL;
-					return 0;
-				}
-
-				if(err == XADERR_OK) {
-					scan(destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
-				}
-
-			}
-			di = di->xdi_Next;
-		}
-
+		if(fi) fi = fi->xfi_Next;
+		if(di) di = di->xdi_Next;
 	}
+
 	if(pw) FreeVec(pw);
 	pw = NULL;
 	return err;
