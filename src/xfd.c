@@ -22,6 +22,7 @@
 
 #include "avalanche.h"
 #include "libs.h"
+#include "locale.h"
 #include "req.h"
 
 struct xfdBufferInfo *bi = NULL;
@@ -39,9 +40,9 @@ void xfd_show_arc_info(void)
 
 	if(!bi) return;
 
-	sprintf(message, "%s crunched", bi->xfdbi_PackerName);	
+	sprintf(message,  locale_get_string( MSG_CRUNCHED ) , bi->xfdbi_PackerName);	
 
-	open_info_req(message, "_OK");
+	open_info_req(message,  locale_get_string( MSG_OK ) );
 }
 
 BOOL xfd_recog(char *file)
@@ -166,7 +167,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 			strcpy(destfile, dest);
 			if(AddPart(destfile, fn, 1024)) {
 				if(fh = Open(destfile, MODE_OLDFILE)) {
-					res = ask_question("%s already exists, overwrite?", fn);
+					res = ask_question( locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , fn);
 					Close(fh);
 				}
 
@@ -180,7 +181,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 		}
 		FreeMem(bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen);
 	} else {
-		open_error_req("Error decrunching", "_OK");
+		open_error_req( locale_get_string( MSG_ERRORDECRUNCHING ) ,  locale_get_string( MSG_OK ) );
 	}
 	return 0;
 }

@@ -51,6 +51,7 @@
 #include "avalanche.h"
 #include "req.h"
 #include "libs.h"
+#include "locale.h"
 #include "xad.h"
 #include "xfd.h"
 #include "xvs.h"
@@ -92,31 +93,31 @@ enum {
 	ARC_XFD
 };
 
-#define GID_EXTRACT_TEXT "E_xtract"
+#define GID_EXTRACT_TEXT  locale_get_string( MSG_EXTRACT ) 
 
 /** Menu **/
 
 struct NewMenu menu[] = {
-	{NM_TITLE, "Project",           0,  0, 0, 0,}, // 0
-	{NM_ITEM,   "Open...",         "O", 0, 0, 0,}, // 0
+	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
+	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 0 Open
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 1
-	{NM_ITEM,   "Archive Info...", "!", NM_ITEMDISABLED, 0, 0,}, // 2
-	{NM_ITEM,   "About...",        "?", 0, 0, 0,}, // 3
+	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 2 Archive Info
+	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 3 About
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 4
-	{NM_ITEM,   "Quit...",         "Q", 0, 0, 0,}, // 5
+	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 5 Quit
 
-	{NM_TITLE, "Edit",               0,  0, 0, 0,}, // 1
-	{NM_ITEM,   "Select all",       "A", NM_ITEMDISABLED, 0, 0,}, // 0
-	{NM_ITEM,   "Clear selection",  "Z", NM_ITEMDISABLED, 0, 0,}, // 1
-	{NM_ITEM,   "Invert selection", "I", NM_ITEMDISABLED, 0, 0,}, // 2
+	{NM_TITLE,  NULL,               0,  0, 0, 0,}, // 1 Edit
+	{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
+	{NM_ITEM,   NULL ,  "Z", NM_ITEMDISABLED, 0, 0,}, // 1 Clear Selection
+	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
 
-	{NM_TITLE, "Settings",              0,  0, 0, 0,}, // 2
-	{NM_ITEM,	"Scan for viruses",     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0
-	{NM_ITEM,	"Hierarchical browser (experimental)", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1
-	{NM_ITEM,   "Save window position", 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2
-	{NM_ITEM,   "Confirm quit",         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 3
+	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
+	{NM_ITEM,	NULL,     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 Scan
+	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1 HBrowser
+	{NM_ITEM,   NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2 Win posn
+	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 3 Confirm quit
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 4
-	{NM_ITEM,   "Save settings",        0,  0, 0, 0,}, // 5
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 5 Save settings
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -395,7 +396,7 @@ int sort(const char *a, const char *b)
 		if(a[i] != b[i]) {
 			if(a[i] == '/') return -1;
 			if(b[i] == '/') return 1;
-			return StrnCmp(locale, a, b, 1, SC_COLLATE2);
+			return StrnCmp(locale_get_locale(), a, b, 1, SC_COLLATE2);
 		}
 		i++;
 	}
@@ -612,7 +613,7 @@ static void disable_gadgets(BOOL disable)
 {
 	if(disable) {
 		SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
-				GA_Text, "_Stop",
+				GA_Text,  locale_get_string( MSG_STOP ) ,
 			TAG_DONE);
 	} else {
 		SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
@@ -772,21 +773,21 @@ static void gui(void)
 
 	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
 		LBCIA_Column, 0,
-			LBCIA_Title, "Name",
+			LBCIA_Title,  locale_get_string( MSG_NAME ) ,
 			LBCIA_Weight, 65,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
 		LBCIA_Column, 1,
-			LBCIA_Title, "Size",
+			LBCIA_Title,  locale_get_string( MSG_SIZE ) ,
 			LBCIA_Weight, 15,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
 		LBCIA_Column, 2,
-			LBCIA_Title, "Date",
+			LBCIA_Title,  locale_get_string( MSG_DATE ) ,
 			LBCIA_Weight, 20,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
@@ -831,19 +832,19 @@ static void gui(void)
 						LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObj,
 							GA_ID, GID_ARCHIVE,
 							GA_RelVerify, TRUE,
-							GETFILE_TitleText, "Select Archive",
+							GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 							GETFILE_FullFile, archive,
 							GETFILE_ReadOnly, TRUE,
 							GETFILE_FilterFunc, &aslfilterhook,
 						End,
 						CHILD_WeightedHeight, 0,
 						CHILD_Label, LabelObj,
-							LABEL_Text, "_Archive",
+							LABEL_Text,  locale_get_string( MSG_ARCHIVE ) ,
 						LabelEnd,
 						LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObj,
 							GA_ID, GID_DEST,
 							GA_RelVerify, TRUE,
-							GETFILE_TitleText, "Select Destination",
+							GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
 							GETFILE_Drawer, dest,
 							GETFILE_DoSaveMode, TRUE,
 							GETFILE_DrawersOnly, TRUE,
@@ -851,7 +852,7 @@ static void gui(void)
 						End,
 						CHILD_WeightedHeight, 0,
 						CHILD_Label, LabelObj,
-							LABEL_Text, "_Destination",
+							LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
 						LabelEnd,
 					LayoutEnd,
 					LAYOUT_WeightBar, TRUE,
@@ -1152,6 +1153,25 @@ static void gettooltypes(UBYTE **tooltypes)
 	win_h = ArgInt(tooltypes, "WINH", 0);
 }
 
+static void fill_menu_labels(void)
+{
+	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
+	menu[1].nm_Label = locale_get_string( MSG_OPEN );
+	menu[3].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
+	menu[4].nm_Label = locale_get_string( MSG_ABOUT );
+	menu[6].nm_Label = locale_get_string( MSG_QUIT );
+	menu[7].nm_Label = locale_get_string( MSG_EDIT );
+	menu[8].nm_Label = locale_get_string( MSG_SELECTALL );
+	menu[9].nm_Label = locale_get_string( MSG_CLEARSELECTION );
+	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
+	menu[11].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[12].nm_Label = locale_get_string( MSG_SCANFORVIRUSES );
+	menu[13].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
+	menu[14].nm_Label = locale_get_string( MSG_SAVEWINDOWPOSITION );
+	menu[15].nm_Label = locale_get_string( MSG_CONFIRMQUIT );
+	menu[17].nm_Label = locale_get_string( MSG_SAVESETTINGS );
+}
+
 /** Main program **/
 int main(int argc, char **argv)
 {
@@ -1199,7 +1219,9 @@ int main(int argc, char **argv)
 	gettooltypes(tooltypes);
 	ArgArrayDone();
 
-	locale = OpenLocale(NULL);
+	Locale_Open("avalanche.catalog", 0, 0);
+
+	fill_menu_labels();
 
 	tmpdir = AllocVec(20, MEMF_CLEAR);
 	sprintf(tmpdir, "T:Avalanche.%x", GetUniqueID());
@@ -1207,7 +1229,7 @@ int main(int argc, char **argv)
 
 	gui();
 
-	CloseLocale(locale);
+	Locale_Close();
 
 	DeleteFile(tmpdir);
 

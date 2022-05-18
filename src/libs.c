@@ -117,7 +117,7 @@
 
 ALIB_STRUCT(Icon)
 ALIB_STRUCT(Intuition)
-ALIB_STRUCT(Locale)
+//ALIB_STRUCT(Locale)
 ALIB_STRUCT(Utility)
 ALIB_STRUCT(Workbench)
 
@@ -160,7 +160,7 @@ BOOL libs_open(void)
 {
 	ALIB_OPEN("icon.library",         44, Icon)
 	ALIB_OPEN("intuition.library",    40, Intuition)
-	ALIB_OPEN("locale.library",       38, Locale)
+//	ALIB_OPEN("locale.library",       38, Locale)
 	ALIB_OPEN("utility.library",      36, Utility)
 	ALIB_OPEN("workbench.library",    40, Workbench)
 
@@ -191,7 +191,7 @@ void libs_close(void)
 
 	ALIB_CLOSE(Icon)
 	ALIB_CLOSE(Intuition)
-	ALIB_CLOSE(Locale)
+//	ALIB_CLOSE(Locale)
 	ALIB_CLOSE(Workbench)
 }
 

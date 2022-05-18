@@ -13,7 +13,9 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
+#include <proto/exec.h>
 #include <proto/intuition.h>
 #include <clib/alib_protos.h>
 
@@ -24,10 +26,13 @@
 
 #include "avalanche.h"
 #include "libs.h"
+#include "locale.h"
 #include "req.h"
 #include "xad.h"
 
 #include "Avalanche_rev.h"
+
+#define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
 
 void open_info_req(char *message, char *buttons)
 {
@@ -47,17 +52,13 @@ void open_info_req(char *message, char *buttons)
 
 void show_about(void)
 {
-	open_info_req(VERS " (" DATE ")\n"
-									"(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
-									"This program is free software; you can redistribute it and/or modify\n"
-									"it under the terms of the GNU General Public License as published by\n"
-									"the Free Software Foundation; either version 2 of the License, or\n"
-									"(at your option) any later version.\n\n"
-									"This program is distributed in the hope that it will be useful,\n"
-									"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-									"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-									"GNU General Public License for more details.", "_OK");
+	char *msg = AllocVec(strlen(MSG_COPYRIGHT) + strlen(locale_get_string( MSG_GPL )) + 1, MEMF_CLEAR);
 
+	if(msg) {
+		sprintf(msg, "%s%s", MSG_COPYRIGHT, locale_get_string(MSG_GPL));
+		open_info_req(msg,  locale_get_string( MSG_OK ) );
+		FreeVec(msg);
+	}
 }
 
 void open_error_req(char *message, char *button)
@@ -74,7 +75,7 @@ void open_error_req(char *message, char *button)
 		OpenRequester(obj, get_window());
 		DisposeObject(obj);
 	} else {
-		printf("Unable to open requester to show error;\n%s [%s]\n", message, button);
+		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOSHOWERRORS ) , message, button);
 	}
 }
 
@@ -83,12 +84,12 @@ void show_error(long code)
 	char message[100];
 
 	if(code == -1) {
-		sprintf(message, "Unable to open xadmaster.library");
+		sprintf(message,  locale_get_string( MSG_UNABLETOOPENXADMASTERLIBRARY ) );
 	} else {
 		sprintf(message, "%s", xad_error(code));
 	}
 
-	open_error_req(message, "_OK");
+	open_error_req(message,  locale_get_string( MSG_OK ) );
 }
 
 ULONG ask_quit_req(void)
@@ -99,8 +100,8 @@ ULONG ask_quit_req(void)
 			REQ_TitleText, VERS,
 			REQ_Type, REQTYPE_INFO,
 			REQ_Image, REQIMAGE_WARNING,
-			REQ_BodyText, "Are you sure you want to exit?",
-			REQ_GadgetText, "_Yes|_No",
+			REQ_BodyText,  locale_get_string( MSG_AREYOUSUREYOUWANTTOEXIT ) ,
+			REQ_GadgetText,  locale_get_string( MSG_YESNO ) ,
 		End;
 
 	if(obj) {
@@ -122,14 +123,14 @@ ULONG ask_question(char *q, char *f)
 			REQ_Type, REQTYPE_INFO,
 			REQ_Image, REQIMAGE_QUESTION,
 			REQ_BodyText, message,
-			REQ_GadgetText, "_Yes|Yes to _all|_No|N_o to all|Abort",
+			REQ_GadgetText,  locale_get_string( MSG_YESYESTOALLNONOTOALLABORT ) ,
 		End;
 
 	if(obj) {
 		ret = OpenRequester(obj, get_window()); 
 		DisposeObject(obj);
 	} else {
-		printf("Unable to open requester to show error;\n%s\n", message);
+		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOSHOWERRORS ) , message, "");
 	}
 
 	return ret;
@@ -146,15 +147,15 @@ ULONG ask_password(char *pw, ULONG pwlen)
 			REQS_Invisible, TRUE,
 			REQS_Buffer, pw,
 			REQS_MaxChars, pwlen,
-			REQ_BodyText, "Archive is encrypted, please enter password.",
-			REQ_GadgetText, "_OK|_Cancel",
+			REQ_BodyText,  locale_get_string( MSG_ARCHIVEISENCRYPTEDPLEASEENTERPASSWORD ) ,
+			REQ_GadgetText,  locale_get_string( MSG_OKCANCEL ) ,
 		End;
 
 	if(obj) {
 		ret = OpenRequester(obj, get_window()); 
 		DisposeObject(obj);
 	} else {
-		printf("Unable to open requester to ask password\n");
+		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOASKPASSWORD ) );
 	}
 
 	return ret;
