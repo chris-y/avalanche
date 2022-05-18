@@ -20,6 +20,7 @@
 
 #include "avalanche.h"
 #include "libs.h"
+#include "locale.h"
 #include "req.h"
 #include "xad.h"
 
@@ -129,7 +130,7 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 			if(xpi->xpi_Status & XADPIF_OVERWRITE) {
 				if(*pud == PUD_SKIP) return (XADPIF_OK | XADPIF_SKIP);
 				if(*pud == PUD_OVER) return (XADPIF_OK | XADPIF_OVERWRITE);
-				res = ask_question("%s already exists, overwrite?", xpi->xpi_FileName);
+				res = ask_question( locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , xpi->xpi_FileName);
 				switch(res) {
 					case 0: // Abort
 						*pud = PUD_ABORT;
@@ -178,22 +179,22 @@ void xad_show_arc_info(void)
 
 	switch(arctype) {
 		case XFILE:
-			type = "file archive";
+			type =  locale_get_string( MSG_FILEARCHIVE ) ;
 		break;
 		case XDISK:
-			type = "disk archive";
+			type =  locale_get_string( MSG_DISKARCHIVE ) ;
 		break;
 		case XDISKFILE:
-			type = "disk image";
+			type =  locale_get_string( MSG_DISKIMAGE ) ;
 		break;
 		default:
-			type = "unknown";
+			type =  locale_get_string( MSG_UNKNOWN ) ;
 		break;
 	}
 
 	sprintf(message, "%s %s", ai->xai_Client->xc_ArchiverName, type);	
 
-	open_info_req(message, "_OK");
+	open_info_req(message,  locale_get_string( MSG_OK ) );
 }
 
 BOOL xad_recog(char *file)

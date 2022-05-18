@@ -21,6 +21,7 @@
 
 #include "req.h"
 #include "libs.h"
+#include "locale.h"
 #include "xvs.h"
 
 static long xvs_init(void)
@@ -28,12 +29,12 @@ static long xvs_init(void)
 	if(xvsBase == NULL) {
 		libs_xvs_init();
 		if(xvsBase == NULL) {
-			open_error_req("xvs.library v33 could not be opened, virus scanning will be disabled.\n", "_OK");
+			open_error_req( locale_get_string( MSG_XVSLIBRARYV33COULDNOTBEOPENEDVIRUSSCANNINGWILLBEDISABLED ) ,  locale_get_string( MSG_OK ) );
 			return -1;
 		}
 	
 		if(xvsSelfTest() == FALSE) {
-			open_error_req("xvs.library Failed self-test,\nvirus scanning will be disabled.", "_OK");
+			open_error_req( locale_get_string( MSG_XVSLIBRARYFAILEDSELFTESTIRUSSCANNINGWILLBEDISABLED ) ,  locale_get_string( MSG_OK ) );
 			return -3;
 		}
 	}
@@ -51,7 +52,7 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len)
 	xvsfi = xvsAllocObject(XVSOBJ_FILEINFO);
 	if(xvsfi == NULL) {
 		FreeVec(buf);
-		open_error_req("Out of memory scanning file", "_OK");
+		open_error_req( locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ) ,  locale_get_string( MSG_OK ) );
 		return -2;
 	}
 
@@ -67,15 +68,15 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len)
 			BOOL deleted = DeleteFile(file);
 
 			if(deleted) {
-				sprintf(message, "Virus found in %s\nDetection name: %s\n\nFile has been deleted.", file, xvsfi->xvsfi_Name);
+				sprintf(message,  locale_get_string( MSG_VIRUSFOUNDINETECTIONNAMENFILEHASBEENDELETED ) , file, xvsfi->xvsfi_Name);
 			} else {
-				sprintf(message, "Virus found in %s\nDetection name: %s\n\nFile could not be deleted.", file, xvsfi->xvsfi_Name);
+				sprintf(message,  locale_get_string( MSG_VIRUSFOUNDINETECTIONNAMENFILECOULDNOTBEDELETED ) , file, xvsfi->xvsfi_Name);
 			}
 		} else {
-			sprintf(message, "Virus found\nDetection name: %s\n", xvsfi->xvsfi_Name);
+			sprintf(message,  locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , xvsfi->xvsfi_Name);
 		}
 
-		open_error_req(message, "_OK");
+		open_error_req(message,  locale_get_string( MSG_OK ) );
 	}
 
 	xvsFreeObject(xvsfi);
@@ -96,7 +97,7 @@ long xvs_scan(char *file, ULONG len)
 
 	buffer = AllocVec(len, MEMF_ANY);
 	if(buffer == NULL) {
-		open_error_req("Out of memory scanning file", "_OK");
+		open_error_req( locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ) ,  locale_get_string( MSG_OK ) );
 		return -2;
 	}
 

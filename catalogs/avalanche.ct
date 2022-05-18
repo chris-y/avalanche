@@ -1,0 +1,193 @@
+## version $VER: avalanche.catalog 1.0 (15.05.2022)
+## codeset 0
+## language english
+;
+MSG_EXTRACT
+E_xtract
+; E_xtract
+;
+MSG_PROJECT
+Project
+; Project
+;
+MSG_OPEN
+Open...
+; Open...
+;
+MSG_ARCHIVEINFO
+Archive Info...
+; Archive Info...
+;
+MSG_ABOUT
+About...
+; About...
+;
+MSG_QUIT
+Quit...
+; Quit...
+;
+MSG_EDIT
+Edit
+; Edit
+;
+MSG_SELECTALL
+Select all
+; Select all
+;
+MSG_CLEARSELECTION
+Clear selection
+; Clear selection
+;
+MSG_INVERTSELECTION
+Invert selection
+; Invert selection
+;
+MSG_SETTINGS
+Settings
+; Settings
+;
+MSG_SCANFORVIRUSES
+Scan for viruses
+; Scan for viruses
+;
+MSG_HIERARCHICALBROWSEREXPERIMENTAL
+Hierarchical browser (experimental)
+; Hierarchical browser (experimental)
+;
+MSG_SAVEWINDOWPOSITION
+Save window position
+; Save window position
+;
+MSG_CONFIRMQUIT
+Confirm quit
+; Confirm quit
+;
+MSG_SAVESETTINGS
+Save settings
+; Save settings
+;
+MSG_STOP
+_Stop
+; _Stop
+;
+MSG_NAME
+Name
+; Name
+;
+MSG_SIZE
+Size
+; Size
+;
+MSG_DATE
+Date
+; Date
+;
+MSG_SELECTARCHIVE
+Select Archive
+; Select Archive
+;
+MSG_ARCHIVE
+_Archive
+; _Archive
+;
+MSG_SELECTDESTINATION
+Select Destination
+; Select Destination
+;
+MSG_DESTINATION
+_Destination
+; _Destination
+;
+MSG_ALREADYEXISTSOVERWRITE
+%s already exists, overwrite?
+; %s already exists, overwrite?
+;
+MSG_FILEARCHIVE
+file archive
+; file archive
+;
+MSG_DISKARCHIVE
+disk archive
+; disk archive
+;
+MSG_DISKIMAGE
+disk image
+; disk image
+;
+MSG_UNKNOWN
+unknown
+; unknown
+;
+MSG_OK
+_OK
+; _OK
+;
+MSG_CRUNCHED
+%s crunched
+; %s crunched
+;
+MSG_ERRORDECRUNCHING
+Error decrunching
+; Error decrunching
+;
+MSG_XVSLIBRARYV33COULDNOTBEOPENEDVIRUSSCANNINGWILLBEDISABLED
+xvs.library v33 could not be opened, virus scanning will be disabled.\n
+; xvs.library v33 could not be opened, virus scanning will be disabled.\n
+;
+MSG_XVSLIBRARYFAILEDSELFTESTIRUSSCANNINGWILLBEDISABLED
+xvs.library Failed self-test,\nvirus scanning will be disabled.
+; xvs.library Failed self-test,\nvirus scanning will be disabled.
+;
+MSG_OUTOFMEMORYSCANNINGFILE
+Out of memory scanning file
+; Out of memory scanning file
+;
+MSG_VIRUSFOUNDINETECTIONNAMENFILEHASBEENDELETED
+Virus found in %s\nDetection name: %s\n\nFile has been deleted.
+; Virus found in %s\nDetection name: %s\n\nFile has been deleted.
+;
+MSG_VIRUSFOUNDINETECTIONNAMENFILECOULDNOTBEDELETED
+Virus found in %s\nDetection name: %s\n\nFile could not be deleted.
+; Virus found in %s\nDetection name: %s\n\nFile could not be deleted.
+;
+MSG_VIRUSFOUNDETECTIONNAME
+Virus found\nDetection name: %s\n
+; Virus found\nDetection name: %s\n
+;
+MSG_GPL
+This program is free software; you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation; either version 2 of the \
+License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or \
+FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.
+; This program is free software; you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation; either version 2 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.
+;
+MSG_UNABLETOOPENREQUESTERTOSHOWERRORS
+Unable to open requester to show error;\n%s [%s]\n
+; Unable to open requester to show error;\n%s [%s]\n
+;
+MSG_UNABLETOOPENXADMASTERLIBRARY
+Unable to open xadmaster.library
+; Unable to open xadmaster.library
+;
+MSG_AREYOUSUREYOUWANTTOEXIT
+Are you sure you want to exit?
+; Are you sure you want to exit?
+;
+MSG_YESNO
+_Yes|_No
+; _Yes|_No
+;
+MSG_YESYESTOALLNONOTOALLABORT
+_Yes|Yes to _all|_No|N_o to all|Abort
+; _Yes|Yes to _all|_No|N_o to all|Abort
+;
+MSG_ARCHIVEISENCRYPTEDPLEASEENTERPASSWORD
+Archive is encrypted, please enter password.
+; Archive is encrypted, please enter password.
+;
+MSG_OKCANCEL
+_OK|_Cancel
+; _OK|_Cancel
+;
+MSG_UNABLETOOPENREQUESTERTOASKPASSWORD
+Unable to open requester to ask password\n
+; Unable to open requester to ask password\n

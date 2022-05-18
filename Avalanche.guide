@@ -8,6 +8,7 @@
 @{"Installation " link install}
 @{"Configuration" link config}
 @{"Usage        " link usage}
+@{"Translations " link locale}
 @{"Changelog    " link history}
 @{"Contact      " link contact}
 @endnode
@@ -94,6 +95,7 @@ Files will not be further extracted in order to be scanned, so infected files th
   NB: This has required the previous "single click to select/deselect" to be disabled,
       as the functionality was incompatible.
   * Add option to enable/disable the quit confirmation requester
+* Localisaton support
 * Fix loading/saving of virusscan pref on OS4
 * Fix unchecking of files in archive
 
@@ -131,6 +133,12 @@ Files will not be further extracted in order to be scanned, so infected files th
 
 @{u}1.1 (11.01.2022)@{uu}
 * First release
+@endnode
+
+@node locale "Translations"
+Avalanche supports localisation using AmigaOS catalog files.
+The built-in language is English.  This is the only official translation.
+Catalogs for other languages may be created by using the translation files in "catalogs", and can be distributed separately.
 @endnode
 
 @node contact "Contact"
