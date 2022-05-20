@@ -150,6 +150,7 @@ static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
 static struct List lblist;
 static struct Locale *locale = NULL;
 static ULONG current_item = 0;
+static ULONG total_items = 0;
 
 static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_LAST];
@@ -416,13 +417,27 @@ int sort_array(const void *a, const void *b)
 	return sort(c->name, d->name);
 }
 
+void fuelgauge_update(ULONG size, ULONG total_size)
+{
+				SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
+					FUELGAUGE_Max, total_size,
+					FUELGAUGE_Level, size,
+					TAG_DONE);
+}
+
 static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata)
 {
 	static struct arc_entries **arc_array = NULL;
 
 	if(gadgets[GID_PROGRESS]) {
+		char msg[20];
+		sprintf(msg, "%d/%d", 0, total);
+		total_items = total;
+
 		SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
-			FUELGAUGE_Max, total,
+			GA_Text, msg,
+			FUELGAUGE_Percent, FALSE,
+			FUELGAUGE_Justification, FGJ_CENTER,
 			FUELGAUGE_Level, 0,
 			TAG_DONE);
 	}
@@ -438,8 +453,14 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 	if(item == 0) {
 		current_item = 0;
 		if(gadgets[GID_PROGRESS]) {
+			char msg[20];
+			sprintf(msg, "%d/%d", 0, total);
+			total_items = total;
+
 			SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
-				FUELGAUGE_Max, total,
+				GA_Text, msg,
+				FUELGAUGE_Percent, FALSE,
+				FUELGAUGE_Justification, FGJ_CENTER,
 				FUELGAUGE_Level, 0,
 				TAG_DONE);
 		}
@@ -479,6 +500,7 @@ static void *getlbnode(struct Node *node)
 {
 	void *userdata = NULL;
 	ULONG checked = FALSE;
+	char msg[20];
 
 	GetListBrowserNodeAttrs(node,
 			LBNA_Checked, &checked,
@@ -486,8 +508,13 @@ static void *getlbnode(struct Node *node)
 		TAG_DONE);
 
 	current_item++;
+	sprintf(msg, "%d/%d", current_item, total_items);
+
 	SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
-			FUELGAUGE_Level, current_item,
+			GA_Text, msg,
+			FUELGAUGE_Percent, FALSE,
+			FUELGAUGE_Justification, FGJ_CENTER,
+			FUELGAUGE_Level, 0,
 			TAG_DONE);
 
 	if(checked == FALSE) return NULL;

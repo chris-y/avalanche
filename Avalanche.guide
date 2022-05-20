@@ -96,6 +96,7 @@ Files will not be further extracted in order to be scanned, so infected files th
       as the functionality was incompatible.
   * Add option to enable/disable the quit confirmation requester
 * Localisaton support
+* Improved progress display - now shows current file progress and total
 * Fix loading/saving of virusscan pref on OS4
 * Fix unchecking of files in archive
 

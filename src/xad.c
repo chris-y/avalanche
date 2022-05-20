@@ -157,6 +157,11 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 				show_error(xpi->xpi_Error);
 		break;
 
+		case XADPMODE_PROGRESS:
+			if(xpi->xpi_FileInfo)
+				fuelgauge_update(xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size);
+		break;
+
 		default:
 			//printf("%d\n", xpi->xpi_Mode);
 		break;
