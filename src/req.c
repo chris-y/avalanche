@@ -84,7 +84,7 @@ void show_error(long code)
 	char message[100];
 
 	if(code == -1) {
-		sprintf(message,  locale_get_string( MSG_UNABLETOOPENXADMASTERLIBRARY ) );
+		sprintf(message,  locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xadmaster.library", 12 );
 	} else {
 		sprintf(message, "%s", xad_error(code));
 	}

@@ -70,23 +70,24 @@
 #define MSG_OK 29
 #define MSG_CRUNCHED 30
 #define MSG_ERRORDECRUNCHING 31
-#define MSG_XVSLIBRARYV33COULDNOTBEOPENEDVIRUSSCANNINGWILLBEDISABLED 32
-#define MSG_XVSLIBRARYFAILEDSELFTESTIRUSSCANNINGWILLBEDISABLED 33
+#define MSG_VIRUSSCANNINGWILLBEDISABLED 32
+#define MSG_XVSLIBRARYFAILEDSELFTEST 33
 #define MSG_OUTOFMEMORYSCANNINGFILE 34
-#define MSG_VIRUSFOUNDINETECTIONNAMENFILEHASBEENDELETED 35
-#define MSG_VIRUSFOUNDINETECTIONNAMENFILECOULDNOTBEDELETED 36
+#define MSG_FILEHASBEENDELETED 35
+#define MSG_FILECOULDNOTBEDELETED 36
 #define MSG_VIRUSFOUNDETECTIONNAME 37
 #define MSG_GPL 38
 #define MSG_UNABLETOOPENREQUESTERTOSHOWERRORS 39
-#define MSG_UNABLETOOPENXADMASTERLIBRARY 40
+#define MSG_UNABLETOOPENLIBRARY 40
 #define MSG_AREYOUSUREYOUWANTTOEXIT 41
 #define MSG_YESNO 42
 #define MSG_YESYESTOALLNONOTOALLABORT 43
 #define MSG_ARCHIVEISENCRYPTEDPLEASEENTERPASSWORD 44
 #define MSG_OKCANCEL 45
 #define MSG_UNABLETOOPENREQUESTERTOASKPASSWORD 46
+#define MSG_INTERFACE 47
 
-#define CATCOMP_LASTID 46
+#define CATCOMP_LASTID 47
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -128,21 +129,22 @@
 #define MSG_OK_STR "_OK"
 #define MSG_CRUNCHED_STR "%s crunched"
 #define MSG_ERRORDECRUNCHING_STR "Error decrunching"
-#define MSG_XVSLIBRARYV33COULDNOTBEOPENEDVIRUSSCANNINGWILLBEDISABLED_STR "xvs.library v33 could not be opened, virus scanning will be disabled.\n"
-#define MSG_XVSLIBRARYFAILEDSELFTESTIRUSSCANNINGWILLBEDISABLED_STR "xvs.library Failed self-test,\nvirus scanning will be disabled."
+#define MSG_VIRUSSCANNINGWILLBEDISABLED_STR "Virus scanning will be disabled.\n"
+#define MSG_XVSLIBRARYFAILEDSELFTEST_STR "xvs.library failed self-test,"
 #define MSG_OUTOFMEMORYSCANNINGFILE_STR "Out of memory scanning file"
-#define MSG_VIRUSFOUNDINETECTIONNAMENFILEHASBEENDELETED_STR "Virus found in %s\nDetection name: %s\n\nFile has been deleted."
-#define MSG_VIRUSFOUNDINETECTIONNAMENFILECOULDNOTBEDELETED_STR "Virus found in %s\nDetection name: %s\n\nFile could not be deleted."
-#define MSG_VIRUSFOUNDETECTIONNAME_STR "Virus found\nDetection name: %s\n"
+#define MSG_FILEHASBEENDELETED_STR "File has been deleted."
+#define MSG_FILECOULDNOTBEDELETED_STR "File could not be deleted."
+#define MSG_VIRUSFOUNDETECTIONNAME_STR "Virus found in %s\nDetection name: %s\n\n"
 #define MSG_GPL_STR "This program is free software; you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation; either version 2 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details."
 #define MSG_UNABLETOOPENREQUESTERTOSHOWERRORS_STR "Unable to open requester to show error;\n%s [%s]\n"
-#define MSG_UNABLETOOPENXADMASTERLIBRARY_STR "Unable to open xadmaster.library"
+#define MSG_UNABLETOOPENLIBRARY_STR "Unable to open %s v%d\n"
 #define MSG_AREYOUSUREYOUWANTTOEXIT_STR "Are you sure you want to exit?"
 #define MSG_YESNO_STR "_Yes|_No"
 #define MSG_YESYESTOALLNONOTOALLABORT_STR "_Yes|Yes to _all|_No|N_o to all|Abort"
 #define MSG_ARCHIVEISENCRYPTEDPLEASEENTERPASSWORD_STR "Archive is encrypted, please enter password."
 #define MSG_OKCANCEL_STR "_OK|_Cancel"
 #define MSG_UNABLETOOPENREQUESTERTOASKPASSWORD_STR "Unable to open requester to ask password\n"
+#define MSG_INTERFACE_STR "(interface)"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -218,24 +220,24 @@ const char CatCompBlock[] =
     MSG_CRUNCHED_STR "\x00"
     "\x00\x00\x00\x1F\x00\x12"
     MSG_ERRORDECRUNCHING_STR "\x00"
-    "\x00\x00\x00\x20\x00\x48"
-    MSG_XVSLIBRARYV33COULDNOTBEOPENEDVIRUSSCANNINGWILLBEDISABLED_STR "\x00\x00"
-    "\x00\x00\x00\x21\x00\x40"
-    MSG_XVSLIBRARYFAILEDSELFTESTIRUSSCANNINGWILLBEDISABLED_STR "\x00\x00"
+    "\x00\x00\x00\x20\x00\x22"
+    MSG_VIRUSSCANNINGWILLBEDISABLED_STR "\x00"
+    "\x00\x00\x00\x21\x00\x1E"
+    MSG_XVSLIBRARYFAILEDSELFTEST_STR "\x00"
     "\x00\x00\x00\x22\x00\x1C"
     MSG_OUTOFMEMORYSCANNINGFILE_STR "\x00"
-    "\x00\x00\x00\x23\x00\x3E"
-    MSG_VIRUSFOUNDINETECTIONNAMENFILEHASBEENDELETED_STR "\x00\x00"
-    "\x00\x00\x00\x24\x00\x42"
-    MSG_VIRUSFOUNDINETECTIONNAMENFILECOULDNOTBEDELETED_STR "\x00\x00"
-    "\x00\x00\x00\x25\x00\x20"
-    MSG_VIRUSFOUNDETECTIONNAME_STR "\x00"
+    "\x00\x00\x00\x23\x00\x18"
+    MSG_FILEHASBEENDELETED_STR "\x00\x00"
+    "\x00\x00\x00\x24\x00\x1C"
+    MSG_FILECOULDNOTBEDELETED_STR "\x00\x00"
+    "\x00\x00\x00\x25\x00\x28"
+    MSG_VIRUSFOUNDETECTIONNAME_STR "\x00\x00"
     "\x00\x00\x00\x26\x01\xDC"
     MSG_GPL_STR "\x00\x00"
     "\x00\x00\x00\x27\x00\x32"
     MSG_UNABLETOOPENREQUESTERTOSHOWERRORS_STR "\x00\x00"
-    "\x00\x00\x00\x28\x00\x22"
-    MSG_UNABLETOOPENXADMASTERLIBRARY_STR "\x00\x00"
+    "\x00\x00\x00\x28\x00\x18"
+    MSG_UNABLETOOPENLIBRARY_STR "\x00\x00"
     "\x00\x00\x00\x29\x00\x20"
     MSG_AREYOUSUREYOUWANTTOEXIT_STR "\x00\x00"
     "\x00\x00\x00\x2A\x00\x0A"
@@ -248,6 +250,8 @@ const char CatCompBlock[] =
     MSG_OKCANCEL_STR "\x00"
     "\x00\x00\x00\x2E\x00\x2A"
     MSG_UNABLETOOPENREQUESTERTOASKPASSWORD_STR "\x00"
+    "\x00\x00\x00\x2F\x00\x0C"
+    MSG_INTERFACE_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

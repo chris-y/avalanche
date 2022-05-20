@@ -26,15 +26,26 @@
 
 static long xvs_init(void)
 {
+	char *msg;
+
 	if(xvsBase == NULL) {
 		libs_xvs_init();
 		if(xvsBase == NULL) {
-			open_error_req( locale_get_string( MSG_XVSLIBRARYV33COULDNOTBEOPENEDVIRUSSCANNINGWILLBEDISABLED ) ,  locale_get_string( MSG_OK ) );
+			if(msg = AllocVec(strlen(locale_get_string( MSG_UNABLETOOPENLIBRARY )) + strlen(locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED )) + strlen("xvs.library") + 4, MEMF_CLEAR)) {
+				sprintf(msg, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xvs.library", 33);
+				strcat(msg, locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ));
+				open_error_req(msg, locale_get_string( MSG_OK ) );
+				FreeVec(msg);
+			}
 			return -1;
 		}
 	
 		if(xvsSelfTest() == FALSE) {
-			open_error_req( locale_get_string( MSG_XVSLIBRARYFAILEDSELFTESTIRUSSCANNINGWILLBEDISABLED ) ,  locale_get_string( MSG_OK ) );
+			if(msg = AllocVec(strlen(locale_get_string( MSG_XVSLIBRARYFAILEDSELFTEST )) + strlen(locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED )) + 1, MEMF_CLEAR)) {
+				sprintf(msg, "%s\n%s", locale_get_string( MSG_XVSLIBRARYFAILEDSELFTEST ), locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ));
+				open_error_req(msg, locale_get_string( MSG_OK ) );
+				FreeVec(msg);
+			}
 			return -3;
 		}
 	}
@@ -68,12 +79,14 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len)
 			BOOL deleted = DeleteFile(file);
 
 			if(deleted) {
-				sprintf(message,  locale_get_string( MSG_VIRUSFOUNDINETECTIONNAMENFILEHASBEENDELETED ) , file, xvsfi->xvsfi_Name);
+				sprintf(message,  locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
+				strcat(message, locale_get_string(MSG_FILEHASBEENDELETED));
 			} else {
-				sprintf(message,  locale_get_string( MSG_VIRUSFOUNDINETECTIONNAMENFILECOULDNOTBEDELETED ) , file, xvsfi->xvsfi_Name);
+				sprintf(message,  locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
+				strcat(message, locale_get_string(MSG_FILECOULDNOTBEDELETED));
 			}
 		} else {
-			sprintf(message,  locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , xvsfi->xvsfi_Name);
+			sprintf(message,  locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , "----", xvsfi->xvsfi_Name);
 		}
 
 		open_error_req(message,  locale_get_string( MSG_OK ) );

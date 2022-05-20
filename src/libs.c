@@ -31,6 +31,7 @@
 #include <stdio.h>
 
 #include "libs.h"
+#include "locale.h"
 
 #ifdef __amigaos4__
 #define ALIB_OPEN(LIB, LIBVER, PREFIX)	\
@@ -38,11 +39,12 @@
 		I##PREFIX = (struct PREFIX##IFace *)GetInterface((struct Library *)PREFIX##Base, "main", 1, NULL);	\
 		if(I##PREFIX == NULL) {	\
 			ALIB_CLOSE(PREFIX)	\
-			printf("Failed to open %s v%d (interface)\n", LIB, LIBVER); \
+			printf(locale_get_string(MSG_INTERFACE));	\
+			printf(locale_get_string(MSG_UNABLETOOPENLIBRARY), LIB, LIBVER); \
 			return FALSE;	\
 		}	\
 	} else {	\
-		printf("Failed to open %s v%d\n", LIB, LIBVER); \
+		printf(locale_get_string(MSG_UNABLETOOPENLIBRARY), LIB, LIBVER); \
 		return FALSE;	\
 	}
 
@@ -61,13 +63,14 @@
 		if(NEEDINTERFACE == true) {	\
 			I##PREFIX = (struct PREFIX##IFace *)GetInterface((struct Library *)PREFIX##Base, "main", 1, NULL);	\
 			if(I##PREFIX == NULL) {	\
-				printf("Failed to open %s v%d (interface)\n", CLASS, CLASSVER); \
+				printf(locale_get_string(MSG_INTERFACE));	\
+				printf(locale_get_string(MSG_UNABLETOOPENLIBRARY), CLASS, CLASSVER); \
 				return FALSE;	\
 			}	\
 		}	\
 	}	\
 	if(PREFIX##Class == NULL) {	\
-		printf("Failed to open %s v%d\n", CLASS, CLASSVER); \
+		printf(locale_get_string(MSG_UNABLETOOPENLIBRARY), CLASS, CLASSVER); \
 		return FALSE;	\
 	}
 
@@ -86,7 +89,7 @@
 
 #define ALIB_OPEN(LIB, LIBVER, PREFIX)	\
 	if((!(PREFIX##Base = (struct PREFIX##Base *)OpenLibrary(LIB, LIBVER)))) {	\
-		printf("Failed to open %s v%d\n", LIB, LIBVER); \
+		printf(locale_get_string(MSG_UNABLETOOPENLIBRARY), LIB, LIBVER); \
 			return FALSE;	\
 	}
 
@@ -101,7 +104,7 @@
 		PREFIX##Class = CLASSGET##_GetClass();	\
 	}	\
 	if(PREFIX##Class == NULL) {	\
-		printf("Failed to open %s v%d\n", CLASS, CLASSVER); \
+		printf(locale_get_string(MSG_UNABLETOOPENLIBRARY), CLASS, CLASSVER); \
 		return FALSE;	\
 	}
 
