@@ -67,13 +67,7 @@ BOOL Locale_Open( STRPTR catname, ULONG version, ULONG revision)
 #endif
 			if( (locale_locale = OpenLocale(NULL)) ) {
 				if( (locale_catalog = OpenCatalogA(locale_locale, catname, TAG_DONE)) ) {
-					if(    locale_catalog->cat_Version  == version  &&
-						   locale_catalog->cat_Revision == revision ) {
-	                    return(TRUE);
-
-	                }
-					CloseCatalog(locale_catalog);
-					locale_catalog = NULL;
+                    return(TRUE);
 	            }
 	            CloseLocale(locale_locale);
 	            locale_locale = NULL;
