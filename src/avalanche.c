@@ -717,7 +717,8 @@ static long extract(char *newdest, struct Node *node)
 				if(node == NULL) {
 					ret = xad_extract(archive, newdest, &lblist, getlbnode, vscan);
 				} else {
-					ret = xad_extract_file(archive, newdest, node, getlbnode, vscan);
+					ULONG pud = 0;
+					ret = xad_extract_file(archive, newdest, node, getlbnode, vscan, &pud);
 				}
 			break;
 			case ARC_XFD:

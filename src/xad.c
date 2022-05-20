@@ -330,7 +330,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	return err;
 }
 
-long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud)
 {
 	long err = 0;
 	char destfile[1024];
@@ -338,12 +338,11 @@ long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)
 	struct xadDiskInfo *di = NULL;
 	struct DateStamp ds;
 	char *fn = NULL;
-	ULONG pud = 0;
 
 	struct Hook progress_hook;
 	progress_hook.h_Entry = xad_progress;
 	progress_hook.h_SubEntry = NULL;
-	progress_hook.h_Data = &pud;
+	progress_hook.h_Data = pud;
 
 	if(arctype == XDISK) {
 		di = (struct xadDiskInfo *)getnode(node);
@@ -401,10 +400,10 @@ long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)
 						break;
 				}
 
-				if(pud == PUD_ABORT) {
+				if(*pud == PUD_ABORT) {
 					if(pw) FreeVec(pw);
 					pw = NULL;
-					return 0;
+					return XADERR_BREAK;
 				}
 
 				if(err == XADERR_OK) {
@@ -444,10 +443,11 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 {
 	long err = XADERR_OK;
 	struct Node *node;
+	ULONG pud = 0;
 
 	if(ai) {
 		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-			err = xad_extract_file(file, dest, node, getnode, scan);
+			err = xad_extract_file(file, dest, node, getnode, scan, &pud);
 			if(err != XADERR_OK) return err;
 		}
 	}
