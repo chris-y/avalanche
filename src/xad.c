@@ -16,6 +16,7 @@
 #include <proto/exec.h>
 #include <proto/xadmaster.h>
 
+#include <stdio.h>
 #include <string.h>
 
 #include "avalanche.h"
@@ -161,7 +162,8 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 			if(xpi->xpi_FileInfo) {
 				fuelgauge_update(xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size);
 			} else if(xpi->xpi_DiskInfo) {
-				fuelgauge_update(xpi->xpi_CurrentSize, xpi->xpi_DiskInfo->xdi_TotalSectors * xpi->xpi_DiskInfo->xdi_SectorSize);
+				fuelgauge_update(xpi->xpi_CurrentSize,
+					xpi->xpi_DiskInfo->xdi_TotalSectors * xpi->xpi_DiskInfo->xdi_SectorSize);
 			}
 		break;
 
@@ -301,12 +303,28 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 			} else {
 				arctype = XFILE;
 			}
-		} else {
+		}
+
+		if((arctype == XNONE) || (arctype == XDISK)) {
 			xad_free();
 			ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
-			if((err = xadGetDiskInfo(ai,
-						XAD_INFILENAME, file,
-						TAG_DONE)) == 0) {
+
+			if(arctype == XNONE) {
+				err = xadGetDiskInfo(ai,
+					XAD_INFILENAME, file,
+					TAG_DONE);
+			} else {
+				struct TagItem ti[2];
+				ti[0].ti_Tag = XAD_INFILENAME;
+				ti[0].ti_Data = (ULONG)file;
+				ti[1].ti_Tag = TAG_DONE;
+
+				err = xadGetDiskInfo(ai,
+					XAD_INDISKARCHIVE, &ti,
+					TAG_DONE);
+			}
+
+			if (err == 0) {
 				
 				/* Count entries (files) */
 				fi = ai->xai_FileInfo;
