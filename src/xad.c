@@ -158,8 +158,11 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 		break;
 
 		case XADPMODE_PROGRESS:
-			if(xpi->xpi_FileInfo)
+			if(xpi->xpi_FileInfo) {
 				fuelgauge_update(xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size);
+			} else if(xpi->xpi_DiskInfo) {
+				fuelgauge_update(xpi->xpi_CurrentSize, xpi->xpi_DiskInfo->xdi_TotalSectors * xpi->xpi_DiskInfo->xdi_SectorSize);
+			}
 		break;
 
 		default:
