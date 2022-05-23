@@ -288,7 +288,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 			}
 
 			if(err == 0) {
-				arctype = DISKFILE;
+				arctype = XDISKFILE;
 				xad_free();
 				ai = dai;
 			} else {
