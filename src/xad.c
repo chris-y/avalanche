@@ -247,6 +247,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	long err = 0;
 	struct xadFileInfo *fi;
 	struct xadDiskInfo *di;
+	struct xadArchiveInfo *dai = NULL;
 	ULONG total = 0;
 	ULONG i = 0;
 	ULONG size = 0;
@@ -263,7 +264,57 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 		if((err = xadGetInfo(ai,
 				XAD_INFILENAME, file,
 				TAG_DONE)) == 0) {
-				
+			if(ai->xai_DiskInfo) arctype = XDISK;
+			if(ai->xai_FileInfo) arctype = XFILE; /* We only support one of file/disk so file preferred */
+
+		}
+
+		if((arctype == XNONE) || (arctype == XDISK)) {
+			dai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
+
+			if(arctype == XNONE) {
+				err = xadGetDiskInfo(dai,
+					XAD_INFILENAME, file,
+					TAG_DONE);
+			} else {
+				struct TagItem ti[2];
+				ti[0].ti_Tag = XAD_INFILENAME;
+				ti[0].ti_Data = (ULONG)file;
+				ti[1].ti_Tag = TAG_DONE;
+
+				err = xadGetDiskInfo(dai,
+					XAD_INDISKARCHIVE, &ti,
+					TAG_DONE);
+			}
+
+			if(err == 0) {
+				arctype = DISKFILE;
+				xad_free();
+				ai = dai;
+			} else {
+				xad_free_ai(dai);
+			}
+		}
+		
+		if(arctype == XDISK) {
+			/* Count entries (disks) */
+			/* We only support archives which have disks or files, not mixed */
+			di = ai->xai_DiskInfo;
+			while(di) {
+				total++;
+				di = di->xdi_Next;
+			}
+					
+			/* Add to list */
+			di = ai->xai_DiskInfo;
+			while(di) {
+				size = di->xdi_SectorSize * di->xdi_TotalSectors;
+				addnode("disk.img", &size, 0, i, total, di);
+				i++;
+				di = di->xdi_Next;
+			}
+
+		} else if (arctype != XNONE) {
 			/* Count entries (files) */
 			fi = ai->xai_FileInfo;
 			while(fi) {
@@ -278,72 +329,6 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi);
 				i++;
 				fi = fi->xfi_Next;
-			}
-
-			if(total == 0) {
-				/* Count entries (disks) */
-				/* We only support archives which have disks or files, not mixed */
-				di = ai->xai_DiskInfo;
-				while(di) {
-					total++;
-					di = di->xdi_Next;
-				}
-					
-				/* Add to list */
-				di = ai->xai_DiskInfo;
-				while(di) {
-					size = di->xdi_SectorSize * di->xdi_TotalSectors;
-					addnode("disk.img", &size,
-						0, i, total, di);
-					i++;
-					di = di->xdi_Next;
-				}
-
-				arctype = XDISK;
-			} else {
-				arctype = XFILE;
-			}
-		}
-
-		if((arctype == XNONE) || (arctype == XDISK)) {
-			xad_free();
-			ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
-
-			if(arctype == XNONE) {
-				err = xadGetDiskInfo(ai,
-					XAD_INFILENAME, file,
-					TAG_DONE);
-			} else {
-				struct TagItem ti[2];
-				ti[0].ti_Tag = XAD_INFILENAME;
-				ti[0].ti_Data = (ULONG)file;
-				ti[1].ti_Tag = TAG_DONE;
-
-				err = xadGetDiskInfo(ai,
-					XAD_INDISKARCHIVE, &ti,
-					TAG_DONE);
-			}
-
-			if (err == 0) {
-				
-				/* Count entries (files) */
-				fi = ai->xai_FileInfo;
-				while(fi) {
-					total++;
-					fi = fi->xfi_Next;
-				}
-					
-				/* Add to list */
-				fi = ai->xai_FileInfo;
-				while(fi) {
-					addnode(fi->xfi_FileName, &fi->xfi_Size,
-						(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi);
-					i++;
-					fi = fi->xfi_Next;
-				}
-
-				if(total != 0) arctype = XDISKFILE;
-
 			}
 		}
 	}
