@@ -86,8 +86,9 @@
 #define MSG_OKCANCEL 45
 #define MSG_UNABLETOOPENREQUESTERTOASKPASSWORD 46
 #define MSG_INTERFACE 47
+#define MSG_IGNOREFILESYSTEMS 48
 
-#define CATCOMP_LASTID 47
+#define CATCOMP_LASTID 48
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -145,6 +146,7 @@
 #define MSG_OKCANCEL_STR "_OK|_Cancel"
 #define MSG_UNABLETOOPENREQUESTERTOASKPASSWORD_STR "Unable to open requester to ask password\n"
 #define MSG_INTERFACE_STR "(interface)"
+#define MSG_IGNOREFILESYSTEMS_STR "Ignore filesystems"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -252,6 +254,8 @@ const char CatCompBlock[] =
     MSG_UNABLETOOPENREQUESTERTOASKPASSWORD_STR "\x00"
     "\x00\x00\x00\x2F\x00\x0C"
     MSG_INTERFACE_STR "\x00"
+    "\x00\x00\x00\x30\x00\x14"
+    MSG_IGNOREFILESYSTEMS_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

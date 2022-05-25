@@ -116,8 +116,9 @@ struct NewMenu menu[] = {
 	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1 HBrowser
 	{NM_ITEM,   NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2 Win posn
 	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 3 Confirm quit
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 4
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 5 Save settings
+	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 4 Ignore FS
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 5
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 6 Save settings
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -139,6 +140,7 @@ static BOOL h_browser = FALSE;
 static BOOL virus_scan = FALSE;
 static BOOL debug = FALSE;
 static BOOL confirmquit = FALSE;
+static BOOL ignorefs = FALSE;
 
 static ULONG win_x = 0;
 static ULONG win_y = 0;
@@ -193,7 +195,7 @@ void savesettings(Object *win)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[11];
+	UBYTE *newtooltypes[12];
 	char tt_dest[100];
 	char tt_winx[15];
 	char tt_winy[15];
@@ -277,7 +279,13 @@ void savesettings(Object *win)
 			newtooltypes[9] = "(CONFIRMQUIT)";
 		}
 
-		newtooltypes[10] = NULL;
+		if(ignorefs) {
+			newtooltypes[10] = "IGNOREFS";
+		} else {
+			newtooltypes[10] = "(IGNOREFS)";
+		}
+
+		newtooltypes[11] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(progname, dobj, NULL);
@@ -559,7 +567,7 @@ static void open_archive_req(BOOL refresh_only)
 
 	FreeListBrowserList(&lblist);
 
-	ret = xad_info(archive, addlbnode_cb);
+	ret = xad_info(archive, !ignorefs, addlbnode_cb);
 	if(ret != 0) { /* if xad failed try xfd */
 		retxfd = xfd_info(archive, addlbnodexfd_cb);
 		if(retxfd != 0) show_error(ret);
@@ -828,7 +836,8 @@ static void gui(void)
 	if(virus_scan) menu[12].nm_Flags |= CHECKED;
 	if(h_browser) menu[13].nm_Flags |= CHECKED;
 	if(save_win_posn) menu[14].nm_Flags |= CHECKED;
-	if(progname == NULL) menu[16].nm_Flags |= NM_ITEMDISABLED;
+	if(ignorefs) menu[15].nm_Flags |= CHECKED;
+	if(progname == NULL) menu[17].nm_Flags |= NM_ITEMDISABLED;
 
 	if(win_x && win_y) tag_default_position = TAG_IGNORE;
 
@@ -1134,8 +1143,13 @@ static void gui(void)
 													case 3: //save window position
 														confirmquit = !confirmquit;
 													break;
-												
-													case 5: //save settings
+
+													case 4: //ignore fs
+														ignorefs = !ignorefs;
+														open_archive_req(TRUE);
+													break;
+
+													case 6: //save settings
 														savesettings(objects[OID_MAIN]);
 													break;
 												}
@@ -1171,6 +1185,7 @@ static void gettooltypes(UBYTE **tooltypes)
 	if(FindToolType(tooltypes, "VIRUSSCAN")) virus_scan = TRUE;
 	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
 	if(FindToolType(tooltypes, "CONFIRMQUIT")) confirmquit = TRUE;
+	if(FindToolType(tooltypes, "IGNOREFS")) ignorefs = TRUE;
 	if(FindToolType(tooltypes, "DEBUG")) debug = TRUE;
 
 	progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
@@ -1197,7 +1212,8 @@ static void fill_menu_labels(void)
 	menu[13].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
 	menu[14].nm_Label = locale_get_string( MSG_SAVEWINDOWPOSITION );
 	menu[15].nm_Label = locale_get_string( MSG_CONFIRMQUIT );
-	menu[17].nm_Label = locale_get_string( MSG_SAVESETTINGS );
+	menu[16].nm_Label = locale_get_string( MSG_IGNOREFILESYSTEMS );
+	menu[18].nm_Label = locale_get_string( MSG_SAVESETTINGS );
 }
 
 /** Main program **/

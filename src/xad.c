@@ -242,7 +242,7 @@ BOOL xad_recog(char *file)
 	return TRUE;
 }
 
-long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
+long xad_info(char *file, BOOL fs, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
 {
 	long err = 0;
 	struct xadFileInfo *fi;
@@ -269,7 +269,7 @@ long xad_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 
 		}
 
-		if((arctype == XNONE) || (arctype == XDISK)) {
+		if(fs && ((arctype == XNONE) || (arctype == XDISK))) {
 			dai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
 			if(arctype == XNONE) {

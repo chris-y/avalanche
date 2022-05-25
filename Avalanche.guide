@@ -36,6 +36,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}DEST@{ub} Destination to extract the archive to. (default = RAM:)
 @{b}HBROWSER@{ub} Enable @{"hierarchical browser" link hbrowser} mode
 @{b}SAVEWINPOSN@{ub} Enables the "save window position" option
+@{b}IGNOREFS@{ub} Enables the "Ignore filesystems" option
 @{b}WINX@{ub}/@{b}WINY@{ub}/@{b}WINW@{ub}/@{b}WINH@{ub} Window position/width/height
 @{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
 @{b}VIRUSSCAN@{ub} Use xvs.library to @{"scan files" link vscan} after extraction
@@ -54,6 +55,8 @@ The state of checkboxes can be toggled by clicking on them, or by choosing "Sele
 Clicking Extract will extract the archive to the chosen destination.  If "scan for viruses" is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
 
 The browser can be put into a @{"hierarchical" link hbrowser} mode through the menu.  This is experimental - see the associated page for details.
+
+The option to "Ignore filesystems" is only useful for DMS and similar disk archives.  Normally Avalanche will check for a valid filesystem, and list the individual files.  With this option set, the raw disk image will be listed instead.
 
 @{b}Limitations@{ub}:
 * Mixed file/disk archives are not supported.
@@ -90,7 +93,7 @@ Files will not be further extracted in order to be scanned, so infected files th
 @node history "Changelog"
 @{U}1.6 (??.??.????)@{UU}
 * Add ability to extract disk archives to images
-* Add ability to extract files from disk images
+* Add ability to extract files from disk images/archives
 * Double-clicking now extracts the clicked file to a temporary location and opens it.
   NB: This has required the previous "single click to select/deselect" to be disabled,
       as the functionality was incompatible.

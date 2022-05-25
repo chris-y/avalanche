@@ -195,3 +195,7 @@ MSG_INTERFACE
 (interface)
 ; (interface)
 ;
+MSG_IGNOREFILESYSTEMS
+Ignore filesystems
+; Ignore filesystems
+;

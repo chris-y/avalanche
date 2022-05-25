@@ -151,3 +151,6 @@ Unable to open requester to ask password\n
 MSG_INTERFACE
 (interface)
 ;
+MSG_IGNOREFILESYSTEMS
+Ignore filesystems
+;
