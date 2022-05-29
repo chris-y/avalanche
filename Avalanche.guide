@@ -34,6 +34,7 @@ The install script additionally modifies the default tool for "archive" type fil
 Configuration is done via ToolTypes or through the equivalent options in the GUI.  Currently the following ToolTypes are recognised:
 
 @{b}DEST@{ub} Destination to extract the archive to. (default = RAM:)
+@{b}TMPDIR@{ub} Path for temporary directory (default = T:)
 @{b}HBROWSER@{ub} Enable @{"hierarchical browser" link hbrowser} mode
 @{b}SAVEWINPOSN@{ub} Enables the "save window position" option
 @{b}IGNOREFS@{ub} Enables the "Ignore filesystems" option

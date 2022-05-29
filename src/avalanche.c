@@ -195,8 +195,9 @@ void savesettings(Object *win)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[12];
+	UBYTE *newtooltypes[13];
 	char tt_dest[100];
+	char tt_tmp[100];
 	char tt_winx[15];
 	char tt_winy[15];
 	char tt_winh[15];
@@ -285,7 +286,14 @@ void savesettings(Object *win)
 			newtooltypes[10] = "(IGNOREFS)";
 		}
 
-		newtooltypes[11] = NULL;
+		if(tmpdir && (strcmp("T:", tmpdir) != 0)) {
+			strcpy(tt_tmp, "TMPDIR=");
+			newtooltypes[11] = strcat(tt_tmp, dest);
+		} else {
+			newtooltypes[11] = "(TMPDIR=T:)";
+		}
+
+		newtooltypes[12] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(progname, dobj, NULL);
@@ -1181,6 +1189,8 @@ static void gettooltypes(UBYTE **tooltypes)
 	dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
 	dest_needs_free = TRUE;
 
+	if(tmpdir) strncpy(tmpdir, ArgString(tooltypes, "TMPDIR", "T:"), 90);
+
 	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
 	if(FindToolType(tooltypes, "VIRUSSCAN")) virus_scan = TRUE;
 	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
@@ -1219,6 +1229,8 @@ static void fill_menu_labels(void)
 /** Main program **/
 int main(int argc, char **argv)
 {
+	char *tmp = NULL;
+
 	if(libs_open() == FALSE) {
 		return 10;
 	}
@@ -1258,6 +1270,8 @@ int main(int argc, char **argv)
 			}
         }
 	}
+
+	tmpdir = AllocVec(100, MEMF_CLEAR);
 	
 	UBYTE **tooltypes = ArgArrayInit(argc, argv);
 	gettooltypes(tooltypes);
@@ -1267,9 +1281,12 @@ int main(int argc, char **argv)
 
 	fill_menu_labels();
 
-	tmpdir = AllocVec(20, MEMF_CLEAR);
-	sprintf(tmpdir, "T:Avalanche.%x", GetUniqueID());
-	UnLock(CreateDir(tmpdir));
+	if(tmp = AllocVec(20, MEMF_CLEAR)) {
+		sprintf(tmp, "Avalanche.%x", GetUniqueID());
+		AddPart(tmpdir, tmp, 100);
+		UnLock(CreateDir(tmpdir));
+		FreeVec(tmp);
+	}
 
 	gui();
 
