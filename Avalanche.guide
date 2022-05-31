@@ -92,7 +92,7 @@ Files will not be further extracted in order to be scanned, so infected files th
 @endnode
 
 @node history "Changelog"
-@{U}1.6 (??.??.????)@{UU}
+@{U}1.6 (31.05.2022)@{UU}
 * Add ability to extract disk archives to images
 * Add ability to extract files from disk images/archives
 * Double-clicking now extracts the clicked file to a temporary location and opens it.
