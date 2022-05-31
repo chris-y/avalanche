@@ -61,6 +61,10 @@
 
 #include "Avalanche_rev.h"
 
+#ifndef __amigaos4__
+#define IsMinListEmpty(L) (L)->mlh_Head->mln_Succ == 0
+#endif
+
 const char *version = VERSTAG;
 
 struct arc_entries {
@@ -165,6 +169,30 @@ static Object *objects[OID_LAST];
 ULONG archiver = ARC_NONE;
 
 /** Useful functions **/
+#ifndef __amigaos4__
+struct Node *GetHead(struct List *list)
+{
+	struct Node *res = NULL;
+
+	if ((NULL != list) && (NULL != list->lh_Head->ln_Succ))
+	{
+		res = list->lh_Head;
+	}
+	return res;
+}
+
+struct Node *GetPred(struct Node *node)
+{
+	if (node->ln_Pred->ln_Pred == NULL) return NULL;
+	return node->ln_Pred;
+}
+
+struct Node *GetSucc(struct Node *node)
+{
+	if (node->ln_Succ->ln_Succ == NULL) return NULL;
+	return node->ln_Succ;
+}
+#endif
 
 char *strdup(const char *s)
 {
@@ -804,19 +832,19 @@ BOOL check_abort(void)
 	return FALSE;
 }
 
-static delete_delete_list(void)
+static void delete_delete_list(void)
 {
 	struct Node *node;
 	struct Node *nnode;
 
-	if(IsMinListEmpty((struct MinList *)deletelist) == FALSE) {
-		node = (struct Node *)GetHead((struct List *)deletelist);
+	if(IsMinListEmpty((struct MinList *)&deletelist) == FALSE) {
+		node = (struct Node *)GetHead((struct List *)&deletelist);
 
 		do {
 			nnode = (struct Node *)GetSucc((struct Node *)node);
 			Remove((struct Node *)node);
 			if(node->ln_Name) {
-				DeleteFile(node->ln_Node);
+				DeleteFile(node->ln_Name);
 				free(node->ln_Name);
 			}
 			FreeVec(node);
@@ -830,7 +858,7 @@ static void add_to_delete_list(char *fn)
 	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
 	if(node) {
 		node->ln_Name = strdup(fn);
-		AddTail((struct List *)deletelist, (struct Node *)node);
+		AddTail((struct List *)&deletelist, (struct Node *)node);
 	}
 }
 
