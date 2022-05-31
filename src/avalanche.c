@@ -38,6 +38,9 @@
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
+
+#include <exec/lists.h>
+#include <exec/nodes.h>
 #include <intuition/intuition.h>
 #include <intuition/pointerclass.h>
 #include <libraries/asl.h>
@@ -149,6 +152,7 @@ static ULONG win_h = 0;
 static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
 
 /** Shared variables **/
+static struct MinList deletelist;
 static struct List lblist;
 static struct Locale *locale = NULL;
 static ULONG current_item = 0;
@@ -800,6 +804,36 @@ BOOL check_abort(void)
 	return FALSE;
 }
 
+static delete_delete_list(void)
+{
+	struct Node *node;
+	struct Node *nnode;
+
+	if(IsMinListEmpty((struct MinList *)deletelist) == FALSE) {
+		node = (struct Node *)GetHead((struct List *)deletelist);
+
+		do {
+			nnode = (struct Node *)GetSucc((struct Node *)node);
+			Remove((struct Node *)node);
+			if(node->ln_Name) {
+				DeleteFile(node->ln_Node);
+				free(node->ln_Name);
+			}
+			FreeVec(node);
+		} while((node = nnode));
+	}
+}
+
+
+static void add_to_delete_list(char *fn)
+{
+	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+	if(node) {
+		node->ln_Name = strdup(fn);
+		AddTail((struct List *)deletelist, (struct Node *)node);
+	}
+}
+
 static void gui(void)
 {
 	struct MsgPort *AppPort = NULL;
@@ -1034,6 +1068,7 @@ static void gui(void)
 													ret = extract(fn, node);
 													if(ret == 0) {
 														AddPart(fn, get_item_filename(node), 1024);
+														add_to_delete_list(fn);
 														OpenWorkbenchObjectA(fn, NULL);
 													} else {
 														show_error(ret);
@@ -1272,6 +1307,7 @@ int main(int argc, char **argv)
 	}
 
 	tmpdir = AllocVec(100, MEMF_CLEAR);
+	NewMinList(&deletelist);
 	
 	UBYTE **tooltypes = ArgArrayInit(argc, argv);
 	gettooltypes(tooltypes);
@@ -1292,6 +1328,7 @@ int main(int argc, char **argv)
 
 	Locale_Close();
 
+	delete_delete_list();
 	DeleteFile(tmpdir);
 
 	if(tmpdir) FreeVec(tmpdir);
