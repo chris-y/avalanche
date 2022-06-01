@@ -906,7 +906,8 @@ static void gui(void)
 	if(virus_scan) menu[12].nm_Flags |= CHECKED;
 	if(h_browser) menu[13].nm_Flags |= CHECKED;
 	if(save_win_posn) menu[14].nm_Flags |= CHECKED;
-	if(ignorefs) menu[15].nm_Flags |= CHECKED;
+	if(confirmquit) menu[15].nm_Flags |= CHECKED;
+	if(ignorefs) menu[16].nm_Flags |= CHECKED;
 	if(progname == NULL) menu[17].nm_Flags |= NM_ITEMDISABLED;
 
 	if(win_x && win_y) tag_default_position = TAG_IGNORE;

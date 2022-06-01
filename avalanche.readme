@@ -23,7 +23,7 @@ Changes in this version:
 * Double-clicking now extracts the clicked file to a temporary location and opens it.
   NB: This has required the previous "single click to select/deselect" to be disabled,
       as the functionality was incompatible.
-  * Add option to enable/disable the quit confirmation requester
+* Add option to enable/disable the quit confirmation requester
 * Localisaton support
 * Improved progress display - now shows current file progress and total
 * Fix loading/saving of virusscan pref on OS4
