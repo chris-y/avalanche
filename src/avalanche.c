@@ -1079,7 +1079,43 @@ static void gui(void)
 				while (!done) {
 					wait = Wait( signal | app | appwin_sig | cx_signal );
 
-					if(wait & appwin_sig) {
+					if(wait & cx_signal) {
+						ULONG cx_msgid, cx_msgtype;
+						CxMsg *cx_msg;
+
+						while(cx_msg = (CxMsg *)GetMsg(cx_mp)) {
+							cx_msgid = CxMsgID(cx_msg);
+							cx_msgtype = CxMsgType(cx_msg);
+							ReplyMsg((struct Message *)cx_msg);
+
+							switch(cx_msgtype) {
+								case CXM_COMMAND:
+									switch(cx_msgid) {
+										case CXCMD_KILL:
+											done = TRUE;
+										break;
+										case CXCMD_APPEAR:
+										case CXCMD_UNIQUE:
+											//uniconify
+										break;
+										case CXCMD_DISAPPEAR:
+											//iconify
+										break;
+
+										/* Nothing to disable yet, here for later use */
+										case CXCMD_ENABLE:
+										case CXCMD_DISABLE:
+										default:
+										break;
+									}
+								break;
+								case CXM_IEVENT:
+									/* TODO: popup hotkey */
+								default:
+								break;
+							}
+						}
+					} else if(wait & appwin_sig) {
 						while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
 							struct WBArg *wbarg = appmsg->am_ArgList;
 							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
