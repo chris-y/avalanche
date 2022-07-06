@@ -118,6 +118,11 @@
 
 #endif
 
+#ifdef __amigaos4__
+ALIB_STRUCT(Commodities)
+#else
+ALIB_STRUCT(Cx)
+#endif
 ALIB_STRUCT(Icon)
 ALIB_STRUCT(Intuition)
 //ALIB_STRUCT(Locale)
@@ -161,6 +166,11 @@ static void libs_xvs_exit(void)
 
 BOOL libs_open(void)
 {
+#ifdef __amigaos4__
+	ALIB_OPEN("commodities.library",  37, Commodities)
+#else
+	ALIB_OPEN("commodities.library",  37, Cx)
+#endif
 	ALIB_OPEN("icon.library",         44, Icon)
 	ALIB_OPEN("intuition.library",    40, Intuition)
 //	ALIB_OPEN("locale.library",       38, Locale)
@@ -192,6 +202,11 @@ void libs_close(void)
 	CLASS_CLOSE(Requester)
 	CLASS_CLOSE(Window)
 
+#ifdef __amigaos4__
+	ALIB_CLOSE(Commodities)
+#else
+	ALIB_CLOSE(Cx)
+#endif
 	ALIB_CLOSE(Icon)
 	ALIB_CLOSE(Intuition)
 //	ALIB_CLOSE(Locale)

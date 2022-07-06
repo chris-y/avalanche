@@ -199,3 +199,7 @@ MSG_IGNOREFILESYSTEMS
 Ignore filesystems
 ; Ignore filesystems
 ;
+MSG_CXDESCRIPTION
+Unarchive GUI for XAD/XFD
+; Unarchive GUI for XAD/XFD
+;

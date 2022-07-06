@@ -150,3 +150,6 @@ MSG_INTERFACE (//)
 MSG_IGNOREFILESYSTEMS (//)
 Ignore filesystems
 ;
+MSG_CXDESCRIPTION (//)
+Unarchive GUI for XAD/XFD
+;

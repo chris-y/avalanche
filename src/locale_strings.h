@@ -1,36 +1,39 @@
-#ifndef LOCALE_STRINGS_H
-#define LOCALE_STRINGS_H 1
-
-/* Locale Catalog Source File
- *
- * Automatically created by SimpleCat V3
- * Do NOT edit by hand!
- *
- * SimpleCat ©1992-2013 Guido Mersmann
- *
- */
-
+#ifndef LOCALE_STRINGS_H_H
+#define LOCALE_STRINGS_H_H
 
 
 /****************************************************************************/
+
+
+/* This file was created automatically by CatComp.
+ * Do NOT edit by hand!
+ */
 
 
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
 
+#ifdef CATCOMP_CODE
+#ifndef CATCOMP_BLOCK
+#define CATCOMP_ARRAY
+#endif
+#endif
+
 #ifdef CATCOMP_ARRAY
-#undef CATCOMP_NUMBERS
-#undef CATCOMP_STRINGS
+#ifndef CATCOMP_NUMBERS
 #define CATCOMP_NUMBERS
+#endif
+#ifndef CATCOMP_STRINGS
 #define CATCOMP_STRINGS
+#endif
 #endif
 
 #ifdef CATCOMP_BLOCK
-#undef CATCOMP_STRINGS
+#ifndef CATCOMP_STRINGS
 #define CATCOMP_STRINGS
 #endif
-
+#endif
 
 
 /****************************************************************************/
@@ -87,8 +90,7 @@
 #define MSG_UNABLETOOPENREQUESTERTOASKPASSWORD 46
 #define MSG_INTERFACE 47
 #define MSG_IGNOREFILESYSTEMS 48
-
-#define CATCOMP_LASTID 48
+#define MSG_CXDESCRIPTION 49
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -147,6 +149,7 @@
 #define MSG_UNABLETOOPENREQUESTERTOASKPASSWORD_STR "Unable to open requester to ask password\n"
 #define MSG_INTERFACE_STR "(interface)"
 #define MSG_IGNOREFILESYSTEMS_STR "Ignore filesystems"
+#define MSG_CXDESCRIPTION_STR "Unarchive GUI for XAD/XFD"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -156,7 +159,7 @@
 
 #ifdef CATCOMP_BLOCK
 
-const char CatCompBlock[] =
+STATIC CONST UBYTE CatCompBlock[] =
 {
     "\x00\x00\x00\x00\x00\x0A"
     MSG_EXTRACT_STR "\x00\x00"
@@ -256,6 +259,8 @@ const char CatCompBlock[] =
     MSG_INTERFACE_STR "\x00"
     "\x00\x00\x00\x30\x00\x14"
     MSG_IGNOREFILESYSTEMS_STR "\x00\x00"
+    "\x00\x00\x00\x31\x00\x1A"
+    MSG_CXDESCRIPTION_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */
@@ -265,5 +270,4 @@ const char CatCompBlock[] =
 
 
 
-#endif /* LOCALE_STRINGS_H */
-
+#endif /* LOCALE_STRINGS_H_H */

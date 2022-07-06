@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <proto/commodities.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
@@ -155,12 +156,15 @@ static ULONG win_w = 0;
 static ULONG win_h = 0;
 static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
 
+static long cx_pri = 0;
+
 /** Shared variables **/
 static struct MinList deletelist;
 static struct List lblist;
 static struct Locale *locale = NULL;
 static ULONG current_item = 0;
 static ULONG total_items = 0;
+static struct MsgPort *cx_mp = NULL;
 
 static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_LAST];
@@ -1291,9 +1295,50 @@ static void fill_menu_labels(void)
 	menu[18].nm_Label = locale_get_string( MSG_SAVESETTINGS );
 }
 
+static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
+{
+	CxMsg *msg;
+
+	DeleteCxObj(CXBroker);
+	while(msg = (CxMsg *)GetMsg(CXMP))
+		ReplyMsg((struct Message *)msg);
+
+	DeletePort(CXMP);
+}
+
+static struct MsgPort *RegisterCx(CxObj **CXBroker)
+{
+	struct MsgPort *CXMP = NULL;
+	struct NewBroker newbroker;
+	CxObj *broker = NULL;
+
+	if(CXMP = CreateMsgPort()) {
+		newbroker.nb_Version = NB_VERSION;
+		newbroker.nb_Name = "Avalanche";
+		newbroker.nb_Title = VERS;
+		newbroker.nb_Descr = locale_get_string(MSG_CXDESCRIPTION);
+		newbroker.nb_Unique = 0;
+		newbroker.nb_Flags = COF_SHOW_HIDE;
+		newbroker.nb_Pri = cx_pri;
+		newbroker.nb_Port = CXMP;
+		newbroker.nb_ReservedChannel = 0;
+
+		if(broker = CxBroker(&newbroker, NULL)) {
+			ActivateCxObj(broker, 1L);
+			*CXBroker = broker;
+		} else {
+			DeleteMsgPort(CXMP);
+			return NULL;
+		}
+	}
+
+	return CXMP;
+}
+
 /** Main program **/
 int main(int argc, char **argv)
 {
+	CxObj *cx_broker = NULL;
 	char *tmp = NULL;
 
 	if(libs_open() == FALSE) {
@@ -1354,7 +1399,9 @@ int main(int argc, char **argv)
 		FreeVec(tmp);
 	}
 
+	cx_mp = RegisterCx(&cx_broker);
 	gui();
+	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 
 	Locale_Close();
 
