@@ -592,7 +592,8 @@ static void open_archive_req(BOOL refresh_only)
 	long retxfd = 0;
 
 	if(refresh_only == FALSE) {
-		DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
+		ret = DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
+		if(ret == 0) return;
 	}
 
 	if(archive_needs_free) free_archive_path();
