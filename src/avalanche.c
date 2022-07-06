@@ -157,6 +157,7 @@ static ULONG win_h = 0;
 static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
 
 static long cx_pri = 0;
+static BOOL cx_popup = TRUE;
 
 /** Shared variables **/
 static struct MinList deletelist;
@@ -164,7 +165,6 @@ static struct List lblist;
 static struct Locale *locale = NULL;
 static ULONG current_item = 0;
 static ULONG total_items = 0;
-static struct MsgPort *cx_mp = NULL;
 
 static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_LAST];
@@ -867,8 +867,51 @@ static void add_to_delete_list(char *fn)
 	}
 }
 
+static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
+{
+	CxMsg *msg;
+
+	DeleteCxObj(CXBroker);
+	while(msg = (CxMsg *)GetMsg(CXMP))
+		ReplyMsg((struct Message *)msg);
+
+	DeletePort(CXMP);
+}
+
+static struct MsgPort *RegisterCx(CxObj **CXBroker)
+{
+	struct MsgPort *CXMP = NULL;
+	struct NewBroker newbroker;
+	CxObj *broker = NULL;
+
+	if(CXMP = CreateMsgPort()) {
+		newbroker.nb_Version = NB_VERSION;
+		newbroker.nb_Name = "Avalanche";
+		newbroker.nb_Title = VERS;
+		newbroker.nb_Descr = locale_get_string(MSG_CXDESCRIPTION);
+		newbroker.nb_Unique = 0;
+		newbroker.nb_Flags = COF_SHOW_HIDE;
+		newbroker.nb_Pri = cx_pri;
+		newbroker.nb_Port = CXMP;
+		newbroker.nb_ReservedChannel = 0;
+
+		if(broker = CxBroker(&newbroker, NULL)) {
+			ActivateCxObj(broker, 1L);
+			*CXBroker = broker;
+		} else {
+			DeleteMsgPort(CXMP);
+			return NULL;
+		}
+	}
+
+	return CXMP;
+}
+
 static void gui(void)
 {
+	struct MsgPort *cx_mp = NULL;
+	CxObj *cx_broker = NULL;
+	ULONG cx_signal = 0;
 	struct MsgPort *AppPort = NULL;
 	struct MsgPort *appwin_mp = NULL;
 	struct AppWindow *appwin = NULL;
@@ -1001,7 +1044,11 @@ static void gui(void)
 	 	/*  Object creation sucessful?
 	 	 */
 		if (objects[OID_MAIN]) {
-			
+
+			if(cx_mp = RegisterCx(&cx_broker)) {
+				cx_signal = (1 << cx_mp->mp_SigBit);
+			}
+
 			/*  Open the window.
 			 */
 			if (windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN])) {
@@ -1030,7 +1077,7 @@ static void gui(void)
 				/* Input Event Loop
 				 */
 				while (!done) {
-					wait = Wait( signal | app | appwin_sig );
+					wait = Wait( signal | app | appwin_sig | cx_signal );
 
 					if(wait & appwin_sig) {
 						while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
@@ -1242,6 +1289,7 @@ static void gui(void)
 			}
 
 			DisposeObject(objects[OID_MAIN]);
+			if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 		}
 
 		if(lbci) FreeLBColumnInfo(lbci);
@@ -1254,7 +1302,14 @@ static void gui(void)
 static void gettooltypes(UBYTE **tooltypes)
 {
 	char *s;
-	
+
+	s = ArgString(tooltypes, "CX_POPUP", "YES");
+	if(MatchToolValue(s, "NO")) {
+		cx_popup = FALSE;
+	}
+
+	cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
+
 	dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
 	dest_needs_free = TRUE;
 
@@ -1295,50 +1350,9 @@ static void fill_menu_labels(void)
 	menu[18].nm_Label = locale_get_string( MSG_SAVESETTINGS );
 }
 
-static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
-{
-	CxMsg *msg;
-
-	DeleteCxObj(CXBroker);
-	while(msg = (CxMsg *)GetMsg(CXMP))
-		ReplyMsg((struct Message *)msg);
-
-	DeletePort(CXMP);
-}
-
-static struct MsgPort *RegisterCx(CxObj **CXBroker)
-{
-	struct MsgPort *CXMP = NULL;
-	struct NewBroker newbroker;
-	CxObj *broker = NULL;
-
-	if(CXMP = CreateMsgPort()) {
-		newbroker.nb_Version = NB_VERSION;
-		newbroker.nb_Name = "Avalanche";
-		newbroker.nb_Title = VERS;
-		newbroker.nb_Descr = locale_get_string(MSG_CXDESCRIPTION);
-		newbroker.nb_Unique = 0;
-		newbroker.nb_Flags = COF_SHOW_HIDE;
-		newbroker.nb_Pri = cx_pri;
-		newbroker.nb_Port = CXMP;
-		newbroker.nb_ReservedChannel = 0;
-
-		if(broker = CxBroker(&newbroker, NULL)) {
-			ActivateCxObj(broker, 1L);
-			*CXBroker = broker;
-		} else {
-			DeleteMsgPort(CXMP);
-			return NULL;
-		}
-	}
-
-	return CXMP;
-}
-
 /** Main program **/
 int main(int argc, char **argv)
 {
-	CxObj *cx_broker = NULL;
 	char *tmp = NULL;
 
 	if(libs_open() == FALSE) {
@@ -1399,9 +1413,7 @@ int main(int argc, char **argv)
 		FreeVec(tmp);
 	}
 
-	cx_mp = RegisterCx(&cx_broker);
 	gui();
-	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 
 	Locale_Close();
 
