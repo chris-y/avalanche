@@ -494,7 +494,8 @@ static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG 
 			TAG_DONE);
 	}
 
-	return addlbnodesinglefile(name, size, userdata);
+	addlbnodesinglefile(name, size, userdata);
+	return;
 }
 
 
@@ -518,7 +519,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		}
 	}
 
-	if(archiver == ARC_XFD) return addlbnodesinglefile(name, size, userdata);
+	if(archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata); return; }
 
 	if(h_browser) {
 		if(item == 0) {
