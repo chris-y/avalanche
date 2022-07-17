@@ -1435,7 +1435,7 @@ int main(int argc, char **argv)
 	tmpdir = AllocVec(100, MEMF_CLEAR);
 	NewMinList(&deletelist);
 	
-	UBYTE **tooltypes = ArgArrayInit(argc, argv);
+	UBYTE **tooltypes = ArgArrayInit(argc, (CONST_STRPTR *) argv);
 	gettooltypes(tooltypes);
 	ArgArrayDone();
 
