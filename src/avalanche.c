@@ -269,35 +269,35 @@ void savesettings(Object *win)
 		}
 
 		if(win_x) {
-			sprintf(tt_winx, "WINX=%d", win_x);
+			sprintf(tt_winx, "WINX=%lu", win_x);
 			newtooltypes[3] = tt_winx;
 		} else {
 			newtooltypes[3] = "(WINX=0)";
 		}
 
 		if(win_y) {
-			sprintf(tt_winy, "WINY=%d", win_y);
+			sprintf(tt_winy, "WINY=%lu", win_y);
 			newtooltypes[4] = tt_winy;
 		} else {
 			newtooltypes[4] = "(WINY=0)";
 		}
 
 		if(win_w) {
-			sprintf(tt_winw, "WINW=%d", win_w);
+			sprintf(tt_winw, "WINW=%lu", win_w);
 			newtooltypes[5] = tt_winw;
 		} else {
 			newtooltypes[5] = "(WINW=0)";
 		}
 
 		if(win_h) {
-			sprintf(tt_winh, "WINH=%d", win_h);
+			sprintf(tt_winh, "WINH=%lu", win_h);
 			newtooltypes[6] = tt_winh;
 		} else {
 			newtooltypes[6] = "(WINH=0)";
 		}
 
 		if(progress_size != PROGRESS_SIZE_DEFAULT) {
-			sprintf(tt_progresssize, "PROGRESSSIZE=%d", progress_size);
+			sprintf(tt_progresssize, "PROGRESSSIZE=%lu", progress_size);
 		} else {
 			sprintf(tt_progresssize, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
 		}
@@ -401,7 +401,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
 
-	sprintf(datestr, "%04d-%02d-%02d %02d:%02d:%02d", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+	sprintf(datestr, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
 
 	struct Node *node = AllocListBrowserNode(3,
 		LBNA_UserData, userdata,
@@ -483,7 +483,7 @@ static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG 
 
 	if(gadgets[GID_PROGRESS]) {
 		char msg[20];
-		sprintf(msg, "%d/%d", 0, total);
+		sprintf(msg, "%d/%lu", 0, total);
 		total_items = total;
 
 		SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
@@ -494,7 +494,8 @@ static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG 
 			TAG_DONE);
 	}
 
-	return addlbnodesinglefile(name, size, userdata);
+	addlbnodesinglefile(name, size, userdata);
+	return;
 }
 
 
@@ -506,7 +507,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		current_item = 0;
 		if(gadgets[GID_PROGRESS]) {
 			char msg[20];
-			sprintf(msg, "%d/%d", 0, total);
+			sprintf(msg, "%d/%lu", 0, total);
 			total_items = total;
 
 			SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
@@ -518,7 +519,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		}
 	}
 
-	if(archiver == ARC_XFD) return addlbnodesinglefile(name, size, userdata);
+	if(archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata); return; }
 
 	if(h_browser) {
 		if(item == 0) {
@@ -560,7 +561,7 @@ static void *getlbnode(struct Node *node)
 		TAG_DONE);
 
 	current_item++;
-	sprintf(msg, "%d/%d", current_item, total_items);
+	sprintf(msg, "%lu/%lu", current_item, total_items);
 
 	SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
 			GA_Text, msg,
@@ -596,7 +597,7 @@ static void open_archive_req(BOOL refresh_only)
 	long retxfd = 0;
 
 	if(refresh_only == FALSE) {
-		ret = DoMethod(gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
+		ret = DoMethod((Object *) gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
 		if(ret == 0) return;
 	}
 
@@ -1434,7 +1435,7 @@ int main(int argc, char **argv)
 	tmpdir = AllocVec(100, MEMF_CLEAR);
 	NewMinList(&deletelist);
 	
-	UBYTE **tooltypes = ArgArrayInit(argc, argv);
+	UBYTE **tooltypes = ArgArrayInit(argc, (CONST_STRPTR *) argv);
 	gettooltypes(tooltypes);
 	ArgArrayDone();
 
@@ -1443,7 +1444,7 @@ int main(int argc, char **argv)
 	fill_menu_labels();
 
 	if(tmp = AllocVec(20, MEMF_CLEAR)) {
-		sprintf(tmp, "Avalanche.%x", GetUniqueID());
+		sprintf(tmp, "Avalanche.%lx", GetUniqueID());
 		AddPart(tmpdir, tmp, 100);
 		UnLock(CreateDir(tmpdir));
 		FreeVec(tmp);
