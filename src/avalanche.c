@@ -138,6 +138,7 @@ static char *progname = NULL;
 static char *dest;
 static char *archive = NULL;
 static char *tmpdir = NULL;
+static int tmpdirlen = 0;
 
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
@@ -323,9 +324,9 @@ void savesettings(Object *win)
 			newtooltypes[10] = "(IGNOREFS)";
 		}
 
-		if(tmpdir && (strcmp("T:", tmpdir) != 0)) {
+		if(tmpdir && (strncmp("T:", tmpdir, tmpdirlen) != 0)) {
 			strcpy(tt_tmp, "TMPDIR=");
-			newtooltypes[11] = strcat(tt_tmp, dest);
+			newtooltypes[11] = strncat(tt_tmp, tmpdir, tmpdirlen);
 		} else {
 			newtooltypes[11] = "(TMPDIR=T:)";
 		}
@@ -1373,7 +1374,10 @@ static void gettooltypes(UBYTE **tooltypes)
 	dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
 	dest_needs_free = TRUE;
 
-	if(tmpdir) strncpy(tmpdir, ArgString(tooltypes, "TMPDIR", "T:"), 90);
+	if(tmpdir) {
+		strncpy(tmpdir, ArgString(tooltypes, "TMPDIR", "T:"), 90);
+		tmpdirlen = strlen(tmpdir);
+	}
 
 	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
 	if(FindToolType(tooltypes, "VIRUSSCAN")) virus_scan = TRUE;
