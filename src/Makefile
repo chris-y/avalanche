@@ -1,5 +1,5 @@
 CC := vc +aos68k
-CFLAGS := -c99
+CFLAGS := -c99 -g
 LIBS := -lamiga
 
 OBJS := avalanche.o libs.o locale.o req.o xad.o xfd.o xvs.o
