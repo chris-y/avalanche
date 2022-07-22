@@ -156,7 +156,7 @@ static ULONG win_w = 0;
 static ULONG win_h = 0;
 static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
 
-static long cx_pri = 0;
+static int cx_pri = 0;
 static BOOL cx_popup = TRUE;
 
 /** Shared variables **/
@@ -231,7 +231,7 @@ void savesettings(Object *win)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[13];
+	UBYTE *newtooltypes[17];
 	char tt_dest[100];
 	char tt_tmp[100];
 	char tt_winx[15];
@@ -239,6 +239,7 @@ void savesettings(Object *win)
 	char tt_winh[15];
 	char tt_winw[15];
 	char tt_progresssize[20];
+	char tt_cxpri[20];
 
 	if(dobj = GetIconTagList(progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
@@ -329,7 +330,23 @@ void savesettings(Object *win)
 			newtooltypes[11] = "(TMPDIR=T:)";
 		}
 
-		newtooltypes[12] = NULL;
+		if(cx_popup == FALSE) {
+			newtooltypes[12] = "CX_POPUP=NO";
+		} else {
+			newtooltypes[12] = "(CX_POPUP=YES)";
+		}
+
+		if(cx_pri != 0) {
+			sprintf(tt_cxpri, "CX_PRIORITY=%d", cx_pri);
+		} else {
+			sprintf(tt_cxpri, "(CX_PRIORITY=0)");
+		}
+		newtooltypes[13] = tt_cxpri;
+
+		newtooltypes[14] = "(CX_POPKEY=)";
+		newtooltypes[15] = "DONOTWAIT";
+
+		newtooltypes[16] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(progname, dobj, NULL);
