@@ -1122,11 +1122,28 @@ static void gui(void)
 										done = TRUE;
 									break;
 									case CXCMD_APPEAR:
+										if(windows[WID_MAIN] == NULL) {
+											windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
+
+											if (windows[WID_MAIN]) {
+												GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
+												if(appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL)) {
+													appwin_sig = 1L << appwin_mp->mp_SigBit;
+												}
+											} else {
+												done = TRUE;	// error re-opening window!
+											}
+										}
+									break;
 									case CXCMD_UNIQUE:
-										//uniconify
+										//not unique, ignore
 									break;
 									case CXCMD_DISAPPEAR:
-										//iconify
+										if(windows[WID_MAIN]) {
+											RemoveAppWindow(appwin);
+											RA_CloseWindow(objects[OID_MAIN]);
+											windows[WID_MAIN] = NULL;
+										}
 									break;
 
 									/* Nothing to disable yet, here for later use */
