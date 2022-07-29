@@ -937,6 +937,7 @@ static void gui(void)
 	struct MsgPort *appwin_mp = NULL;
 	struct AppWindow *appwin = NULL;
 	struct AppMessage *appmsg = NULL;
+	struct AppMenuItem *appmenu = NULL;
 	ULONG appwin_sig = 0;
 
 	struct Hook aslfilterhook;
@@ -1094,10 +1095,14 @@ static void gui(void)
 			GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
 
 			if(appwin_mp = CreateMsgPort()) {
+				if(appmenu = AddAppMenuItem(0, 0, locale_get_string(MSG_APPMENU_EXTRACTHERE), appwin_mp,
+								WBAPPMENUA_CommandKeyString, "X",
+								TAG_DONE)) {
+					appwin_sig = 1L << appwin_mp->mp_SigBit;
+				}
+
 				if(windows[WID_MAIN]) {
-					if(appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL)) {
-						appwin_sig = 1L << appwin_mp->mp_SigBit;
-					}
+					appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
 				}
 			}
 
@@ -1127,9 +1132,7 @@ static void gui(void)
 
 											if (windows[WID_MAIN]) {
 												GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-												if(appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL)) {
-													appwin_sig = 1L << appwin_mp->mp_SigBit;
-												}
+												appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
 											} else {
 												done = TRUE;	// error re-opening window!
 											}
@@ -1162,25 +1165,47 @@ static void gui(void)
 				} else if(wait & appwin_sig) {
 					while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
 						struct WBArg *wbarg = appmsg->am_ArgList;
-						if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-							if(archive_needs_free) free_archive_path();
-							if(archive = AllocVec(512, MEMF_CLEAR)) {
-								NameFromLock(wbarg->wa_Lock, archive, 512);
-								AddPart(archive, wbarg->wa_Name, 512);
-								SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
-												GETFILE_FullFile, archive, TAG_DONE);
-								open_archive_req(TRUE);
-								if(progname && (appmsg->am_NumArgs > 1)) {
-									for(int i = 1; i < appmsg->am_NumArgs; i++) {
-										wbarg++;
-										OpenWorkbenchObject(progname+8,
-											WBOPENA_ArgLock, wbarg->wa_Lock,
-											WBOPENA_ArgName, wbarg->wa_Name,
-											TAG_DONE);
+						switch(appmsg->am_Type) {
+							case AMTYPE_APPWINDOW:
+								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+									if(archive_needs_free) free_archive_path();
+									if(archive = AllocVec(512, MEMF_CLEAR)) {
+										NameFromLock(wbarg->wa_Lock, archive, 512);
+										AddPart(archive, wbarg->wa_Name, 512);
+										SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
+														GETFILE_FullFile, archive, TAG_DONE);
+										open_archive_req(TRUE);
+										if(progname && (appmsg->am_NumArgs > 1)) {
+											for(int i = 1; i < appmsg->am_NumArgs; i++) {
+												wbarg++;
+												OpenWorkbenchObject(progname+8,
+													WBOPENA_ArgLock, wbarg->wa_Lock,
+													WBOPENA_ArgName, wbarg->wa_Name,
+													TAG_DONE);
+											}
+										}
 									}
 								}
-							}
-						} 
+							break;
+							case AMTYPE_APPMENUITEM:
+								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+									if(archive_needs_free) free_archive_path();
+									if(archive = AllocVec(512, MEMF_CLEAR)) {
+										char *tempdest = NULL;
+										NameFromLock(wbarg->wa_Lock, archive, 512);
+										tempdest = strdup(archive);
+										AddPart(archive, wbarg->wa_Name, 512);
+										SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
+														GETFILE_FullFile, archive, TAG_DONE);
+										open_archive_req(TRUE);
+										ret = extract(tempdest, NULL);
+										if(ret != 0) show_error(ret);
+									}
+								}
+							break;
+							default:
+							break;
+						}
 						ReplyMsg((struct Message *)appmsg);
 					}
 				} else {
@@ -1265,9 +1290,7 @@ static void gui(void)
 
 								if (windows[WID_MAIN]) {
 									GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-									if(appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL)) {
-										appwin_sig = 1L << appwin_mp->mp_SigBit;
-									}
+									appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
 								} else {
 									done = TRUE;	// error re-opening window!
 								}
@@ -1372,6 +1395,7 @@ static void gui(void)
 
 		if(lbci) FreeLBColumnInfo(lbci);
 		RemoveAppWindow(appwin);
+		RemoveAppMenuItem(appmenu);
 		if(appwin_mp) DeleteMsgPort(appwin_mp);
 		DeleteMsgPort(AppPort);
 	}

@@ -157,3 +157,6 @@ Ignore filesystems
 MSG_CXDESCRIPTION
 Unarchive GUI for XAD/XFD
 ;
+MSG_APPMENU_EXTRACTHERE
+Extract here
+;

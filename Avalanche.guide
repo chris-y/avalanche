@@ -42,10 +42,16 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
 @{b}VIRUSSCAN@{ub} Use xvs.library to @{"scan files" link vscan} after extraction
 @{b}CONFIRMQUIT@{ub} Display confirmation requester on quit
+@{b}CX_POPUP@{ub} Whether to open the window on startup
+@{b}CX_PRIORITY@{ub} Commodities priority
+@{b}CX_POPKEY@{ub} Hotkey to show the window if hidden (not implemented yet)
 @endnode
 
 @node usage "Usage"
 Avalanche can be started as a default tool for an archive, or manually.  If started manually an archive can be selected using the button next to Archive, or by dragging it into the window.
+
+It is possible to "quick extract" archives into their current directory by highlighting
+and selecting "Extract here" from the Tools menu.
 
 The Destination can also be changed here.  To make this change permanent, select Save settings from the Settings menu.  If "Save window position" is checked when Save settings is selected, then the current window position and size will also be saved.
 
@@ -94,7 +100,9 @@ Files will not be further extracted in order to be scanned, so infected files th
 @node history "Changelog"
 @rem keep this to <80 chars for readme
 @{u}1.7 (??.??.????)@{uu}
-* Fix initial state of "confirm quit" and "ignore fs" menu items. 
+* Avalanche now registers as a commodity
+* Added Tools menu item "Extract here" for quick extraction
+* Fix initial state of "confirm quit" and "ignore fs" menu items.
 
 @{u}1.6 (31.05.2022)@{uu}
 * Add ability to extract disk archives to images
