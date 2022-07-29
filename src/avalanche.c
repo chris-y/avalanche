@@ -102,6 +102,7 @@ enum {
 };
 
 #define GID_EXTRACT_TEXT  locale_get_string( MSG_EXTRACT ) 
+#define IEVENT_POPUP 1L
 
 /** Menu **/
 
@@ -159,6 +160,7 @@ static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
 
 static int cx_pri = 0;
 static BOOL cx_popup = TRUE;
+static char *cx_popkey = NULL;
 
 /** Shared variables **/
 static struct MinList deletelist;
@@ -241,6 +243,7 @@ void savesettings(Object *win)
 	char tt_winw[15];
 	char tt_progresssize[20];
 	char tt_cxpri[20];
+	char tt_cxpopkey[50];
 
 	if(dobj = GetIconTagList(progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
@@ -344,7 +347,13 @@ void savesettings(Object *win)
 		}
 		newtooltypes[13] = tt_cxpri;
 
-		newtooltypes[14] = "(CX_POPKEY=)";
+		if((cx_popkey) && (strcmp(cx_popkey, "rawkey ctrl alt a") != 0)) {
+			sprintf(tt_cxpopkey, "CX_POPKEY=%s", cx_popkey + 7);
+		} else {
+			sprintf(tt_cxpopkey, "(CX_POPKEY=ctrl alt a)");
+		}
+		newtooltypes[14] = tt_cxpopkey;
+
 		newtooltypes[15] = "DONOTWAIT";
 
 		newtooltypes[16] = NULL;
@@ -892,7 +901,7 @@ static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
 {
 	CxMsg *msg;
 
-	DeleteCxObj(CXBroker);
+	DeleteCxObjAll(CXBroker);
 	while(msg = (CxMsg *)GetMsg(CXMP))
 		ReplyMsg((struct Message *)msg);
 
@@ -904,6 +913,9 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 	struct MsgPort *CXMP = NULL;
 	struct NewBroker newbroker;
 	CxObj *broker = NULL;
+	CxObj *filter = NULL;
+	CxObj *sender = NULL;
+	CxObj *translate = NULL;
 
 	if(CXMP = CreateMsgPort()) {
 		newbroker.nb_Version = NB_VERSION;
@@ -917,6 +929,18 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 		newbroker.nb_ReservedChannel = 0;
 
 		if(broker = CxBroker(&newbroker, NULL)) {
+			/* Try to add hotkey */
+			if(cx_popkey) {
+				if(filter = CxFilter(cx_popkey)) {
+					AttachCxObj(broker, filter);
+					if(sender = CxSender(CXMP, IEVENT_POPUP)) {
+						AttachCxObj(filter, sender);
+						if(translate = CxTranslate(NULL)) {
+							AttachCxObj(filter, translate);
+						}
+					}
+				}
+			}
 			ActivateCxObj(broker, 1L);
 			*CXBroker = broker;
 		} else {
@@ -1136,6 +1160,8 @@ static void gui(void)
 											} else {
 												done = TRUE;	// error re-opening window!
 											}
+										} else {
+											WindowToFront(windows[WID_MAIN]);
 										}
 									break;
 									case CXCMD_UNIQUE:
@@ -1157,7 +1183,22 @@ static void gui(void)
 								}
 							break;
 							case CXM_IEVENT:
-								/* TODO: popup hotkey */
+								switch(cx_msgid) {
+									case IEVENT_POPUP:
+										if(windows[WID_MAIN] == NULL) {
+											windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
+
+											if (windows[WID_MAIN]) {
+												GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
+												appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
+											} else {
+												done = TRUE;	// error re-opening window!
+											}
+										} else {
+											WindowToFront(windows[WID_MAIN]);
+										}
+									break;
+								}
 							default:
 							break;
 						}
@@ -1289,13 +1330,17 @@ static void gui(void)
 							break;
 
 							case WMHI_UNICONIFY:
-								windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
+								if(windows[WID_MAIN] == NULL) {
+									windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
 
-								if (windows[WID_MAIN]) {
-									GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-									appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
+									if (windows[WID_MAIN]) {
+										GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
+										appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
+									} else {
+										done = TRUE;	// error re-opening window!
+									}
 								} else {
-									done = TRUE;	// error re-opening window!
+									WindowToFront(windows[WID_MAIN]);
 								}
 						 	break;
 								 	
@@ -1415,6 +1460,12 @@ static void gettooltypes(UBYTE **tooltypes)
 
 	cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
 
+	s = ArgString(tooltypes, "CX_POPKEY", "ctrl alt a");
+	if(cx_popkey = AllocVec(strlen("rawkey ") + strlen(s) + 1, MEMF_ANY)) {
+		strcpy(cx_popkey, "rawkey ");
+		strcat(cx_popkey, s);
+	}
+
 	dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
 	dest_needs_free = TRUE;
 
@@ -1528,6 +1579,7 @@ int main(int argc, char **argv)
 	delete_delete_list();
 	DeleteFile(tmpdir);
 
+	if(cx_popkey) FreeVec(cx_popkey);
 	if(tmpdir) FreeVec(tmpdir);
 	if(progname != NULL) FreeVec(progname);
 	if(archive_needs_free) free_archive_path();

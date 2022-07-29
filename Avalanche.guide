@@ -44,7 +44,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}CONFIRMQUIT@{ub} Display confirmation requester on quit
 @{b}CX_POPUP@{ub} Whether to open the window on startup
 @{b}CX_PRIORITY@{ub} Commodities priority
-@{b}CX_POPKEY@{ub} Hotkey to show the window if hidden (not implemented yet)
+@{b}CX_POPKEY@{ub} Hotkey to show the window if hidden (default = ctrl alt a)
 @endnode
 
 @node usage "Usage"
