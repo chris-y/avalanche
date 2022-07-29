@@ -1188,19 +1188,22 @@ static void gui(void)
 								}
 							break;
 							case AMTYPE_APPMENUITEM:
-								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-									if(archive_needs_free) free_archive_path();
-									if(archive = AllocVec(512, MEMF_CLEAR)) {
-										char *tempdest = NULL;
-										NameFromLock(wbarg->wa_Lock, archive, 512);
-										tempdest = strdup(archive);
-										AddPart(archive, wbarg->wa_Name, 512);
-										SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
-														GETFILE_FullFile, archive, TAG_DONE);
-										open_archive_req(TRUE);
-										ret = extract(tempdest, NULL);
-										if(ret != 0) show_error(ret);
+								for(int i=0; i<appmsg->am_NumArgs; i++) {
+									if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+										if(archive_needs_free) free_archive_path();
+										if(archive = AllocVec(512, MEMF_CLEAR)) {
+											char *tempdest = NULL;
+											NameFromLock(wbarg->wa_Lock, archive, 512);
+											tempdest = strdup(archive);
+											AddPart(archive, wbarg->wa_Name, 512);
+											SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
+															GETFILE_FullFile, archive, TAG_DONE);
+											open_archive_req(TRUE);
+											ret = extract(tempdest, NULL);
+											if(ret != 0) show_error(ret);
+										}
 									}
+									wbarg++;
 								}
 							break;
 							default:
