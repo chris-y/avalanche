@@ -1240,8 +1240,10 @@ static void gui(void)
 											SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
 															GETFILE_FullFile, archive, TAG_DONE);
 											open_archive_req(TRUE);
-											ret = extract(tempdest, NULL);
-											if(ret != 0) show_error(ret);
+											if(archiver != ARC_NONE) {
+												ret = extract(tempdest, NULL);
+												if(ret != 0) show_error(ret);
+											}
 										}
 									}
 									wbarg++;
