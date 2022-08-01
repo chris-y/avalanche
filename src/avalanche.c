@@ -958,6 +958,7 @@ static void gui(void)
 	CxObj *cx_broker = NULL;
 	ULONG cx_signal = 0;
 	struct MsgPort *AppPort = NULL;
+	struct MsgPort *winport = NULL;
 	struct MsgPort *appwin_mp = NULL;
 	struct AppWindow *appwin = NULL;
 	struct AppMessage *appmsg = NULL;
@@ -1006,7 +1007,7 @@ static void gui(void)
 
 	if(win_x && win_y) tag_default_position = TAG_IGNORE;
 
-	if(AppPort = CreateMsgPort()) {
+	if((AppPort = CreateMsgPort()) && (winport = CreateMsgPort())) {
 		/* Create the window object.
 		 */
 		objects[OID_MAIN] = WindowObj,
@@ -1024,6 +1025,7 @@ static void gui(void)
 			WINDOW_NewMenu, menu,
 			WINDOW_IconifyGadget, TRUE,
 			WINDOW_IconTitle, "Avalanche",
+			WINDOW_SharedPort, winport,
 			WINDOW_AppPort, AppPort,
 			tag_default_position, WPOS_CENTERSCREEN,
 			WINDOW_ParentGroup, gadgets[GID_MAIN] = LayoutVObj,
@@ -1106,17 +1108,13 @@ static void gui(void)
 			/* Open initial archive, if there is one. */
 			if(archive) open_archive_req(TRUE);
 
-			ULONG wait, signal, app = (1L << AppPort->mp_SigBit);
+			ULONG wait, signal = (1L << winport << winport->mp_SigBit), app = (1L << AppPort->mp_SigBit);
 			ULONG done = FALSE;
 			ULONG result;
 			UWORD code;
 			long ret = 0;
 			ULONG tmp = 0;
 			struct Node *node;
-
-		 	/* Obtain the window wait signal mask.
-			 */
-			GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
 
 			if(appwin_mp = CreateMsgPort()) {
 				if(appmenu = AddAppMenuItem(0, 0, locale_get_string(MSG_APPMENU_EXTRACTHERE), appwin_mp,
@@ -1447,6 +1445,7 @@ static void gui(void)
 		RemoveAppWindow(appwin);
 		RemoveAppMenuItem(appmenu);
 		if(appwin_mp) DeleteMsgPort(appwin_mp);
+		if(winport) DeleteMsgPort(winport);
 		DeleteMsgPort(AppPort);
 	}
 }
