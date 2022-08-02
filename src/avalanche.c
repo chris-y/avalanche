@@ -56,6 +56,7 @@
 #include "req.h"
 #include "libs.h"
 #include "locale.h"
+#include "win.h"
 #include "xad.h"
 #include "xfd.h"
 #include "xvs.h"
@@ -76,104 +77,31 @@ struct arc_entries {
 };
 
 enum {
-	GID_MAIN = 0,
-	GID_ARCHIVE,
-	GID_DEST,
-	GID_LIST,
-	GID_EXTRACT,
-	GID_PROGRESS,
-	GID_LAST
-};
-
-enum {
-	WID_MAIN = 0,
-	WID_LAST
-};
-
-enum {
-	OID_MAIN = 0,
-	OID_LAST
-};
-
-enum {
 	ARC_NONE = 0,
 	ARC_XAD,
 	ARC_XFD
 };
 
-#define GID_EXTRACT_TEXT  locale_get_string( MSG_EXTRACT ) 
+#define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 #define IEVENT_POPUP 1L
-
-/** Menu **/
-
-struct NewMenu menu[] = {
-	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
-	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 0 Open
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 1
-	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 2 Archive Info
-	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 3 About
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 4
-	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 5 Quit
-
-	{NM_TITLE,  NULL,               0,  0, 0, 0,}, // 1 Edit
-	{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
-	{NM_ITEM,   NULL ,  "Z", NM_ITEMDISABLED, 0, 0,}, // 1 Clear Selection
-	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
-
-	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
-	{NM_ITEM,	NULL,     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 Scan
-	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1 HBrowser
-	{NM_ITEM,   NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2 Win posn
-	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 3 Confirm quit
-	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 4 Ignore FS
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 5
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 6 Save settings
-
-	{NM_END,   NULL,        0,  0, 0, 0,},
-};
 
 /** Global config **/
 #define PROGRESS_SIZE_DEFAULT 20
 
-static char *progname = NULL;
 static char *dest;
 static char *archive = NULL;
-static char *tmpdir = NULL;
-static int tmpdirlen = 0;
 
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
 static BOOL dir_seen = FALSE;
 
-static BOOL save_win_posn = FALSE;
-static BOOL h_browser = FALSE;
-static BOOL virus_scan = FALSE;
-static BOOL debug = FALSE;
-static BOOL confirmquit = FALSE;
-static BOOL ignorefs = FALSE;
-
-static ULONG win_x = 0;
-static ULONG win_y = 0;
-static ULONG win_w = 0;
-static ULONG win_h = 0;
-static ULONG progress_size = PROGRESS_SIZE_DEFAULT;
-
-static int cx_pri = 0;
-static BOOL cx_popup = TRUE;
-static char *cx_popkey = NULL;
+static struct avalanche_config config;
 
 /** Shared variables **/
 static struct MinList deletelist;
-static struct List lblist;
 static struct Locale *locale = NULL;
 static ULONG current_item = 0;
 static ULONG total_items = 0;
-
-static struct Window *windows[WID_LAST];
-static struct Gadget *gadgets[GID_LAST];
-static Object *objects[OID_LAST];
-
-ULONG archiver = ARC_NONE;
 
 /** Useful functions **/
 #ifndef __amigaos4__
@@ -960,494 +888,344 @@ static void gui(void)
 	struct MsgPort *AppPort = NULL;
 	struct MsgPort *winport = NULL;
 	struct MsgPort *appwin_mp = NULL;
-	struct AppWindow *appwin = NULL;
 	struct AppMessage *appmsg = NULL;
 	struct AppMenuItem *appmenu = NULL;
 	ULONG appwin_sig = 0;
 
-	struct Hook aslfilterhook;
-	aslfilterhook.h_Entry = aslfilterfunc;
-	aslfilterhook.h_SubEntry = NULL;
-	aslfilterhook.h_Data = NULL;
-
-	ULONG tag_default_position = WINDOW_Position;
-
-	struct ColumnInfo *lbci = AllocLBColumnInfo(3, 
-		LBCIA_Column, 0,
-			LBCIA_Title,  locale_get_string( MSG_NAME ) ,
-			LBCIA_Weight, 65,
-			LBCIA_DraggableSeparator, TRUE,
-			LBCIA_Sortable, TRUE,
-			LBCIA_SortArrow, TRUE,
-			LBCIA_AutoSort, TRUE,
-		LBCIA_Column, 1,
-			LBCIA_Title,  locale_get_string( MSG_SIZE ) ,
-			LBCIA_Weight, 15,
-			LBCIA_DraggableSeparator, TRUE,
-			LBCIA_Sortable, TRUE,
-			LBCIA_SortArrow, TRUE,
-			LBCIA_AutoSort, TRUE,
-		LBCIA_Column, 2,
-			LBCIA_Title,  locale_get_string( MSG_DATE ) ,
-			LBCIA_Weight, 20,
-			LBCIA_DraggableSeparator, TRUE,
-			LBCIA_Sortable, TRUE,
-			LBCIA_SortArrow, TRUE,
-			LBCIA_AutoSort, TRUE,
-		TAG_DONE);
-
-	NewList(&lblist);
-
-	if(virus_scan) menu[12].nm_Flags |= CHECKED;
-	if(h_browser) menu[13].nm_Flags |= CHECKED;
-	if(save_win_posn) menu[14].nm_Flags |= CHECKED;
-	if(confirmquit) menu[15].nm_Flags |= CHECKED;
-	if(ignorefs) menu[16].nm_Flags |= CHECKED;
-	if(progname == NULL) menu[18].nm_Flags |= NM_ITEMDISABLED;
-
-	if(win_x && win_y) tag_default_position = TAG_IGNORE;
+	ULONG wait, signal, app;
+	ULONG done = FALSE;
+	ULONG result;
+	UWORD code;
+	long ret = 0;
+	ULONG tmp = 0;
+	struct Node *node;
+	
+	void *awin = NULL;
 
 	if((AppPort = CreateMsgPort()) && (winport = CreateMsgPort())) {
-		/* Create the window object.
-		 */
-		objects[OID_MAIN] = WindowObj,
-			WA_ScreenTitle, VERS,
-			WA_Title, VERS,
-			WA_Activate, TRUE,
-			WA_DepthGadget, TRUE,
-			WA_DragBar, TRUE,
-			WA_CloseGadget, TRUE,
-			WA_SizeGadget, TRUE,
-			WA_Top, win_x,
-			WA_Left, win_y,
-			WA_Width, win_w,
-			WA_Height, win_h,
-			WINDOW_NewMenu, menu,
-			WINDOW_IconifyGadget, TRUE,
-			WINDOW_IconTitle, "Avalanche",
-			WINDOW_SharedPort, winport,
-			WINDOW_AppPort, AppPort,
-			tag_default_position, WPOS_CENTERSCREEN,
-			WINDOW_ParentGroup, gadgets[GID_MAIN] = LayoutVObj,
-				//LAYOUT_DeferLayout, TRUE,
-				LAYOUT_SpaceOuter, TRUE,
-				LAYOUT_AddChild, LayoutHObj,
-					LAYOUT_AddChild, LayoutVObj,
-						LAYOUT_AddChild, gadgets[GID_ARCHIVE] = GetFileObj,
-							GA_ID, GID_ARCHIVE,
-							GA_RelVerify, TRUE,
-							GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
-							GETFILE_FullFile, archive,
-							GETFILE_ReadOnly, TRUE,
-							GETFILE_FilterFunc, &aslfilterhook,
-						End,
-						CHILD_WeightedHeight, 0,
-						CHILD_Label, LabelObj,
-							LABEL_Text,  locale_get_string( MSG_ARCHIVE ) ,
-						LabelEnd,
-						LAYOUT_AddChild, gadgets[GID_DEST] = GetFileObj,
-							GA_ID, GID_DEST,
-							GA_RelVerify, TRUE,
-							GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-							GETFILE_Drawer, dest,
-							GETFILE_DoSaveMode, TRUE,
-							GETFILE_DrawersOnly, TRUE,
-							GETFILE_ReadOnly, TRUE,
-						End,
-						CHILD_WeightedHeight, 0,
-						CHILD_Label, LabelObj,
-							LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
-						LabelEnd,
-					LayoutEnd,
-					LAYOUT_WeightBar, TRUE,
-					LAYOUT_AddChild, gadgets[GID_PROGRESS] = FuelGaugeObj,
-						GA_ID, GID_PROGRESS,
-					FuelGaugeEnd,
-					CHILD_WeightedWidth, progress_size,
-				LayoutEnd,
-				CHILD_WeightedHeight, 0,
-				LAYOUT_AddChild, LayoutVObj,
-					LAYOUT_AddChild, gadgets[GID_LIST] = ListBrowserObj,
-						GA_ID, GID_LIST,
-						GA_RelVerify, TRUE,
-						LISTBROWSER_ColumnInfo, lbci,
-						LISTBROWSER_Labels, &lblist,
-						LISTBROWSER_ColumnTitles, TRUE,
-						LISTBROWSER_TitleClickable, TRUE,
-						LISTBROWSER_SortColumn, 0,
-						LISTBROWSER_Striping, LBS_ROWS,
-						LISTBROWSER_FastRender, TRUE,
-						LISTBROWSER_Hierarchical, h_browser,
-					ListBrowserEnd,
-					LAYOUT_AddChild, gadgets[GID_EXTRACT] = ButtonObj,
-						GA_ID, GID_EXTRACT,
-						GA_RelVerify, TRUE,
-						GA_Text, GID_EXTRACT_TEXT,
-					ButtonEnd,
-					CHILD_WeightedHeight, 0,
-				LayoutEnd,
-			EndGroup,
-		EndWindow;
 
-	 	/*  Object creation sucessful?
-	 	 */
-		if (objects[OID_MAIN]) {
-
-			if(cx_mp = RegisterCx(&cx_broker)) {
-				cx_signal = (1 << cx_mp->mp_SigBit);
+		/* Register CX */
+		if(cx_mp = RegisterCx(&cx_broker)) {
+			cx_signal = (1 << cx_mp->mp_SigBit);
+		}
+		
+		/* Register in Tools menu */
+		if(appwin_mp = CreateMsgPort()) {
+			if(appmenu = AddAppMenuItem(0, 0, locale_get_string(MSG_APPMENU_EXTRACTHERE), appwin_mp,
+							WBAPPMENUA_CommandKeyString, "X",
+							TAG_DONE)) {
 			}
+			appwin_sig = 1L << appwin_mp->mp_SigBit;
+		}
 
-			/*  Open the window.
-			 */
-			if(cx_popup) {
-				windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
-			} else {
-				windows[WID_MAIN] = NULL;
-			}
+		if(cx_popup || archive) {
+			/* only create the window object if we are showing the window OR have an archive */
+			awin = window_create(&config, winport, AppPort);
+
+			/* Open window */
+			if(cx_popup) window_open(awin, appwin_mp);
 
 			/* Open initial archive, if there is one. */
 			if(archive) open_archive_req(TRUE);
+		}
+		
+		
+		/* Input Event Loop
+		 */
+		 
+		signal = (1L << winport << winport->mp_SigBit);
+		app = (1L << AppPort->mp_SigBit);
+		 
+		while (!done) {
+			wait = Wait( signal | app | appwin_sig | cx_signal );
 
-			ULONG wait, signal = (1L << winport << winport->mp_SigBit), app = (1L << AppPort->mp_SigBit);
-			ULONG done = FALSE;
-			ULONG result;
-			UWORD code;
-			long ret = 0;
-			ULONG tmp = 0;
-			struct Node *node;
+			if(wait & cx_signal) {
+				ULONG cx_msgid, cx_msgtype;
+				CxMsg *cx_msg;
 
-			if(appwin_mp = CreateMsgPort()) {
-				if(appmenu = AddAppMenuItem(0, 0, locale_get_string(MSG_APPMENU_EXTRACTHERE), appwin_mp,
-								WBAPPMENUA_CommandKeyString, "X",
-								TAG_DONE)) {
-					appwin_sig = 1L << appwin_mp->mp_SigBit;
-				}
+				while(cx_msg = (CxMsg *)GetMsg(cx_mp)) {
+					cx_msgid = CxMsgID(cx_msg);
+					cx_msgtype = CxMsgType(cx_msg);
+					ReplyMsg((struct Message *)cx_msg);
 
-				if(windows[WID_MAIN]) {
-					appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
-				}
-			}
+					switch(cx_msgtype) {
+						case CXM_COMMAND:
+							switch(cx_msgid) {
+								case CXCMD_KILL:
+									done = TRUE;
+								break;
+								case CXCMD_APPEAR:
+									window_open(awin, appwin_mp);
+								break;
+								case CXCMD_UNIQUE:
+									//not unique, ignore
+								break;
+								case CXCMD_DISAPPEAR:
+									window_close(awin);
+								break;
 
-			/* Input Event Loop
-			 */
-			while (!done) {
-				wait = Wait( signal | app | appwin_sig | cx_signal );
-
-				if(wait & cx_signal) {
-					ULONG cx_msgid, cx_msgtype;
-					CxMsg *cx_msg;
-
-					while(cx_msg = (CxMsg *)GetMsg(cx_mp)) {
-						cx_msgid = CxMsgID(cx_msg);
-						cx_msgtype = CxMsgType(cx_msg);
-						ReplyMsg((struct Message *)cx_msg);
-
-						switch(cx_msgtype) {
-							case CXM_COMMAND:
-								switch(cx_msgid) {
-									case CXCMD_KILL:
-										done = TRUE;
-									break;
-									case CXCMD_APPEAR:
-										if(windows[WID_MAIN] == NULL) {
-											windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
-
-											if (windows[WID_MAIN]) {
-												GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-												appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
-											} else {
-												done = TRUE;	// error re-opening window!
-											}
-										} else {
-											WindowToFront(windows[WID_MAIN]);
-										}
-									break;
-									case CXCMD_UNIQUE:
-										//not unique, ignore
-									break;
-									case CXCMD_DISAPPEAR:
-										if(windows[WID_MAIN]) {
-											RemoveAppWindow(appwin);
-											RA_CloseWindow(objects[OID_MAIN]);
-											windows[WID_MAIN] = NULL;
-										}
-									break;
-
-									/* Nothing to disable yet, here for later use */
-									case CXCMD_ENABLE:
-									case CXCMD_DISABLE:
-									default:
-									break;
-								}
-							break;
-							case CXM_IEVENT:
-								switch(cx_msgid) {
-									case IEVENT_POPUP:
-										if(windows[WID_MAIN] == NULL) {
-											windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
-
-											if (windows[WID_MAIN]) {
-												GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-												appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
-											} else {
-												done = TRUE;	// error re-opening window!
-											}
-										} else {
-											WindowToFront(windows[WID_MAIN]);
-										}
-									break;
-								}
-							default:
-							break;
-						}
+								/* Nothing to disable yet, here for later use */
+								case CXCMD_ENABLE:
+								case CXCMD_DISABLE:
+								default:
+								break;
+							}
+						break;
+						case CXM_IEVENT:
+							switch(cx_msgid) {
+								case IEVENT_POPUP:
+									window_open(awin, appwin_mp);
+								break;
+							}
+						default:
+						break;
 					}
-				} else if(wait & appwin_sig) {
-					while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
-						struct WBArg *wbarg = appmsg->am_ArgList;
-						switch(appmsg->am_Type) {
-							case AMTYPE_APPWINDOW:
+				}
+			} else if(wait & appwin_sig) {
+				while(appmsg = (struct AppMessage *)GetMsg(appwin_mp)) {
+					struct WBArg *wbarg = appmsg->am_ArgList;
+					switch(appmsg->am_Type) {
+						case AMTYPE_APPWINDOW:
+							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+
+								/* TODO: manage archive within window structure */
+								if(archive_needs_free) free_archive_path();
+								if(archive = AllocVec(512, MEMF_CLEAR)) {
+									NameFromLock(wbarg->wa_Lock, archive, 512);
+									AddPart(archive, wbarg->wa_Name, 512);
+									window_update_archive(appmsg->am_UserData, archive);
+
+									open_archive_req(TRUE);
+									if(progname && (appmsg->am_NumArgs > 1)) {
+										for(int i = 1; i < appmsg->am_NumArgs; i++) {
+											wbarg++;
+											OpenWorkbenchObject(progname+8,
+												WBOPENA_ArgLock, wbarg->wa_Lock,
+												WBOPENA_ArgName, wbarg->wa_Name,
+												TAG_DONE);
+										}
+									}
+								}
+							}
+						break;
+						case AMTYPE_APPMENUITEM:
+							for(int i=0; i<appmsg->am_NumArgs; i++) {
 								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+									/* TODO: manage archive within window structure */
 									if(archive_needs_free) free_archive_path();
 									if(archive = AllocVec(512, MEMF_CLEAR)) {
+										char *tempdest = NULL;
 										NameFromLock(wbarg->wa_Lock, archive, 512);
+										tempdest = strdup(archive);
 										AddPart(archive, wbarg->wa_Name, 512);
-										SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
-														GETFILE_FullFile, archive, TAG_DONE);
+										window_update_archive(appmsg->am_UserData, archive);
 										open_archive_req(TRUE);
-										if(progname && (appmsg->am_NumArgs > 1)) {
-											for(int i = 1; i < appmsg->am_NumArgs; i++) {
-												wbarg++;
-												OpenWorkbenchObject(progname+8,
-													WBOPENA_ArgLock, wbarg->wa_Lock,
-													WBOPENA_ArgName, wbarg->wa_Name,
-													TAG_DONE);
-											}
+										if(archiver != ARC_NONE) {
+											ret = extract(tempdest, NULL);
+											if(ret != 0) show_error(ret);
 										}
 									}
 								}
-							break;
-							case AMTYPE_APPMENUITEM:
-								for(int i=0; i<appmsg->am_NumArgs; i++) {
-									if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-										if(archive_needs_free) free_archive_path();
-										if(archive = AllocVec(512, MEMF_CLEAR)) {
-											char *tempdest = NULL;
-											NameFromLock(wbarg->wa_Lock, archive, 512);
-											tempdest = strdup(archive);
-											AddPart(archive, wbarg->wa_Name, 512);
-											SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
-															GETFILE_FullFile, archive, TAG_DONE);
-											open_archive_req(TRUE);
-											if(archiver != ARC_NONE) {
-												ret = extract(tempdest, NULL);
-												if(ret != 0) show_error(ret);
-											}
-										}
-									}
-									wbarg++;
-								}
-							break;
-							default:
-							break;
-						}
-						ReplyMsg((struct Message *)appmsg);
+								wbarg++;
+							}
+						break;
+						default:
+						break;
 					}
-				} else {
-					while((done == FALSE) && ((result = RA_HandleInput(objects[OID_MAIN], &code) ) != WMHI_LASTMSG)) {
-						switch (result & WMHI_CLASSMASK) {
-							case WMHI_CLOSEWINDOW:
-								if(ask_quit()) {
-									windows[WID_MAIN] = NULL;
-									done = TRUE;
-								}
+					ReplyMsg((struct Message *)appmsg);
+				}
+			} else {
+				while((done == FALSE) && ((result = RA_HandleInput(window_get_object(awin), &code) ) != WMHI_LASTMSG)) {
+					switch (result & WMHI_CLASSMASK) {
+						case WMHI_CLOSEWINDOW:
+							if(ask_quit()) {
+								window_close(awin);
+								done = TRUE;
+							}
+						break;
+
+						case WMHI_GADGETUP:
+							switch (result & WMHI_GADGETMASK) {
+								case GID_ARCHIVE:
+									open_archive_req(FALSE);
+								break;
+									
+								case GID_DEST:
+									if(dest_needs_free) free_dest_path();
+									DoMethod((Object *)gadgets[GID_DEST], GFILE_REQUEST, windows[WID_MAIN]);
+									GetAttr(GETFILE_Drawer, gadgets[GID_DEST], (APTR)&dest);
+								break;
+
+								case GID_EXTRACT:
+									ret = extract(NULL, NULL);
+									if(ret != 0) show_error(ret);
+								break;
+
+								case GID_LIST:
+									GetAttr(LISTBROWSER_RelEvent, gadgets[GID_LIST], (APTR)&tmp);
+									switch(tmp) {
+#if 0 /* This selects items when single-clicked off the checkbox -
+	 it's incompatible with doube-clicking as it resets the listview */
+										case LBRE_NORMAL:
+											GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
+											toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 2);
+										break;
+#endif
+										case LBRE_DOUBLECLICK:
+											GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
+											toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 1); /* ensure selected */
+											char fn[1024];
+											strcpy(fn, tmpdir);
+											ret = extract(fn, node);
+											if(ret == 0) {
+												AddPart(fn, get_item_filename(node), 1024);
+												add_to_delete_list(fn);
+												OpenWorkbenchObjectA(fn, NULL);
+											} else {
+												show_error(ret);
+											}
+										break;
+									}
+								break;
+							}
 							break;
 
-							case WMHI_GADGETUP:
-								switch (result & WMHI_GADGETMASK) {
-									case GID_ARCHIVE:
-										open_archive_req(FALSE);
-									break;
-										
-									case GID_DEST:
-										if(dest_needs_free) free_dest_path();
-										DoMethod((Object *)gadgets[GID_DEST], GFILE_REQUEST, windows[WID_MAIN]);
-										GetAttr(GETFILE_Drawer, gadgets[GID_DEST], (APTR)&dest);
-									break;
+						case WMHI_RAWKEY:
+							switch(result & WMHI_GADGETMASK) {
+								case RAWKEY_ESC:
+									if(ask_quit()) {
+										done = TRUE;
+									}
+								break;
 
-									case GID_EXTRACT:
-										ret = extract(NULL, NULL);
-										if(ret != 0) show_error(ret);
-									break;
+								case RAWKEY_RETURN:
+									ret = extract(NULL, NULL);
+									if(ret != 0) show_error(ret);
+								break;
+							}
+						break;
 
-									case GID_LIST:
-										GetAttr(LISTBROWSER_RelEvent, gadgets[GID_LIST], (APTR)&tmp);
-										switch(tmp) {
-#if 0 /* This selects items when single-clicked off the checkbox -
-         it's incompatible with doube-clicking as it resets the listview */
-											case LBRE_NORMAL:
-												GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
-												toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 2);
+						case WMHI_ICONIFY:
+							RemoveAppWindow(appwin);
+							RA_Iconify(objects[OID_MAIN]);
+							windows[WID_MAIN] = NULL;
+						break;
+
+						case WMHI_UNICONIFY:
+							if(windows[WID_MAIN] == NULL) {
+								windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
+
+								if (windows[WID_MAIN]) {
+									GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
+									appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
+								} else {
+									done = TRUE;	// error re-opening window!
+								}
+							} else {
+								WindowToFront(windows[WID_MAIN]);
+							}
+						break;
+								
+						 case WMHI_MENUPICK:
+							while((code != MENUNULL) && (done == FALSE)) {
+								if(windows[WID_MAIN] == NULL) continue;
+								struct MenuItem *item = ItemAddress(windows[WID_MAIN]->MenuStrip, code);
+
+								switch(MENUNUM(code)) {
+									case 0: //project
+										switch(ITEMNUM(code)) {
+											case 0: //open
+												open_archive_req(FALSE);
 											break;
-#endif
-											case LBRE_DOUBLECLICK:
-												GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
-												toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 1); /* ensure selected */
-												char fn[1024];
-												strcpy(fn, tmpdir);
-												ret = extract(fn, node);
-												if(ret == 0) {
-													AddPart(fn, get_item_filename(node), 1024);
-													add_to_delete_list(fn);
-													OpenWorkbenchObjectA(fn, NULL);
-												} else {
-													show_error(ret);
+											
+											case 2: //info
+												switch(archiver) {
+													case ARC_XAD:
+														xad_show_arc_info();
+													break;
+													case ARC_XFD:
+														xfd_show_arc_info();
+													break;
+												}
+											break;
+
+											case 3: //about
+												show_about();
+											break;
+											
+											case 5: //quit
+												if(ask_quit()) {
+													done = TRUE;
 												}
 											break;
 										}
 									break;
-								}
-								break;
+									
+									case 1: //edit
+										switch(ITEMNUM(code)) {
+											case 0: //select all
+												modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 1);
+											break;
+											
+											case 1: //clear selection
+												modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 0);
+											break;
 
-							case WMHI_RAWKEY:
-								switch(result & WMHI_GADGETMASK) {
-									case RAWKEY_ESC:
-										if(ask_quit()) {
-											done = TRUE;
+											case 2: //invert selection
+												modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 2);
+											break;
 										}
 									break;
+									
+									case 2: //settings
+										switch(ITEMNUM(code)) {
+											case 0: //virus scan
+												virus_scan = !virus_scan;
+											break;
 
-									case RAWKEY_RETURN:
-										ret = extract(NULL, NULL);
-										if(ret != 0) show_error(ret);
-									break;
-								}
-							break;
-
-							case WMHI_ICONIFY:
-								RemoveAppWindow(appwin);
-								RA_Iconify(objects[OID_MAIN]);
-								windows[WID_MAIN] = NULL;
-							break;
-
-							case WMHI_UNICONIFY:
-								if(windows[WID_MAIN] == NULL) {
-									windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
-
-									if (windows[WID_MAIN]) {
-										GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-										appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
-									} else {
-										done = TRUE;	// error re-opening window!
-									}
-								} else {
-									WindowToFront(windows[WID_MAIN]);
-								}
-						 	break;
-								 	
-							 case WMHI_MENUPICK:
-								while((code != MENUNULL) && (done == FALSE)) {
-									if(windows[WID_MAIN] == NULL) continue;
-									struct MenuItem *item = ItemAddress(windows[WID_MAIN]->MenuStrip, code);
-
-									switch(MENUNUM(code)) {
-										case 0: //project
-											switch(ITEMNUM(code)) {
-												case 0: //open
-													open_archive_req(FALSE);
-												break;
-												
-												case 2: //info
-													switch(archiver) {
-														case ARC_XAD:
-															xad_show_arc_info();
-														break;
-														case ARC_XFD:
-															xfd_show_arc_info();
-														break;
-													}
-												break;
-
-												case 3: //about
-													show_about();
-												break;
-												
-												case 5: //quit
-													if(ask_quit()) {
-														done = TRUE;
-													}
-												break;
-											}
-										break;
-										
-										case 1: //edit
-											switch(ITEMNUM(code)) {
-												case 0: //select all
-													modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 1);
-												break;
-												
-												case 1: //clear selection
-													modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 0);
-												break;
-
-												case 2: //invert selection
-													modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 2);
-												break;
-											}
-										break;
-										
-										case 2: //settings
-											switch(ITEMNUM(code)) {
-												case 0: //virus scan
-													virus_scan = !virus_scan;
-												break;
-
-												case 1: //browser mode
-													h_browser = !h_browser;
-														
-													SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-															LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
-
-													open_archive_req(TRUE);
-												break;
+											case 1: //browser mode
+												h_browser = !h_browser;
 													
-												case 2: //save window position
-													save_win_posn = !save_win_posn;
-												break;
+												SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
+														LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
 
-												case 3: //save window position
-													confirmquit = !confirmquit;
-												break;
+												open_archive_req(TRUE);
+											break;
+												
+											case 2: //save window position
+												save_win_posn = !save_win_posn;
+											break;
 
-												case 4: //ignore fs
-													ignorefs = !ignorefs;
-													open_archive_req(TRUE);
-												break;
+											case 3: //save window position
+												confirmquit = !confirmquit;
+											break;
 
-												case 6: //save settings
-													savesettings(objects[OID_MAIN]);
-												break;
-											}
-										break;				
-									}
-									code = item->NextSelect;
+											case 4: //ignore fs
+												ignorefs = !ignorefs;
+												open_archive_req(TRUE);
+											break;
+
+											case 6: //save settings
+												savesettings(objects[OID_MAIN]);
+											break;
+										}
+									break;				
 								}
-							break; //WMHI_MENUPICK
-						}
+								code = item->NextSelect;
+							}
+						break; //WMHI_MENUPICK
 					}
 				}
 			}
-
-			DisposeObject(objects[OID_MAIN]);
-			if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 		}
 
-		if(lbci) FreeLBColumnInfo(lbci);
-		RemoveAppWindow(appwin);
-		RemoveAppMenuItem(appmenu);
-		if(appwin_mp) DeleteMsgPort(appwin_mp);
-		if(winport) DeleteMsgPort(winport);
-		DeleteMsgPort(AppPort);
-	}
+	window_dispose(awin);
+	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
+
+	RemoveAppMenuItem(appmenu);
+	if(appwin_mp) DeleteMsgPort(appwin_mp);
+	if(winport) DeleteMsgPort(winport);
+	DeleteMsgPort(AppPort);
 }
 
 static void gettooltypes(UBYTE **tooltypes)
@@ -1456,58 +1234,38 @@ static void gettooltypes(UBYTE **tooltypes)
 
 	s = ArgString(tooltypes, "CX_POPUP", "YES");
 	if(MatchToolValue(s, "NO")) {
-		cx_popup = FALSE;
+		config.cx_popup = FALSE;
 	}
 
-	cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
+	config.cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
 
 	s = ArgString(tooltypes, "CX_POPKEY", "ctrl alt a");
-	if(cx_popkey = AllocVec(strlen("rawkey ") + strlen(s) + 1, MEMF_ANY)) {
-		strcpy(cx_popkey, "rawkey ");
-		strcat(cx_popkey, s);
+	if(config.cx_popkey = AllocVec(strlen("rawkey ") + strlen(s) + 1, MEMF_ANY)) {
+		strcpy(config.cx_popkey, "rawkey ");
+		strcat(config.cx_popkey, s);
 	}
 
-	dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
-	dest_needs_free = TRUE;
+	config.dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
+	config.dest_needs_free = TRUE;
 
-	if(tmpdir) {
-		strncpy(tmpdir, ArgString(tooltypes, "TMPDIR", "T:"), 90);
-		tmpdirlen = strlen(tmpdir);
+	if(config.tmpdir) {
+		strncpy(config.tmpdir, ArgString(tooltypes, "TMPDIR", "T:"), 90);
+		config.tmpdirlen = strlen(config.tmpdir);
 	}
 
-	if(FindToolType(tooltypes, "HBROWSER")) h_browser = TRUE;
-	if(FindToolType(tooltypes, "VIRUSSCAN")) virus_scan = TRUE;
-	if(FindToolType(tooltypes, "SAVEWINPOSN")) save_win_posn = TRUE;
-	if(FindToolType(tooltypes, "CONFIRMQUIT")) confirmquit = TRUE;
-	if(FindToolType(tooltypes, "IGNOREFS")) ignorefs = TRUE;
-	if(FindToolType(tooltypes, "DEBUG")) debug = TRUE;
+	if(FindToolType(tooltypes, "HBROWSER")) config.h_browser = TRUE;
+	if(FindToolType(tooltypes, "VIRUSSCAN")) config.virus_scan = TRUE;
+	if(FindToolType(tooltypes, "SAVEWINPOSN")) config.save_win_posn = TRUE;
+	if(FindToolType(tooltypes, "CONFIRMQUIT")) config.confirmquit = TRUE;
+	if(FindToolType(tooltypes, "IGNOREFS")) config.ignorefs = TRUE;
+	if(FindToolType(tooltypes, "DEBUG")) config.debug = TRUE;
 
-	progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
+	config.progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
 
-	win_x = ArgInt(tooltypes, "WINX", 0);
-	win_y = ArgInt(tooltypes, "WINY", 0);
-	win_w = ArgInt(tooltypes, "WINW", 0);
-	win_h = ArgInt(tooltypes, "WINH", 0);
-}
-
-static void fill_menu_labels(void)
-{
-	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
-	menu[1].nm_Label = locale_get_string( MSG_OPEN );
-	menu[3].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
-	menu[4].nm_Label = locale_get_string( MSG_ABOUT );
-	menu[6].nm_Label = locale_get_string( MSG_QUIT );
-	menu[7].nm_Label = locale_get_string( MSG_EDIT );
-	menu[8].nm_Label = locale_get_string( MSG_SELECTALL );
-	menu[9].nm_Label = locale_get_string( MSG_CLEARSELECTION );
-	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
-	menu[11].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[12].nm_Label = locale_get_string( MSG_SCANFORVIRUSES );
-	menu[13].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[14].nm_Label = locale_get_string( MSG_SAVEWINDOWPOSITION );
-	menu[15].nm_Label = locale_get_string( MSG_CONFIRMQUIT );
-	menu[16].nm_Label = locale_get_string( MSG_IGNOREFILESYSTEMS );
-	menu[18].nm_Label = locale_get_string( MSG_SAVESETTINGS );
+	config.win_x = ArgInt(tooltypes, "WINX", 0);
+	config.win_y = ArgInt(tooltypes, "WINY", 0);
+	config.win_w = ArgInt(tooltypes, "WINW", 0);
+	config.win_h = ArgInt(tooltypes, "WINH", 0);
 }
 
 /** Main program **/
@@ -1518,6 +1276,31 @@ int main(int argc, char **argv)
 	if(libs_open() == FALSE) {
 		return 10;
 	}
+
+
+	/* Initialise config default values */
+	config.progname = NULL;
+	config.dest = NULL;
+	config.save_win_posn = FALSE;
+	config.h_browser = FALSE;
+	config.virus_scan = FALSE;
+	config.debug = FALSE;
+	config.confirmquit = FALSE;
+	config.ignorefs = FALSE;
+
+	config.win_x = 0;
+	config.win_y = 0;
+	config.win_w = 0;
+	config.win_h = 0;
+	config.progress_size = PROGRESS_SIZE_DEFAULT;
+
+	config.cx_pri = 0;
+	config.cx_popup = TRUE;
+	config.cx_popkey = NULL;
+
+	config.tmpdir = NULL;
+	config.tmpdirlen = 0;
+
 
 	if(argc == 0) {
 		/* Started from WB */
@@ -1555,7 +1338,7 @@ int main(int argc, char **argv)
         }
 	}
 
-	tmpdir = AllocVec(100, MEMF_CLEAR);
+	config.tmpdir = AllocVec(100, MEMF_CLEAR);
 	NewMinList(&deletelist);
 	
 	UBYTE **tooltypes = ArgArrayInit(argc, (CONST_STRPTR *) argv);
@@ -1568,8 +1351,8 @@ int main(int argc, char **argv)
 
 	if(tmp = AllocVec(20, MEMF_CLEAR)) {
 		sprintf(tmp, "Avalanche.%lx", GetUniqueID());
-		AddPart(tmpdir, tmp, 100);
-		UnLock(CreateDir(tmpdir));
+		AddPart(config.tmpdir, tmp, 100);
+		UnLock(CreateDir(config.tmpdir));
 		FreeVec(tmp);
 	}
 
@@ -1580,13 +1363,12 @@ int main(int argc, char **argv)
 	delete_delete_list();
 	DeleteFile(tmpdir);
 
-	if(cx_popkey) FreeVec(cx_popkey);
-	if(tmpdir) FreeVec(tmpdir);
-	if(progname != NULL) FreeVec(progname);
+	if(config.cx_popkey) FreeVec(cx_popkey);
+	if(config.tmpdir) FreeVec(tmpdir);
+	if(config.progname != NULL) FreeVec(progname);
 	if(archive_needs_free) free_archive_path();
-	if(dest_needs_free) free_dest_path();
+	if(config.dest_needs_free) free_dest_path();
 	
-	FreeListBrowserList(&lblist);
 	xad_exit();
 	xfd_exit();
 	libs_close();
