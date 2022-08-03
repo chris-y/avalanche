@@ -219,7 +219,7 @@ BOOL xad_recog(char *file)
 #ifndef __amigaos4__
 	ULONG xadrs = xadMasterBase->xmb_RecogSize;
 #else
-	struct xadSystemInfo *xadsi = xadGetSystemInfo();
+	const struct xadSystemInfo *xadsi = xadGetSystemInfo();
 	ULONG xadrs = xadsi->xsi_RecogSize;
 #endif
 
