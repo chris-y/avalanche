@@ -99,7 +99,7 @@ Files will not be further extracted in order to be scanned, so infected files th
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}1.7 (??.??.????)@{uu}
+@{u}1.7 (03.08.2022)@{uu}
 * Avalanche now registers as a commodity
 * Added Tools menu item "Extract here" for quick extraction
 * Fix initial state of "confirm quit" and "ignore fs" menu items.
