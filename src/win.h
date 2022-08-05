@@ -26,6 +26,7 @@ void window_update_archive(void *awin, char *archive);
 
 /* Handle events */
 void window_list_handle(void *awin);
+void window_req_open_archive(void *awin, BOOL refresh_only);
 char *window_req_dest(void *awin);
 
 /* Get info */

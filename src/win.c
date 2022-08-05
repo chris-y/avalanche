@@ -332,6 +332,58 @@ char *window_req_dest(void *awin)
 	return aw->dest;
 }
 
+void window_req_open_archive(void *awin, BOOL refresh_only)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	dir_seen = FALSE;
+	long ret = 0;
+	long retxfd = 0;
+
+	if(refresh_only == FALSE) {
+		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
+		if(ret == 0) return;
+	}
+
+	// do we need this?  if(archive_needs_free) free_archive_path();
+	GetAttr(GETFILE_FullFile, aw->gadgets[GID_ARCHIVE], (APTR)&aw->archive);
+
+	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+										WA_BusyPointer, TRUE,
+										TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	FreeListBrowserList(&aw->lblist);
+
+	ret = xad_info(aw->archive, !config.ignorefs, addlbnode_cb);
+	if(ret != 0) { /* if xad failed try xfd */
+		retxfd = xfd_info(aw->archive, addlbnodexfd_cb);
+		if(retxfd != 0) show_error(ret);
+	}
+
+	if(ret == 0) {
+		archiver = ARC_XAD;
+		menu_activation(TRUE);
+	} else if(retxfd == 0) {
+		archiver = ARC_XFD;
+		menu_activation(TRUE);
+	} else {
+		archiver = ARC_NONE;
+		menu_activation(FALSE);
+	}
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+				LISTBROWSER_Labels, &lblist,
+				LISTBROWSER_SortColumn, 0,
+			TAG_DONE);
+
+	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+											WA_BusyPointer, FALSE,
+											TAG_DONE);
+}
+
 
 Object *window_get_object(void *awin)
 {

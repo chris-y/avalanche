@@ -547,56 +547,6 @@ static void menu_activation(BOOL enable)
 	}
 }
 
-static void open_archive_req(BOOL refresh_only)
-{
-	dir_seen = FALSE;
-	long ret = 0;
-	long retxfd = 0;
-
-	if(refresh_only == FALSE) {
-		ret = DoMethod((Object *) gadgets[GID_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
-		if(ret == 0) return;
-	}
-
-	if(archive_needs_free) free_archive_path();
-	GetAttr(GETFILE_FullFile, gadgets[GID_ARCHIVE], (APTR)&archive);
-
-	if(windows[WID_MAIN]) SetWindowPointer(windows[WID_MAIN],
-										WA_BusyPointer, TRUE,
-										TAG_DONE);
-
-	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, ~0, TAG_DONE);
-
-	FreeListBrowserList(&lblist);
-
-	ret = xad_info(archive, !ignorefs, addlbnode_cb);
-	if(ret != 0) { /* if xad failed try xfd */
-		retxfd = xfd_info(archive, addlbnodexfd_cb);
-		if(retxfd != 0) show_error(ret);
-	}
-
-	if(ret == 0) {
-		archiver = ARC_XAD;
-		menu_activation(TRUE);
-	} else if(retxfd == 0) {
-		archiver = ARC_XFD;
-		menu_activation(TRUE);
-	} else {
-		archiver = ARC_NONE;
-		menu_activation(FALSE);
-	}
-
-	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-				LISTBROWSER_Labels, &lblist,
-				LISTBROWSER_SortColumn, 0,
-			TAG_DONE);
-
-	if(windows[WID_MAIN]) SetWindowPointer(windows[WID_MAIN],
-											WA_BusyPointer, FALSE,
-											TAG_DONE);
-}
-
 static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG select)
 {
 	struct Node *node;
@@ -904,7 +854,7 @@ static void gui(void)
 			if(cx_popup) window_open(awin, appwin_mp);
 
 			/* Open initial archive, if there is one. */
-			if(archive) open_archive_req(TRUE);
+			if(archive) window_req_open_archive(awin, TRUE);
 		}
 		
 		
@@ -976,7 +926,7 @@ static void gui(void)
 									AddPart(archive, wbarg->wa_Name, 512);
 									window_update_archive(appmsg->am_UserData, archive);
 
-									open_archive_req(TRUE);
+									window_req_open_archive(awin, TRUE);
 									if(progname && (appmsg->am_NumArgs > 1)) {
 										for(int i = 1; i < appmsg->am_NumArgs; i++) {
 											wbarg++;
@@ -1000,7 +950,7 @@ static void gui(void)
 										tempdest = strdup(archive);
 										AddPart(archive, wbarg->wa_Name, 512);
 										window_update_archive(appmsg->am_UserData, archive);
-										open_archive_req(TRUE);
+										window_req_open_archive(awin, TRUE);
 										if(archiver != ARC_NONE) {
 											ret = extract(tempdest, NULL);
 											if(ret != 0) show_error(ret);
@@ -1028,7 +978,7 @@ static void gui(void)
 						case WMHI_GADGETUP:
 							switch (result & WMHI_GADGETMASK) {
 								case GID_ARCHIVE:
-									open_archive_req(FALSE);
+									window_req_open_archive(awin, FALSE);
 								break;
 									
 								case GID_DEST:
@@ -1079,7 +1029,7 @@ static void gui(void)
 									case 0: //project
 										switch(ITEMNUM(code)) {
 											case 0: //open
-												open_archive_req(FALSE);
+												window_req_open_archive(awin, FALSE);
 											break;
 											
 											case 2: //info
@@ -1133,7 +1083,7 @@ static void gui(void)
 												SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
 														LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
 
-												open_archive_req(TRUE);
+												window_req_open_archive(awin, TRUE);
 											break;
 												
 											case 2: //save window position
@@ -1146,7 +1096,7 @@ static void gui(void)
 
 											case 4: //ignore fs
 												ignorefs = !ignorefs;
-												open_archive_req(TRUE);
+												window_req_open_archive(awin, TRUE);
 											break;
 
 											case 6: //save settings
