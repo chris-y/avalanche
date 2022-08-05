@@ -597,28 +597,6 @@ static void open_archive_req(BOOL refresh_only)
 											TAG_DONE);
 }
 
-static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node *node, ULONG select)
-{
-	SetGadgetAttrs(list_gad, win, NULL,
-			LISTBROWSER_Labels, ~0, TAG_DONE);
-
-	ULONG current;
-	ULONG selected;
-
-	if(select == 2) {
-		GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
-		selected = !current;
-	} else {
-		selected = select;
-	}
-
-	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
-
-	SetGadgetAttrs(list_gad, win, NULL,
-			LISTBROWSER_Labels, &lblist,
-			TAG_DONE);
-}
-
 static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG select)
 {
 	struct Node *node;
@@ -961,7 +939,7 @@ static void gui(void)
 									//not unique, ignore
 								break;
 								case CXCMD_DISAPPEAR:
-									window_close(awin);
+									window_close(awin, FALSE);
 								break;
 
 								case CXCMD_ENABLE:
@@ -1042,7 +1020,7 @@ static void gui(void)
 					switch (result & WMHI_CLASSMASK) {
 						case WMHI_CLOSEWINDOW:
 							if(ask_quit()) {
-								window_close(awin);
+								window_close(awin, FALSE);
 								done = TRUE;
 							}
 						break;
@@ -1055,8 +1033,7 @@ static void gui(void)
 									
 								case GID_DEST:
 									if(dest_needs_free) free_dest_path();
-									DoMethod((Object *)gadgets[GID_DEST], GFILE_REQUEST, windows[WID_MAIN]);
-									GetAttr(GETFILE_Drawer, gadgets[GID_DEST], (APTR)&dest);
+									dest = window_req_dest(awin);
 								break;
 
 								case GID_EXTRACT:
@@ -1065,30 +1042,7 @@ static void gui(void)
 								break;
 
 								case GID_LIST:
-									GetAttr(LISTBROWSER_RelEvent, gadgets[GID_LIST], (APTR)&tmp);
-									switch(tmp) {
-#if 0 /* This selects items when single-clicked off the checkbox -
-	 it's incompatible with doube-clicking as it resets the listview */
-										case LBRE_NORMAL:
-											GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
-											toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 2);
-										break;
-#endif
-										case LBRE_DOUBLECLICK:
-											GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_LIST], (APTR)&node);
-											toggle_item(windows[WID_MAIN], gadgets[GID_LIST], node, 1); /* ensure selected */
-											char fn[1024];
-											strcpy(fn, tmpdir);
-											ret = extract(fn, node);
-											if(ret == 0) {
-												AddPart(fn, get_item_filename(node), 1024);
-												add_to_delete_list(fn);
-												OpenWorkbenchObjectA(fn, NULL);
-											} else {
-												show_error(ret);
-											}
-										break;
-									}
+									window_list_handle(awin);
 								break;
 							}
 							break;
@@ -1109,24 +1063,11 @@ static void gui(void)
 						break;
 
 						case WMHI_ICONIFY:
-							RemoveAppWindow(appwin);
-							RA_Iconify(objects[OID_MAIN]);
-							windows[WID_MAIN] = NULL;
+							window_close(awin, TRUE);
 						break;
 
 						case WMHI_UNICONIFY:
-							if(windows[WID_MAIN] == NULL) {
-								windows[WID_MAIN] = (struct Window *) RA_OpenWindow(objects[OID_MAIN]);
-
-								if (windows[WID_MAIN]) {
-									GetAttr(WINDOW_SigMask, objects[OID_MAIN], &signal);
-									appwin = AddAppWindowA(0, 0, windows[WID_MAIN], appwin_mp, NULL);
-								} else {
-									done = TRUE;	// error re-opening window!
-								}
-							} else {
-								WindowToFront(windows[WID_MAIN]);
-							}
+							window_open(awin);
 						break;
 								
 						 case WMHI_MENUPICK:

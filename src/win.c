@@ -43,6 +43,7 @@ struct avalanche_window {
 	struct List lblist;
 	struct Hook aslfilterhook;
 	struct AppWindow *appwin;
+	char *dest;
 };
 
 /** Menu **/
@@ -73,6 +74,29 @@ struct NewMenu menu[] = {
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
+
+/* Private functions */
+static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node *node, ULONG select)
+{
+	SetGadgetAttrs(list_gad, win, NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	ULONG current;
+	ULONG selected;
+
+	if(select == 2) {
+		GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
+		selected = !current;
+	} else {
+		selected = select;
+	}
+
+	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
+
+	SetGadgetAttrs(list_gad, win, NULL,
+			LISTBROWSER_Labels, &lblist,
+			TAG_DONE);
+}
 
 
 /* Window functions */
@@ -230,7 +254,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	}
 }			
 
-void window_close(void *awin)
+void window_close(void *awin, BOOL iconify)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
@@ -246,7 +270,7 @@ void window_dispose(void *awin)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	/* Ensure appwindow is removed */
-	if(aw->windows[WID_MAIN]) window_close(aw);
+	if(aw->windows[WID_MAIN]) window_close(aw, FALSE);
 	
 	/* Dispose window object */
 	DisposeObject(aw->objects[OID_MAIN]);
@@ -256,14 +280,58 @@ void window_dispose(void *awin)
 	if(aw->lbci) FreeLBColumnInfo(lbci);
 }
 
+void window_list_handle(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	ULONG tmp = 0;
+	struct Node *node = NULL;
+	
+	GetAttr(LISTBROWSER_RelEvent, aw->gadgets[GID_LIST], (APTR)&tmp);
+	switch(tmp) {
+#if 0 /* This selects items when single-clicked off the checkbox -
+it's incompatible with doube-clicking as it resets the listview */
+		case LBRE_NORMAL:
+			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+			toggle_item(aw->windows[WID_MAIN], aw->gadgets[GID_LIST], node, 2);
+		break;
+#endif
+		case LBRE_DOUBLECLICK:
+			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+			toggle_item(aw->windows[WID_MAIN], aw->gadgets[GID_LIST], node, 1); /* ensure selected */
+			char fn[1024];
+			strcpy(fn, config.tmpdir);
+			ret = extract(fn, node);
+			if(ret == 0) {
+				AddPart(fn, get_item_filename(node), 1024);
+				add_to_delete_list(fn);
+				OpenWorkbenchObjectA(fn, NULL);
+			} else {
+				show_error(ret);
+			}
+		break;
+	}
+}
+
 
 void window_update_archive(void *awin, char *archive)
 {
-		struct avalanche_window *aw = (struct avalanche_window *)awin;
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-		SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
-						GETFILE_FullFile, archive, TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
+					GETFILE_FullFile, archive, TAG_DONE);
 }
+
+char *window_req_dest(void *awin)
+{	
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	DoMethod((Object *)aw->gadgets[GID_DEST], GFILE_REQUEST, aw->windows[WID_MAIN]);
+	GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest);
+	
+	return aw->dest;
+}
+
 
 Object *window_get_object(void *awin)
 {

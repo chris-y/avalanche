@@ -18,11 +18,15 @@
 /* Basic window functions */
 void *win_create(struct avalanche_config *config, struct MsgPort *winport, struct MsgPort *appport);
 void window_open(void *awin, struct MsgPort *appwin_mp);
-void window_close(void *awin);
+void window_close(void *awin, BOOL iconify);
 void window_dispose(void *awin);
 
 /* Update window */
 void window_update_archive(void *awin, char *archive);
+
+/* Handle events */
+void window_list_handle(void *awin);
+char *window_req_dest(void *awin);
 
 /* Get info */
 Object *window_get_object(void *awin);
