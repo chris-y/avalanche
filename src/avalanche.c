@@ -964,9 +964,12 @@ static void gui(void)
 									window_close(awin);
 								break;
 
-								/* Nothing to disable yet, here for later use */
 								case CXCMD_ENABLE:
+									ActivateCxObj(cx_broker, 1L);
+								break;
 								case CXCMD_DISABLE:
+									ActivateCxObj(cx_broker, 0L);
+								break;
 								default:
 								break;
 							}

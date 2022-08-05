@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 1.6
+Version: 1.7
 Architecture: m68k-amigaos >= 3.2.0; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -18,15 +18,8 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Add ability to extract disk archives to images
-* Add ability to extract files from disk images/archives
-* Double-clicking now extracts the clicked file to a temporary location and opens it.
-  NB: This has required the previous "single click to select/deselect" to be disabled,
-      as the functionality was incompatible.
-* Add option to enable/disable the quit confirmation requester
-* Localisaton support
-* Improved progress display - now shows current file progress and total
-* Fix loading/saving of virusscan pref on OS4
-* Fix unchecking of files in archive
+* Avalanche now registers as a commodity
+* Added Tools menu item "Extract here" for quick extraction
+* Fix initial state of "confirm quit" and "ignore fs" menu items.
 
 For full history see documentation inside the archive.
