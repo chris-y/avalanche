@@ -44,6 +44,12 @@ enum {
 	XDISKFILE
 };
 
+struct xad_hookdata {
+	ULONG *pud;
+	void *awin;
+}
+
+/* TODO: ai should be set per window */
 static struct xadArchiveInfo *ai = NULL;
 static int arctype = XNONE;
 static char *pw = NULL;
@@ -123,7 +129,8 @@ static ULONG xad_progress(struct Hook *h, APTR obj, struct xadProgressInfo *xpi)
 static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct xadProgressInfo *xpi)
 #endif
 {
-	ULONG *pud = h->h_Data;
+	struct xad_hookdata *xhd = (struct xad_hookdata *)h->h_Data;
+	ULONG *pud = xhd->pud;
 	ULONG res;
 
 	switch(xpi->xpi_Mode) {
@@ -160,9 +167,9 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 
 		case XADPMODE_PROGRESS:
 			if(xpi->xpi_FileInfo) {
-				fuelgauge_update(xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size);
+				window_fuelgauge_update(xhd->awin, xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size);
 			} else if(xpi->xpi_DiskInfo) {
-				fuelgauge_update(xpi->xpi_CurrentSize,
+				window_fuelgauge_update(xhd->awin, xpi->xpi_CurrentSize,
 					xpi->xpi_DiskInfo->xdi_TotalSectors * xpi->xpi_DiskInfo->xdi_SectorSize);
 			}
 		break;
@@ -180,7 +187,7 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 	return XADPIF_OK;
 }
 
-void xad_show_arc_info(void)
+void xad_show_arc_info(void *awin)
 {
 	char message[100];
 	char *type;
@@ -204,7 +211,7 @@ void xad_show_arc_info(void)
 
 	sprintf(message, "%s %s", ai->xai_Client->xc_ArchiverName, type);	
 
-	open_info_req(message,  locale_get_string( MSG_OK ) );
+	open_info_req(message, locale_get_string(MSG_OK), awin);
 }
 
 BOOL xad_recog(char *file)
@@ -242,7 +249,7 @@ BOOL xad_recog(char *file)
 	return TRUE;
 }
 
-long xad_info(char *file, BOOL fs, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
+long xad_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
 {
 	long err = 0;
 	struct xadFileInfo *fi;
@@ -251,6 +258,7 @@ long xad_info(char *file, BOOL fs, void(*addnode)(char *name, LONG *size, BOOL d
 	ULONG total = 0;
 	ULONG i = 0;
 	ULONG size = 0;
+	BOOL fs = !config->ignorefs;
 
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
@@ -326,7 +334,7 @@ long xad_info(char *file, BOOL fs, void(*addnode)(char *name, LONG *size, BOOL d
 			fi = ai->xai_FileInfo;
 			while(fi) {
 				addnode(fi->xfi_FileName, &fi->xfi_Size,
-					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi);
+					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi, aw);
 				i++;
 				fi = fi->xfi_Next;
 			}
@@ -336,7 +344,7 @@ long xad_info(char *file, BOOL fs, void(*addnode)(char *name, LONG *size, BOOL d
 	return err;
 }
 
-long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud)
+long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud)
 {
 	long err = 0;
 	char destfile[1024];
@@ -345,10 +353,14 @@ long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)
 	struct DateStamp ds;
 	char *fn = NULL;
 
+	struct xad_hookdata xhd;
+	xhd.pud = pud;
+	xhd.awin = awin;
+
 	struct Hook progress_hook;
 	progress_hook.h_Entry = xad_progress;
 	progress_hook.h_SubEntry = NULL;
-	progress_hook.h_Data = pud;
+	progress_hook.h_Data = xhd;
 
 	if(arctype == XDISK) {
 		di = (struct xadDiskInfo *)getnode(node);
@@ -445,7 +457,7 @@ long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)
 }
 
 /* returns 0 on success */
-long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
 {
 	long err = XADERR_OK;
 	struct Node *node;
@@ -453,7 +465,7 @@ long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(stru
 
 	if(ai) {
 		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-			err = xad_extract_file(file, dest, node, getnode, scan, &pud);
+			err = xad_extract_file(awin, file, dest, node, getnode, scan, &pud);
 			if(err != XADERR_OK) return err;
 		}
 	}

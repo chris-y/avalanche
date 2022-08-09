@@ -28,13 +28,14 @@
 #include "libs.h"
 #include "locale.h"
 #include "req.h"
+#include "win.h"
 #include "xad.h"
 
 #include "Avalanche_rev.h"
 
 #define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
 
-void open_info_req(char *message, char *buttons)
+void open_info_req(char *message, char *buttons, void *awin)
 {
 	Object *obj = RequesterObj,
 					REQ_TitleText, VERS,
@@ -45,23 +46,23 @@ void open_info_req(char *message, char *buttons)
 				End;
 
 	if(obj) {
-		OpenRequester(obj, get_window());
+		OpenRequester(obj, window_get_window(awin));
 		DisposeObject(obj);
 	}
 }
 
-void show_about(void)
+void show_about(void *awin)
 {
 	char *msg = AllocVec(strlen(MSG_COPYRIGHT) + strlen(locale_get_string( MSG_GPL )) + 1, MEMF_CLEAR);
 
 	if(msg) {
 		sprintf(msg, "%s%s", MSG_COPYRIGHT, locale_get_string(MSG_GPL));
-		open_info_req(msg,  locale_get_string( MSG_OK ) );
+		open_info_req(msg, locale_get_string(MSG_OK), awin);
 		FreeVec(msg);
 	}
 }
 
-void open_error_req(char *message, char *button)
+void open_error_req(char *message, char *button, void *awin)
 {
 	Object *obj = RequesterObj,
 			REQ_TitleText, VERS,
@@ -72,14 +73,14 @@ void open_error_req(char *message, char *button)
 		End;
 
 	if(obj) {
-		OpenRequester(obj, get_window());
+		OpenRequester(obj, window_get_window(awin));
 		DisposeObject(obj);
 	} else {
 		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOSHOWERRORS ) , message, button);
 	}
 }
 
-void show_error(long code)
+void show_error(long code, void *awin)
 {
 	char message[100];
 
@@ -89,10 +90,10 @@ void show_error(long code)
 		sprintf(message, "%s", xad_error(code));
 	}
 
-	open_error_req(message,  locale_get_string( MSG_OK ) );
+	open_error_req(message, locale_get_string(MSG_OK), awin);
 }
 
-ULONG ask_quit_req(void)
+ULONG ask_quit_req(void *awin)
 {
 	int ret = 1;
 
@@ -105,7 +106,7 @@ ULONG ask_quit_req(void)
 		End;
 
 	if(obj) {
-		ret = OpenRequester(obj, get_window());
+		ret = OpenRequester(obj, window_get_window(awin));
 		DisposeObject(obj);
 	}
 	return ret;
@@ -127,7 +128,7 @@ ULONG ask_question(char *q, char *f)
 		End;
 
 	if(obj) {
-		ret = OpenRequester(obj, get_window()); 
+		ret = OpenRequester(obj, window_get_window(NULL)); 
 		DisposeObject(obj);
 	} else {
 		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOSHOWERRORS ) , message, "");
@@ -152,7 +153,7 @@ ULONG ask_password(char *pw, ULONG pwlen)
 		End;
 
 	if(obj) {
-		ret = OpenRequester(obj, get_window()); 
+		ret = OpenRequester(obj, window_get_window(NULL)); 
 		DisposeObject(obj);
 	} else {
 		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOASKPASSWORD ) );

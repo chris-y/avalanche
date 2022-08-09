@@ -16,20 +16,23 @@
 #define WIN_H 1
 
 /* Basic window functions */
-void *win_create(struct avalanche_config *config, struct MsgPort *winport, struct MsgPort *appport);
+void *window_create(struct avalanche_config *config, struct MsgPort *winport, struct MsgPort *appport);
 void window_open(void *awin, struct MsgPort *appwin_mp);
 void window_close(void *awin, BOOL iconify);
 void window_dispose(void *awin);
 
 /* Update window */
 void window_update_archive(void *awin, char *archive);
+void window_toggle_hbrowser(void *awin, BOOL h_browser);
+void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size);
 
 /* Handle events */
 void window_list_handle(void *awin);
-void window_req_open_archive(void *awin, BOOL refresh_only);
+void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
 char *window_req_dest(void *awin);
 
 /* Get info */
+void *window_get_window(void *awin);
 Object *window_get_object(void *awin);
 
 /* Misc */

@@ -13,6 +13,9 @@
 */
 
 #include "avalanche.h"
+#include "locale.h"
+#include "xad.h"
+#include "xfd.h"
 
 enum {
 	GID_MAIN = 0,
@@ -34,6 +37,13 @@ enum {
 	OID_LAST
 };
 
+struct arc_entries {
+	char *name;
+	ULONG *size;
+	BOOL dir;
+	void *userdata;
+};
+
 struct avalanche_window {
 	struct Window *windows[WID_LAST];
 	struct Gadget *gadgets[GID_LAST];
@@ -44,6 +54,8 @@ struct avalanche_window {
 	struct Hook aslfilterhook;
 	struct AppWindow *appwin;
 	char *dest;
+	struct MinList deletelist;
+	struct arc_entries **arc_array = NULL;
 };
 
 /** Menu **/
@@ -98,10 +110,252 @@ static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node
 			TAG_DONE);
 }
 
+static const char *get_item_filename(struct Node *node)
+{
+	void *userdata = NULL;
+	const char *fn = NULL;
+
+	GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
+
+	switch(archiver) {
+		case ARC_XAD:
+			fn = xad_get_filename(userdata);
+		break;
+		case ARC_XFD:
+			fn = xfd_get_filename(userdata);
+		break;
+	}
+
+	return fn;
+}
+
+static void delete_delete_list(struct avalanche_window *aw)
+{
+	struct Node *node;
+	struct Node *nnode;
+
+	if(IsMinListEmpty((struct MinList *)&aw->deletelist) == FALSE) {
+		node = (struct Node *)GetHead((struct List *)&aw->deletelist);
+
+		do {
+			nnode = (struct Node *)GetSucc((struct Node *)node);
+			Remove((struct Node *)node);
+			if(node->ln_Name) {
+				DeleteFile(node->ln_Name);
+				free(node->ln_Name);
+			}
+			FreeVec(node);
+		} while((node = nnode));
+	}
+}
+
+static void add_to_delete_list(struct avalanche_window *aw, char *fn)
+{
+	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+	if(node) {
+		node->ln_Name = strdup(fn);
+		AddTail((struct List *)&aw->deletelist, (struct Node *)node);
+	}
+}
+
+static int sort(const char *a, const char *b)
+{
+	ULONG i = 0;
+	
+	while ((a[i]) && (b[i])) {
+		if(a[i] != b[i]) {
+			if(a[i] == '/') return -1;
+			if(b[i] == '/') return 1;
+			return StrnCmp(locale_get_locale(), a, b, 1, SC_COLLATE2);
+		}
+		i++;
+	}
+	
+	if((a[i] == 0) && (b[i] == 0)) return 0;
+	if((a[i] == 0) && (b[i] != 0)) return -1;
+	if((a[i] != 0) && (b[i] == 0)) return 1;
+
+	return 0; /* shouldn't get here */
+}
+
+static int sort_array(const void *a, const void *b)
+{
+	struct arc_entries *c = *(struct arc_entries **)a;
+	struct arc_entries *d = *(struct arc_entries **)b;
+
+	return sort(c->name, d->name);
+}
+
+static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, struct avalanche_window *aw)
+{
+	ULONG flags = 0;
+	ULONG gen = 0;
+	int i = 0;
+	char *name_copy = NULL;
+
+	if(h) {
+		gen = 1;
+		
+		/* Count the slashes to find directory level */
+		while(name[i+1]) { /* ignore any trailing slash */
+			if(name[i] == '/') gen++;
+			i++;
+		}
+
+		if(get_xad_ver() == 12) {
+			/* In xadmaster.library 12, sometimes directories aren't marked as such */
+			if(name[i] == '/') {
+				dir = TRUE;
+				name_copy = strdup(name);
+				name_copy[i] = '\0';
+			}
+		}
+
+		if (dir) {
+			dir_seen = TRUE;
+			flags = LBFLG_HASCHILDREN;
+			if(debug) flags |= LBFLG_SHOWCHILDREN;
+		}
+
+		if((gen > 1) && (dir_seen == FALSE)) {
+			/* Probably we have an archive which doesn't have directory nodes */
+			gen = 1;
+		} else {
+			if(debug == FALSE) {
+				if(gen > 1) flags |= LBFLG_HIDDEN;
+				if(name_copy == NULL) {
+					name = FilePart(name);
+				} else {
+					name = name + (FilePart(name_copy) - name_copy);
+					free(name_copy);
+				}
+			}
+		}
+	}
+
+	char datestr[20];
+	struct ClockData cd;
+	xad_get_filedate(userdata, &cd);
+
+	if(CheckDate(&cd) == 0)
+		Amiga2Date(0, &cd);
+
+	sprintf(datestr, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+
+	struct Node *node = AllocListBrowserNode(3,
+		LBNA_UserData, userdata,
+		LBNA_CheckBox, TRUE,
+		LBNA_Checked, TRUE,
+		LBNA_Flags, flags,
+		LBNA_Generation, gen,
+		LBNA_Column, 0,
+			LBNCA_Text, name,
+		LBNA_Column, 1,
+			LBNCA_Integer, size,
+		LBNA_Column, 2,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, datestr,
+		TAG_DONE);
+
+	AddTail(&aw->lblist, node);
+}
+
+static void addlbnodesinglefile(char *name, LONG *size, void *userdata, struct avalanche_window *aw)
+{
+	struct Node *node = AllocListBrowserNode(3,
+		LBNA_UserData, userdata,
+		LBNA_CheckBox, TRUE,
+		LBNA_Checked, TRUE,
+		LBNA_Flags, 0,
+		LBNA_Generation, 0,
+		LBNA_Column, 0,
+			LBNCA_Text, name,
+		LBNA_Column, 1,
+			LBNCA_Integer, size,
+		LBNA_Column, 2,
+			//LBNCA_CopyText, TRUE,
+			LBNCA_Text, NULL,
+		TAG_DONE);
+
+	AddTail(&aw->lblist, node);
+}
+
+static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->gadgets[GID_PROGRESS]) {
+		char msg[20];
+		sprintf(msg, "%d/%lu", 0, total);
+		total_items = total;
+
+		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
+						GA_Text, msg,
+						FUELGAUGE_Percent, FALSE,
+						FUELGAUGE_Justification, FGJ_CENTER,
+						FUELGAUGE_Level, 0,
+						TAG_DONE);
+	}
+
+	addlbnodesinglefile(name, size, userdata, aw);
+	return;
+}
+
+static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(item == 0) {
+		current_item = 0;
+		if(aw->gadgets[GID_PROGRESS]) {
+			char msg[20];
+			sprintf(msg, "%d/%lu", 0, total);
+			total_items = total;
+
+			SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
+				GA_Text, msg,
+				FUELGAUGE_Percent, FALSE,
+				FUELGAUGE_Justification, FGJ_CENTER,
+				FUELGAUGE_Level, 0,
+				TAG_DONE);
+		}
+	}
+
+	if(archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata, aw); return; }
+
+	if(config->h_browser) {
+		if(item == 0) {
+			aw->arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
+		}
+
+		if(aw->arc_array) {
+			aw->arc_array[item] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+			
+			aw->arc_array[item]->name = name;
+			aw->arc_array[item]->size = size;
+			aw->arc_array[item]->dir = dir;
+			aw->arc_array[item]->userdata = userdata;
+			
+			if(item == (total - 1)) {
+				if(debug) qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
+				for(int i=0; i<total; i++) {
+					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, config->h_browser, aw);
+					FreeVec(aw->arc_array[i]);
+				}
+				FreeVec(aw->arc_array);
+				aw->arc_array = NULL;
+			}
+		}
+	} else {
+		addlbnode(name, size, dir, userdata, config->h_browser, aw);
+	}
+}
+
+
 
 /* Window functions */
 
-void *win_create(struct avalanche_config *config, struct MsgPort *winport, struct MsgPort *appport)
+void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport)
 {
 	struct avalanche_window *aw = AllocVec(sizeof(struct avalanche_window), MEMF_CLEAR);
 	if(!aw) return NULL;
@@ -148,6 +402,7 @@ void *win_create(struct avalanche_config *config, struct MsgPort *winport, struc
 	aw->aslfilterhook.h_SubEntry = NULL;
 	aw->aslfilterhook.h_Data = NULL;
 	
+	NewMinList(&aw->deletelist);
 	
 	/* Create the window object */
 	aw->objects[OID_MAIN] = WindowObj,
@@ -244,7 +499,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	if(aw->windows[WID_MAIN]) {
-		aw->WindowToFront(windows[WID_MAIN]);
+		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
@@ -278,9 +533,11 @@ void window_dispose(void *awin)
 	/* Free archive browser list and column info */
 	FreeListBrowserList(&aw->lblist);
 	if(aw->lbci) FreeLBColumnInfo(lbci);
+	
+	delete_delete_list(aw);
 }
 
-void window_list_handle(void *awin)
+void window_list_handle(void *awin, char *tmpdir)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
@@ -300,7 +557,7 @@ it's incompatible with doube-clicking as it resets the listview */
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
 			toggle_item(aw->windows[WID_MAIN], aw->gadgets[GID_LIST], node, 1); /* ensure selected */
 			char fn[1024];
-			strcpy(fn, config.tmpdir);
+			strcpy(fn, tmpdir);
 			ret = extract(fn, node);
 			if(ret == 0) {
 				AddPart(fn, get_item_filename(node), 1024);
@@ -322,6 +579,25 @@ void window_update_archive(void *awin, char *archive)
 					GETFILE_FullFile, archive, TAG_DONE);
 }
 
+void window_toggle_hbrowser(void *awin, BOOL h_browser)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
+}
+
+void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
+					FUELGAUGE_Max, total_size,
+					FUELGAUGE_Level, size,
+					TAG_DONE);
+}
+
+
 char *window_req_dest(void *awin)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -332,7 +608,7 @@ char *window_req_dest(void *awin)
 	return aw->dest;
 }
 
-void window_req_open_archive(void *awin, BOOL refresh_only)
+void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -357,9 +633,9 @@ void window_req_open_archive(void *awin, BOOL refresh_only)
 
 	FreeListBrowserList(&aw->lblist);
 
-	ret = xad_info(aw->archive, !config.ignorefs, addlbnode_cb);
+	ret = xad_info(aw->archive, config, aw, addlbnode_cb);
 	if(ret != 0) { /* if xad failed try xfd */
-		retxfd = xfd_info(aw->archive, addlbnodexfd_cb);
+		retxfd = xfd_info(aw->archive, aw, addlbnodexfd_cb);
 		if(retxfd != 0) show_error(ret);
 	}
 
@@ -390,6 +666,17 @@ Object *window_get_object(void *awin)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	return aw->objects[OID_MAIN];
+}
+
+void *window_get_window(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw == NULL) {
+		return NULL;
+	} else {
+		return aw->windows[WID_MAIN];
+	}
 }
 
 void fill_menu_labels(void)

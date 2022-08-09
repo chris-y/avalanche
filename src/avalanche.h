@@ -45,7 +45,6 @@ struct avalanche_config {
 };
 
 BOOL check_abort(void);
-void *get_window(void);
 char *strdup(const char *s);
-void fuelgauge_update(ULONG size, ULONG total_size);
+struct avalanche_config *get_config(void);
 #endif

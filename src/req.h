@@ -17,9 +17,9 @@
 
 ULONG ask_question(char *q, char *f);
 ULONG ask_password(char *pw, ULONG pwlen);
-ULONG ask_quit_req(void);
-void show_error(long code);
-void show_about(void);
-void open_error_req(char *message, char *button);
-void open_info_req(char *message, char *buttons);
+ULONG ask_quit_req(void *awin);
+void show_error(long code, void *awin);
+void show_about(void *awin);
+void open_error_req(char *message, char *button, void *awin);
+void open_info_req(char *message, char *buttons, void *awin);
 #endif

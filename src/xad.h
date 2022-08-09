@@ -17,14 +17,16 @@
 
 #include <utility/date.h>
 
+#include "avalanche.h"
+
 ULONG get_xad_ver(void);
 ULONG xad_get_filedate(void *xfi, struct ClockData *cd);
 const char *xad_get_filename(void *userdata);
 BOOL xad_recog(char *file);
-long xad_info(char *file, BOOL fs, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata));
-long xad_extract(char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len));
-long xad_extract_file(char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud);
+long xad_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));
+long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len));
+long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud);
 char *xad_error(long code);
-void xad_show_arc_info(void);
+void xad_show_arc_info(void *awin);
 void xad_exit(void);
 #endif

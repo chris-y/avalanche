@@ -69,13 +69,6 @@
 
 const char *version = VERSTAG;
 
-struct arc_entries {
-	char *name;
-	ULONG *size;
-	BOOL dir;
-	void *userdata;
-};
-
 enum {
 	ARC_NONE = 0,
 	ARC_XAD,
@@ -88,9 +81,6 @@ enum {
 /** Global config **/
 #define PROGRESS_SIZE_DEFAULT 20
 
-static char *dest;
-static char *archive = NULL;
-
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
 static BOOL dir_seen = FALSE;
@@ -98,7 +88,6 @@ static BOOL dir_seen = FALSE;
 static struct avalanche_config config;
 
 /** Shared variables **/
-static struct MinList deletelist;
 static struct Locale *locale = NULL;
 static ULONG current_item = 0;
 static ULONG total_items = 0;
@@ -138,13 +127,8 @@ char *strdup(const char *s)
   return (char*) memcpy (result, s, len);
 }
 
-void *get_window(void)
-{
-	return windows[WID_MAIN];
-}
-
 /** Private functions **/
-static void free_archive_path(void)
+static void free_archive_path(char *archive)
 {
 	if(archive) FreeVec(archive);
 	archive = NULL;
@@ -176,20 +160,20 @@ void savesettings(Object *win)
 	if(dobj = GetIconTagList(progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
 
-		if(dest && (strcmp("RAM:", dest) != 0)) {
+		if(config.dest && (strcmp("RAM:", config.dest) != 0)) {
 			strcpy(tt_dest, "DEST=");
-			newtooltypes[0] = strcat(tt_dest, dest);
+			newtooltypes[0] = strcat(tt_dest, config.dest);
 		} else {
 			newtooltypes[0] = "(DEST=RAM:)";
 		}
 
-		if(h_browser) {
+		if(config.h_browser) {
 			newtooltypes[1] = "HBROWSER";
 		} else {
 			newtooltypes[1] = "(HBROWSER)";
 		}
 
-		if(save_win_posn) {
+		if(config.save_win_posn) {
 			newtooltypes[2] = "SAVEWINPOSN";
 
 			/* fetch current win posn */
@@ -237,46 +221,46 @@ void savesettings(Object *win)
 
 		newtooltypes[7] = tt_progresssize;
 
-		if(virus_scan) {
+		if(config.virus_scan) {
 			newtooltypes[8] = "VIRUSSCAN";
 		} else {
 			newtooltypes[8] = "(VIRUSSCAN)";
 		}
 
-		if(confirmquit) {
+		if(config.confirmquit) {
 			newtooltypes[9] = "CONFIRMQUIT";
 		} else {
 			newtooltypes[9] = "(CONFIRMQUIT)";
 		}
 
-		if(ignorefs) {
+		if(config.ignorefs) {
 			newtooltypes[10] = "IGNOREFS";
 		} else {
 			newtooltypes[10] = "(IGNOREFS)";
 		}
 
-		if(tmpdir && (strncmp("T:", tmpdir, tmpdirlen) != 0)) {
+		if(config.tmpdir && (strncmp("T:", config.tmpdir, config.tmpdirlen) != 0)) {
 			strcpy(tt_tmp, "TMPDIR=");
-			newtooltypes[11] = strncat(tt_tmp, tmpdir, tmpdirlen);
+			newtooltypes[11] = strncat(tt_tmp, config.tmpdir, config.tmpdirlen);
 		} else {
 			newtooltypes[11] = "(TMPDIR=T:)";
 		}
 
-		if(cx_popup == FALSE) {
+		if(config.cx_popup == FALSE) {
 			newtooltypes[12] = "CX_POPUP=NO";
 		} else {
 			newtooltypes[12] = "(CX_POPUP=YES)";
 		}
 
-		if(cx_pri != 0) {
-			sprintf(tt_cxpri, "CX_PRIORITY=%d", cx_pri);
+		if(config.cx_pri != 0) {
+			sprintf(tt_cxpri, "CX_PRIORITY=%d", config.cx_pri);
 		} else {
 			sprintf(tt_cxpri, "(CX_PRIORITY=0)");
 		}
 		newtooltypes[13] = tt_cxpri;
 
-		if((cx_popkey) && (strcmp(cx_popkey, "rawkey ctrl alt a") != 0)) {
-			sprintf(tt_cxpopkey, "CX_POPKEY=%s", cx_popkey + 7);
+		if((config.cx_popkey) && (strcmp(config.cx_popkey, "rawkey ctrl alt a") != 0)) {
+			sprintf(tt_cxpopkey, "CX_POPKEY=%s", config.cx_popkey + 7);
 		} else {
 			sprintf(tt_cxpopkey, "(CX_POPKEY=ctrl alt a)");
 		}
@@ -293,215 +277,18 @@ void savesettings(Object *win)
 	}
 }
 
-static ULONG ask_quit(void)
+static ULONG ask_quit(void *awin)
 {
 	if(confirmquit) {
-		return ask_quit_req();
+		return ask_quit_req(awin);
 	}
 
 	return 1;
 }
 
-static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h)
+struct avalanche_config *get_config(void)
 {
-	ULONG flags = 0;
-	ULONG gen = 0;
-	int i = 0;
-	char *name_copy = NULL;
-
-	if(h) {
-		gen = 1;
-		
-		/* Count the slashes to find directory level */
-		while(name[i+1]) { /* ignore any trailing slash */
-			if(name[i] == '/') gen++;
-			i++;
-		}
-
-		if(get_xad_ver() == 12) {
-			/* In xadmaster.library 12, sometimes directories aren't marked as such */
-			if(name[i] == '/') {
-				dir = TRUE;
-				name_copy = strdup(name);
-				name_copy[i] = '\0';
-			}
-		}
-
-		if (dir) {
-			dir_seen = TRUE;
-			flags = LBFLG_HASCHILDREN;
-			if(debug) flags |= LBFLG_SHOWCHILDREN;
-		}
-
-		if((gen > 1) && (dir_seen == FALSE)) {
-			/* Probably we have an archive which doesn't have directory nodes */
-			gen = 1;
-		} else {
-			if(debug == FALSE) {
-				if(gen > 1) flags |= LBFLG_HIDDEN;
-				if(name_copy == NULL) {
-					name = FilePart(name);
-				} else {
-					name = name + (FilePart(name_copy) - name_copy);
-					free(name_copy);
-				}
-			}
-		}
-	}
-
-	char datestr[20];
-	struct ClockData cd;
-	xad_get_filedate(userdata, &cd);
-
-	if(CheckDate(&cd) == 0)
-		Amiga2Date(0, &cd);
-
-	sprintf(datestr, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
-
-	struct Node *node = AllocListBrowserNode(3,
-		LBNA_UserData, userdata,
-		LBNA_CheckBox, TRUE,
-		LBNA_Checked, TRUE,
-		LBNA_Flags, flags,
-		LBNA_Generation, gen,
-		LBNA_Column, 0,
-			LBNCA_Text, name,
-		LBNA_Column, 1,
-			LBNCA_Integer, size,
-		LBNA_Column, 2,
-			LBNCA_CopyText, TRUE,
-			LBNCA_Text, datestr,
-		TAG_DONE);
-
-	AddTail(&lblist, node);
-}
-
-static void addlbnodesinglefile(char *name, LONG *size, void *userdata)
-{
-	struct Node *node = AllocListBrowserNode(3,
-		LBNA_UserData, userdata,
-		LBNA_CheckBox, TRUE,
-		LBNA_Checked, TRUE,
-		LBNA_Flags, 0,
-		LBNA_Generation, 0,
-		LBNA_Column, 0,
-			LBNCA_Text, name,
-		LBNA_Column, 1,
-			LBNCA_Integer, size,
-		LBNA_Column, 2,
-			//LBNCA_CopyText, TRUE,
-			LBNCA_Text, NULL,
-		TAG_DONE);
-
-	AddTail(&lblist, node);
-}
-
-int sort(const char *a, const char *b)
-{
-	ULONG i = 0;
-	
-	while ((a[i]) && (b[i])) {
-		if(a[i] != b[i]) {
-			if(a[i] == '/') return -1;
-			if(b[i] == '/') return 1;
-			return StrnCmp(locale_get_locale(), a, b, 1, SC_COLLATE2);
-		}
-		i++;
-	}
-	
-	if((a[i] == 0) && (b[i] == 0)) return 0;
-	if((a[i] == 0) && (b[i] != 0)) return -1;
-	if((a[i] != 0) && (b[i] == 0)) return 1;
-
-	return 0; /* shouldn't get here */
-}
-
-int sort_array(const void *a, const void *b)
-{
-	struct arc_entries *c = *(struct arc_entries **)a;
-	struct arc_entries *d = *(struct arc_entries **)b;
-
-	return sort(c->name, d->name);
-}
-
-void fuelgauge_update(ULONG size, ULONG total_size)
-{
-	SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
-					FUELGAUGE_Max, total_size,
-					FUELGAUGE_Level, size,
-					TAG_DONE);
-}
-
-static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata)
-{
-	static struct arc_entries **arc_array = NULL;
-
-	if(gadgets[GID_PROGRESS]) {
-		char msg[20];
-		sprintf(msg, "%d/%lu", 0, total);
-		total_items = total;
-
-		SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
-						GA_Text, msg,
-						FUELGAUGE_Percent, FALSE,
-						FUELGAUGE_Justification, FGJ_CENTER,
-						FUELGAUGE_Level, 0,
-						TAG_DONE);
-	}
-
-	addlbnodesinglefile(name, size, userdata);
-	return;
-}
-
-
-static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata)
-{
-	static struct arc_entries **arc_array = NULL;
-
-	if(item == 0) {
-		current_item = 0;
-		if(gadgets[GID_PROGRESS]) {
-			char msg[20];
-			sprintf(msg, "%d/%lu", 0, total);
-			total_items = total;
-
-			SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
-				GA_Text, msg,
-				FUELGAUGE_Percent, FALSE,
-				FUELGAUGE_Justification, FGJ_CENTER,
-				FUELGAUGE_Level, 0,
-				TAG_DONE);
-		}
-	}
-
-	if(archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata); return; }
-
-	if(h_browser) {
-		if(item == 0) {
-			arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
-		}
-
-		if(arc_array) {
-			arc_array[item] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
-			
-			arc_array[item]->name = name;
-			arc_array[item]->size = size;
-			arc_array[item]->dir = dir;
-			arc_array[item]->userdata = userdata;
-			
-			if(item == (total - 1)) {
-				if(debug) qsort(arc_array, total, sizeof(struct arc_entries *), sort_array);
-				for(int i=0; i<total; i++) {
-					addlbnode(arc_array[i]->name, arc_array[i]->size, arc_array[i]->dir, arc_array[i]->userdata, h_browser);
-					FreeVec(arc_array[i]);
-				}
-				FreeVec(arc_array);
-				arc_array = NULL;
-			}
-		}
-	} else {
-		addlbnode(name, size, dir, userdata, h_browser);
-	}
+	return &config;
 }
 
 static void *getlbnode(struct Node *node)
@@ -618,26 +405,7 @@ static ULONG vscan(char *file, UBYTE *buf, ULONG len)
 	return res;
 }
 
-static const char *get_item_filename(struct Node *node)
-{
-	void *userdata = NULL;
-	const char *fn = NULL;
-
-	GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
-
-	switch(archiver) {
-		case ARC_XAD:
-			fn = xad_get_filename(userdata);
-		break;
-		case ARC_XFD:
-			fn = xfd_get_filename(userdata);
-		break;
-	}
-
-	return fn;
-}
-
-static long extract(char *newdest, struct Node *node)
+static long extract(void *awin, char *newdest, struct Node *node)
 {
 	long ret = 0;
 
@@ -654,10 +422,10 @@ static long extract(char *newdest, struct Node *node)
 		switch(archiver) {
 			case ARC_XAD:
 				if(node == NULL) {
-					ret = xad_extract(archive, newdest, &lblist, getlbnode, vscan);
+					ret = xad_extract(awin, archive, newdest, &lblist, getlbnode, vscan);
 				} else {
 					ULONG pud = 0;
-					ret = xad_extract_file(archive, newdest, node, getlbnode, vscan, &pud);
+					ret = xad_extract_file(awin, archive, newdest, node, getlbnode, vscan, &pud);
 				}
 			break;
 			case ARC_XFD:
@@ -723,36 +491,6 @@ BOOL check_abort(void)
 	return FALSE;
 }
 
-static void delete_delete_list(void)
-{
-	struct Node *node;
-	struct Node *nnode;
-
-	if(IsMinListEmpty((struct MinList *)&deletelist) == FALSE) {
-		node = (struct Node *)GetHead((struct List *)&deletelist);
-
-		do {
-			nnode = (struct Node *)GetSucc((struct Node *)node);
-			Remove((struct Node *)node);
-			if(node->ln_Name) {
-				DeleteFile(node->ln_Name);
-				free(node->ln_Name);
-			}
-			FreeVec(node);
-		} while((node = nnode));
-	}
-}
-
-
-static void add_to_delete_list(char *fn)
-{
-	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-	if(node) {
-		node->ln_Name = strdup(fn);
-		AddTail((struct List *)&deletelist, (struct Node *)node);
-	}
-}
-
 static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
 {
 	CxMsg *msg;
@@ -808,7 +546,7 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 	return CXMP;
 }
 
-static void gui(void)
+static void gui(char *archive)
 {
 	struct MsgPort *cx_mp = NULL;
 	CxObj *cx_broker = NULL;
@@ -848,13 +586,13 @@ static void gui(void)
 
 		if(cx_popup || archive) {
 			/* only create the window object if we are showing the window OR have an archive */
-			awin = window_create(&config, winport, AppPort);
+			awin = window_create(&config, archive, winport, AppPort);
 
 			/* Open window */
 			if(cx_popup) window_open(awin, appwin_mp);
 
 			/* Open initial archive, if there is one. */
-			if(archive) window_req_open_archive(awin, TRUE);
+			if(archive) window_req_open_archive(awin, &config, TRUE);
 		}
 		
 		
@@ -926,7 +664,7 @@ static void gui(void)
 									AddPart(archive, wbarg->wa_Name, 512);
 									window_update_archive(appmsg->am_UserData, archive);
 
-									window_req_open_archive(awin, TRUE);
+									window_req_open_archive(awin, &config, TRUE);
 									if(progname && (appmsg->am_NumArgs > 1)) {
 										for(int i = 1; i < appmsg->am_NumArgs; i++) {
 											wbarg++;
@@ -950,9 +688,9 @@ static void gui(void)
 										tempdest = strdup(archive);
 										AddPart(archive, wbarg->wa_Name, 512);
 										window_update_archive(appmsg->am_UserData, archive);
-										window_req_open_archive(awin, TRUE);
+										window_req_open_archive(awin, &config, TRUE);
 										if(archiver != ARC_NONE) {
-											ret = extract(tempdest, NULL);
+											ret = extract(awin, tempdest, NULL);
 											if(ret != 0) show_error(ret);
 										}
 									}
@@ -969,7 +707,7 @@ static void gui(void)
 				while((done == FALSE) && ((result = RA_HandleInput(window_get_object(awin), &code) ) != WMHI_LASTMSG)) {
 					switch (result & WMHI_CLASSMASK) {
 						case WMHI_CLOSEWINDOW:
-							if(ask_quit()) {
+							if(ask_quit(awin)) {
 								window_close(awin, FALSE);
 								done = TRUE;
 							}
@@ -978,21 +716,20 @@ static void gui(void)
 						case WMHI_GADGETUP:
 							switch (result & WMHI_GADGETMASK) {
 								case GID_ARCHIVE:
-									window_req_open_archive(awin, FALSE);
+									window_req_open_archive(awin, &config, FALSE);
 								break;
 									
 								case GID_DEST:
-									if(dest_needs_free) free_dest_path();
-									dest = window_req_dest(awin);
+									window_req_dest(awin);
 								break;
 
 								case GID_EXTRACT:
-									ret = extract(NULL, NULL);
+									ret = extract(awin, NULL, NULL);
 									if(ret != 0) show_error(ret);
 								break;
 
 								case GID_LIST:
-									window_list_handle(awin);
+									window_list_handle(awin, config.tmpdir);
 								break;
 							}
 							break;
@@ -1000,14 +737,14 @@ static void gui(void)
 						case WMHI_RAWKEY:
 							switch(result & WMHI_GADGETMASK) {
 								case RAWKEY_ESC:
-									if(ask_quit()) {
+									if(ask_quit(awin)) {
 										done = TRUE;
 									}
 								break;
 
 								case RAWKEY_RETURN:
-									ret = extract(NULL, NULL);
-									if(ret != 0) show_error(ret);
+									ret = extract(awin, NULL, NULL);
+									if(ret != 0) show_error(ret, awin);
 								break;
 							}
 						break;
@@ -1029,26 +766,26 @@ static void gui(void)
 									case 0: //project
 										switch(ITEMNUM(code)) {
 											case 0: //open
-												window_req_open_archive(awin, FALSE);
+												window_req_open_archive(awin, &config, FALSE);
 											break;
 											
 											case 2: //info
 												switch(archiver) {
 													case ARC_XAD:
-														xad_show_arc_info();
+														xad_show_arc_info(awin);
 													break;
 													case ARC_XFD:
-														xfd_show_arc_info();
+														xfd_show_arc_info(awin);
 													break;
 												}
 											break;
 
 											case 3: //about
-												show_about();
+												show_about(awin);
 											break;
 											
 											case 5: //quit
-												if(ask_quit()) {
+												if(ask_quit(awin)) {
 													done = TRUE;
 												}
 											break;
@@ -1080,10 +817,8 @@ static void gui(void)
 											case 1: //browser mode
 												h_browser = !h_browser;
 													
-												SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-														LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
-
-												window_req_open_archive(awin, TRUE);
+												window_toggle_hbrowser(awin, h_browser);
+												window_req_open_archive(awin, &config, TRUE);
 											break;
 												
 											case 2: //save window position
@@ -1096,14 +831,14 @@ static void gui(void)
 
 											case 4: //ignore fs
 												ignorefs = !ignorefs;
-												window_req_open_archive(awin, TRUE);
+												window_req_open_archive(awin, &config, TRUE);
 											break;
 
 											case 6: //save settings
-												savesettings(objects[OID_MAIN]);
+												savesettings(window_get_object(awin));
 											break;
 										}
-									break;				
+									break;
 								}
 								code = item->NextSelect;
 							}
@@ -1166,6 +901,7 @@ static void gettooltypes(UBYTE **tooltypes)
 int main(int argc, char **argv)
 {
 	char *tmp = NULL;
+	char *archive = NULL;
 
 	if(libs_open() == FALSE) {
 		return 10;
@@ -1233,7 +969,6 @@ int main(int argc, char **argv)
 	}
 
 	config.tmpdir = AllocVec(100, MEMF_CLEAR);
-	NewMinList(&deletelist);
 	
 	UBYTE **tooltypes = ArgArrayInit(argc, (CONST_STRPTR *) argv);
 	gettooltypes(tooltypes);
@@ -1250,18 +985,17 @@ int main(int argc, char **argv)
 		FreeVec(tmp);
 	}
 
-	gui();
+	gui(archive);
 
 	Locale_Close();
 
-	delete_delete_list();
 	DeleteFile(tmpdir);
 
 	if(config.cx_popkey) FreeVec(cx_popkey);
 	if(config.tmpdir) FreeVec(tmpdir);
 	if(config.progname != NULL) FreeVec(progname);
-	if(archive_needs_free) free_archive_path();
-	if(config.dest_needs_free) free_dest_path();
+	if(archive_needs_free) free_archive_path(archive);
+//	if(dest_needs_free) free_dest_path();
 	
 	xad_exit();
 	xfd_exit();
