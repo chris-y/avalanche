@@ -344,7 +344,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	return err;
 }
 
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud)
+long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud)
 {
 	long err = 0;
 	char destfile[1024];
@@ -363,9 +363,9 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	progress_hook.h_Data = xhd;
 
 	if(arctype == XDISK) {
-		di = (struct xadDiskInfo *)getnode(node);
+		di = (struct xadDiskInfo *)getnode(awin, node);
 	} else {
-		fi = (struct xadFileInfo *)getnode(node);
+		fi = (struct xadFileInfo *)getnode(awin, node);
 	}
 
 	if(fi || di) {
@@ -457,7 +457,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 }
 
 /* returns 0 on success */
-long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
 {
 	long err = XADERR_OK;
 	struct Node *node;

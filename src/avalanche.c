@@ -27,19 +27,6 @@
 #include <proto/wb.h>
 #include <clib/alib_protos.h>
 
-#include <proto/button.h>
-#include <proto/getfile.h>
-#include <proto/label.h>
-#include <proto/layout.h>
-#include <proto/listbrowser.h>
-#include <proto/window.h>
-
-#include <classes/window.h>
-#include <gadgets/fuelgauge.h>
-#include <gadgets/getfile.h>
-#include <gadgets/listbrowser.h>
-#include <images/label.h>
-
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <intuition/intuition.h>
@@ -89,8 +76,6 @@ static struct avalanche_config config;
 
 /** Shared variables **/
 static struct Locale *locale = NULL;
-static ULONG current_item = 0;
-static ULONG total_items = 0;
 
 /** Useful functions **/
 #ifndef __amigaos4__
@@ -137,8 +122,8 @@ static void free_archive_path(char *archive)
 
 static void free_dest_path(void)
 {
-	if(dest) free(dest);
-	dest = NULL;
+	if(config.dest) free(config.dest);
+	config.dest = NULL;
 	dest_needs_free = FALSE;
 }
 
@@ -157,7 +142,7 @@ void savesettings(Object *win)
 	char tt_cxpri[20];
 	char tt_cxpopkey[50];
 
-	if(dobj = GetIconTagList(progname, NULL)) {
+	if(dobj = GetIconTagList(config.progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
 
 		if(config.dest && (strcmp("RAM:", config.dest) != 0)) {
@@ -177,44 +162,44 @@ void savesettings(Object *win)
 			newtooltypes[2] = "SAVEWINPOSN";
 
 			/* fetch current win posn */
-			GetAttr(WA_Top, win, (APTR)&win_x);
-			GetAttr(WA_Left, win, (APTR)&win_y);
-			GetAttr(WA_Width, win, (APTR)&win_w);
-			GetAttr(WA_Height, win, (APTR)&win_h);
+			GetAttr(WA_Top, win, (APTR)&config.win_x);
+			GetAttr(WA_Left, win, (APTR)&config.win_y);
+			GetAttr(WA_Width, win, (APTR)&config.win_w);
+			GetAttr(WA_Height, win, (APTR)&config.win_h);
 		} else {
 			newtooltypes[2] = "(SAVEWINPOSN)";
 		}
 
-		if(win_x) {
-			sprintf(tt_winx, "WINX=%lu", win_x);
+		if(config.win_x) {
+			sprintf(tt_winx, "WINX=%lu", config.win_x);
 			newtooltypes[3] = tt_winx;
 		} else {
 			newtooltypes[3] = "(WINX=0)";
 		}
 
-		if(win_y) {
-			sprintf(tt_winy, "WINY=%lu", win_y);
+		if(config.win_y) {
+			sprintf(tt_winy, "WINY=%lu", config.win_y);
 			newtooltypes[4] = tt_winy;
 		} else {
 			newtooltypes[4] = "(WINY=0)";
 		}
 
-		if(win_w) {
-			sprintf(tt_winw, "WINW=%lu", win_w);
+		if(config.win_w) {
+			sprintf(tt_winw, "WINW=%lu", config.win_w);
 			newtooltypes[5] = tt_winw;
 		} else {
 			newtooltypes[5] = "(WINW=0)";
 		}
 
-		if(win_h) {
-			sprintf(tt_winh, "WINH=%lu", win_h);
+		if(config.win_h) {
+			sprintf(tt_winh, "WINH=%lu", config.win_h);
 			newtooltypes[6] = tt_winh;
 		} else {
 			newtooltypes[6] = "(WINH=0)";
 		}
 
-		if(progress_size != PROGRESS_SIZE_DEFAULT) {
-			sprintf(tt_progresssize, "PROGRESSSIZE=%lu", progress_size);
+		if(config.progress_size != PROGRESS_SIZE_DEFAULT) {
+			sprintf(tt_progresssize, "PROGRESSSIZE=%lu", config.progress_size);
 		} else {
 			sprintf(tt_progresssize, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
 		}
@@ -271,7 +256,7 @@ void savesettings(Object *win)
 		newtooltypes[16] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
-		PutIconTags(progname, dobj, NULL);
+		PutIconTags(config.progname, dobj, NULL);
 		dobj->do_ToolTypes = (STRPTR *)oldtooltypes;
 		FreeDiskObject(dobj);
 	}
@@ -279,7 +264,7 @@ void savesettings(Object *win)
 
 static ULONG ask_quit(void *awin)
 {
-	if(confirmquit) {
+	if(config.confirmquit) {
 		return ask_quit_req(awin);
 	}
 
@@ -289,31 +274,6 @@ static ULONG ask_quit(void *awin)
 struct avalanche_config *get_config(void)
 {
 	return &config;
-}
-
-static void *getlbnode(struct Node *node)
-{
-	void *userdata = NULL;
-	ULONG checked = FALSE;
-	char msg[20];
-
-	GetListBrowserNodeAttrs(node,
-			LBNA_Checked, &checked,
-			LBNA_UserData, &userdata,
-		TAG_DONE);
-
-	current_item++;
-	sprintf(msg, "%lu/%lu", current_item, total_items);
-
-	SetGadgetAttrs(gadgets[GID_PROGRESS], windows[WID_MAIN], NULL,
-			GA_Text, msg,
-			FUELGAUGE_Percent, FALSE,
-			FUELGAUGE_Justification, FGJ_CENTER,
-			FUELGAUGE_Level, 0,
-			TAG_DONE);
-
-	if(checked == FALSE) return NULL;
-	return userdata;
 }
 
 /* Activate/disable menus related to an open archive */
@@ -332,34 +292,6 @@ static void menu_activation(BOOL enable)
 		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,2,0));
 	}
-}
-
-static void modify_all_list(struct Window *win, struct Gadget *list_gad, ULONG select)
-{
-	struct Node *node;
-	BOOL selected;
-
-	/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
-	if(select == 0) selected = FALSE;
-	if(select == 1) selected = TRUE;
-
-	SetGadgetAttrs(list_gad, win, NULL,
-			LISTBROWSER_Labels, ~0, TAG_DONE);
-
-	for(node = lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
-
-		if(select == 2) {
-			ULONG current;
-			GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
-			selected = !current;
-		}
-
-		SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
-	}
-
-	SetGadgetAttrs(list_gad, win, NULL,
-				LISTBROWSER_Labels, &lblist,
-			TAG_DONE);
 }
 
 static void disable_gadgets(BOOL disable)
@@ -409,10 +341,10 @@ static long extract(void *awin, char *newdest, struct Node *node)
 {
 	long ret = 0;
 
-	if(newdest == NULL) newdest = dest;
+	if(newdest == NULL) newdest = config.dest; /* TODO: should always have dest passed in */
 
 	if(archive && newdest) {
-		if(windows[WID_MAIN]) SetWindowPointer(windows[WID_MAIN],
+		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 										WA_PointerType, POINTERTYPE_PROGRESS,
 										TAG_DONE);
 		current_item = 0;
@@ -422,10 +354,10 @@ static long extract(void *awin, char *newdest, struct Node *node)
 		switch(archiver) {
 			case ARC_XAD:
 				if(node == NULL) {
-					ret = xad_extract(awin, archive, newdest, &lblist, getlbnode, vscan);
+					ret = xad_extract(awin, archive, newdest, &lblist, window_get_lbnode, vscan);
 				} else {
 					ULONG pud = 0;
-					ret = xad_extract_file(awin, archive, newdest, node, getlbnode, vscan, &pud);
+					ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, vscan, &pud);
 				}
 			break;
 			case ARC_XFD:
@@ -435,7 +367,7 @@ static long extract(void *awin, char *newdest, struct Node *node)
 
 		disable_gadgets(FALSE);
 
-		if(windows[WID_MAIN]) SetWindowPointer(windows[WID_MAIN],
+		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
 	}
@@ -665,10 +597,10 @@ static void gui(char *archive)
 									window_update_archive(appmsg->am_UserData, archive);
 
 									window_req_open_archive(awin, &config, TRUE);
-									if(progname && (appmsg->am_NumArgs > 1)) {
+									if(config.progname && (appmsg->am_NumArgs > 1)) {
 										for(int i = 1; i < appmsg->am_NumArgs; i++) {
 											wbarg++;
-											OpenWorkbenchObject(progname+8,
+											OpenWorkbenchObject(config.progname+8,
 												WBOPENA_ArgLock, wbarg->wa_Lock,
 												WBOPENA_ArgName, wbarg->wa_Name,
 												TAG_DONE);
@@ -795,15 +727,15 @@ static void gui(char *archive)
 									case 1: //edit
 										switch(ITEMNUM(code)) {
 											case 0: //select all
-												modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 1);
+												modify_all_list(awin, 1);
 											break;
 											
 											case 1: //clear selection
-												modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 0);
+												modify_all_list(awin, 0);
 											break;
 
 											case 2: //invert selection
-												modify_all_list(windows[WID_MAIN], gadgets[GID_LIST], 2);
+												modify_all_list(awin, 2);
 											break;
 										}
 									break;
@@ -811,26 +743,26 @@ static void gui(char *archive)
 									case 2: //settings
 										switch(ITEMNUM(code)) {
 											case 0: //virus scan
-												virus_scan = !virus_scan;
+												config.virus_scan = !config.virus_scan;
 											break;
 
 											case 1: //browser mode
-												h_browser = !h_browser;
+												config.h_browser = !config.h_browser;
 													
-												window_toggle_hbrowser(awin, h_browser);
+												window_toggle_hbrowser(awin, config.h_browser);
 												window_req_open_archive(awin, &config, TRUE);
 											break;
 												
 											case 2: //save window position
-												save_win_posn = !save_win_posn;
+												config.save_win_posn = !config.save_win_posn;
 											break;
 
-											case 3: //save window position
-												confirmquit = !confirmquit;
+											case 3: //confirm quit
+												config.confirmquit = !config.confirmquit;
 											break;
 
 											case 4: //ignore fs
-												ignorefs = !ignorefs;
+												config.ignorefs = !config.ignorefs;
 												window_req_open_archive(awin, &config, TRUE);
 											break;
 

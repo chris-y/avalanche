@@ -12,6 +12,19 @@
  * GNU General Public License for more details.
 */
 
+#include <proto/button.h>
+#include <proto/getfile.h>
+#include <proto/label.h>
+#include <proto/layout.h>
+#include <proto/listbrowser.h>
+#include <proto/window.h>
+
+#include <classes/window.h>
+#include <gadgets/fuelgauge.h>
+#include <gadgets/getfile.h>
+#include <gadgets/listbrowser.h>
+#include <images/label.h>
+
 #include "avalanche.h"
 #include "locale.h"
 #include "xad.h"
@@ -55,7 +68,9 @@ struct avalanche_window {
 	struct AppWindow *appwin;
 	char *dest;
 	struct MinList deletelist;
-	struct arc_entries **arc_array = NULL;
+	struct arc_entries **arc_array;
+	ULONG current_item;
+	ULONG total_items;
 };
 
 /** Menu **/
@@ -597,6 +612,35 @@ void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
 					TAG_DONE);
 }
 
+void window_modify_all_list(void *awin, ULONG select)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	struct Node *node;
+	BOOL selected;
+
+	/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
+	if(select == 0) selected = FALSE;
+	if(select == 1) selected = TRUE;
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	for(node = lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
+
+		if(select == 2) {
+			ULONG current;
+			GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
+			selected = !current;
+		}
+
+		SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
+	}
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+				LISTBROWSER_Labels, &aw->lblist,
+			TAG_DONE);
+}
 
 char *window_req_dest(void *awin)
 {	
@@ -677,6 +721,40 @@ void *window_get_window(void *awin)
 	} else {
 		return aw->windows[WID_MAIN];
 	}
+}
+
+void *window_get_lbnode(void *awin, struct Node *node)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	void *userdata = NULL;
+	ULONG checked = FALSE;
+	char msg[20];
+
+	GetListBrowserNodeAttrs(node,
+			LBNA_Checked, &checked,
+			LBNA_UserData, &userdata,
+		TAG_DONE);
+
+	current_item++;
+	sprintf(msg, "%lu/%lu", aw->current_item, aw->total_items);
+
+	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
+			GA_Text, msg,
+			FUELGAUGE_Percent, FALSE,
+			FUELGAUGE_Justification, FGJ_CENTER,
+			FUELGAUGE_Level, 0,
+			TAG_DONE);
+
+	if(checked == FALSE) return NULL;
+	return userdata;
+}
+
+void window_reset_count(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	aw->current_item = 0;
 }
 
 void fill_menu_labels(void)

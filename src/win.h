@@ -25,6 +25,7 @@ void window_dispose(void *awin);
 void window_update_archive(void *awin, char *archive);
 void window_toggle_hbrowser(void *awin, BOOL h_browser);
 void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size);
+void window_modify_all_list(void *awin, ULONG select);
 
 /* Handle events */
 void window_list_handle(void *awin);
@@ -34,8 +35,10 @@ char *window_req_dest(void *awin);
 /* Get info */
 void *window_get_window(void *awin);
 Object *window_get_object(void *awin);
+void *window_get_lbnode(void *awin, struct Node *node);
 
 /* Misc */
+void window_reset_count(void *awin);
 void fill_menu_labels(void);
 
 #endif
