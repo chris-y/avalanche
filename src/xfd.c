@@ -141,7 +141,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	return -3;
 }
 
-long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len))
 {
 	char destfile[1024];
 	BPTR fh = 0;
@@ -164,7 +164,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 	}
 
 	if(xfdDecrunchBuffer(bi) == TRUE) {
-		if(scan(NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen) < 4) {
+		if(scan(awin, NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen) < 4) {
 			strcpy(destfile, dest);
 			if(AddPart(destfile, fn, 1024)) {
 				if(fh = Open(destfile, MODE_OLDFILE)) {

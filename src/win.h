@@ -16,7 +16,7 @@
 #define WIN_H 1
 
 /* Basic window functions */
-void *window_create(struct avalanche_config *config, struct MsgPort *winport, struct MsgPort *appport);
+void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
 void window_open(void *awin, struct MsgPort *appwin_mp);
 void window_close(void *awin, BOOL iconify);
 void window_dispose(void *awin);
@@ -31,13 +31,20 @@ void window_modify_all_list(void *awin, ULONG select);
 void window_list_handle(void *awin);
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
 char *window_req_dest(void *awin);
+ULONG window_handle_input(void *awin, UWORD *code);
+ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result);
 
 /* Get info */
 void *window_get_window(void *awin);
 Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
+struct List *window_get_lblist(void *awin);
+ULONG window_get_archiver(void *awin);
 
 /* Misc */
+void window_disable_vscan_menu(void *awin);
+void window_disable_gadgets(void *awin, BOOL disable);
+BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
 

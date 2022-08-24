@@ -44,7 +44,6 @@ struct avalanche_config {
 	char *cx_popkey;
 };
 
-BOOL check_abort(void);
 char *strdup(const char *s);
 struct avalanche_config *get_config(void);
 #endif

@@ -12,6 +12,18 @@
  * GNU General Public License for more details.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/locale.h>
+#include <clib/alib_protos.h>
+
+#include <libraries/gadtools.h>
+
 #include <proto/button.h>
 #include <proto/getfile.h>
 #include <proto/label.h>
@@ -26,6 +38,7 @@
 #include <images/label.h>
 
 #include "avalanche.h"
+#include "libs.h"
 #include "locale.h"
 #include "xad.h"
 #include "xfd.h"
@@ -103,6 +116,26 @@ struct NewMenu menu[] = {
 
 
 /* Private functions */
+/* Activate/disable menus related to an open archive */
+static void window_menu_activation(void *awin, BOOL enable)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->windows[WID_MAIN] == NULL) return;
+
+	if(enable) {
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
+	} else {
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
+	}
+}
+
 static void toggle_item(struct Window *win, struct Gadget *list_gad, struct Node *node, ULONG select)
 {
 	SetGadgetAttrs(list_gad, win, NULL,
@@ -573,7 +606,7 @@ it's incompatible with doube-clicking as it resets the listview */
 			toggle_item(aw->windows[WID_MAIN], aw->gadgets[GID_LIST], node, 1); /* ensure selected */
 			char fn[1024];
 			strcpy(fn, tmpdir);
-			ret = extract(fn, node);
+			ret = extract(aw, aw->archive, fn, node);
 			if(ret == 0) {
 				AddPart(fn, get_item_filename(node), 1024);
 				add_to_delete_list(fn);
@@ -685,13 +718,13 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	if(ret == 0) {
 		archiver = ARC_XAD;
-		menu_activation(TRUE);
+		window_menu_activation(aw, TRUE);
 	} else if(retxfd == 0) {
 		archiver = ARC_XFD;
-		menu_activation(TRUE);
+		window_menu_activation(aw, TRUE);
 	} else {
 		archiver = ARC_NONE;
-		menu_activation(FALSE);
+		window_menu_activation(aw, FALSE);
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
@@ -750,11 +783,242 @@ void *window_get_lbnode(void *awin, struct Node *node)
 	return userdata;
 }
 
+struct List *window_get_lblist(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	return &aw->lblist;
+}
+
+ULONG window_get_archiver(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	return aw->archiver;
+}
+
+ULONG window_handle_input(void *awin, UWORD *code)
+{
+	return RA_HandleInput(window_get_object(awin), code);
+}
+
+ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	ULONG done = FALSE;
+	UWORD code;
+
+					switch (result & WMHI_CLASSMASK) {
+						case WMHI_CLOSEWINDOW:
+							if(ask_quit(awin)) {
+								window_close(awin, FALSE);
+								done = TRUE;
+							}
+						break;
+
+						case WMHI_GADGETUP:
+							switch (result & WMHI_GADGETMASK) {
+								case GID_ARCHIVE:
+									window_req_open_archive(awin, config, FALSE);
+								break;
+									
+								case GID_DEST:
+									window_req_dest(awin);
+								break;
+
+								case GID_EXTRACT:
+									ret = extract(awin, NULL, NULL);
+									if(ret != 0) show_error(ret);
+								break;
+
+								case GID_LIST:
+									window_list_handle(awin, config->tmpdir);
+								break;
+							}
+							break;
+
+						case WMHI_RAWKEY:
+							switch(result & WMHI_GADGETMASK) {
+								case RAWKEY_ESC:
+									if(ask_quit(awin)) {
+										done = TRUE;
+									}
+								break;
+
+								case RAWKEY_RETURN:
+									ret = extract(awin, NULL, NULL);
+									if(ret != 0) show_error(ret, awin);
+								break;
+							}
+						break;
+
+						case WMHI_ICONIFY:
+							window_close(awin, TRUE);
+						break;
+
+						case WMHI_UNICONIFY:
+							window_open(awin);
+						break;
+								
+						 case WMHI_MENUPICK:
+							while((code != MENUNULL) && (done == FALSE)) {
+								if(windows[WID_MAIN] == NULL) continue;
+								struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
+
+								switch(MENUNUM(code)) {
+									case 0: //project
+										switch(ITEMNUM(code)) {
+											case 0: //open
+												window_req_open_archive(awin, config, FALSE);
+											break;
+											
+											case 2: //info
+												switch(archiver) {
+													case ARC_XAD:
+														xad_show_arc_info(awin);
+													break;
+													case ARC_XFD:
+														xfd_show_arc_info(awin);
+													break;
+												}
+											break;
+
+											case 3: //about
+												show_about(awin);
+											break;
+											
+											case 5: //quit
+												if(ask_quit(awin)) {
+													done = TRUE;
+												}
+											break;
+										}
+									break;
+									
+									case 1: //edit
+										switch(ITEMNUM(code)) {
+											case 0: //select all
+												modify_all_list(awin, 1);
+											break;
+											
+											case 1: //clear selection
+												modify_all_list(awin, 0);
+											break;
+
+											case 2: //invert selection
+												modify_all_list(awin, 2);
+											break;
+										}
+									break;
+									
+									case 2: //settings
+										switch(ITEMNUM(code)) {
+											case 0: //virus scan
+												config->virus_scan = !config->virus_scan;
+											break;
+
+											case 1: //browser mode
+												config->h_browser = !config->h_browser;
+													
+												window_toggle_hbrowser(awin, config->h_browser);
+												window_req_open_archive(awin, config, TRUE);
+											break;
+												
+											case 2: //save window position
+												config->save_win_posn = !config->save_win_posn;
+											break;
+
+											case 3: //confirm quit
+												config->confirmquit = !config->confirmquit;
+											break;
+
+											case 4: //ignore fs
+												config.ignorefs = !config->ignorefs;
+												window_req_open_archive(awin, config, TRUE);
+											break;
+
+											case 6: //save settings
+												savesettings(window_get_object(awin));
+											break;
+										}
+									break;
+								}
+								code = item->NextSelect;
+							}
+						break; //WMHI_MENUPICK
+					}
+
+	return done;
+}
+
+/* Check if abort button is pressed - only called from xad hook */
+BOOL check_abort(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	ULONG result;
+	UWORD code;
+
+	while((result = RA_HandleInput(aw->objects[OID_MAIN], &code)) != WMHI_LASTMSG ) {
+		switch (result & WMHI_CLASSMASK) {
+			case WMHI_GADGETUP:
+				switch (result & WMHI_GADGETMASK) {
+					case GID_EXTRACT:
+						return TRUE;
+					break;
+				}
+			break;
+
+			case WMHI_RAWKEY:
+				switch(result & WMHI_GADGETMASK) {
+					case RAWKEY_ESC:
+						return TRUE;
+					break;
+				}
+			break;
+		}
+	}
+	return FALSE;
+}
+
 void window_reset_count(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	aw->current_item = 0;
+}
+
+void window_disable_gadgets(void *awin, BOOL disable)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(disable) {
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Text,  locale_get_string( MSG_STOP ) ,
+			TAG_DONE);
+	} else {
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Text, GID_EXTRACT_TEXT,
+			TAG_DONE);
+	}
+
+	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_DEST], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+}
+
+void window_disable_vscan_menu(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->windows[WID_MAIN]) OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0));
 }
 
 void fill_menu_labels(void)

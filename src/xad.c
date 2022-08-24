@@ -179,7 +179,7 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 		break;
 	}
 
-	if(check_abort()) {
+	if(check_abort(xhd->awin)) {
 		*pud = PUD_ABORT;
 		return 0;
 	}
@@ -344,7 +344,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	return err;
 }
 
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len), ULONG *pud)
+long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len), ULONG *pud)
 {
 	long err = 0;
 	char destfile[1024];
@@ -425,8 +425,8 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 				}
 
 				if(err == XADERR_OK) {
-					if(fi) scan(destfile, NULL, fi->xfi_Size);
-					if(di) scan(destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
+					if(fi) scan(awin, destfile, NULL, fi->xfi_Size);
+					if(di) scan(awin, destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
 				}
 
 				if(fi) {
@@ -457,7 +457,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 }
 
 /* returns 0 on success */
-long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len))
 {
 	long err = XADERR_OK;
 	struct Node *node;

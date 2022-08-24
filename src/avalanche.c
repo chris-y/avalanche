@@ -36,8 +36,7 @@
 #include <utility/date.h>
 #include <workbench/startup.h>
 
-#include <reaction/reaction.h>
-#include <reaction/reaction_macros.h>
+#include <classes/window.h>
 
 #include "avalanche.h"
 #include "req.h"
@@ -276,52 +275,11 @@ struct avalanche_config *get_config(void)
 	return &config;
 }
 
-/* Activate/disable menus related to an open archive */
-static void menu_activation(BOOL enable)
-{
-	if(windows[WID_MAIN] == NULL) return;
-
-	if(enable) {
-		OnMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
-		OnMenu(windows[WID_MAIN], FULLMENUNUM(1,0,0));
-		OnMenu(windows[WID_MAIN], FULLMENUNUM(1,1,0));
-		OnMenu(windows[WID_MAIN], FULLMENUNUM(1,2,0));
-	} else {
-		OffMenu(windows[WID_MAIN], FULLMENUNUM(0,2,0));
-		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,0,0));
-		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,1,0));
-		OffMenu(windows[WID_MAIN], FULLMENUNUM(1,2,0));
-	}
-}
-
-static void disable_gadgets(BOOL disable)
-{
-	if(disable) {
-		SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
-				GA_Text,  locale_get_string( MSG_STOP ) ,
-			TAG_DONE);
-	} else {
-		SetGadgetAttrs(gadgets[GID_EXTRACT], windows[WID_MAIN], NULL,
-				GA_Text, GID_EXTRACT_TEXT,
-			TAG_DONE);
-	}
-
-	SetGadgetAttrs(gadgets[GID_ARCHIVE], windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
-	SetGadgetAttrs(gadgets[GID_DEST], windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
-	SetGadgetAttrs(gadgets[GID_LIST], windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
-}
-
-static ULONG vscan(char *file, UBYTE *buf, ULONG len)
+static ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
 {
 	long res = 0;
 
-	if(virus_scan) {
+	if(config.virus_scan) {
 		if(buf == NULL) {
 			res = xvs_scan(file, len);
 		} else {
@@ -329,15 +287,16 @@ static ULONG vscan(char *file, UBYTE *buf, ULONG len)
 		}
 
 		if((res == -1) || (res == -3)) {
-			virus_scan = FALSE;
-			if(windows[WID_MAIN]) OffMenu(windows[WID_MAIN], FULLMENUNUM(2,0,0));
+			config.virus_scan = FALSE;
+			window_disable_vscan_menu(awin);
+			
 		}
 	}
 
 	return res;
 }
 
-static long extract(void *awin, char *newdest, struct Node *node)
+static long extract(void *awin, char *archive, char *newdest, struct Node *node)
 {
 	long ret = 0;
 
@@ -347,25 +306,24 @@ static long extract(void *awin, char *newdest, struct Node *node)
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 										WA_PointerType, POINTERTYPE_PROGRESS,
 										TAG_DONE);
-		current_item = 0;
+		window_reset_count(awin);
+		window_disable_gadgets(awin, TRUE);
 
-		disable_gadgets(TRUE);
-
-		switch(archiver) {
+		switch(window_get_archiver(awin)) {
 			case ARC_XAD:
 				if(node == NULL) {
-					ret = xad_extract(awin, archive, newdest, &lblist, window_get_lbnode, vscan);
+					ret = xad_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode, vscan);
 				} else {
 					ULONG pud = 0;
 					ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, vscan, &pud);
 				}
 			break;
 			case ARC_XFD:
-				ret = xfd_extract(archive, newdest, vscan);
+				ret = xfd_extract(awin, archive, newdest, vscan);
 			break;
 		}
 
-		disable_gadgets(FALSE);
+		window_disable_gadgets(awin, FALSE);
 
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, FALSE,
@@ -395,34 +353,6 @@ static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") stru
 	return found;
 }
 
-/* Check if abort button is pressed - only called from xad hook */
-BOOL check_abort(void)
-{
-	ULONG result;
-	UWORD code;
-
-	while((result = RA_HandleInput(objects[OID_MAIN], &code)) != WMHI_LASTMSG ) {
-		switch (result & WMHI_CLASSMASK) {
-			case WMHI_GADGETUP:
-				switch (result & WMHI_GADGETMASK) {
-					case GID_EXTRACT:
-						return TRUE;
-					break;
-				}
-			break;
-
-			case WMHI_RAWKEY:
-				switch(result & WMHI_GADGETMASK) {
-					case RAWKEY_ESC:
-						return TRUE;
-					break;
-				}
-			break;
-		}
-	}
-	return FALSE;
-}
-
 static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
 {
 	CxMsg *msg;
@@ -450,14 +380,14 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 		newbroker.nb_Descr = locale_get_string(MSG_CXDESCRIPTION);
 		newbroker.nb_Unique = 0;
 		newbroker.nb_Flags = COF_SHOW_HIDE;
-		newbroker.nb_Pri = cx_pri;
+		newbroker.nb_Pri = config.cx_pri;
 		newbroker.nb_Port = CXMP;
 		newbroker.nb_ReservedChannel = 0;
 
 		if(broker = CxBroker(&newbroker, NULL)) {
 			/* Try to add hotkey */
-			if(cx_popkey) {
-				if(filter = CxFilter(cx_popkey)) {
+			if(config.cx_popkey) {
+				if(filter = CxFilter(config.cx_popkey)) {
 					AttachCxObj(broker, filter);
 					if(sender = CxSender(CXMP, IEVENT_POPUP)) {
 						AttachCxObj(filter, sender);
@@ -516,12 +446,12 @@ static void gui(char *archive)
 			appwin_sig = 1L << appwin_mp->mp_SigBit;
 		}
 
-		if(cx_popup || archive) {
+		if(config.cx_popup || archive) {
 			/* only create the window object if we are showing the window OR have an archive */
 			awin = window_create(&config, archive, winport, AppPort);
 
 			/* Open window */
-			if(cx_popup) window_open(awin, appwin_mp);
+			if(config.cx_popup) window_open(awin, appwin_mp);
 
 			/* Open initial archive, if there is one. */
 			if(archive) window_req_open_archive(awin, &config, TRUE);
@@ -531,7 +461,7 @@ static void gui(char *archive)
 		/* Input Event Loop
 		 */
 		 
-		signal = (1L << winport << winport->mp_SigBit);
+		signal = (1L << winport->mp_SigBit);
 		app = (1L << AppPort->mp_SigBit);
 		 
 		while (!done) {
@@ -590,11 +520,11 @@ static void gui(char *archive)
 							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
 
 								/* TODO: manage archive within window structure */
-								if(archive_needs_free) free_archive_path();
+								if(archive_needs_free) free_archive_path(archive);
 								if(archive = AllocVec(512, MEMF_CLEAR)) {
 									NameFromLock(wbarg->wa_Lock, archive, 512);
 									AddPart(archive, wbarg->wa_Name, 512);
-									window_update_archive(appmsg->am_UserData, archive);
+									window_update_archive((void *)appmsg->am_UserData, archive);
 
 									window_req_open_archive(awin, &config, TRUE);
 									if(config.progname && (appmsg->am_NumArgs > 1)) {
@@ -613,17 +543,17 @@ static void gui(char *archive)
 							for(int i=0; i<appmsg->am_NumArgs; i++) {
 								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
 									/* TODO: manage archive within window structure */
-									if(archive_needs_free) free_archive_path();
+									if(archive_needs_free) free_archive_path(archive);
 									if(archive = AllocVec(512, MEMF_CLEAR)) {
 										char *tempdest = NULL;
 										NameFromLock(wbarg->wa_Lock, archive, 512);
 										tempdest = strdup(archive);
 										AddPart(archive, wbarg->wa_Name, 512);
-										window_update_archive(appmsg->am_UserData, archive);
+										window_update_archive((void *)appmsg->am_UserData, archive);
 										window_req_open_archive(awin, &config, TRUE);
-										if(archiver != ARC_NONE) {
-											ret = extract(awin, tempdest, NULL);
-											if(ret != 0) show_error(ret);
+										if(window_get_archiver(awin) != ARC_NONE) {
+											ret = extract(awin, archive, tempdest, NULL);
+											if(ret != 0) show_error(ret, awin);
 										}
 									}
 								}
@@ -636,149 +566,12 @@ static void gui(char *archive)
 					ReplyMsg((struct Message *)appmsg);
 				}
 			} else {
-				while((done == FALSE) && ((result = RA_HandleInput(window_get_object(awin), &code) ) != WMHI_LASTMSG)) {
-					switch (result & WMHI_CLASSMASK) {
-						case WMHI_CLOSEWINDOW:
-							if(ask_quit(awin)) {
-								window_close(awin, FALSE);
-								done = TRUE;
-							}
-						break;
-
-						case WMHI_GADGETUP:
-							switch (result & WMHI_GADGETMASK) {
-								case GID_ARCHIVE:
-									window_req_open_archive(awin, &config, FALSE);
-								break;
-									
-								case GID_DEST:
-									window_req_dest(awin);
-								break;
-
-								case GID_EXTRACT:
-									ret = extract(awin, NULL, NULL);
-									if(ret != 0) show_error(ret);
-								break;
-
-								case GID_LIST:
-									window_list_handle(awin, config.tmpdir);
-								break;
-							}
-							break;
-
-						case WMHI_RAWKEY:
-							switch(result & WMHI_GADGETMASK) {
-								case RAWKEY_ESC:
-									if(ask_quit(awin)) {
-										done = TRUE;
-									}
-								break;
-
-								case RAWKEY_RETURN:
-									ret = extract(awin, NULL, NULL);
-									if(ret != 0) show_error(ret, awin);
-								break;
-							}
-						break;
-
-						case WMHI_ICONIFY:
-							window_close(awin, TRUE);
-						break;
-
-						case WMHI_UNICONIFY:
-							window_open(awin);
-						break;
-								
-						 case WMHI_MENUPICK:
-							while((code != MENUNULL) && (done == FALSE)) {
-								if(windows[WID_MAIN] == NULL) continue;
-								struct MenuItem *item = ItemAddress(windows[WID_MAIN]->MenuStrip, code);
-
-								switch(MENUNUM(code)) {
-									case 0: //project
-										switch(ITEMNUM(code)) {
-											case 0: //open
-												window_req_open_archive(awin, &config, FALSE);
-											break;
-											
-											case 2: //info
-												switch(archiver) {
-													case ARC_XAD:
-														xad_show_arc_info(awin);
-													break;
-													case ARC_XFD:
-														xfd_show_arc_info(awin);
-													break;
-												}
-											break;
-
-											case 3: //about
-												show_about(awin);
-											break;
-											
-											case 5: //quit
-												if(ask_quit(awin)) {
-													done = TRUE;
-												}
-											break;
-										}
-									break;
-									
-									case 1: //edit
-										switch(ITEMNUM(code)) {
-											case 0: //select all
-												modify_all_list(awin, 1);
-											break;
-											
-											case 1: //clear selection
-												modify_all_list(awin, 0);
-											break;
-
-											case 2: //invert selection
-												modify_all_list(awin, 2);
-											break;
-										}
-									break;
-									
-									case 2: //settings
-										switch(ITEMNUM(code)) {
-											case 0: //virus scan
-												config.virus_scan = !config.virus_scan;
-											break;
-
-											case 1: //browser mode
-												config.h_browser = !config.h_browser;
-													
-												window_toggle_hbrowser(awin, config.h_browser);
-												window_req_open_archive(awin, &config, TRUE);
-											break;
-												
-											case 2: //save window position
-												config.save_win_posn = !config.save_win_posn;
-											break;
-
-											case 3: //confirm quit
-												config.confirmquit = !config.confirmquit;
-											break;
-
-											case 4: //ignore fs
-												config.ignorefs = !config.ignorefs;
-												window_req_open_archive(awin, &config, TRUE);
-											break;
-
-											case 6: //save settings
-												savesettings(window_get_object(awin));
-											break;
-										}
-									break;
-								}
-								code = item->NextSelect;
-							}
-						break; //WMHI_MENUPICK
-					}
+				while((done == FALSE) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
+					done = window_handle_input_events(awin, &config, result);
 				}
 			}
 		}
+	}
 
 	window_dispose(awin);
 	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
@@ -807,7 +600,7 @@ static void gettooltypes(UBYTE **tooltypes)
 	}
 
 	config.dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
-	config.dest_needs_free = TRUE;
+	dest_needs_free = TRUE;
 
 	if(config.tmpdir) {
 		strncpy(config.tmpdir, ArgString(tooltypes, "TMPDIR", "T:"), 90);
@@ -870,9 +663,9 @@ int main(int argc, char **argv)
 		struct WBArg *wbarg = WBenchMsg->sm_ArgList;
 
 		if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-			if(progname = AllocVec(40, MEMF_CLEAR)) {
-				strcpy(progname, "PROGDIR:");
-				AddPart(progname, wbarg->wa_Name, 40);
+			if(config.progname = AllocVec(40, MEMF_CLEAR)) {
+				strcpy(config.progname, "PROGDIR:");
+				AddPart(config.progname, wbarg->wa_Name, 40);
 			}
 		}
 
@@ -888,10 +681,10 @@ int main(int argc, char **argv)
 				}
 			}
 
-			if(progname && (WBenchMsg->sm_NumArgs > 2)) {
+			if(config.progname && (WBenchMsg->sm_NumArgs > 2)) {
 				for(int i = 2; i < WBenchMsg->sm_NumArgs; i++) {
 					wbarg++;
-					OpenWorkbenchObject(progname+8,
+					OpenWorkbenchObject(config.progname+8,
 						WBOPENA_ArgLock, wbarg->wa_Lock,
 						WBOPENA_ArgName, wbarg->wa_Name,
 						TAG_DONE);
@@ -921,11 +714,11 @@ int main(int argc, char **argv)
 
 	Locale_Close();
 
-	DeleteFile(tmpdir);
+	DeleteFile(config.tmpdir);
 
-	if(config.cx_popkey) FreeVec(cx_popkey);
-	if(config.tmpdir) FreeVec(tmpdir);
-	if(config.progname != NULL) FreeVec(progname);
+	if(config.cx_popkey) FreeVec(config.cx_popkey);
+	if(config.tmpdir) FreeVec(config.tmpdir);
+	if(config.progname != NULL) FreeVec(config.progname);
 	if(archive_needs_free) free_archive_path(archive);
 //	if(dest_needs_free) free_dest_path();
 	
