@@ -23,6 +23,7 @@
 #include "libs.h"
 #include "locale.h"
 #include "req.h"
+#include "win.h"
 #include "xad.h"
 
 #ifdef __amigaos4__
@@ -47,7 +48,7 @@ enum {
 struct xad_hookdata {
 	ULONG *pud;
 	void *awin;
-}
+};
 
 /* TODO: ai should be set per window */
 static struct xadArchiveInfo *ai = NULL;
@@ -162,7 +163,7 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 
 		case XADPMODE_ERROR:
 			if(xpi->xpi_Error != XADERR_SKIP)
-				show_error(xpi->xpi_Error);
+				show_error(xpi->xpi_Error, xhd->awin);
 		break;
 
 		case XADPMODE_PROGRESS:
@@ -317,7 +318,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 			di = ai->xai_DiskInfo;
 			while(di) {
 				size = di->xdi_SectorSize * di->xdi_TotalSectors;
-				addnode("disk.img", &size, 0, i, total, di);
+				addnode("disk.img", &size, 0, i, total, di, config, awin);
 				i++;
 				di = di->xdi_Next;
 			}
@@ -334,7 +335,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 			fi = ai->xai_FileInfo;
 			while(fi) {
 				addnode(fi->xfi_FileName, &fi->xfi_Size,
-					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi, aw);
+					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi, awin);
 				i++;
 				fi = fi->xfi_Next;
 			}
@@ -360,7 +361,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	struct Hook progress_hook;
 	progress_hook.h_Entry = xad_progress;
 	progress_hook.h_SubEntry = NULL;
-	progress_hook.h_Data = xhd;
+	progress_hook.h_Data = &xhd;
 
 	if(arctype == XDISK) {
 		di = (struct xadDiskInfo *)getnode(awin, node);

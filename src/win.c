@@ -491,9 +491,11 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	aw->aslfilterhook.h_SubEntry = NULL;
 	aw->aslfilterhook.h_Data = NULL;
 	
-	aw->archive = strdup(archive);
-	aw->archive_needs_free = TRUE; /* TODO: fix */
-
+	if(archive) {
+		aw->archive = strdup(archive);
+		aw->archive_needs_free = TRUE; /* TODO: fix */
+	}
+	
 	NewMinList(&aw->deletelist);
 	
 	/* Create the window object */
@@ -874,7 +876,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								break;
 
 								case GID_EXTRACT:
-									ret = extract(awin, NULL, NULL);
+									ret = extract(awin, aw->archive, NULL, NULL);
 									if(ret != 0) show_error(ret, awin);
 								break;
 
@@ -893,7 +895,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								break;
 
 								case RAWKEY_RETURN:
-									ret = extract(awin, NULL, NULL);
+									ret = extract(awin, aw->archive, NULL, NULL);
 									if(ret != 0) show_error(ret, awin);
 								break;
 							}

@@ -21,7 +21,7 @@
 
 /* Basic window functions */
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
-void window_open(void *awin, appwin_mp);
+void window_open(void *awin, struct MsgPort *appwin_mp);
 void window_close(void *awin, BOOL iconify);
 void window_dispose(void *awin);
 
