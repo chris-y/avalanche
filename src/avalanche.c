@@ -19,7 +19,6 @@
 #include <proto/commodities.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/graphics.h>
 #include <proto/icon.h>
 #include <proto/intuition.h>
 #include <proto/locale.h>
@@ -29,11 +28,7 @@
 
 #include <exec/lists.h>
 #include <exec/nodes.h>
-#include <intuition/intuition.h>
 #include <intuition/pointerclass.h>
-#include <libraries/asl.h>
-#include <libraries/gadtools.h>
-#include <utility/date.h>
 #include <workbench/startup.h>
 
 #include <classes/window.h>
@@ -55,13 +50,6 @@
 
 const char *version = VERSTAG;
 
-enum {
-	ARC_NONE = 0,
-	ARC_XAD,
-	ARC_XFD
-};
-
-#define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 #define IEVENT_POPUP 1L
 
 /** Global config **/
@@ -261,7 +249,7 @@ void savesettings(Object *win)
 	}
 }
 
-static ULONG ask_quit(void *awin)
+ULONG ask_quit(void *awin)
 {
 	if(config.confirmquit) {
 		return ask_quit_req(awin);
@@ -296,7 +284,7 @@ static ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
 	return res;
 }
 
-static long extract(void *awin, char *archive, char *newdest, struct Node *node)
+long extract(void *awin, char *archive, char *newdest, struct Node *node)
 {
 	long ret = 0;
 
@@ -331,26 +319,6 @@ static long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	}
 
 	return ret;
-}
-
-#ifdef __amigaos4__
-static ULONG aslfilterfunc(struct Hook *h, struct FileRequester *fr, struct AnchorPathOld *ap)
-#else
-static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") struct FileRequester *fr, __reg("a1") struct AnchorPath *ap)
-#endif
-{
-	BOOL found = FALSE;
-	char fullfilename[256];
-
-	if(ap->ap_Info.fib_DirEntryType > 0) return(TRUE); /* Drawer */
-
-	strcpy(fullfilename, fr->fr_Drawer);
-	AddPart(fullfilename, ap->ap_Info.fib_FileName, 256);
-
-	found = xad_recog(fullfilename);
-	if(found == FALSE) found = xfd_recog(fullfilename);
-
-	return found;
 }
 
 static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
@@ -567,7 +535,7 @@ static void gui(char *archive)
 				}
 			} else {
 				while((done == FALSE) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
-					done = window_handle_input_events(awin, &config, result);
+					done = window_handle_input_events(awin, &config, result, appwin_mp);
 				}
 			}
 		}

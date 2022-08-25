@@ -15,9 +15,17 @@
 #ifndef AVALANCHE_H
 #define AVALANCHE_H 1
 
+#include <intuition/classusr.h>
+
 #ifndef MEMF_PRIVATE
 #define MEMF_PRIVATE 0L
 #endif
+
+enum {
+	ARC_NONE = 0,
+	ARC_XAD,
+	ARC_XFD
+};
 
 struct avalanche_config {
 	char *progname;
@@ -46,4 +54,7 @@ struct avalanche_config {
 
 char *strdup(const char *s);
 struct avalanche_config *get_config(void);
+ULONG ask_quit(void *awin);
+void savesettings(Object *win);
+long extract(void *awin, char *archive, char *newdest, struct Node *node);
 #endif
