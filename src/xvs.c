@@ -108,9 +108,11 @@ long xvs_scan(char *file, ULONG len, void *awin)
 	BPTR fh = 0;
 	long res = 0;
 
-	buffer = AllocVec(len, MEMF_ANY);
+	buffer = AllocVec(len, MEMF_ANY | MEMF_PRIVATE);
 	if(buffer == NULL) {
-		open_error_req( locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ) ,  locale_get_string( MSG_OK ), awin );
+		char message[200];
+		sprintf(message, locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ), file);
+		open_error_req(message, locale_get_string( MSG_OK ), awin);
 		return -2;
 	}
 
