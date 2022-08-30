@@ -15,6 +15,6 @@
 #ifndef XVS_H
 #define XVS_H 1
 
-long xvs_scan(char *file, ULONG len);
-long xvs_scan_buffer(UBYTE *buf, ULONG len);
+long xvs_scan(char *file, ULONG len, void *awin);
+long xvs_scan_buffer(UBYTE *buf, ULONG len, void *awin);
 #endif

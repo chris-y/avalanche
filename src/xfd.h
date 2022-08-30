@@ -17,8 +17,8 @@
 
 const char *xfd_get_filename(void *userdata);
 BOOL xfd_recog(char *file);
-void xfd_show_arc_info(void);
-long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata));
-long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, ULONG len));
+void xfd_show_arc_info(void *awin);
+long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin));
+long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len));
 void xfd_exit(void);
 #endif

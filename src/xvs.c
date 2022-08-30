@@ -24,7 +24,7 @@
 #include "locale.h"
 #include "xvs.h"
 
-static long xvs_init(void)
+static long xvs_init(void *awin)
 {
 	char *msg;
 
@@ -34,7 +34,7 @@ static long xvs_init(void)
 			if(msg = AllocVec(strlen(locale_get_string( MSG_UNABLETOOPENLIBRARY )) + strlen(locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED )) + strlen("xvs.library") + 4, MEMF_CLEAR)) {
 				sprintf(msg, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xvs.library", 33);
 				strcat(msg, locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ));
-				open_error_req(msg, locale_get_string( MSG_OK ) );
+				open_error_req(msg, locale_get_string( MSG_OK ), awin );
 				FreeVec(msg);
 			}
 			return -1;
@@ -43,7 +43,7 @@ static long xvs_init(void)
 		if(xvsSelfTest() == FALSE) {
 			if(msg = AllocVec(strlen(locale_get_string( MSG_XVSLIBRARYFAILEDSELFTEST )) + strlen(locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED )) + 1, MEMF_CLEAR)) {
 				sprintf(msg, "%s\n%s", locale_get_string( MSG_XVSLIBRARYFAILEDSELFTEST ), locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ));
-				open_error_req(msg, locale_get_string( MSG_OK ) );
+				open_error_req(msg, locale_get_string( MSG_OK ), awin );
 				FreeVec(msg);
 			}
 			return -3;
@@ -52,18 +52,18 @@ static long xvs_init(void)
 	return 0;
 }
 
-static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len)
+static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, void *awin)
 {
 	struct xvsFileInfo *xvsfi = NULL;
 	ULONG result;
 
-	long err = xvs_init();
+	long err = xvs_init(awin);
 	if(err != 0) return err;
 
 	xvsfi = xvsAllocObject(XVSOBJ_FILEINFO);
 	if(xvsfi == NULL) {
 		FreeVec(buf);
-		open_error_req( locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ) ,  locale_get_string( MSG_OK ) );
+		open_error_req( locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ) ,  locale_get_string( MSG_OK ), awin );
 		return -2;
 	}
 
@@ -89,7 +89,7 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len)
 			sprintf(message,  locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , "----", xvsfi->xvsfi_Name);
 		}
 
-		open_error_req(message,  locale_get_string( MSG_OK ) );
+		open_error_req(message,  locale_get_string( MSG_OK ), awin );
 	}
 
 	xvsFreeObject(xvsfi);
@@ -97,12 +97,12 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len)
 	return result;
 }
 
-long xvs_scan_buffer(UBYTE *buf, ULONG len)
+long xvs_scan_buffer(UBYTE *buf, ULONG len, void *awin)
 {
-	return xvs_scan_virus(NULL, buf, len);
+	return xvs_scan_virus(NULL, buf, len, awin);
 }
 
-long xvs_scan(char *file, ULONG len)
+long xvs_scan(char *file, ULONG len, void *awin)
 {
 	UBYTE *buffer = NULL;
 	BPTR fh = 0;
@@ -110,7 +110,7 @@ long xvs_scan(char *file, ULONG len)
 
 	buffer = AllocVec(len, MEMF_ANY);
 	if(buffer == NULL) {
-		open_error_req( locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ) ,  locale_get_string( MSG_OK ) );
+		open_error_req( locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ) ,  locale_get_string( MSG_OK ), awin );
 		return -2;
 	}
 
@@ -119,7 +119,7 @@ long xvs_scan(char *file, ULONG len)
 		Close(fh);
 	}
 
-	res = xvs_scan_virus(file, buffer, len);
+	res = xvs_scan_virus(file, buffer, len, awin);
 
 	FreeVec(buffer);
 

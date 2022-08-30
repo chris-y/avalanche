@@ -31,10 +31,11 @@ UBYTE *buffer = NULL;
 
 const char *xfd_get_filename(void *userdata)
 {
+	/* TODO: fn should be set per window */
 	return fn;
 }
 
-void xfd_show_arc_info(void)
+void xfd_show_arc_info(void *awin)
 {
 	char message[100];
 
@@ -42,7 +43,7 @@ void xfd_show_arc_info(void)
 
 	sprintf(message,  locale_get_string( MSG_CRUNCHED ) , bi->xfdbi_PackerName);	
 
-	open_info_req(message,  locale_get_string( MSG_OK ) );
+	open_info_req(message, locale_get_string(MSG_OK), awin);
 }
 
 BOOL xfd_recog(char *file)
@@ -82,7 +83,7 @@ BOOL xfd_recog(char *file)
 	return res;
 }
 
-long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata))
+long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin))
 {
 	BPTR fh = 0;
 	ULONG len = 0;
@@ -132,7 +133,7 @@ long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	if(res == TRUE) {
 		fn = strdup(FilePart(file));
 		/* Add to list */
-		addnode(fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, fn);
+		addnode(fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, fn, awin);
 
 		return 0;
 	}
@@ -140,7 +141,7 @@ long xfd_info(char *file, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG
 	return -3;
 }
 
-long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, ULONG len))
+long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len))
 {
 	char destfile[1024];
 	BPTR fh = 0;
@@ -153,7 +154,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 		if(bi->xfdbi_MaxSpecialLen > 0)
 			pwlen = bi->xfdbi_MaxSpecialLen;
 		pw = AllocVec(pwlen, MEMF_CLEAR);
-		err = ask_password(pw, pwlen);
+		err = ask_password(awin, pw, pwlen);
 		if(err == 0) {
 			FreeVec(pw);
 			pw = NULL;
@@ -163,11 +164,11 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 	}
 
 	if(xfdDecrunchBuffer(bi) == TRUE) {
-		if(scan(NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen) < 4) {
+		if(scan(awin, NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen) < 4) {
 			strcpy(destfile, dest);
 			if(AddPart(destfile, fn, 1024)) {
 				if(fh = Open(destfile, MODE_OLDFILE)) {
-					res = ask_question( locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , fn);
+					res = ask_question(awin, locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , fn);
 					Close(fh);
 				}
 
@@ -181,7 +182,7 @@ long xfd_extract(char *file, char *dest, ULONG (scan)(char *file, UBYTE *buf, UL
 		}
 		FreeMem(bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen);
 	} else {
-		open_error_req( locale_get_string( MSG_ERRORDECRUNCHING ) ,  locale_get_string( MSG_OK ) );
+		open_error_req( locale_get_string( MSG_ERRORDECRUNCHING ) ,  locale_get_string( MSG_OK ) , awin);
 	}
 	return 0;
 }
