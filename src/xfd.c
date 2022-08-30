@@ -154,7 +154,7 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 		if(bi->xfdbi_MaxSpecialLen > 0)
 			pwlen = bi->xfdbi_MaxSpecialLen;
 		pw = AllocVec(pwlen, MEMF_CLEAR);
-		err = ask_password(pw, pwlen);
+		err = ask_password(awin, pw, pwlen);
 		if(err == 0) {
 			FreeVec(pw);
 			pw = NULL;
@@ -168,7 +168,7 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 			strcpy(destfile, dest);
 			if(AddPart(destfile, fn, 1024)) {
 				if(fh = Open(destfile, MODE_OLDFILE)) {
-					res = ask_question( locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , fn);
+					res = ask_question(awin, locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , fn);
 					Close(fh);
 				}
 
@@ -182,7 +182,7 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 		}
 		FreeMem(bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufLen);
 	} else {
-		open_error_req( locale_get_string( MSG_ERRORDECRUNCHING ) ,  locale_get_string( MSG_OK ) );
+		open_error_req( locale_get_string( MSG_ERRORDECRUNCHING ) ,  locale_get_string( MSG_OK ) , awin);
 	}
 	return 0;
 }

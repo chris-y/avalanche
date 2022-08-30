@@ -147,7 +147,7 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 			if(xpi->xpi_Status & XADPIF_OVERWRITE) {
 				if(*pud == PUD_SKIP) return (XADPIF_OK | XADPIF_SKIP);
 				if(*pud == PUD_OVER) return (XADPIF_OK | XADPIF_OVERWRITE);
-				res = ask_question( locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , xpi->xpi_FileName);
+				res = ask_question(xhd->awin, locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , xpi->xpi_FileName);
 				switch(res) {
 					case 0: // Abort
 						*pud = PUD_ABORT;
@@ -390,7 +390,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 			if((di) || (!xad_is_dir(fi))) {
 				if(((fi && (fi->xfi_Flags & XADFIF_CRYPTED)) || (di && (di->xdi_Flags & XADDIF_CRYPTED))) && (pw == NULL)) {
 					pw = AllocVec(100, MEMF_CLEAR);
-					err = ask_password(pw, 100);
+					err = ask_password(awin, pw, 100);
 					if(err == 0) {
 						FreeVec(pw);
 						pw = NULL;

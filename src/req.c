@@ -112,7 +112,7 @@ ULONG ask_quit_req(void *awin)
 	return ret;
 }
 
-ULONG ask_question(char *q, char *f)
+ULONG ask_question(void *awin, char *q, char *f)
 {
 	char message[200];
 	int ret = 0;
@@ -128,7 +128,7 @@ ULONG ask_question(char *q, char *f)
 		End;
 
 	if(obj) {
-		ret = OpenRequester(obj, window_get_window(NULL)); 
+		ret = OpenRequester(obj, window_get_window(awin)); 
 		DisposeObject(obj);
 	} else {
 		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOSHOWERRORS ) , message, "");
@@ -137,7 +137,7 @@ ULONG ask_question(char *q, char *f)
 	return ret;
 }
 
-ULONG ask_password(char *pw, ULONG pwlen)
+ULONG ask_password(void *awin, char *pw, ULONG pwlen)
 {
 	int ret = 0;
 
@@ -153,7 +153,7 @@ ULONG ask_password(char *pw, ULONG pwlen)
 		End;
 
 	if(obj) {
-		ret = OpenRequester(obj, window_get_window(NULL)); 
+		ret = OpenRequester(obj, window_get_window(awin)); 
 		DisposeObject(obj);
 	} else {
 		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOASKPASSWORD ) );

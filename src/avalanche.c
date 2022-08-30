@@ -269,9 +269,9 @@ static ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
 
 	if(config.virus_scan) {
 		if(buf == NULL) {
-			res = xvs_scan(file, len);
+			res = xvs_scan(file, len, awin);
 		} else {
-			res = xvs_scan_buffer(buf, len);
+			res = xvs_scan_buffer(buf, len, awin);
 		}
 
 		if((res == -1) || (res == -3)) {
