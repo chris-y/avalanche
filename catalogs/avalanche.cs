@@ -109,7 +109,7 @@ MSG_XVSLIBRARYFAILEDSELFTEST
 xvs.library failed self-test,
 ;
 MSG_OUTOFMEMORYSCANNINGFILE
-Out of memory scanning file
+Out of memory scanning file:\n%s
 ;
 MSG_FILEHASBEENDELETED
 File has been deleted.
