@@ -95,6 +95,7 @@ struct avalanche_window {
 	ULONG current_item;
 	ULONG total_items;
 	BOOL archive_needs_free;
+	void *archive_userdata;
 };
 
 /** Menu **/
@@ -493,7 +494,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	if(archive) {
 		aw->archive = strdup(archive);
-		aw->archive_needs_free = TRUE; /* TODO: fix */
+		aw->archive_needs_free = TRUE;
 	}
 	
 	NewMinList(&aw->deletelist);
@@ -628,7 +629,8 @@ void window_dispose(void *awin)
 	/* Free archive browser list and column info */
 	FreeListBrowserList(&aw->lblist);
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
-	
+	if(aw->archive_needs_free) window_free_archive_path(aw);
+
 	delete_delete_list(aw);
 }
 
@@ -670,8 +672,12 @@ void window_update_archive(void *awin, char *archive)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
+	if(aw->archive_needs_free) window_free_archive_path(aw);
+	aw->archive = strdup(archive);
+	aw->archive_needs_free = TRUE;
+
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
-					GETFILE_FullFile, archive, TAG_DONE);
+					GETFILE_FullFile, aw->archive, TAG_DONE);
 }
 
 void window_toggle_hbrowser(void *awin, BOOL h_browser)
@@ -857,145 +863,145 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 	ULONG done = FALSE;
 	UWORD code;
 
-					switch (result & WMHI_CLASSMASK) {
-						case WMHI_CLOSEWINDOW:
-							if(ask_quit(awin)) {
-								window_close(awin, FALSE);
-								done = TRUE;
-							}
-						break;
+	switch (result & WMHI_CLASSMASK) {
+		case WMHI_CLOSEWINDOW:
+			if(ask_quit(awin)) {
+				window_close(awin, FALSE);
+				done = TRUE;
+			}
+		break;
 
-						case WMHI_GADGETUP:
-							switch (result & WMHI_GADGETMASK) {
-								case GID_ARCHIVE:
-									window_req_open_archive(awin, config, FALSE);
-								break;
-									
-								case GID_DEST:
-									window_req_dest(awin);
-								break;
+		case WMHI_GADGETUP:
+			switch (result & WMHI_GADGETMASK) {
+				case GID_ARCHIVE:
+					window_req_open_archive(awin, config, FALSE);
+				break;
+					
+				case GID_DEST:
+					window_req_dest(awin);
+				break;
 
-								case GID_EXTRACT:
-									ret = extract(awin, aw->archive, NULL, NULL);
-									if(ret != 0) show_error(ret, awin);
-								break;
+				case GID_EXTRACT:
+					ret = extract(awin, aw->archive, NULL, NULL);
+					if(ret != 0) show_error(ret, awin);
+				break;
 
-								case GID_LIST:
-									window_list_handle(awin, config->tmpdir);
-								break;
-							}
+				case GID_LIST:
+					window_list_handle(awin, config->tmpdir);
+				break;
+			}
+			break;
+
+		case WMHI_RAWKEY:
+			switch(result & WMHI_GADGETMASK) {
+				case RAWKEY_ESC:
+					if(ask_quit(awin)) {
+						done = TRUE;
+					}
+				break;
+
+				case RAWKEY_RETURN:
+					ret = extract(awin, aw->archive, NULL, NULL);
+					if(ret != 0) show_error(ret, awin);
+				break;
+			}
+		break;
+
+		case WMHI_ICONIFY:
+			window_close(awin, TRUE);
+		break;
+
+		case WMHI_UNICONIFY:
+			window_open(awin, appwin_mp);
+		break;
+				
+		 case WMHI_MENUPICK:
+			while((code != MENUNULL) && (done == FALSE)) {
+				if(aw->windows[WID_MAIN] == NULL) continue;
+				struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
+
+				switch(MENUNUM(code)) {
+					case 0: //project
+						switch(ITEMNUM(code)) {
+							case 0: //open
+								window_req_open_archive(awin, config, FALSE);
 							break;
-
-						case WMHI_RAWKEY:
-							switch(result & WMHI_GADGETMASK) {
-								case RAWKEY_ESC:
-									if(ask_quit(awin)) {
-										done = TRUE;
-									}
-								break;
-
-								case RAWKEY_RETURN:
-									ret = extract(awin, aw->archive, NULL, NULL);
-									if(ret != 0) show_error(ret, awin);
-								break;
-							}
-						break;
-
-						case WMHI_ICONIFY:
-							window_close(awin, TRUE);
-						break;
-
-						case WMHI_UNICONIFY:
-							window_open(awin, appwin_mp);
-						break;
-								
-						 case WMHI_MENUPICK:
-							while((code != MENUNULL) && (done == FALSE)) {
-								if(aw->windows[WID_MAIN] == NULL) continue;
-								struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
-
-								switch(MENUNUM(code)) {
-									case 0: //project
-										switch(ITEMNUM(code)) {
-											case 0: //open
-												window_req_open_archive(awin, config, FALSE);
-											break;
-											
-											case 2: //info
-												switch(aw->archiver) {
-													case ARC_XAD:
-														xad_show_arc_info(awin);
-													break;
-													case ARC_XFD:
-														xfd_show_arc_info(awin);
-													break;
-												}
-											break;
-
-											case 3: //about
-												show_about(awin);
-											break;
-											
-											case 5: //quit
-												if(ask_quit(awin)) {
-													done = TRUE;
-												}
-											break;
-										}
+							
+							case 2: //info
+								switch(aw->archiver) {
+									case ARC_XAD:
+										xad_show_arc_info(awin);
 									break;
-									
-									case 1: //edit
-										switch(ITEMNUM(code)) {
-											case 0: //select all
-												window_modify_all_list(awin, 1);
-											break;
-											
-											case 1: //clear selection
-												window_modify_all_list(awin, 0);
-											break;
-
-											case 2: //invert selection
-												window_modify_all_list(awin, 2);
-											break;
-										}
-									break;
-									
-									case 2: //settings
-										switch(ITEMNUM(code)) {
-											case 0: //virus scan
-												config->virus_scan = !config->virus_scan;
-											break;
-
-											case 1: //browser mode
-												config->h_browser = !config->h_browser;
-													
-												window_toggle_hbrowser(awin, config->h_browser);
-												window_req_open_archive(awin, config, TRUE);
-											break;
-												
-											case 2: //save window position
-												config->save_win_posn = !config->save_win_posn;
-											break;
-
-											case 3: //confirm quit
-												config->confirmquit = !config->confirmquit;
-											break;
-
-											case 4: //ignore fs
-												config->ignorefs = !config->ignorefs;
-												window_req_open_archive(awin, config, TRUE);
-											break;
-
-											case 6: //save settings
-												savesettings(window_get_object(awin));
-											break;
-										}
+									case ARC_XFD:
+										xfd_show_arc_info(awin);
 									break;
 								}
-								code = item->NextSelect;
-							}
-						break; //WMHI_MENUPICK
-					}
+							break;
+
+							case 3: //about
+								show_about(awin);
+							break;
+							
+							case 5: //quit
+								if(ask_quit(awin)) {
+									done = TRUE;
+								}
+							break;
+						}
+					break;
+					
+					case 1: //edit
+						switch(ITEMNUM(code)) {
+							case 0: //select all
+								window_modify_all_list(awin, 1);
+							break;
+							
+							case 1: //clear selection
+								window_modify_all_list(awin, 0);
+							break;
+
+							case 2: //invert selection
+								window_modify_all_list(awin, 2);
+							break;
+						}
+					break;
+					
+					case 2: //settings
+						switch(ITEMNUM(code)) {
+							case 0: //virus scan
+								config->virus_scan = !config->virus_scan;
+							break;
+
+							case 1: //browser mode
+								config->h_browser = !config->h_browser;
+									
+								window_toggle_hbrowser(awin, config->h_browser);
+								window_req_open_archive(awin, config, TRUE);
+							break;
+								
+							case 2: //save window position
+								config->save_win_posn = !config->save_win_posn;
+							break;
+
+							case 3: //confirm quit
+								config->confirmquit = !config->confirmquit;
+							break;
+
+							case 4: //ignore fs
+								config->ignorefs = !config->ignorefs;
+								window_req_open_archive(awin, config, TRUE);
+							break;
+
+							case 6: //save settings
+								savesettings(window_get_object(awin));
+							break;
+						}
+					break;
+				}
+				code = item->NextSelect;
+			}
+		break; //WMHI_MENUPICK
+	}
 
 	return done;
 }
@@ -1089,4 +1095,16 @@ void fill_menu_labels(void)
 	menu[18].nm_Label = locale_get_string( MSG_SAVESETTINGS );
 }
 
+void *window_get_archive_userdata(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	return aw->archive_userdata;
+}
 
+void window_set_archive_userdata(void *awin, void *userdata)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	aw->archive_userdata = userdata;
+}

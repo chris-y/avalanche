@@ -52,4 +52,7 @@ BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
 
+/* Archiver userdata */
+void *window_get_archive_userdata(void *awin);
+void window_set_archive_userdata(void *awin, void *userdata);
 #endif

@@ -50,10 +50,18 @@ struct xad_hookdata {
 	void *awin;
 };
 
+#if 0 // this will contain our window-specific XAD data */
+struct xad_userdata {
+	struct xadArchiveInfo *ai;
+	int arctype;
+	char *pw;
+};
+#else
 /* TODO: ai should be set per window */
 static struct xadArchiveInfo *ai = NULL;
 static int arctype = XNONE;
 static char *pw = NULL;
+#endif
 
 static void xad_free_ai(struct xadArchiveInfo *a)
 {
@@ -335,7 +343,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 			fi = ai->xai_FileInfo;
 			while(fi) {
 				addnode(fi->xfi_FileName, &fi->xfi_Size,
-					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi, awin);
+					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi, config, awin);
 				i++;
 				fi = fi->xfi_Next;
 			}

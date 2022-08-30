@@ -57,11 +57,11 @@ const char *version = VERSTAG;
 
 static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
-static BOOL dir_seen = FALSE;
 
 static struct avalanche_config config;
 
 /** Shared variables **/
+static char *archive = NULL;
 static struct Locale *locale = NULL;
 
 /** Useful functions **/
@@ -100,7 +100,7 @@ char *strdup(const char *s)
 }
 
 /** Private functions **/
-static void free_archive_path(char *archive)
+static void free_archive_path(void)
 {
 	if(archive) FreeVec(archive);
 	archive = NULL;
@@ -376,7 +376,7 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 	return CXMP;
 }
 
-static void gui(char *archive)
+static void gui(void)
 {
 	struct MsgPort *cx_mp = NULL;
 	CxObj *cx_broker = NULL;
@@ -487,13 +487,12 @@ static void gui(char *archive)
 						case AMTYPE_APPWINDOW:
 							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
 
-								/* TODO: manage archive within window structure */
-								if(archive_needs_free) free_archive_path(archive);
+								if(archive_needs_free) free_archive_path();
 								if(archive = AllocVec(512, MEMF_CLEAR)) {
 									NameFromLock(wbarg->wa_Lock, archive, 512);
 									AddPart(archive, wbarg->wa_Name, 512);
 									window_update_archive((void *)appmsg->am_UserData, archive);
-
+									free_archive_path();
 									window_req_open_archive(awin, &config, TRUE);
 									if(config.progname && (appmsg->am_NumArgs > 1)) {
 										for(int i = 1; i < appmsg->am_NumArgs; i++) {
@@ -510,14 +509,14 @@ static void gui(char *archive)
 						case AMTYPE_APPMENUITEM:
 							for(int i=0; i<appmsg->am_NumArgs; i++) {
 								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-									/* TODO: manage archive within window structure */
-									if(archive_needs_free) free_archive_path(archive);
+									if(archive_needs_free) free_archive_path();
 									if(archive = AllocVec(512, MEMF_CLEAR)) {
 										char *tempdest = NULL;
 										NameFromLock(wbarg->wa_Lock, archive, 512);
 										tempdest = strdup(archive);
 										AddPart(archive, wbarg->wa_Name, 512);
 										window_update_archive((void *)appmsg->am_UserData, archive);
+										free_archive_path();
 										window_req_open_archive(awin, &config, TRUE);
 										if(window_get_archiver(awin) != ARC_NONE) {
 											ret = extract(awin, archive, tempdest, NULL);
@@ -594,7 +593,6 @@ static void gettooltypes(UBYTE **tooltypes)
 int main(int argc, char **argv)
 {
 	char *tmp = NULL;
-	char *archive = NULL;
 
 	if(libs_open() == FALSE) {
 		return 10;
@@ -678,7 +676,7 @@ int main(int argc, char **argv)
 		FreeVec(tmp);
 	}
 
-	gui(archive);
+	gui();
 
 	Locale_Close();
 
@@ -687,8 +685,8 @@ int main(int argc, char **argv)
 	if(config.cx_popkey) FreeVec(config.cx_popkey);
 	if(config.tmpdir) FreeVec(config.tmpdir);
 	if(config.progname != NULL) FreeVec(config.progname);
-	if(archive_needs_free) free_archive_path(archive);
-//	if(dest_needs_free) free_dest_path();
+	if(archive_needs_free) free_archive_path();
+	if(dest_needs_free) free_dest_path();
 	
 	xad_exit();
 	xfd_exit();
