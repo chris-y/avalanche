@@ -881,7 +881,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_EXTRACT:
-					ret = extract(awin, aw->archive, NULL, NULL);
+					ret = extract(awin, aw->archive, aw->dest, NULL);
 					if(ret != 0) show_error(ret, awin);
 				break;
 
@@ -900,7 +900,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case RAWKEY_RETURN:
-					ret = extract(awin, aw->archive, NULL, NULL);
+					ret = extract(awin, aw->archive, aw->dest, NULL);
 					if(ret != 0) show_error(ret, awin);
 				break;
 			}
