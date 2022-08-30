@@ -36,7 +36,7 @@ void window_list_handle(void *awin);
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
 char *window_req_dest(void *awin);
 ULONG window_handle_input(void *awin, UWORD *code);
-ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp);
+ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code);
 
 /* Get info */
 void *window_get_window(void *awin);

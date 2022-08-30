@@ -534,7 +534,7 @@ static void gui(void)
 				}
 			} else {
 				while((done == FALSE) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
-					done = window_handle_input_events(awin, &config, result, appwin_mp);
+					done = window_handle_input_events(awin, &config, result, appwin_mp, code);
 				}
 			}
 		}

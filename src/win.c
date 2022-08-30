@@ -855,13 +855,12 @@ ULONG window_handle_input(void *awin, UWORD *code)
 	return RA_HandleInput(window_get_object(awin), code);
 }
 
-ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp)
+ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	long ret = 0;
 	ULONG done = FALSE;
-	UWORD code;
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
