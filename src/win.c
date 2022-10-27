@@ -47,6 +47,7 @@
 #include "libs.h"
 #include "locale.h"
 #include "req.h"
+#include "win.h"
 #include "xad.h"
 #include "xfd.h"
 
@@ -208,7 +209,7 @@ static const char *get_item_filename(struct avalanche_window *aw, struct Node *n
 
 	switch(aw->archiver) {
 		case ARC_XAD:
-			fn = xad_get_filename(userdata);
+			fn = xad_get_filename(userdata, aw);
 		break;
 		case ARC_XFD:
 			fn = xfd_get_filename(userdata);
@@ -326,7 +327,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 
 	char datestr[20];
 	struct ClockData cd;
-	xad_get_filedate(userdata, &cd);
+	xad_get_filedate(userdata, &cd, aw);
 
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
@@ -632,6 +633,19 @@ void window_dispose(void *awin)
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 
 	delete_delete_list(aw);
+	
+	switch(window_get_archiver(aw)) {
+		case ARC_XAD:
+			xad_free(aw);
+		break;
+
+		case ARC_XFD:
+			xfd_free(aw);
+		break;
+	}
+
+	window_free_archive_userdata(aw);
+	FreeVec(aw);
 }
 
 void window_list_handle(void *awin, char *tmpdir)
@@ -1106,4 +1120,22 @@ void window_set_archive_userdata(void *awin, void *userdata)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	aw->archive_userdata = userdata;
+}
+
+void *window_alloc_archive_userdata(void *awin, ULONG size)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	aw->archive_userdata = AllocVec(size, MEMF_CLEAR | MEMF_PRIVATE);
+	return aw->archive_userdata;
+}
+
+void window_free_archive_userdata(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->archive_userdata) {
+		FreeVec(aw->archive_userdata);
+		aw->archive_userdata = NULL;
+	}
 }

@@ -55,4 +55,6 @@ void fill_menu_labels(void);
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);
 void window_set_archive_userdata(void *awin, void *userdata);
+void *window_alloc_archive_userdata(void *awin, ULONG size);
+void window_free_archive_userdata(void *awin);
 #endif

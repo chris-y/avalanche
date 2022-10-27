@@ -15,6 +15,7 @@
 #ifndef XFD_H
 #define XFD_H 1
 
+void xfd_free(void *awin);
 const char *xfd_get_filename(void *userdata);
 BOOL xfd_recog(char *file);
 void xfd_show_arc_info(void *awin);
