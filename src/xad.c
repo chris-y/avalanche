@@ -275,7 +275,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
 
-	xad_free();
+	xad_free(awin);
 
 	struct xad_userdata *xu = (struct xad_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xad_userdata *xu));
 	if(xu == NULL) return -2;
@@ -296,7 +296,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 		if(fs && ((xu->arctype == XNONE) || (xu->arctype == XDISK))) {
 			dai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
-			if(arctype == XNONE) {
+			if(xu->arctype == XNONE) {
 				err = xadGetDiskInfo(dai,
 					XAD_INFILENAME, file,
 					TAG_DONE);
@@ -339,7 +339,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 				di = di->xdi_Next;
 			}
 
-		} else if (arctype != XNONE) {
+		} else if (xu->arctype != XNONE) {
 			/* Count entries (files) */
 			fi = ai->xai_FileInfo;
 			while(fi) {
@@ -407,7 +407,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 					}
 				}
 
-				switch(arctype) {
+				switch(xu->arctype) {
 					case XFILE:
 						err = xadFileUnArc(ai,
 									XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
@@ -482,7 +482,9 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 	struct Node *node;
 	ULONG pud = 0;
 
-	if(ai) {
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu->ai) {
 		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
 			err = xad_extract_file(awin, file, dest, node, getnode, scan, &pud);
 			if(err != XADERR_OK) return err;

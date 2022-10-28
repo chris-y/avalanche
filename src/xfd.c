@@ -54,10 +54,10 @@ const char *xfd_get_filename(void *userdata)
 void xfd_show_arc_info(void *awin)
 {
 	char message[100];
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	if(!xu->bi) return;
 
-	if(!bi) return;
-
-	sprintf(message,  locale_get_string( MSG_CRUNCHED ) , bi->xfdbi_PackerName);	
+	sprintf(message,  locale_get_string( MSG_CRUNCHED ) , xu->bi->xfdbi_PackerName);
 
 	open_info_req(message, locale_get_string(MSG_OK), awin);
 }
@@ -133,7 +133,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 			return -2;
 		}
 
-		len = Read(fh, buffer, len);
+		len = Read(fh, xu->buffer, len);
 		Close(fh);
 
 		bi->xfdbi_SourceBuffer = xu->buffer;
