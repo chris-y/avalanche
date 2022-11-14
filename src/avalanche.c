@@ -487,13 +487,14 @@ static void gui(void)
 						case AMTYPE_APPWINDOW:
 							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
 
-								if(archive_needs_free) free_archive_path();
-								if(archive = AllocVec(512, MEMF_CLEAR)) {
-									NameFromLock(wbarg->wa_Lock, archive, 512);
-									AddPart(archive, wbarg->wa_Name, 512);
-									window_update_archive((void *)appmsg->am_UserData, archive);
-									free_archive_path();
+								char *appwin_archive = NULL;
+								if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
+									NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
+									AddPart(appwin_archive, wbarg->wa_Name, 512);
+									window_update_archive((void *)appmsg->am_UserData, appwin_archive);
+									FreeVec(appwin_archive);
 									window_req_open_archive(awin, &config, TRUE);
+									
 									if(config.progname && (appmsg->am_NumArgs > 1)) {
 										for(int i = 1; i < appmsg->am_NumArgs; i++) {
 											wbarg++;
@@ -509,25 +510,25 @@ static void gui(void)
 						case AMTYPE_APPMENUITEM:
 							for(int i=0; i<appmsg->am_NumArgs; i++) {
 								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-									if(archive_needs_free) free_archive_path();
-									if(archive = AllocVec(512, MEMF_CLEAR)) {
-										char *tempdest = NULL;
-										NameFromLock(wbarg->wa_Lock, archive, 512);
-										tempdest = strdup(archive);
-										AddPart(archive, wbarg->wa_Name, 512);
+									char *am_archive = NULL;
+									if(am_archive = AllocVec(512, MEMF_CLEAR)) {
+										NameFromLock(wbarg->wa_Lock, am_archive, 512);
+										char *tempdest = strdup(am_archive);
+										AddPart(am_archive, wbarg->wa_Name, 512);
 										
 										/* Create a new window for our AppMenu to use */
-										struct avalanche_window *appmenu_awin = window_create(&config, archive, winport, AppPort);
+										struct avalanche_window *appmenu_awin = window_create(&config, am_archive, winport, AppPort);
 										if(appmenu_awin) {
-											window_open(awin, appwin_mp);
+											window_open(appmenu_awin, appwin_mp);
 											window_req_open_archive(appmenu_awin, &config, TRUE);
 											if(window_get_archiver(appmenu_awin) != ARC_NONE) {
-												ret = extract(appmenu_awin, archive, tempdest, NULL);
+												ret = extract(appmenu_awin, am_archive, tempdest, NULL);
+												free(tempdest);
 												if(ret != 0) show_error(ret, awin);
 											}
-											free_archive_path();
 											window_dispose(appmenu_awin);
 										}
+										FreeVec(am_archive);
 									}
 								}
 								wbarg++;

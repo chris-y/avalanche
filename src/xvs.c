@@ -19,9 +19,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "req.h"
+#include "avalanche.h"
 #include "libs.h"
 #include "locale.h"
+#include "req.h"
 #include "xvs.h"
 
 static long xvs_init(void *awin)

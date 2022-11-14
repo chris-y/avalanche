@@ -57,4 +57,9 @@ struct avalanche_config *get_config(void);
 ULONG ask_quit(void *awin);
 void savesettings(Object *win);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
+
+#ifndef __amigaos4__
+#define IsMinListEmpty(L) (L)->mlh_Head->mln_Succ == 0
+#endif
+
 #endif
