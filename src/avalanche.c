@@ -515,12 +515,18 @@ static void gui(void)
 										NameFromLock(wbarg->wa_Lock, archive, 512);
 										tempdest = strdup(archive);
 										AddPart(archive, wbarg->wa_Name, 512);
-										window_update_archive((void *)appmsg->am_UserData, archive);
-										free_archive_path();
-										window_req_open_archive(awin, &config, TRUE);
-										if(window_get_archiver(awin) != ARC_NONE) {
-											ret = extract(awin, archive, tempdest, NULL);
-											if(ret != 0) show_error(ret, awin);
+										
+										/* Create a new window for our AppMenu to use */
+										struct avalanche_window *appmenu_awin = window_create(&config, archive, winport, AppPort);
+										if(appmenu_awin) {
+											window_open(awin, appwin_mp);
+											window_req_open_archive(appmenu_awin, &config, TRUE);
+											if(window_get_archiver(appmenu_awin) != ARC_NONE) {
+												ret = extract(appmenu_awin, archive, tempdest, NULL);
+												if(ret != 0) show_error(ret, awin);
+											}
+											free_archive_path();
+											window_dispose(appmenu_awin);
 										}
 									}
 								}
