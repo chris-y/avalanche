@@ -108,6 +108,8 @@ long xvs_scan(char *file, ULONG len, void *awin)
 	BPTR fh = 0;
 	long res = 0;
 
+	if(len == 0) return 0;
+
 	buffer = AllocVec(len, MEMF_ANY | MEMF_PRIVATE);
 	if(buffer == NULL) {
 		char message[200];
