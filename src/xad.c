@@ -487,7 +487,10 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 	if(xu->ai) {
 		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
 			err = xad_extract_file(awin, file, dest, node, getnode, scan, &pud);
-			if(err != XADERR_OK) return err;
+			if(err != XADERR_OK) {
+				if(err == XADERR_BREAK) err = XADERR_OK; // user abort
+				 return err;
+			}
 		}
 	}
 
