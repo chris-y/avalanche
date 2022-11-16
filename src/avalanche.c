@@ -64,6 +64,8 @@ static struct avalanche_config config;
 static char *archive = NULL;
 static struct Locale *locale = NULL;
 
+static struct MinList win_list;
+
 /** Useful functions **/
 #ifndef __amigaos4__
 struct Node *GetHead(struct List *list)
@@ -376,6 +378,15 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 	return CXMP;
 }
 
+static void add_to_window_list(void *awin)
+{
+	struct Node *node = (struct Node *)awin;
+
+	if(node) {
+		AddTail((struct List *)&win_list, (struct Node *)node);
+	}
+}
+
 static void gui(void)
 {
 	struct MsgPort *cx_mp = NULL;
@@ -395,8 +406,11 @@ static void gui(void)
 	long ret = 0;
 	ULONG tmp = 0;
 	struct Node *node;
+	struct Node *nnode;
 	
 	void *awin = NULL;
+
+	NewMinList(&win_list);
 
 	if((AppPort = CreateMsgPort()) && (winport = CreateMsgPort())) {
 
@@ -417,6 +431,9 @@ static void gui(void)
 		if(config.cx_popup || archive) {
 			/* only create the window object if we are showing the window OR have an archive */
 			awin = window_create(&config, archive, winport, AppPort);
+			if(awin == NULL) return;
+
+			add_to_window_list(awin);
 
 			/* Open window */
 			if(config.cx_popup) window_open(awin, appwin_mp);
@@ -431,7 +448,7 @@ static void gui(void)
 		 
 		signal = (1L << winport->mp_SigBit);
 		app = (1L << AppPort->mp_SigBit);
-		 
+
 		while (!done) {
 			wait = Wait( signal | app | appwin_sig | cx_signal );
 
@@ -540,8 +557,15 @@ static void gui(void)
 					ReplyMsg((struct Message *)appmsg);
 				}
 			} else {
-				while((done == FALSE) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
-					done = window_handle_input_events(awin, &config, result, appwin_mp, code);
+				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
+					awin = (void *)GetHead((struct List *)&win_list);
+					do {
+						nnode = (struct Node *)GetSucc((struct Node *)awin);
+
+						while((done == FALSE) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
+							done = window_handle_input_events(awin, &config, result, appwin_mp, code);
+						}
+					}
 				}
 			}
 		}

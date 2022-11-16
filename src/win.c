@@ -81,6 +81,7 @@ struct arc_entries {
 };
 
 struct avalanche_window {
+	struct MinNode node;
 	struct Window *windows[WID_LAST];
 	struct Gadget *gadgets[GID_LAST];
 	Object *objects[OID_LAST];
@@ -98,6 +99,8 @@ struct avalanche_window {
 	BOOL archive_needs_free;
 	void *archive_userdata;
 };
+
+struct List winlist;
 
 /** Menu **/
 
