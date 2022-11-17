@@ -378,12 +378,38 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 	return CXMP;
 }
 
-static void add_to_window_list(void *awin)
+void add_to_window_list(void *awin)
 {
 	struct Node *node = (struct Node *)awin;
 
 	if(node) {
 		AddTail((struct List *)&win_list, (struct Node *)node);
+	}
+}
+
+void del_from_window_list(void *awin)
+{
+	struct Node *node = (struct Node *)awin;
+
+	if(node) {
+		Remove((struct Node *)node);
+	}
+}
+
+static void close_all_windows()
+{
+	struct Node *node;
+	struct Node *nnode;
+
+	if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
+		node = (void *)GetHead((struct List *)&win_list);
+		do {
+			nnode = (struct Node *)GetSucc(node);
+
+			window_close(node, FALSE);
+			window_dispose(node);
+
+		} while((node = nnode));
 	}
 }
 
@@ -400,7 +426,7 @@ static void gui(void)
 	ULONG appwin_sig = 0;
 
 	ULONG wait, signal, app;
-	ULONG done = FALSE;
+	ULONG done = WIN_DONE_OK;
 	ULONG result;
 	UWORD code;
 	long ret = 0;
@@ -409,6 +435,7 @@ static void gui(void)
 	struct Node *nnode;
 	
 	void *awin = NULL;
+	void *main_awin = NULL;
 
 	NewMinList(&win_list);
 
@@ -428,13 +455,10 @@ static void gui(void)
 			appwin_sig = 1L << appwin_mp->mp_SigBit;
 		}
 
-		if(config.cx_popup || archive) {
-			/* only create the window object if we are showing the window OR have an archive */
-			awin = window_create(&config, archive, winport, AppPort);
-			if(awin == NULL) return;
+		awin = window_create(&config, archive, winport, AppPort);
+		if(awin == NULL) return;
 
-			add_to_window_list(awin);
-
+		if(config.cx_popup) {
 			/* Open window */
 			if(config.cx_popup) window_open(awin, appwin_mp);
 
@@ -442,14 +466,16 @@ static void gui(void)
 			if(archive) window_req_open_archive(awin, &config, TRUE);
 		}
 		
-		
+		main_awin = awin;
+
 		/* Input Event Loop
 		 */
 		 
 		signal = (1L << winport->mp_SigBit);
 		app = (1L << AppPort->mp_SigBit);
 
-		while (!done) {
+		while (done != WIN_DONE_QUIT) {
+			done = WIN_DONE_OK;
 			wait = Wait( signal | app | appwin_sig | cx_signal );
 
 			if(wait & cx_signal) {
@@ -465,16 +491,16 @@ static void gui(void)
 						case CXM_COMMAND:
 							switch(cx_msgid) {
 								case CXCMD_KILL:
-									done = TRUE;
+									done = WIN_DONE_QUIT;
 								break;
 								case CXCMD_APPEAR:
-									window_open(awin, appwin_mp);
+									window_open(main_awin, appwin_mp);
 								break;
 								case CXCMD_UNIQUE:
 									//not unique, ignore
 								break;
 								case CXCMD_DISAPPEAR:
-									window_close(awin, FALSE);
+									window_close(main_awin, FALSE);
 								break;
 
 								case CXCMD_ENABLE:
@@ -490,7 +516,7 @@ static void gui(void)
 						case CXM_IEVENT:
 							switch(cx_msgid) {
 								case IEVENT_POPUP:
-									window_open(awin, appwin_mp);
+									window_open(main_awin, appwin_mp);
 								break;
 							}
 						default:
@@ -559,19 +585,25 @@ static void gui(void)
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
+
 					do {
 						nnode = (struct Node *)GetSucc((struct Node *)awin);
 
-						while((done == FALSE) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
+						while((done != WIN_DONE_CLOSED) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
 							done = window_handle_input_events(awin, &config, result, appwin_mp, code);
 						}
-					}
+					} while((done != WIN_DONE_CLOSED) && (awin = (void *)nnode));
 				}
 			}
-		}
+			if((done == WIN_DONE_CLOSED) && (awin != main_awin)) {
+				/* DISPOSE IF NOT MAIN WINDOW */
+				window_dispose(awin);
+			}
+		} // while
 	}
 
-	window_dispose(awin);
+	close_all_windows();
+
 	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 
 	RemoveAppMenuItem(appmenu);

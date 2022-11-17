@@ -606,6 +606,9 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
 		}
+
+		add_to_window_list(awin);
+
 	}
 }			
 
@@ -618,6 +621,8 @@ void window_close(void *awin, BOOL iconify)
 		RA_CloseWindow(aw->objects[OID_MAIN]);
 		aw->windows[WID_MAIN] = NULL;
 	}
+
+	del_from_window_list(awin);
 }
 
 void window_dispose(void *awin)
@@ -877,14 +882,12 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	long ret = 0;
-	ULONG done = FALSE;
+	ULONG done = WIN_DONE_OK;
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
-			if(ask_quit(awin)) {
-				window_close(awin, FALSE);
-				done = TRUE;
-			}
+			window_close(awin, FALSE);
+			done = WIN_DONE_CLOSED;
 		break;
 
 		case WMHI_GADGETUP:
@@ -911,9 +914,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		case WMHI_RAWKEY:
 			switch(result & WMHI_GADGETMASK) {
 				case RAWKEY_ESC:
-					if(ask_quit(awin)) {
-						done = TRUE;
-					}
+					done = WIN_DONE_CLOSED;
 				break;
 
 				case RAWKEY_RETURN:
@@ -932,7 +933,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		break;
 				
 		 case WMHI_MENUPICK:
-			while((code != MENUNULL) && (done == FALSE)) {
+			while((code != MENUNULL) && (done != WIN_DONE_CLOSED)) {
 				if(aw->windows[WID_MAIN] == NULL) continue;
 				struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
 
@@ -960,7 +961,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							
 							case 5: //quit
 								if(ask_quit(awin)) {
-									done = TRUE;
+									done = WIN_DONE_QUIT;
 								}
 							break;
 						}
