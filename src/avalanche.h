@@ -27,6 +27,12 @@ enum {
 	ARC_XFD
 };
 
+enum {
+	WIN_DONE_OK = 0,
+	WIN_DONE_CLOSED,
+	WIN_DONE_QUIT
+};
+
 struct avalanche_config {
 	char *progname;
 	
@@ -57,4 +63,13 @@ struct avalanche_config *get_config(void);
 ULONG ask_quit(void *awin);
 void savesettings(Object *win);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
+
+/* window list */
+void add_to_window_list(void *awin);
+void del_from_window_list(void *awin);
+
+#ifndef __amigaos4__
+#define IsMinListEmpty(L) (L)->mlh_Head->mln_Succ == 0
+#endif
+
 #endif

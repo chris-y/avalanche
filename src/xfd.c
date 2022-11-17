@@ -25,23 +25,39 @@
 #include "locale.h"
 #include "req.h"
 
-struct xfdBufferInfo *bi = NULL;
-char *fn = NULL;
-UBYTE *buffer = NULL;
+struct xfd_userdata {
+	struct xfdBufferInfo *bi;
+	char *fn;
+	UBYTE *buffer;
+};
+
+void xfd_free(void *awin)
+{
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	if(xu) {
+		if(xu->bi != NULL) xfdFreeObject(xu->bi);
+		if(xu->buffer != NULL) FreeVec(xu->buffer);
+		if(xu->fn != NULL) {
+			free(xu->fn);
+			xu->fn = NULL;
+		}
+	}
+
+	window_free_archive_userdata(awin);
+}
 
 const char *xfd_get_filename(void *userdata)
 {
-	/* TODO: fn should be set per window */
-	return fn;
+	return userdata;
 }
 
 void xfd_show_arc_info(void *awin)
 {
 	char message[100];
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	if(!xu->bi) return;
 
-	if(!bi) return;
-
-	sprintf(message,  locale_get_string( MSG_CRUNCHED ) , bi->xfdbi_PackerName);	
+	sprintf(message,  locale_get_string( MSG_CRUNCHED ) , xu->bi->xfdbi_PackerName);
 
 	open_info_req(message, locale_get_string(MSG_OK), awin);
 }
@@ -93,17 +109,13 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	if(xfdMasterBase == NULL) return -1;
 
 	struct xfdMasterBase *xfdmb = (struct xfdMasterBase *)xfdMasterBase;
+	
+	xfd_free(awin);
+	struct xfd_userdata *xu = (struct xad_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xfd_userdata *xu));
 
-	if(bi != NULL) xfdFreeObject(bi);
-	if(buffer != NULL) FreeVec(buffer);
-	if(fn != NULL) {
-		free(fn);
-		fn = NULL;
-	}
-
-
-	bi = xfdAllocObject(XFDOBJ_BUFFERINFO);
-	if(bi == NULL) return -2;
+	xu->bi = xfdAllocObject(XFDOBJ_BUFFERINFO);
+	if(xu->bi == NULL) return -2;
+	struct xfdBufferInfo *bi = xu->bi;
 
 	if(fh = Open(file, MODE_OLDFILE)) {
 #ifdef __amigaos4__
@@ -113,17 +125,18 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 		len = Seek(fh, 0, OFFSET_BEGINNING);
 #endif
 
-		buffer = AllocVec(len, MEMF_ANY);
-		if(buffer == NULL) {
+		xu->buffer = AllocVec(len, MEMF_ANY);
+		if(xu->buffer == NULL) {
 			Close(fh);
-			xfdFreeObject(bi);
+			xfdFreeObject(xu->bi);
+			xu->bi = NULL;
 			return -2;
 		}
 
-		len = Read(fh, buffer, len);
+		len = Read(fh, xu->buffer, len);
 		Close(fh);
 
-		bi->xfdbi_SourceBuffer = buffer;
+		bi->xfdbi_SourceBuffer = xu->buffer;
 		bi->xfdbi_SourceBufLen = len;
 		bi->xfdbi_Flags = XFDFB_RECOGEXTERN;
 
@@ -131,9 +144,9 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	}
 
 	if(res == TRUE) {
-		fn = strdup(FilePart(file));
+		xu->fn = strdup(FilePart(file));
 		/* Add to list */
-		addnode(fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, fn, awin);
+		addnode(xu->fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, xu->fn, awin);
 
 		return 0;
 	}
@@ -149,6 +162,9 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 	ULONG pwlen = 100;
 	ULONG err = 0;
 	ULONG res = 1;
+
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	struct xfdBufferInfo *bi = xu->bi;
 
 	if(bi->xfdbi_PackerFlags & XFDPFF_PASSWORD) {
 		if(bi->xfdbi_MaxSpecialLen > 0)
@@ -166,9 +182,9 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 	if(xfdDecrunchBuffer(bi) == TRUE) {
 		if(scan(awin, NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen) < 4) {
 			strcpy(destfile, dest);
-			if(AddPart(destfile, fn, 1024)) {
+			if(AddPart(destfile, xu->fn, 1024)) {
 				if(fh = Open(destfile, MODE_OLDFILE)) {
-					res = ask_question(awin, locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , fn);
+					res = ask_question(awin, locale_get_string( MSG_ALREADYEXISTSOVERWRITE ) , xu->fn);
 					Close(fh);
 				}
 
@@ -189,8 +205,5 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 
 void xfd_exit(void)
 {
-	if(bi != NULL) xfdFreeObject(bi);
-	if(fn != NULL) free(fn);
-	if(buffer != NULL) FreeVec(buffer);
 	libs_xfd_exit();
 }

@@ -47,6 +47,7 @@
 #include "libs.h"
 #include "locale.h"
 #include "req.h"
+#include "win.h"
 #include "xad.h"
 #include "xfd.h"
 
@@ -80,6 +81,7 @@ struct arc_entries {
 };
 
 struct avalanche_window {
+	struct MinNode node;
 	struct Window *windows[WID_LAST];
 	struct Gadget *gadgets[GID_LAST];
 	Object *objects[OID_LAST];
@@ -97,6 +99,8 @@ struct avalanche_window {
 	BOOL archive_needs_free;
 	void *archive_userdata;
 };
+
+struct List winlist;
 
 /** Menu **/
 
@@ -208,7 +212,7 @@ static const char *get_item_filename(struct avalanche_window *aw, struct Node *n
 
 	switch(aw->archiver) {
 		case ARC_XAD:
-			fn = xad_get_filename(userdata);
+			fn = xad_get_filename(userdata, aw);
 		break;
 		case ARC_XFD:
 			fn = xfd_get_filename(userdata);
@@ -326,7 +330,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 
 	char datestr[20];
 	struct ClockData cd;
-	xad_get_filedate(userdata, &cd);
+	xad_get_filedate(userdata, &cd, aw);
 
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
@@ -602,6 +606,9 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
 		}
+
+		add_to_window_list(awin);
+
 	}
 }			
 
@@ -614,6 +621,8 @@ void window_close(void *awin, BOOL iconify)
 		RA_CloseWindow(aw->objects[OID_MAIN]);
 		aw->windows[WID_MAIN] = NULL;
 	}
+
+	del_from_window_list(awin);
 }
 
 void window_dispose(void *awin)
@@ -632,6 +641,19 @@ void window_dispose(void *awin)
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 
 	delete_delete_list(aw);
+	
+	switch(window_get_archiver(aw)) {
+		case ARC_XAD:
+			xad_free(aw);
+		break;
+
+		case ARC_XFD:
+			xfd_free(aw);
+		break;
+	}
+
+	window_free_archive_userdata(aw);
+	FreeVec(aw);
 }
 
 void window_list_handle(void *awin, char *tmpdir)
@@ -860,14 +882,12 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	long ret = 0;
-	ULONG done = FALSE;
+	ULONG done = WIN_DONE_OK;
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
-			if(ask_quit(awin)) {
-				window_close(awin, FALSE);
-				done = TRUE;
-			}
+			window_close(awin, FALSE);
+			done = WIN_DONE_CLOSED;
 		break;
 
 		case WMHI_GADGETUP:
@@ -894,9 +914,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		case WMHI_RAWKEY:
 			switch(result & WMHI_GADGETMASK) {
 				case RAWKEY_ESC:
-					if(ask_quit(awin)) {
-						done = TRUE;
-					}
+					done = WIN_DONE_CLOSED;
 				break;
 
 				case RAWKEY_RETURN:
@@ -915,7 +933,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		break;
 				
 		 case WMHI_MENUPICK:
-			while((code != MENUNULL) && (done == FALSE)) {
+			while((code != MENUNULL) && (done != WIN_DONE_CLOSED)) {
 				if(aw->windows[WID_MAIN] == NULL) continue;
 				struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
 
@@ -943,7 +961,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							
 							case 5: //quit
 								if(ask_quit(awin)) {
-									done = TRUE;
+									done = WIN_DONE_QUIT;
 								}
 							break;
 						}
@@ -1106,4 +1124,22 @@ void window_set_archive_userdata(void *awin, void *userdata)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	aw->archive_userdata = userdata;
+}
+
+void *window_alloc_archive_userdata(void *awin, ULONG size)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	aw->archive_userdata = AllocVec(size, MEMF_CLEAR | MEMF_PRIVATE);
+	return aw->archive_userdata;
+}
+
+void window_free_archive_userdata(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->archive_userdata) {
+		FreeVec(aw->archive_userdata);
+		aw->archive_userdata = NULL;
+	}
 }

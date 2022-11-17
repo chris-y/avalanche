@@ -50,18 +50,11 @@ struct xad_hookdata {
 	void *awin;
 };
 
-#if 0 // this will contain our window-specific XAD data */
 struct xad_userdata {
 	struct xadArchiveInfo *ai;
 	int arctype;
 	char *pw;
 };
-#else
-/* TODO: ai should be set per window */
-static struct xadArchiveInfo *ai = NULL;
-static int arctype = XNONE;
-static char *pw = NULL;
-#endif
 
 static void xad_free_ai(struct xadArchiveInfo *a)
 {
@@ -69,15 +62,19 @@ static void xad_free_ai(struct xadArchiveInfo *a)
 	xadFreeObjectA(a, NULL);
 }
 
-void xad_free(void)
+void xad_free(void *awin)
 {
-	if(ai) xad_free_ai(ai);
-	ai = NULL;
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	if(xu && xu->ai) {
+		xad_free_ai(xu->ai);
+		xu->ai = NULL;
+	}
+	
+	window_free_archive_userdata(awin);
 }
 
 void xad_exit(void)
 {
-	xad_free();
 	libs_xad_exit();
 }
 
@@ -111,9 +108,11 @@ static ULONG xad_get_fileprotection(void *xfi)
 	return protbits;
 }
 
-ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
+ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 {
-	if(arctype == XDISK) return 0;
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu->arctype == XDISK) return 0;
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
@@ -123,9 +122,11 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd)
 				TAG_DONE);
 }
 
-const char *xad_get_filename(void *userdata)
+const char *xad_get_filename(void *userdata, void *awin)
 {
-	if(arctype == XDISK) return "disk.img";
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	
+	if(xu && (xu->arctype == XDISK)) return "disk.img";
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)userdata;
 
@@ -201,9 +202,10 @@ void xad_show_arc_info(void *awin)
 	char message[100];
 	char *type;
 
-	if(!ai) return;
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	if(!xu->ai) return;
 
-	switch(arctype) {
+	switch(xu->arctype) {
 		case XFILE:
 			type =  locale_get_string( MSG_FILEARCHIVE ) ;
 		break;
@@ -218,7 +220,7 @@ void xad_show_arc_info(void *awin)
 		break;
 	}
 
-	sprintf(message, "%s %s", ai->xai_Client->xc_ArchiverName, type);	
+	sprintf(message, "%s %s", xu->ai->xai_Client->xc_ArchiverName, type);	
 
 	open_info_req(message, locale_get_string(MSG_OK), awin);
 }
@@ -264,6 +266,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	struct xadFileInfo *fi;
 	struct xadDiskInfo *di;
 	struct xadArchiveInfo *dai = NULL;
+	struct xadArchiveInfo *ai = NULL;
 	ULONG total = 0;
 	ULONG i = 0;
 	ULONG size = 0;
@@ -272,24 +275,28 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
 
-	xad_free();
-	ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
+	xad_free(awin);
 
-	arctype = XNONE;
+	struct xad_userdata *xu = (struct xad_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xad_userdata *xu));
+	if(xu == NULL) return -2;
+
+	xu->ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
+	ai = xu->ai;
+	xu->arctype = XNONE;
 
 	if(ai) {
 		if((err = xadGetInfo(ai,
 				XAD_INFILENAME, file,
 				TAG_DONE)) == 0) {
-			if(ai->xai_DiskInfo) arctype = XDISK;
-			if(ai->xai_FileInfo) arctype = XFILE; /* We only support one of file/disk so file preferred */
+			if(ai->xai_DiskInfo) xu->arctype = XDISK;
+			if(ai->xai_FileInfo) xu->arctype = XFILE; /* We only support one of file/disk so file preferred */
 
 		}
 
-		if(fs && ((arctype == XNONE) || (arctype == XDISK))) {
+		if(fs && ((xu->arctype == XNONE) || (xu->arctype == XDISK))) {
 			dai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
-			if(arctype == XNONE) {
+			if(xu->arctype == XNONE) {
 				err = xadGetDiskInfo(dai,
 					XAD_INFILENAME, file,
 					TAG_DONE);
@@ -305,15 +312,16 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 			}
 
 			if(err == 0) {
-				arctype = XDISKFILE;
-				xad_free();
+				xu->arctype = XDISKFILE;
+				xad_free_ai(ai);
 				ai = dai;
+				xu->ai = dai;
 			} else {
 				xad_free_ai(dai);
 			}
 		}
 		
-		if(arctype == XDISK) {
+		if(xu->arctype == XDISK) {
 			/* Count entries (disks) */
 			/* We only support archives which have disks or files, not mixed */
 			di = ai->xai_DiskInfo;
@@ -331,7 +339,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 				di = di->xdi_Next;
 			}
 
-		} else if (arctype != XNONE) {
+		} else if (xu->arctype != XNONE) {
 			/* Count entries (files) */
 			fi = ai->xai_FileInfo;
 			while(fi) {
@@ -361,6 +369,8 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	struct xadDiskInfo *di = NULL;
 	struct DateStamp ds;
 	char *fn = NULL;
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	struct xadArchiveInfo *ai = xu->ai;
 
 	struct xad_hookdata xhd;
 	xhd.pud = pud;
@@ -371,7 +381,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	progress_hook.h_SubEntry = NULL;
 	progress_hook.h_Data = &xhd;
 
-	if(arctype == XDISK) {
+	if(xu->arctype == XDISK) {
 		di = (struct xadDiskInfo *)getnode(awin, node);
 	} else {
 		fi = (struct xadFileInfo *)getnode(awin, node);
@@ -388,22 +398,22 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 
 		if(AddPart(destfile, fn, 1024)) {
 			if((di) || (!xad_is_dir(fi))) {
-				if(((fi && (fi->xfi_Flags & XADFIF_CRYPTED)) || (di && (di->xdi_Flags & XADDIF_CRYPTED))) && (pw == NULL)) {
-					pw = AllocVec(100, MEMF_CLEAR);
-					err = ask_password(awin, pw, 100);
+				if(((fi && (fi->xfi_Flags & XADFIF_CRYPTED)) || (di && (di->xdi_Flags & XADDIF_CRYPTED))) && (xu->pw == NULL)) {
+					xu->pw = AllocVec(100, MEMF_CLEAR);
+					err = ask_password(awin, xu->pw, 100);
 					if(err == 0) {
-						FreeVec(pw);
-						pw = NULL;
+						FreeVec(xu->pw);
+						xu->pw = NULL;
 					}
 				}
 
-				switch(arctype) {
+				switch(xu->arctype) {
 					case XFILE:
 						err = xadFileUnArc(ai,
 									XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
 									XAD_MAKEDIRECTORY, TRUE,
 									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, pw,
+									XAD_PASSWORD, xu->pw,
 									XAD_PROGRESSHOOK, &progress_hook,
 									TAG_DONE);
 						break;
@@ -411,7 +421,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 					case XDISK:
 						err = xadDiskUnArc(ai, XAD_ENTRYNUMBER, di->xdi_EntryNumber,
 									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, pw,
+									XAD_PASSWORD, xu->pw,
 									XAD_PROGRESSHOOK, &progress_hook,
 									TAG_DONE);
 						break;
@@ -421,15 +431,15 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 									XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
 									XAD_MAKEDIRECTORY, TRUE,
 									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, pw,
+									XAD_PASSWORD, xu->pw,
 									XAD_PROGRESSHOOK, &progress_hook,
 									TAG_DONE);
 						break;
 				}
 
 				if(*pud == PUD_ABORT) {
-					if(pw) FreeVec(pw);
-					pw = NULL;
+					if(xu->pw) FreeVec(xu->pw);
+					xu->pw = NULL;
 					return XADERR_BREAK;
 				}
 
@@ -445,8 +455,8 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 										TAG_DONE);
 
 					if(err != XADERR_OK) {
-						if(pw) FreeVec(pw);
-						pw = NULL;
+						if(xu->pw) FreeVec(xu->pw);
+						xu->pw = NULL;
 						return err;
 					}
 
@@ -460,8 +470,8 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 		if(di) di = di->xdi_Next;
 	}
 
-	if(pw) FreeVec(pw);
-	pw = NULL;
+	if(xu->pw) FreeVec(xu->pw);
+	xu->pw = NULL;
 	return err;
 }
 
@@ -472,10 +482,15 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 	struct Node *node;
 	ULONG pud = 0;
 
-	if(ai) {
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu->ai) {
 		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
 			err = xad_extract_file(awin, file, dest, node, getnode, scan, &pud);
-			if(err != XADERR_OK) return err;
+			if(err != XADERR_OK) {
+				if(err == XADERR_BREAK) err = XADERR_OK; // user abort
+				 return err;
+			}
 		}
 	}
 
