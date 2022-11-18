@@ -413,6 +413,44 @@ static void close_all_windows()
 	}
 }
 
+/* Do not call this directly! */
+static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window,
+				struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
+{
+	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+
+		char *appwin_archive = NULL;
+		if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
+			NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
+			AddPart(appwin_archive, wbarg->wa_Name, 512);
+			if(new_window == FALSE) {
+				window_update_archive(awin, appwin_archive);
+			} else {
+				awin = window_create(&config, appwin_archive, win_port, app_port);
+				if(awin) {
+					window_open(awin, appwin_mp);
+				}
+			}
+			FreeVec(appwin_archive);
+			if(awin) window_req_open_archive(awin, &config, TRUE);
+		}
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static BOOL open_archive_from_wbarg_new(struct WBArg *wbarg, struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
+{
+	return open_archive_from_wbarg(NULL, wbarg, TRUE, win_port, app_port, appwin_mp);
+}
+
+static BOOL open_archive_from_wbarg_existing(void *awin, struct WBArg *wbarg)
+{
+	return open_archive_from_wbarg(awin, wbarg, FALSE, NULL, NULL, NULL);
+}
+
 static void gui(void)
 {
 	struct MsgPort *cx_mp = NULL;
@@ -528,24 +566,11 @@ static void gui(void)
 					struct WBArg *wbarg = appmsg->am_ArgList;
 					switch(appmsg->am_Type) {
 						case AMTYPE_APPWINDOW:
-							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-
-								char *appwin_archive = NULL;
-								if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
-									NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
-									AddPart(appwin_archive, wbarg->wa_Name, 512);
-									window_update_archive((void *)appmsg->am_UserData, appwin_archive);
-									FreeVec(appwin_archive);
-									window_req_open_archive(awin, &config, TRUE);
-									
-									if(config.progname && (appmsg->am_NumArgs > 1)) {
-										for(int i = 1; i < appmsg->am_NumArgs; i++) {
-											wbarg++;
-											OpenWorkbenchObject(config.progname+8,
-												WBOPENA_ArgLock, wbarg->wa_Lock,
-												WBOPENA_ArgName, wbarg->wa_Name,
-												TAG_DONE);
-										}
+							if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+								if(appmsg->am_NumArgs > 1) {
+									for(int i = 1; i < appmsg->am_NumArgs; i++) {
+										wbarg++;
+										open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
 									}
 								}
 							}
