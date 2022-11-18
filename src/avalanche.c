@@ -55,13 +55,11 @@ const char *version = VERSTAG;
 /** Global config **/
 #define PROGRESS_SIZE_DEFAULT 20
 
-static BOOL archive_needs_free = FALSE;
 static BOOL dest_needs_free = FALSE;
 
 static struct avalanche_config config;
 
 /** Shared variables **/
-static char *archive = NULL;
 static struct Locale *locale = NULL;
 
 static struct MinList win_list;
@@ -102,13 +100,6 @@ char *strdup(const char *s)
 }
 
 /** Private functions **/
-static void free_archive_path(void)
-{
-	if(archive) FreeVec(archive);
-	archive = NULL;
-	archive_needs_free = FALSE;
-}
-
 static void free_dest_path(void)
 {
 	if(config.dest) free(config.dest);
@@ -413,7 +404,46 @@ static void close_all_windows()
 	}
 }
 
-static void gui(void)
+/* Do not call this directly! */
+static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window,
+				struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
+{
+	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+
+		char *appwin_archive = NULL;
+		if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
+			NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
+			AddPart(appwin_archive, wbarg->wa_Name, 512);
+			if(new_window == FALSE) {
+				window_update_archive(awin, appwin_archive);
+			} else {
+				awin = window_create(&config, appwin_archive, win_port, app_port);
+			}
+			FreeVec(appwin_archive);
+			if(awin) {
+				/* Ensure our window is open to avoid confusion */
+				window_open(awin, appwin_mp);
+				window_req_open_archive(awin, &config, TRUE);
+			}
+		}
+
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static BOOL open_archive_from_wbarg_new(struct WBArg *wbarg, struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
+{
+	return open_archive_from_wbarg(NULL, wbarg, TRUE, win_port, app_port, appwin_mp);
+}
+
+static BOOL open_archive_from_wbarg_existing(void *awin, struct WBArg *wbarg)
+{
+	return open_archive_from_wbarg(awin, wbarg, FALSE, NULL, NULL, NULL);
+}
+
+static void gui(struct WBStartup *WBenchMsg)
 {
 	struct MsgPort *cx_mp = NULL;
 	CxObj *cx_broker = NULL;
@@ -455,18 +485,31 @@ static void gui(void)
 			appwin_sig = 1L << appwin_mp->mp_SigBit;
 		}
 
-		awin = window_create(&config, archive, winport, AppPort);
+		awin = window_create(&config, NULL, winport, AppPort);
 		if(awin == NULL) return;
 
-		if(config.cx_popup) {
-			/* Open window */
-			if(config.cx_popup) window_open(awin, appwin_mp);
-
-			/* Open initial archive, if there is one. */
-			if(archive) window_req_open_archive(awin, &config, TRUE);
-		}
+		/* NB: Window will alway open (below) if we opened as default tool */
+		if(config.cx_popup) window_open(awin, appwin_mp);
 		
 		main_awin = awin;
+
+		if(WBenchMsg) {
+			struct WBArg *wbarg;
+
+			if(WBenchMsg->sm_NumArgs > 0) {
+				/* Started as default tool, get the path+filename of the (first) project */
+				wbarg = WBenchMsg->sm_ArgList + 1;
+
+				if(open_archive_from_wbarg_existing(awin, wbarg)) {
+					if(WBenchMsg->sm_NumArgs > 2) {
+						for(int i = 2; i < WBenchMsg->sm_NumArgs; i++) {
+							wbarg++;
+							open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+						}
+					}
+				}
+			}				
+		}
 
 		/* Input Event Loop
 		 */
@@ -528,24 +571,11 @@ static void gui(void)
 					struct WBArg *wbarg = appmsg->am_ArgList;
 					switch(appmsg->am_Type) {
 						case AMTYPE_APPWINDOW:
-							if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-
-								char *appwin_archive = NULL;
-								if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
-									NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
-									AddPart(appwin_archive, wbarg->wa_Name, 512);
-									window_update_archive((void *)appmsg->am_UserData, appwin_archive);
-									FreeVec(appwin_archive);
-									window_req_open_archive(awin, &config, TRUE);
-									
-									if(config.progname && (appmsg->am_NumArgs > 1)) {
-										for(int i = 1; i < appmsg->am_NumArgs; i++) {
-											wbarg++;
-											OpenWorkbenchObject(config.progname+8,
-												WBOPENA_ArgLock, wbarg->wa_Lock,
-												WBOPENA_ArgName, wbarg->wa_Name,
-												TAG_DONE);
-										}
+							if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+								if(appmsg->am_NumArgs > 1) {
+									for(int i = 1; i < appmsg->am_NumArgs; i++) {
+										wbarg++;
+										open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
 									}
 								}
 							}
@@ -656,6 +686,7 @@ static void gettooltypes(UBYTE **tooltypes)
 int main(int argc, char **argv)
 {
 	char *tmp = NULL;
+	struct WBStartup *WBenchMsg = NULL;
 
 	if(libs_open() == FALSE) {
 		return 10;
@@ -688,7 +719,7 @@ int main(int argc, char **argv)
 
 	if(argc == 0) {
 		/* Started from WB */
-		struct WBStartup *WBenchMsg = (struct WBStartup *)argv;
+		WBenchMsg = (struct WBStartup *)argv;
 		struct WBArg *wbarg = WBenchMsg->sm_ArgList;
 
 		if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
@@ -697,29 +728,6 @@ int main(int argc, char **argv)
 				AddPart(config.progname, wbarg->wa_Name, 40);
 			}
 		}
-
-		if(WBenchMsg->sm_NumArgs > 0) {
-			/* Started as default tool, get the path+filename of the (first) project */
-			wbarg = WBenchMsg->sm_ArgList + 1;
-
-            if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-				if(archive = AllocVec(512, MEMF_CLEAR)) {
-					archive_needs_free = TRUE;
-					NameFromLock(wbarg->wa_Lock, archive, 512);
-					AddPart(archive, wbarg->wa_Name, 512);
-				}
-			}
-
-			if(config.progname && (WBenchMsg->sm_NumArgs > 2)) {
-				for(int i = 2; i < WBenchMsg->sm_NumArgs; i++) {
-					wbarg++;
-					OpenWorkbenchObject(config.progname+8,
-						WBOPENA_ArgLock, wbarg->wa_Lock,
-						WBOPENA_ArgName, wbarg->wa_Name,
-						TAG_DONE);
-				}
-			}
-        }
 	}
 
 	config.tmpdir = AllocVec(100, MEMF_CLEAR);
@@ -739,7 +747,7 @@ int main(int argc, char **argv)
 		FreeVec(tmp);
 	}
 
-	gui();
+	gui(WBenchMsg);
 
 	Locale_Close();
 
@@ -748,7 +756,6 @@ int main(int argc, char **argv)
 	if(config.cx_popkey) FreeVec(config.cx_popkey);
 	if(config.tmpdir) FreeVec(config.tmpdir);
 	if(config.progname != NULL) FreeVec(config.progname);
-	if(archive_needs_free) free_archive_path();
 	if(dest_needs_free) free_dest_path();
 	
 	xad_exit();
