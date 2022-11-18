@@ -99,6 +99,11 @@ Files will not be further extracted in order to be scanned, so infected files th
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}1.8 (xx.xx.xxxx)@{uu}
+* Multiple windows supported internally. Limitations:
+   - Commodities events only operate on the main (first) window
+   - Does not spawn new process, so cannot use other windows whilst one is busy
+
 @{u}1.7 (03.08.2022)@{uu}
 * Avalanche now registers as a commodity
 * Added Tools menu item "Extract here" for quick extraction
