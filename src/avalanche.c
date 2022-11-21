@@ -33,6 +33,7 @@
 
 #include <classes/window.h>
 
+#include "arexx.h"
 #include "avalanche.h"
 #include "req.h"
 #include "libs.h"
@@ -443,7 +444,7 @@ static BOOL open_archive_from_wbarg_existing(void *awin, struct WBArg *wbarg)
 	return open_archive_from_wbarg(awin, wbarg, FALSE, NULL, NULL, NULL);
 }
 
-static void gui(struct WBStartup *WBenchMsg)
+static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 {
 	struct MsgPort *cx_mp = NULL;
 	CxObj *cx_broker = NULL;
@@ -612,6 +613,8 @@ static void gui(struct WBStartup *WBenchMsg)
 					}
 					ReplyMsg((struct Message *)appmsg);
 				}
+			} else if(signal & rxsig) {
+				ami_arexx_handle();
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
@@ -687,6 +690,7 @@ int main(int argc, char **argv)
 {
 	char *tmp = NULL;
 	struct WBStartup *WBenchMsg = NULL;
+	ULONG rxsig = 0;
 
 	if(libs_open() == FALSE) {
 		return 10;
@@ -747,8 +751,14 @@ int main(int argc, char **argv)
 		FreeVec(tmp);
 	}
 
-	gui(WBenchMsg);
+	if(ami_arexx_init(&rxsig)) {
+		/* ARexx port did not already exist */
+		gui(WBenchMsg, rxsig);
+	} else {
+		ami_arexx_send("OPEN test");
+	}
 
+	ami_arexx_cleanup();
 	Locale_Close();
 
 	DeleteFile(config.tmpdir);
