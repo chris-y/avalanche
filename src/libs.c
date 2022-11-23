@@ -17,6 +17,7 @@
 #include <proto/intuition.h>
 
 #ifndef __amigaos4__
+#include <proto/arexx.h>
 #include <proto/button.h>
 #include <proto/fuelgauge.h>
 #include <proto/getfile.h>
@@ -138,6 +139,7 @@ ALIB_STRUCT(XadMaster)
 ALIB_STRUCT(xadMaster)
 #endif
 
+CLASS_STRUCT(ARexx)
 CLASS_STRUCT(Button)
 CLASS_STRUCT(FuelGauge)
 CLASS_STRUCT(GetFile)
@@ -185,7 +187,8 @@ BOOL libs_open(void)
 	CLASS_OPEN("gadgets/listbrowser.gadget",   45, ListBrowser,   LISTBROWSER, TRUE)
 	CLASS_OPEN("requester.class",              41, Requester,     REQUESTER,   FALSE)
 	CLASS_OPEN("window.class",                 47, Window,        WINDOW,      FALSE)
-
+	CLASS_OPEN("arexx.class",                  41, ARexx,         AREXX,      FALSE)
+	
 	return TRUE;
 }
 
@@ -201,6 +204,7 @@ void libs_close(void)
 	CLASS_CLOSE(ListBrowser)
 	CLASS_CLOSE(Requester)
 	CLASS_CLOSE(Window)
+	CLASS_CLOSE(ARexx)
 
 #ifdef __amigaos4__
 	ALIB_CLOSE(Commodities)

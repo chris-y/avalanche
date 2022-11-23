@@ -21,6 +21,7 @@
 #define DeleteFile Delete
 #endif
 
+extern Class *ARexxClass;
 extern Class *ButtonClass;
 extern Class *FuelGaugeClass;
 extern Class *GetFileClass;
@@ -30,6 +31,7 @@ extern Class *ListBrowserClass;
 extern Class *RequesterClass;
 extern Class *WindowClass;
 
+#define ARexxObj		NewObject(ARexxClass, NULL
 #define ButtonObj		NewObject(ButtonClass, NULL
 #define FuelGaugeObj	NewObject(FuelGaugeClass, NULL
 #define GetFileObj		NewObject(GetFileClass, NULL
