@@ -23,6 +23,7 @@
 #include "arexx.h"
 #include "avalanche.h"
 #include "libs.h"
+#include "Avalanche_rev.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -30,6 +31,7 @@
 enum
 {
 	RX_OPEN=0,
+	RX_VERSION,
 	RX_QUIT,
 };
 
@@ -43,11 +45,13 @@ STATIC char result[100];
 #endif
 
 RXHOOKF(rx_open);
+RXHOOKF(rx_version);
 RXHOOKF(rx_quit);
 
 STATIC struct ARexxCmd Commands[] =
 {
 	{"OPEN", RX_OPEN, rx_open, "FILE/A", 		0, 	NULL, 	0, 	0, 	NULL },
+	{"VERSION", RX_VERSION, rx_version, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{"QUIT", RX_QUIT, rx_quit, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{ NULL, 		0, 				NULL, 		NULL, 		0, 	NULL, 	0, 	0, 	NULL }
 };
@@ -88,9 +92,7 @@ void ami_arexx_handle(void)
 static void ami_arexx_command(const char *cmd, const char *port)
 {
 	if(arexx_obj == NULL) return;
-	DebugPrintF("%lx //%s //%s\n", arexx_obj, cmd, port);
 	IDoMethod(arexx_obj, AM_EXECUTE, cmd, port, NULL, NULL, NULL, NULL);
-	DebugPrintF("done %lx //%s //%s\n", arexx_obj, cmd, port);
 }
 
 void ami_arexx_send(const char *cmd)
@@ -107,11 +109,19 @@ RXHOOKF(rx_open)
 {
 	cmd->ac_RC = 0;
 
-	DebugPrintF("open 0%s\n", (char *)cmd->ac_ArgList[0]);
+	DebugPrintF("open %s\n", (char *)cmd->ac_ArgList[0]);
 }
 
 RXHOOKF(rx_quit)
 {
 	cmd->ac_RC = 0;
 	// quit
+}
+
+RXHOOKF(rx_version)
+{
+	static char reply[10];
+	cmd->ac_RC = 0;
+	snprintf(reply, sizeof(reply), "%d.%d", VERSION, REVISION);
+	cmd->ac_Result = reply;
 }

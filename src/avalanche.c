@@ -520,7 +520,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 
 		while (done != WIN_DONE_QUIT) {
 			done = WIN_DONE_OK;
-			wait = Wait( signal | app | appwin_sig | cx_signal );
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig );
 
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
@@ -613,7 +613,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 					}
 					ReplyMsg((struct Message *)appmsg);
 				}
-			} else if(signal & rxsig) {
+			} else if(wait & rxsig) {
 				ami_arexx_handle();
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
