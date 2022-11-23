@@ -413,7 +413,7 @@ static void close_all_windows()
 }
 
 /* Do not call this directly! */
-static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window,
+static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window, BOOL arexx,
 				struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
 	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
@@ -422,6 +422,12 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 		if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
 			NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
 			AddPart(appwin_archive, wbarg->wa_Name, 512);
+			if(arexx) {
+				char cmd[1024];
+				snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
+				ami_arexx_send(cmd);
+				return TRUE;
+			}
 			if(new_window == FALSE) {
 				window_update_archive(awin, appwin_archive);
 			} else {
@@ -443,12 +449,17 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 
 static BOOL open_archive_from_wbarg_new(struct WBArg *wbarg, struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
-	return open_archive_from_wbarg(NULL, wbarg, TRUE, win_port, app_port, appwin_mp);
+	return open_archive_from_wbarg(NULL, wbarg, TRUE, FALSE, win_port, app_port, appwin_mp);
 }
 
 static BOOL open_archive_from_wbarg_existing(void *awin, struct WBArg *wbarg)
 {
-	return open_archive_from_wbarg(awin, wbarg, FALSE, NULL, NULL, NULL);
+	return open_archive_from_wbarg(awin, wbarg, FALSE, FALSE, NULL, NULL, NULL);
+}
+
+static BOOL open_archive_from_wbarg_arexx(struct WBArg *wbarg)
+{
+	return open_archive_from_wbarg(NULL, wbarg, FALSE, TRUE, NULL, NULL, NULL);
 }
 
 static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
@@ -774,7 +785,23 @@ int main(int argc, char **argv)
 		/* ARexx port did not already exist */
 		gui(WBenchMsg, rxsig);
 	} else {
-		ami_arexx_send("OPEN test");
+		if(WBenchMsg) {
+			struct WBArg *wbarg;
+
+			if(WBenchMsg->sm_NumArgs > 0) {
+				/* Started as default tool, get the path+filename of the (first) project */
+				wbarg = WBenchMsg->sm_ArgList + 1;
+
+				if(open_archive_from_wbarg_arexx(wbarg)) {
+					if(WBenchMsg->sm_NumArgs > 2) {
+						for(int i = 2; i < WBenchMsg->sm_NumArgs; i++) {
+							wbarg++;
+							open_archive_from_wbarg_arexx(wbarg);
+						}
+					}
+				}
+			}				
+		}
 	}
 
 	ami_arexx_cleanup();
