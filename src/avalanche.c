@@ -619,10 +619,10 @@ static void gui(struct WBStartup *WBenchMsg)
 					do {
 						nnode = (struct Node *)GetSucc((struct Node *)awin);
 
-						while((done != WIN_DONE_CLOSED) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
+						while((done == WIN_DONE_OK) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
 							done = window_handle_input_events(awin, &config, result, appwin_mp, code);
 						}
-					} while((done != WIN_DONE_CLOSED) && (awin = (void *)nnode));
+					} while((done == WIN_DONE_OK) && (awin = (void *)nnode));
 				}
 			}
 			if((done == WIN_DONE_CLOSED) && (awin != main_awin)) {
