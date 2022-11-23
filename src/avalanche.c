@@ -62,8 +62,9 @@ static struct avalanche_config config;
 
 /** Shared variables **/
 static struct Locale *locale = NULL;
-
 static struct MinList win_list;
+
+static char *arexx_arc = NULL;
 
 /** Useful functions **/
 #ifndef __amigaos4__
@@ -98,6 +99,12 @@ char *strdup(const char *s)
   if (result == (char*) 0)
   return (char*) 0;
   return (char*) memcpy (result, s, len);
+}
+
+void set_arexx_archive(char *arc)
+{
+	/* Sets a variable so we can pick it up later in our event loop */
+	arexx_arc = strdup(arc);
 }
 
 /** Private functions **/
@@ -614,7 +621,19 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 					ReplyMsg((struct Message *)appmsg);
 				}
 			} else if(wait & rxsig) {
+				/* ARexx messages */
 				ami_arexx_handle();
+				
+				if(arexx_arc != NULL) { /* Archive set on OPEN */
+					void *arexx_awin = window_create(&config, arexx_arc, winport, AppPort);
+
+					free(arexx_arc);
+					arexx_arc = NULL;
+					if(arexx_awin) {
+						window_open(arexx_awin, appwin_mp);
+						window_req_open_archive(arexx_awin, &config, TRUE);
+					}
+				}
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);

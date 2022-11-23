@@ -32,7 +32,6 @@ enum
 {
 	RX_OPEN=0,
 	RX_VERSION,
-	RX_QUIT,
 };
 
 static Object *arexx_obj = NULL;
@@ -46,13 +45,11 @@ STATIC char result[100];
 
 RXHOOKF(rx_open);
 RXHOOKF(rx_version);
-RXHOOKF(rx_quit);
 
 STATIC struct ARexxCmd Commands[] =
 {
 	{"OPEN", RX_OPEN, rx_open, "FILE/A", 		0, 	NULL, 	0, 	0, 	NULL },
 	{"VERSION", RX_VERSION, rx_version, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
-	{"QUIT", RX_QUIT, rx_quit, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{ NULL, 		0, 				NULL, 		NULL, 		0, 	NULL, 	0, 	0, 	NULL }
 };
 
@@ -109,13 +106,7 @@ RXHOOKF(rx_open)
 {
 	cmd->ac_RC = 0;
 
-	DebugPrintF("open %s\n", (char *)cmd->ac_ArgList[0]);
-}
-
-RXHOOKF(rx_quit)
-{
-	cmd->ac_RC = 0;
-	// quit
+	set_arexx_archive((char *)cmd->ac_ArgList[0]);
 }
 
 RXHOOKF(rx_version)
