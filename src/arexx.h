@@ -19,8 +19,16 @@
 
 #include <stdbool.h>
 
+enum {
+	RXEVT_NONE = 0,
+	RXEVT_OPEN
+};
+
 bool ami_arexx_init(ULONG *rxsig);
 void ami_arexx_handle(void);
 void ami_arexx_send(const char *);
 void ami_arexx_cleanup(void);
+
+char *arexx_get_event(void);
+void arexx_free_event(void);
 #endif

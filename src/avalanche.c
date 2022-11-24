@@ -64,8 +64,6 @@ static struct avalanche_config config;
 static struct Locale *locale = NULL;
 static struct MinList win_list;
 
-static char *arexx_arc = NULL;
-
 /** Useful functions **/
 #ifndef __amigaos4__
 struct Node *GetHead(struct List *list)
@@ -633,13 +631,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 				}
 			} else if(wait & rxsig) {
 				/* ARexx messages */
-				ami_arexx_handle();
+				ULONG evt = ami_arexx_handle();
 				
-				if(arexx_arc != NULL) { /* Archive set on OPEN */
-					void *arexx_awin = window_create(&config, arexx_arc, winport, AppPort);
-
-					free(arexx_arc);
-					arexx_arc = NULL;
+				if(evt == RXEVT_OPEN) { /* Archive set on OPEN */
+					void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
+					arexx_free_event();
 					if(arexx_awin) {
 						window_open(arexx_awin, appwin_mp);
 						window_req_open_archive(arexx_awin, &config, TRUE);

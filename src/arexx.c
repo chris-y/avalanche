@@ -36,6 +36,8 @@ enum
 
 static Object *arexx_obj = NULL;
 STATIC char result[100];
+static ULONG event = RXEVT_NONE;
+static char *event_param = NULL;
 
 #ifdef __amigaos4__
 #define RXHOOKF(func) static VOID func(struct ARexxCmd *cmd, struct RexxMsg *rxm __attribute__((unused)))
@@ -84,6 +86,8 @@ bool ami_arexx_init(ULONG *rxsig)
 void ami_arexx_handle(void)
 {
 	RA_HandleRexx(arexx_obj);
+
+	return event;
 }
 
 static void ami_arexx_command(const char *cmd, const char *port)
@@ -102,11 +106,31 @@ void ami_arexx_cleanup(void)
 	if(arexx_obj) DisposeObject(arexx_obj);
 }
 
+void arexx_free_event(void)
+{
+	if(event_param) free(event_param);
+	event_param = NULL;
+	event = RXEVT_NONE;
+}
+
+static void arexx_set_event(ULONG evt, char *param)
+{
+	if(event_param) arexx_free_event();
+	event_param = strdup(param);
+	event = evt;
+}
+
+char *arexx_get_event(void)
+{
+	return event_param;
+}
+
+
 RXHOOKF(rx_open)
 {
 	cmd->ac_RC = 0;
 
-	set_arexx_archive((char *)cmd->ac_ArgList[0]);
+	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0]);
 }
 
 RXHOOKF(rx_version)
