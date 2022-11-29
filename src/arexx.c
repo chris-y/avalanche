@@ -31,6 +31,7 @@
 enum
 {
 	RX_OPEN=0,
+	RX_SHOW,
 	RX_VERSION,
 };
 
@@ -46,11 +47,13 @@ static char *event_param = NULL;
 #endif
 
 RXHOOKF(rx_open);
+RXHOOKF(rx_show);
 RXHOOKF(rx_version);
 
 STATIC struct ARexxCmd Commands[] =
 {
 	{"OPEN", RX_OPEN, rx_open, "FILE/A", 		0, 	NULL, 	0, 	0, 	NULL },
+	{"SHOW", RX_SHOW, rx_show, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{"VERSION", RX_VERSION, rx_version, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{ NULL, 		0, 				NULL, 		NULL, 		0, 	NULL, 	0, 	0, 	NULL }
 };
@@ -131,6 +134,13 @@ RXHOOKF(rx_open)
 	cmd->ac_RC = 0;
 
 	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0]);
+}
+
+RXHOOKF(rx_show)
+{
+	cmd->ac_RC = 0;
+
+	arexx_set_event(RXEVT_SHOW, NULL);
 }
 
 RXHOOKF(rx_version)

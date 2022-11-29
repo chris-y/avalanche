@@ -633,13 +633,19 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 				/* ARexx messages */
 				ULONG evt = ami_arexx_handle();
 				
-				if(evt == RXEVT_OPEN) { /* Archive set on OPEN */
-					void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
-					arexx_free_event();
-					if(arexx_awin) {
-						window_open(arexx_awin, appwin_mp);
-						window_req_open_archive(arexx_awin, &config, TRUE);
-					}
+				switch(evt) {
+					case RXEVT_OPEN: /* Archive set on OPEN */
+						void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
+						arexx_free_event();
+						if(arexx_awin) {
+							window_open(arexx_awin, appwin_mp);
+							window_req_open_archive(arexx_awin, &config, TRUE);
+						}
+					break;
+					
+					case RXEVT_SHOW:
+						window_open(main_awin, appwin_mp);
+					break;
 				}
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
@@ -796,7 +802,9 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-			}				
+			} else {
+				ami_arexx_send("SHOW");
+			}
 		}
 	}
 

@@ -21,7 +21,8 @@
 
 enum {
 	RXEVT_NONE = 0,
-	RXEVT_OPEN
+	RXEVT_OPEN,
+	RXEVT_SHOW
 };
 
 bool ami_arexx_init(ULONG *rxsig);
