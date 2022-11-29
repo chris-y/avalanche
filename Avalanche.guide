@@ -8,6 +8,7 @@
 @{"Installation " link install}
 @{"Configuration" link config}
 @{"Usage        " link usage}
+@{"ARexx port   " link arexx}
 @{"Translations " link locale}
 @{"Changelog    " link history}
 @{"Contact      " link contact}
@@ -97,12 +98,26 @@ Infected files will be deleted without warning.
 Files will not be further extracted in order to be scanned, so infected files that are individually compressed inside the archive will not be picked up.  It is recommended to run a scan with a full featured virus checker over any archives of concern.  
 @endnode
 
+@node arexx "ARexx port"
+Avalanche has an ARexx port called "AVALANCHE".
+This is mostly for internal use, but has the following commands:
+
+@{b}OPEN@{ub} FILE/A
+ - Open FILE in a new window
+@{b}SHOW@{ub}
+ - Show Avalanche or bring window to front
+@{b}VERSION@{ub}
+ - returns the current version number in RESULT
+
+@endnode
+
 @node history "Changelog"
 @rem keep this to <80 chars for readme
 @{u}1.8 (xx.xx.xxxx)@{uu}
 * Multiple windows supported internally. Limitations:
    - Commodities events only operate on the main (first) window
    - Does not spawn new process, so cannot use other windows whilst one is busy
+* Simple @{"ARexx port" link arexx} added.
 
 @{u}1.7 (03.08.2022)@{uu}
 * Avalanche now registers as a commodity
