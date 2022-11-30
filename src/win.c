@@ -98,6 +98,7 @@ struct avalanche_window {
 	ULONG total_items;
 	BOOL archive_needs_free;
 	void *archive_userdata;
+	BOOL h_mode;
 };
 
 struct List winlist;
@@ -418,7 +419,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 
 	if(aw->archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata, aw); return; }
 
-	if(config->h_browser) {
+	if(aw->h_mode) {
 		if(item == 0) {
 			aw->arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
 		}
@@ -434,7 +435,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			if(item == (total - 1)) {
 				if(config->debug) qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
 				for(int i=0; i<total; i++) {
-					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, config->h_browser, aw);
+					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, aw->h_mode, aw);
 					FreeVec(aw->arc_array[i]);
 				}
 				FreeVec(aw->arc_array);
@@ -442,7 +443,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			}
 		}
 	} else {
-		addlbnode(name, size, dir, userdata, config->h_browser, aw);
+		addlbnode(name, size, dir, userdata, aw->h_mode, aw);
 	}
 }
 
@@ -492,6 +493,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
+	/* Copy global to local config */
+	aw->h_mode = config->h_browser;
+
+	/* ASL hook */
 	aw->aslfilterhook.h_Entry = aslfilterfunc;
 	aw->aslfilterhook.h_SubEntry = NULL;
 	aw->aslfilterhook.h_Data = NULL;
@@ -990,9 +995,9 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 
 							case 1: //browser mode
-								config->h_browser = !config->h_browser;
+								aw->h_mode = !aw->h_mode;
 									
-								window_toggle_hbrowser(awin, config->h_browser);
+								window_toggle_hbrowser(awin, aw->h_mode);
 								window_req_open_archive(awin, config, TRUE);
 							break;
 								
