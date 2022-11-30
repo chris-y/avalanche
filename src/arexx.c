@@ -27,6 +27,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 enum
 {
@@ -86,7 +87,7 @@ bool ami_arexx_init(ULONG *rxsig)
 	}
 }
 
-void ami_arexx_handle(void)
+ULONG ami_arexx_handle(void)
 {
 	RA_HandleRexx(arexx_obj);
 

@@ -26,7 +26,7 @@ enum {
 };
 
 bool ami_arexx_init(ULONG *rxsig);
-void ami_arexx_handle(void);
+ULONG ami_arexx_handle(void);
 void ami_arexx_send(const char *);
 void ami_arexx_cleanup(void);
 

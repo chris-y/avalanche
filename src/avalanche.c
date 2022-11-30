@@ -99,12 +99,6 @@ char *strdup(const char *s)
   return (char*) memcpy (result, s, len);
 }
 
-void set_arexx_archive(char *arc)
-{
-	/* Sets a variable so we can pick it up later in our event loop */
-	arexx_arc = strdup(arc);
-}
-
 /** Private functions **/
 static void free_dest_path(void)
 {
@@ -635,11 +629,12 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 				
 				switch(evt) {
 					case RXEVT_OPEN: /* Archive set on OPEN */
-						void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
-						arexx_free_event();
-						if(arexx_awin) {
-							window_open(arexx_awin, appwin_mp);
-							window_req_open_archive(arexx_awin, &config, TRUE);
+						{
+							void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
+							if(arexx_awin) {
+								window_open(arexx_awin, appwin_mp);
+								window_req_open_archive(arexx_awin, &config, TRUE);
+							}
 						}
 					break;
 					
@@ -647,6 +642,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 						window_open(main_awin, appwin_mp);
 					break;
 				}
+				arexx_free_event();
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
