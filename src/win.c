@@ -44,6 +44,7 @@
 #include <reaction/reaction_macros.h>
 
 #include "avalanche.h"
+#include "config.h"
 #include "libs.h"
 #include "locale.h"
 #include "req.h"
@@ -489,7 +490,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	if(config->save_win_posn) menu[14].nm_Flags |= CHECKED;
 	if(config->confirmquit) menu[15].nm_Flags |= CHECKED;
 	if(config->ignorefs) menu[16].nm_Flags |= CHECKED;
-	if(config->progname == NULL) menu[18].nm_Flags |= NM_ITEMDISABLED;
 
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
@@ -1015,7 +1015,8 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 
 							case 6: //save settings
-								savesettings(window_get_object(awin));
+								config_window_open();
+								//savesettings(window_get_object(awin));
 							break;
 						}
 					break;
@@ -1114,7 +1115,7 @@ void fill_menu_labels(void)
 	menu[14].nm_Label = locale_get_string( MSG_SAVEWINDOWPOSITION );
 	menu[15].nm_Label = locale_get_string( MSG_CONFIRMQUIT );
 	menu[16].nm_Label = locale_get_string( MSG_IGNOREFILESYSTEMS );
-	menu[18].nm_Label = locale_get_string( MSG_SAVESETTINGS );
+	menu[18].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

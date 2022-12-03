@@ -35,6 +35,7 @@
 
 #include "arexx.h"
 #include "avalanche.h"
+#include "config.h"
 #include "req.h"
 #include "libs.h"
 #include "locale.h"
