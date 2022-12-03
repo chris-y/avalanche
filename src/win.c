@@ -1015,7 +1015,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 
 							case 6: //save settings
-								config_window_open();
+								config_window_open(config);
 								//savesettings(window_get_object(awin));
 							break;
 						}
