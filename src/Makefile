@@ -37,6 +37,7 @@ distrib: install
 
 clean:
 	delete #?.o
+	delete locale_strings.h
 	delete Avalanche
 
 version:

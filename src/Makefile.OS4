@@ -22,4 +22,5 @@ install: AvalanchePPC
 
 clean:
 	delete #?.o
+	delete locale_strings.h
 	delete AvalanchePPC
