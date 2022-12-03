@@ -278,7 +278,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 
 	xad_free(awin);
 
-	struct xad_userdata *xu = (struct xad_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xad_userdata *xu));
+	struct xad_userdata *xu = (struct xad_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xad_userdata));
 	if(xu == NULL) return -2;
 
 	xu->ai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
