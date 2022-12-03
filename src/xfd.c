@@ -112,7 +112,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	struct xfdMasterBase *xfdmb = (struct xfdMasterBase *)xfdMasterBase;
 	
 	xfd_free(awin);
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xfd_userdata *xu));
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xfd_userdata));
 
 	xu->bi = xfdAllocObject(XFDOBJ_BUFFERINFO);
 	if(xu->bi == NULL) return -2;

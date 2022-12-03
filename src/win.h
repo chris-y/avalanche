@@ -32,7 +32,7 @@ void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size);
 void window_modify_all_list(void *awin, ULONG select);
 
 /* Handle events */
-void window_list_handle(void *awin);
+void window_list_handle(void *awin, char *tmpdir);
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
 char *window_req_dest(void *awin);
 ULONG window_handle_input(void *awin, UWORD *code);

@@ -119,8 +119,11 @@ void arexx_free_event(void)
 
 static void arexx_set_event(ULONG evt, char *param)
 {
-	if(event_param) arexx_free_event();
-	event_param = strdup(param);
+	if(event_param) {
+		arexx_free_event();
+		event_param = NULL;
+	}
+	if(param) event_param = strdup(param);
 	event = evt;
 }
 
