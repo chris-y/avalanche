@@ -121,13 +121,9 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
-	{NM_ITEM,	NULL,     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 Scan
-	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1 HBrowser
-	{NM_ITEM,   NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2 Win posn
-	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 3 Confirm quit
-	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 4 Ignore FS
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 5
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 6 Save settings
+	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -485,11 +481,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	NewList(&aw->lblist);
 
-	if(config->virus_scan) menu[12].nm_Flags |= CHECKED;
-	if(config->h_browser) menu[13].nm_Flags |= CHECKED;
-	if(config->save_win_posn) menu[14].nm_Flags |= CHECKED;
-	if(config->confirmquit) menu[15].nm_Flags |= CHECKED;
-	if(config->ignorefs) menu[16].nm_Flags |= CHECKED;
+	if(config->h_browser) menu[12].nm_Flags |= CHECKED;
 
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
@@ -592,6 +584,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	/*  Object creation sucessful?
 	 */
 	if (aw->objects[OID_MAIN]) {
+		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest); /* Ensure we have a local dest */
 		return aw;
 	} else {
 		FreeVec(aw);
@@ -990,33 +983,15 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					
 					case 2: //settings
 						switch(ITEMNUM(code)) {
-							case 0: //virus scan
-								config->virus_scan = !config->virus_scan;
-							break;
-
-							case 1: //browser mode
+							case 0: //browser mode
 								aw->h_mode = !aw->h_mode;
 									
 								window_toggle_hbrowser(awin, aw->h_mode);
 								window_req_open_archive(awin, config, TRUE);
 							break;
 								
-							case 2: //save window position
-								config->save_win_posn = !config->save_win_posn;
-							break;
-
-							case 3: //confirm quit
-								config->confirmquit = !config->confirmquit;
-							break;
-
-							case 4: //ignore fs
-								config->ignorefs = !config->ignorefs;
-								window_req_open_archive(awin, config, TRUE);
-							break;
-
-							case 6: //save settings
+							case 2: //prefs
 								config_window_open(config);
-								//savesettings(window_get_object(awin));
 							break;
 						}
 					break;
@@ -1110,12 +1085,8 @@ void fill_menu_labels(void)
 	menu[9].nm_Label = locale_get_string( MSG_CLEARSELECTION );
 	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
 	menu[11].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[12].nm_Label = locale_get_string( MSG_SCANFORVIRUSES );
-	menu[13].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[14].nm_Label = locale_get_string( MSG_SAVEWINDOWPOSITION );
-	menu[15].nm_Label = locale_get_string( MSG_CONFIRMQUIT );
-	menu[16].nm_Label = locale_get_string( MSG_IGNOREFILESYSTEMS );
-	menu[18].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[12].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
+	menu[14].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

@@ -19,6 +19,8 @@
 
 struct avalanche_config;
 
+#define PROGRESS_SIZE_DEFAULT 20
+
 #ifndef MEMF_PRIVATE
 #define MEMF_PRIVATE 0L
 #endif
@@ -40,6 +42,7 @@ struct avalanche_config *get_config(void);
 ULONG ask_quit(void *awin);
 void savesettings(Object *win);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
+void free_dest_path(void);
 
 /* window list */
 void add_to_window_list(void *awin);
