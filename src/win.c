@@ -86,6 +86,7 @@ struct avalanche_window {
 	struct Window *windows[WID_LAST];
 	struct Gadget *gadgets[GID_LAST];
 	Object *objects[OID_LAST];
+	struct NewMenu *menu;
 	ULONG archiver;
 	struct ColumnInfo *lbci;
 	struct List lblist;
@@ -481,7 +482,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	NewList(&aw->lblist);
 
-	if(config->h_browser) menu[12].nm_Flags |= CHECKED;
+	if(aw->menu = AllocVec(sizeof(menu), MEMF_PRIVATE))
+		CopyMem(&menu, aw->menu, sizeof(menu));
+
+	if(config->h_browser) aw->menu[12].nm_Flags |= CHECKED;
 
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
@@ -513,7 +517,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WA_Left, config->win_y,
 		WA_Width, config->win_w,
 		WA_Height, config->win_h,
-		WINDOW_NewMenu, menu,
+		WINDOW_NewMenu, aw->menu,
 		WINDOW_IconifyGadget, TRUE,
 		WINDOW_IconTitle, "Avalanche",
 		WINDOW_SharedPort, winport,
@@ -637,6 +641,7 @@ void window_dispose(void *awin)
 	FreeListBrowserList(&aw->lblist);
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
 	if(aw->archive_needs_free) window_free_archive_path(aw);
+	if(aw->menu) FreeVec(aw->menu);
 
 	delete_delete_list(aw);
 	
