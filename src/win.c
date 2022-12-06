@@ -934,7 +934,6 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 			while((code != MENUNULL) && (done != WIN_DONE_CLOSED)) {
 				if(aw->windows[WID_MAIN] == NULL) continue;
 				struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
-
 				switch(MENUNUM(code)) {
 					case 0: //project
 						switch(ITEMNUM(code)) {
@@ -1064,13 +1063,6 @@ void window_disable_gadgets(void *awin, BOOL disable)
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
-}
-
-void window_disable_vscan_menu(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	if(aw->windows[WID_MAIN]) OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0));
 }
 
 void fill_menu_labels(void)

@@ -28,6 +28,7 @@ struct avalanche_config {
 	BOOL debug;
 	BOOL confirmquit;
 	BOOL ignorefs;
+	BOOL disable_vscan_menu;
 
 	ULONG win_x;
 	ULONG win_y;

@@ -134,7 +134,7 @@ static ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
 
 		if((res == -1) || (res == -3)) {
 			config.virus_scan = FALSE;
-			window_disable_vscan_menu(awin);
+			config.disable_vscan_menu = TRUE;
 			
 		}
 	}
@@ -604,6 +604,7 @@ int main(int argc, char **argv)
 	config.debug = FALSE;
 	config.confirmquit = FALSE;
 	config.ignorefs = FALSE;
+	config.disable_vscan_menu = FALSE;
 
 	config.win_x = 0;
 	config.win_y = 0;

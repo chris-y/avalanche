@@ -46,7 +46,6 @@ struct List *window_get_lblist(void *awin);
 ULONG window_get_archiver(void *awin);
 
 /* Misc */
-void window_disable_vscan_menu(void *awin);
 void window_disable_gadgets(void *awin, BOOL disable);
 BOOL check_abort(void *awin);
 void window_reset_count(void *awin);

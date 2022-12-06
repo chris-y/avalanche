@@ -256,7 +256,6 @@ void config_window_open(struct avalanche_config *config)
 	if(config->progname == NULL) save_disabled = TRUE;
 
 	if(cw_port = CreateMsgPort()) {
-
 		/* Create the window object */
 		objects[OID_MAIN] = WindowObj,
 			WA_ScreenTitle, VERS,
@@ -288,6 +287,7 @@ void config_window_open(struct avalanche_config *config)
 					LAYOUT_AddChild,  gadgets[GID_C_SCAN] = CheckBoxObj,
 						GA_ID, GID_C_SCAN,
 						GA_RelVerify, TRUE,
+						GA_Disabled, config->disable_vscan_menu,
 						GA_Text, locale_get_string( MSG_SCANFORVIRUSES ) ,
 						GA_Selected, config->virus_scan,
 					End,
