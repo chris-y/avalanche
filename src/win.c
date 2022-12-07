@@ -180,6 +180,17 @@ static void window_menu_activation(void *awin, BOOL enable)
 	}
 }
 
+static void window_menu_set_enable_state(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->archiver == ARC_NONE) {
+		window_menu_activation(aw, FALSE);
+	} else {
+		window_menu_activation(aw, TRUE);
+	}
+}
+
 static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select)
 {
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
@@ -485,8 +496,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	if(aw->menu = AllocVec(sizeof(menu), MEMF_PRIVATE))
 		CopyMem(&menu, aw->menu, sizeof(menu));
 
-	if(config->h_browser) aw->menu[12].nm_Flags |= CHECKED;
-
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
 	/* Copy global to local config */
@@ -603,16 +612,18 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	if(aw->windows[WID_MAIN]) {
 		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
+		if(aw->h_mode) aw->menu[12].nm_Flags |= CHECKED;
+	
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
+			window_menu_set_enable_state(aw);
+
+			add_to_window_list(awin);
 		}
-
-		add_to_window_list(awin);
-
 	}
-}			
+}
 
 void window_close(void *awin, BOOL iconify)
 {
@@ -796,14 +807,13 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	if(ret == 0) {
 		aw->archiver = ARC_XAD;
-		window_menu_activation(aw, TRUE);
 	} else if(retxfd == 0) {
 		aw->archiver = ARC_XFD;
-		window_menu_activation(aw, TRUE);
 	} else {
 		aw->archiver = ARC_NONE;
-		window_menu_activation(aw, FALSE);
 	}
+
+	window_menu_set_enable_state(aw);
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, &aw->lblist,
