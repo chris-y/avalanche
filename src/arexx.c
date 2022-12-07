@@ -44,6 +44,17 @@ static char *event_param = NULL;
 #ifdef __amigaos4__
 #define RXHOOKF(func) static VOID func(struct ARexxCmd *cmd, struct RexxMsg *rxm __attribute__((unused)))
 #else
+#ifndef ASM
+#define ASM
+#endif
+
+#ifndef REG
+#define REG(reg,arg) __reg(#reg) arg
+#endif
+
+#define IDoMethod DoMethod
+#define IDoMethodA DoMethodA
+
 #define RXHOOKF(func) static ASM VOID func(REG(a0, struct ARexxCmd* cmd), REG(a1, struct RexxMsg* msg))
 #endif
 
