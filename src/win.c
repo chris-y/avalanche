@@ -572,7 +572,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					LISTBROWSER_SortColumn, 0,
 					LISTBROWSER_Striping, LBS_ROWS,
 					LISTBROWSER_FastRender, TRUE,
-					LISTBROWSER_Hierarchical, config->h_browser,
+					LISTBROWSER_Hierarchical, aw->h_mode,
 				ListBrowserEnd,
 				LAYOUT_AddChild,  aw->gadgets[GID_EXTRACT] = ButtonObj,
 					GA_ID, GID_EXTRACT,
