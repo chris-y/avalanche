@@ -19,6 +19,7 @@
 #ifndef __amigaos4__
 #include <proto/arexx.h>
 #include <proto/button.h>
+#include <proto/checkbox.h>
 #include <proto/fuelgauge.h>
 #include <proto/getfile.h>
 #include <proto/label.h>
@@ -141,6 +142,7 @@ ALIB_STRUCT(xadMaster)
 
 CLASS_STRUCT(ARexx)
 CLASS_STRUCT(Button)
+CLASS_STRUCT(CheckBox)
 CLASS_STRUCT(FuelGauge)
 CLASS_STRUCT(GetFile)
 CLASS_STRUCT(Label)
@@ -180,6 +182,7 @@ BOOL libs_open(void)
 	ALIB_OPEN("workbench.library",    40, Workbench)
 
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON,      FALSE)
+	CLASS_OPEN("gadgets/checkbox.gadget",      41, CheckBox,      CHECKBOX,    FALSE)
 	CLASS_OPEN("gadgets/fuelgauge.gadget",     41, FuelGauge,     FUELGAUGE,   FALSE)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE,     FALSE)
 	CLASS_OPEN("images/label.image",           41, Label,         LABEL,       FALSE)
@@ -187,7 +190,7 @@ BOOL libs_open(void)
 	CLASS_OPEN("gadgets/listbrowser.gadget",   45, ListBrowser,   LISTBROWSER, TRUE)
 	CLASS_OPEN("requester.class",              41, Requester,     REQUESTER,   FALSE)
 	CLASS_OPEN("window.class",                 47, Window,        WINDOW,      FALSE)
-	CLASS_OPEN("arexx.class",                  41, ARexx,         AREXX,      FALSE)
+	CLASS_OPEN("arexx.class",                  41, ARexx,         AREXX,       FALSE)
 	
 	return TRUE;
 }
@@ -197,6 +200,7 @@ void libs_close(void)
 	libs_xvs_exit();
 
 	CLASS_CLOSE(Button)
+	CLASS_CLOSE(CheckBox)
 	CLASS_CLOSE(FuelGauge)
 	CLASS_CLOSE(GetFile)
 	CLASS_CLOSE(Label)

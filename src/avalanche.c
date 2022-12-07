@@ -35,6 +35,7 @@
 
 #include "arexx.h"
 #include "avalanche.h"
+#include "config.h"
 #include "req.h"
 #include "libs.h"
 #include "locale.h"
@@ -54,8 +55,6 @@ const char *version = VERSTAG;
 #define IEVENT_POPUP 1L
 
 /** Global config **/
-#define PROGRESS_SIZE_DEFAULT 20
-
 static BOOL dest_needs_free = FALSE;
 
 static struct avalanche_config config;
@@ -99,146 +98,12 @@ char *strdup(const char *s)
   return (char*) memcpy (result, s, len);
 }
 
-/** Private functions **/
-static void free_dest_path(void)
+void free_dest_path(void)
 {
-	if(config.dest) free(config.dest);
-	config.dest = NULL;
-	dest_needs_free = FALSE;
-}
-
-void savesettings(Object *win)
-{
-	struct DiskObject *dobj;
-	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[17];
-	char tt_dest[100];
-	char tt_tmp[100];
-	char tt_winx[15];
-	char tt_winy[15];
-	char tt_winh[15];
-	char tt_winw[15];
-	char tt_progresssize[20];
-	char tt_cxpri[20];
-	char tt_cxpopkey[50];
-
-	if(dobj = GetIconTagList(config.progname, NULL)) {
-		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
-
-		if(config.dest && (strcmp("RAM:", config.dest) != 0)) {
-			strcpy(tt_dest, "DEST=");
-			newtooltypes[0] = strcat(tt_dest, config.dest);
-		} else {
-			newtooltypes[0] = "(DEST=RAM:)";
-		}
-
-		if(config.h_browser) {
-			newtooltypes[1] = "HBROWSER";
-		} else {
-			newtooltypes[1] = "(HBROWSER)";
-		}
-
-		if(config.save_win_posn) {
-			newtooltypes[2] = "SAVEWINPOSN";
-
-			/* fetch current win posn */
-			GetAttr(WA_Top, win, (APTR)&config.win_x);
-			GetAttr(WA_Left, win, (APTR)&config.win_y);
-			GetAttr(WA_Width, win, (APTR)&config.win_w);
-			GetAttr(WA_Height, win, (APTR)&config.win_h);
-		} else {
-			newtooltypes[2] = "(SAVEWINPOSN)";
-		}
-
-		if(config.win_x) {
-			sprintf(tt_winx, "WINX=%lu", config.win_x);
-			newtooltypes[3] = tt_winx;
-		} else {
-			newtooltypes[3] = "(WINX=0)";
-		}
-
-		if(config.win_y) {
-			sprintf(tt_winy, "WINY=%lu", config.win_y);
-			newtooltypes[4] = tt_winy;
-		} else {
-			newtooltypes[4] = "(WINY=0)";
-		}
-
-		if(config.win_w) {
-			sprintf(tt_winw, "WINW=%lu", config.win_w);
-			newtooltypes[5] = tt_winw;
-		} else {
-			newtooltypes[5] = "(WINW=0)";
-		}
-
-		if(config.win_h) {
-			sprintf(tt_winh, "WINH=%lu", config.win_h);
-			newtooltypes[6] = tt_winh;
-		} else {
-			newtooltypes[6] = "(WINH=0)";
-		}
-
-		if(config.progress_size != PROGRESS_SIZE_DEFAULT) {
-			sprintf(tt_progresssize, "PROGRESSSIZE=%lu", config.progress_size);
-		} else {
-			sprintf(tt_progresssize, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
-		}
-
-		newtooltypes[7] = tt_progresssize;
-
-		if(config.virus_scan) {
-			newtooltypes[8] = "VIRUSSCAN";
-		} else {
-			newtooltypes[8] = "(VIRUSSCAN)";
-		}
-
-		if(config.confirmquit) {
-			newtooltypes[9] = "CONFIRMQUIT";
-		} else {
-			newtooltypes[9] = "(CONFIRMQUIT)";
-		}
-
-		if(config.ignorefs) {
-			newtooltypes[10] = "IGNOREFS";
-		} else {
-			newtooltypes[10] = "(IGNOREFS)";
-		}
-
-		if(config.tmpdir && (strncmp("T:", config.tmpdir, config.tmpdirlen) != 0)) {
-			strcpy(tt_tmp, "TMPDIR=");
-			newtooltypes[11] = strncat(tt_tmp, config.tmpdir, config.tmpdirlen);
-		} else {
-			newtooltypes[11] = "(TMPDIR=T:)";
-		}
-
-		if(config.cx_popup == FALSE) {
-			newtooltypes[12] = "CX_POPUP=NO";
-		} else {
-			newtooltypes[12] = "(CX_POPUP=YES)";
-		}
-
-		if(config.cx_pri != 0) {
-			sprintf(tt_cxpri, "CX_PRIORITY=%d", config.cx_pri);
-		} else {
-			sprintf(tt_cxpri, "(CX_PRIORITY=0)");
-		}
-		newtooltypes[13] = tt_cxpri;
-
-		if((config.cx_popkey) && (strcmp(config.cx_popkey, "rawkey ctrl alt a") != 0)) {
-			sprintf(tt_cxpopkey, "CX_POPKEY=%s", config.cx_popkey + 7);
-		} else {
-			sprintf(tt_cxpopkey, "(CX_POPKEY=ctrl alt a)");
-		}
-		newtooltypes[14] = tt_cxpopkey;
-
-		newtooltypes[15] = "DONOTWAIT";
-
-		newtooltypes[16] = NULL;
-
-		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
-		PutIconTags(config.progname, dobj, NULL);
-		dobj->do_ToolTypes = (STRPTR *)oldtooltypes;
-		FreeDiskObject(dobj);
+	if(dest_needs_free) {
+		if(config.dest) free(config.dest);
+		config.dest = NULL;
+		dest_needs_free = FALSE;
 	}
 }
 
@@ -269,7 +134,7 @@ static ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
 
 		if((res == -1) || (res == -3)) {
 			config.virus_scan = FALSE;
-			window_disable_vscan_menu(awin);
+			config.disable_vscan_menu = TRUE;
 			
 		}
 	}
@@ -280,8 +145,6 @@ static ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
 long extract(void *awin, char *archive, char *newdest, struct Node *node)
 {
 	long ret = 0;
-
-	if(newdest == NULL) newdest = config.dest; /* TODO: should always have dest passed in */
 
 	if(archive && newdest) {
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
@@ -466,7 +329,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 	struct AppMenuItem *appmenu = NULL;
 	ULONG appwin_sig = 0;
 
-	ULONG wait, signal, app;
+	ULONG wait, signal, app, cw_sig;
 	ULONG done = WIN_DONE_OK;
 	ULONG result;
 	UWORD code;
@@ -530,8 +393,10 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 
 		while (done != WIN_DONE_QUIT) {
 			done = WIN_DONE_OK;
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig );
-
+			cw_sig = config_window_get_signal();
+			
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig);
+			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
 				CxMsg *cx_msg;
@@ -643,6 +508,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 					break;
 				}
 				arexx_free_event();
+			} else if(cw_sig && (wait & cw_sig)) {
+				BOOL cw_done = FALSE;
+				while((cw_done == FALSE) && ((result = config_window_handle_input(&code)) != WMHI_LASTMSG)) {
+					cw_done = config_window_handle_input_events(&config, result, code);
+				}
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
@@ -734,6 +604,7 @@ int main(int argc, char **argv)
 	config.debug = FALSE;
 	config.confirmquit = FALSE;
 	config.ignorefs = FALSE;
+	config.disable_vscan_menu = FALSE;
 
 	config.win_x = 0;
 	config.win_y = 0;
@@ -813,7 +684,7 @@ int main(int argc, char **argv)
 	if(config.tmpdir) FreeVec(config.tmpdir);
 	if(config.progname != NULL) FreeVec(config.progname);
 	if(dest_needs_free) free_dest_path();
-	
+
 	xad_exit();
 	xfd_exit();
 	libs_close();

@@ -6,6 +6,22 @@ MSG_EXTRACT
 E_xtract
 ; E_xtract
 ;
+MSG_SAVE
+Save
+; Save
+;
+MSG_USE
+Use
+; Use
+;
+MSG_CANCEL
+Cancel
+; Cancel
+;
+MSG_PREFERENCES
+Preferences...
+; Preferences...
+;
 MSG_PROJECT
 Project
 ; Project

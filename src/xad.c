@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include "avalanche.h"
+#include "config.h"
 #include "libs.h"
 #include "locale.h"
 #include "req.h"

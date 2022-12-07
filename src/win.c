@@ -44,6 +44,7 @@
 #include <reaction/reaction_macros.h>
 
 #include "avalanche.h"
+#include "config.h"
 #include "libs.h"
 #include "locale.h"
 #include "req.h"
@@ -85,6 +86,7 @@ struct avalanche_window {
 	struct Window *windows[WID_LAST];
 	struct Gadget *gadgets[GID_LAST];
 	Object *objects[OID_LAST];
+	struct NewMenu *menu;
 	ULONG archiver;
 	struct ColumnInfo *lbci;
 	struct List lblist;
@@ -98,6 +100,7 @@ struct avalanche_window {
 	ULONG total_items;
 	BOOL archive_needs_free;
 	void *archive_userdata;
+	BOOL h_mode;
 };
 
 struct List winlist;
@@ -119,13 +122,9 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
-	{NM_ITEM,	NULL,     0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 Scan
-	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1 HBrowser
-	{NM_ITEM,   NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 2 Win posn
-	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 3 Confirm quit
-	{NM_ITEM,   NULL ,         0, CHECKIT | MENUTOGGLE, 0, 0,}, // 4 Ignore FS
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 5
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 6 Save settings
+	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -418,7 +417,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 
 	if(aw->archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata, aw); return; }
 
-	if(config->h_browser) {
+	if(aw->h_mode) {
 		if(item == 0) {
 			aw->arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
 		}
@@ -434,7 +433,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			if(item == (total - 1)) {
 				if(config->debug) qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
 				for(int i=0; i<total; i++) {
-					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, config->h_browser, aw);
+					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, aw->h_mode, aw);
 					FreeVec(aw->arc_array[i]);
 				}
 				FreeVec(aw->arc_array);
@@ -442,7 +441,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			}
 		}
 	} else {
-		addlbnode(name, size, dir, userdata, config->h_browser, aw);
+		addlbnode(name, size, dir, userdata, aw->h_mode, aw);
 	}
 }
 
@@ -483,15 +482,17 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	NewList(&aw->lblist);
 
-	if(config->virus_scan) menu[12].nm_Flags |= CHECKED;
-	if(config->h_browser) menu[13].nm_Flags |= CHECKED;
-	if(config->save_win_posn) menu[14].nm_Flags |= CHECKED;
-	if(config->confirmquit) menu[15].nm_Flags |= CHECKED;
-	if(config->ignorefs) menu[16].nm_Flags |= CHECKED;
-	if(config->progname == NULL) menu[18].nm_Flags |= NM_ITEMDISABLED;
+	if(aw->menu = AllocVec(sizeof(menu), MEMF_PRIVATE))
+		CopyMem(&menu, aw->menu, sizeof(menu));
+
+	if(config->h_browser) aw->menu[12].nm_Flags |= CHECKED;
 
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
+	/* Copy global to local config */
+	aw->h_mode = config->h_browser;
+
+	/* ASL hook */
 	aw->aslfilterhook.h_Entry = aslfilterfunc;
 	aw->aslfilterhook.h_SubEntry = NULL;
 	aw->aslfilterhook.h_Data = NULL;
@@ -516,7 +517,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WA_Left, config->win_y,
 		WA_Width, config->win_w,
 		WA_Height, config->win_h,
-		WINDOW_NewMenu, menu,
+		WINDOW_NewMenu, aw->menu,
 		WINDOW_IconifyGadget, TRUE,
 		WINDOW_IconTitle, "Avalanche",
 		WINDOW_SharedPort, winport,
@@ -571,7 +572,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					LISTBROWSER_SortColumn, 0,
 					LISTBROWSER_Striping, LBS_ROWS,
 					LISTBROWSER_FastRender, TRUE,
-					LISTBROWSER_Hierarchical, config->h_browser,
+					LISTBROWSER_Hierarchical, aw->h_mode,
 				ListBrowserEnd,
 				LAYOUT_AddChild,  aw->gadgets[GID_EXTRACT] = ButtonObj,
 					GA_ID, GID_EXTRACT,
@@ -587,6 +588,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	/*  Object creation sucessful?
 	 */
 	if (aw->objects[OID_MAIN]) {
+		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest); /* Ensure we have a local dest */
 		return aw;
 	} else {
 		FreeVec(aw);
@@ -639,6 +641,7 @@ void window_dispose(void *awin)
 	FreeListBrowserList(&aw->lblist);
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
 	if(aw->archive_needs_free) window_free_archive_path(aw);
+	if(aw->menu) FreeVec(aw->menu);
 
 	delete_delete_list(aw);
 	
@@ -936,7 +939,6 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 			while((code != MENUNULL) && (done != WIN_DONE_CLOSED)) {
 				if(aw->windows[WID_MAIN] == NULL) continue;
 				struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
-
 				switch(MENUNUM(code)) {
 					case 0: //project
 						switch(ITEMNUM(code)) {
@@ -985,32 +987,15 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					
 					case 2: //settings
 						switch(ITEMNUM(code)) {
-							case 0: //virus scan
-								config->virus_scan = !config->virus_scan;
-							break;
-
-							case 1: //browser mode
-								config->h_browser = !config->h_browser;
+							case 0: //browser mode
+								aw->h_mode = !aw->h_mode;
 									
-								window_toggle_hbrowser(awin, config->h_browser);
+								window_toggle_hbrowser(awin, aw->h_mode);
 								window_req_open_archive(awin, config, TRUE);
 							break;
 								
-							case 2: //save window position
-								config->save_win_posn = !config->save_win_posn;
-							break;
-
-							case 3: //confirm quit
-								config->confirmquit = !config->confirmquit;
-							break;
-
-							case 4: //ignore fs
-								config->ignorefs = !config->ignorefs;
-								window_req_open_archive(awin, config, TRUE);
-							break;
-
-							case 6: //save settings
-								savesettings(window_get_object(awin));
+							case 2: //prefs
+								config_window_open(config);
 							break;
 						}
 					break;
@@ -1085,13 +1070,6 @@ void window_disable_gadgets(void *awin, BOOL disable)
 		TAG_DONE);
 }
 
-void window_disable_vscan_menu(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	if(aw->windows[WID_MAIN]) OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0));
-}
-
 void fill_menu_labels(void)
 {
 	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
@@ -1104,12 +1082,8 @@ void fill_menu_labels(void)
 	menu[9].nm_Label = locale_get_string( MSG_CLEARSELECTION );
 	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
 	menu[11].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[12].nm_Label = locale_get_string( MSG_SCANFORVIRUSES );
-	menu[13].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[14].nm_Label = locale_get_string( MSG_SAVEWINDOWPOSITION );
-	menu[15].nm_Label = locale_get_string( MSG_CONFIRMQUIT );
-	menu[16].nm_Label = locale_get_string( MSG_IGNOREFILESYSTEMS );
-	menu[18].nm_Label = locale_get_string( MSG_SAVESETTINGS );
+	menu[12].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
+	menu[14].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

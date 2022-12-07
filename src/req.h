@@ -15,6 +15,8 @@
 #ifndef REQ_H
 #define REQ_H 1
 
+#include <exec/types.h>
+
 ULONG ask_question(void *awin, char *q, char *f);
 ULONG ask_password(void *awin, char *pw, ULONG pwlen);
 ULONG ask_quit_req(void *awin);

@@ -2,10 +2,10 @@ CC := vc +aos68k
 CFLAGS := -c99 -g
 LIBS := -lamiga
 
-OBJS := avalanche.o arexx.o libs.o locale.o req.o win.o xad.o xfd.o xvs.o
-DEPS := avalanche_rev.h avalanche.h arexx.h libs.h locale.h locale_strings.h req.h win.h xad.h xfd.h xvs.h
+OBJS := avalanche.o arexx.o config.o libs.o locale.o req.o win.o xad.o xfd.o xvs.o
+DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h req.h win.h xad.h xfd.h xvs.h
 
-all: install
+all: locale_strings.h install
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -16,6 +16,9 @@ Avalanche: $(OBJS)
 AvalanchePPC: $(OBJS)
 	make -i -f Makefile.OS4 clean
 	make -f Makefile.OS4
+
+locale_strings.h: ../catalogs/avalanche.cd
+	catcomp /catalogs/avalanche.cd CFILE locale_strings.h NOCODE NOARRAY
 
 install: Avalanche AvalanchePPC
 	copy Avalanche /
@@ -37,6 +40,7 @@ distrib: install
 
 clean:
 	delete #?.o
+	delete locale_strings.h
 	delete Avalanche
 
 version:
