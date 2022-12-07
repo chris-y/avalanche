@@ -227,10 +227,10 @@ static void config_save(struct avalanche_config *config)
 static void config_window_settings(struct avalanche_config *config, BOOL save)
 {
 	ULONG data = 0;
-
+#if 0
 	free_dest_path();
 	GetAttr(GETFILE_Drawer, gadgets[GID_C_DEST], (APTR)&config->dest);
-
+#endif
 	GetAttr(GA_Selected, gadgets[GID_C_SCAN],(ULONG *)&data);
 	config->virus_scan = (data ? TRUE : FALSE);
 
@@ -271,6 +271,7 @@ void config_window_open(struct avalanche_config *config)
 				//LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
 				LAYOUT_AddChild, LayoutVObj,
+#if 0
 					LAYOUT_AddChild,  gadgets[GID_C_DEST] = GetFileObj,
 						GA_ID, GID_C_DEST,
 						GA_RelVerify, TRUE,
@@ -284,6 +285,7 @@ void config_window_open(struct avalanche_config *config)
 					CHILD_Label, LabelObj,
 						LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
 					LabelEnd,
+#endif
 					LAYOUT_AddChild,  gadgets[GID_C_SCAN] = CheckBoxObj,
 						GA_ID, GID_C_SCAN,
 						GA_RelVerify, TRUE,
