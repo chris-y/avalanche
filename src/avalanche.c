@@ -202,7 +202,7 @@ static struct MsgPort *RegisterCx(CxObj **CXBroker)
 		newbroker.nb_Name = "Avalanche";
 		newbroker.nb_Title = VERS;
 		newbroker.nb_Descr = locale_get_string(MSG_CXDESCRIPTION);
-		newbroker.nb_Unique = 0;
+		newbroker.nb_Unique = NBU_UNIQUE;
 		newbroker.nb_Flags = COF_SHOW_HIDE;
 		newbroker.nb_Pri = config.cx_pri;
 		newbroker.nb_Port = CXMP;

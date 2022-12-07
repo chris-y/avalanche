@@ -5,7 +5,7 @@ LIBS := -lamiga
 OBJS := avalanche.o arexx.o config.o libs.o locale.o req.o win.o xad.o xfd.o xvs.o
 DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h req.h win.h xad.h xfd.h xvs.h
 
-all: locale_strings.h install
+all: install
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -40,7 +40,6 @@ distrib: install
 
 clean:
 	delete #?.o
-	delete locale_strings.h
 	delete Avalanche
 
 version:

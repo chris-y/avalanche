@@ -54,13 +54,11 @@ Avalanche can be started as a default tool for an archive, or manually.  If star
 It is possible to "quick extract" archives into their current directory by highlighting
 and selecting "Extract here" from the Tools menu.
 
-The Destination can also be changed here.  To make this change permanent, select Save settings from the Settings menu.  If "Save window position" is checked when Save settings is selected, then the current window position and size will also be saved.
-
 When a valid archive or crunched file is loaded, the contents will be displayed.  Unchecked items will not be extracted.
 
 The state of checkboxes can be toggled by clicking on them, or by choosing "Select all" or "Clear selection" from the Edit menu.
 
-Clicking Extract will extract the archive to the chosen destination.  If "scan for viruses" is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
+Clicking Extract will extract the archive to the chosen destination.  If @{"scan for viruses" link config} is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
 
 The browser can be put into a @{"hierarchical" link hbrowser} mode through the menu.  This is experimental - see the associated page for details.
 
@@ -113,11 +111,15 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}1.8 (xx.xx.xxxx)@{uu}
+@{u}1.8 (07.12.2022)@{uu}
 * Multiple windows supported internally. Limitations:
    - Commodities events only operate on the main (first) window
    - Does not spawn new process, so cannot use other windows whilst one is busy
 * Simple @{"ARexx port" link arexx} added.
+* Config options moved to separate prefs window
+   - Note the options to snapshot the current window and change the default
+     destination are currently not available. They can still be manually set
+     through @{"tooltypes" link config}.
 
 @{u}1.7 (03.08.2022)@{uu}
 * Avalanche now registers as a commodity

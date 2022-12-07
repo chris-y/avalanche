@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 1.7
+Version: 1.8
 Architecture: m68k-amigaos >= 3.2.0; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -18,8 +18,13 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Avalanche now registers as a commodity
-* Added Tools menu item "Extract here" for quick extraction
-* Fix initial state of "confirm quit" and "ignore fs" menu items.
+* Multiple windows supported internally. Limitations:
+   - Commodities events only operate on the main (first) window
+   - Does not spawn new process, so cannot use other windows whilst one is busy
+* Simple ARexx port added.
+* Config options moved to separate prefs window
+   - Note the options to snapshot the current window and change the default
+     destination are currently not available. They can still be manually set
+     through tooltypes.
 
 For full history see documentation inside the archive.
