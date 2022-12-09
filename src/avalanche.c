@@ -41,7 +41,6 @@
 #include "locale.h"
 #include "module.h"
 #include "win.h"
-#include "xvs.h"
 
 #include "Avalanche_rev.h"
 
@@ -118,27 +117,6 @@ ULONG ask_quit(void *awin)
 struct avalanche_config *get_config(void)
 {
 	return &config;
-}
-
-ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
-{
-	long res = 0;
-
-	if(config.virus_scan) {
-		if(buf == NULL) {
-			res = xvs_scan(file, len, awin);
-		} else {
-			res = xvs_scan_buffer(buf, len, awin);
-		}
-
-		if((res == -1) || (res == -3)) {
-			config.virus_scan = FALSE;
-			config.disable_vscan_menu = TRUE;
-			
-		}
-	}
-
-	return res;
 }
 
 long extract(void *awin, char *archive, char *newdest, struct Node *node)

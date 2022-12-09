@@ -13,12 +13,38 @@
 */
 
 #include "avalanche.h"
+#include "config.h"
 #include "module.h"
 #include "win.h"
 
 #include "xad.h"
 #include "xfd.h"
+#include "xvs.h"
 
+/*** Virus Scanning ***/
+static ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len)
+{
+	long res = 0;
+	struct avalanche_config *config = get_config();
+
+	if(config->virus_scan) {
+		if(buf == NULL) {
+			res = xvs_scan(file, len, awin);
+		} else {
+			res = xvs_scan_buffer(buf, len, awin);
+		}
+
+		if((res == -1) || (res == -3)) {
+			config->virus_scan = FALSE;
+			config->disable_vscan_menu = TRUE;
+			
+		}
+	}
+
+	return res;
+}
+
+/*** Extraction ***/
 const char *module_get_item_filename(void *awin, void *userdata)
 {
 	const char *fn = NULL;
@@ -81,14 +107,14 @@ long module_extract(void *awin, void *node, void *archive, void *newdest)
 	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
 			if(node == NULL) {
-				ret = xad_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode, vscan);
+				ret = xad_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode, module_vscan);
 			} else {
 				ULONG pud = 0;
-				ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, vscan, &pud);
+				ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, module_vscan, &pud);
 			}
 		break;
 		case ARC_XFD:
-			ret = xfd_extract(awin, archive, newdest, vscan);
+			ret = xfd_extract(awin, archive, newdest, module_vscan);
 		break;
 	}
 
