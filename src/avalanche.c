@@ -39,9 +39,8 @@
 #include "req.h"
 #include "libs.h"
 #include "locale.h"
+#include "module.h"
 #include "win.h"
-#include "xad.h"
-#include "xfd.h"
 #include "xvs.h"
 
 #include "Avalanche_rev.h"
@@ -121,7 +120,7 @@ struct avalanche_config *get_config(void)
 	return &config;
 }
 
-static ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
+ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len)
 {
 	long res = 0;
 
@@ -153,19 +152,7 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 		window_reset_count(awin);
 		window_disable_gadgets(awin, TRUE);
 
-		switch(window_get_archiver(awin)) {
-			case ARC_XAD:
-				if(node == NULL) {
-					ret = xad_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode, vscan);
-				} else {
-					ULONG pud = 0;
-					ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, vscan, &pud);
-				}
-			break;
-			case ARC_XFD:
-				ret = xfd_extract(awin, archive, newdest, vscan);
-			break;
-		}
+		ret = module_extract(awin, node, archive, newdest);
 
 		window_disable_gadgets(awin, FALSE);
 
@@ -686,8 +673,7 @@ int main(int argc, char **argv)
 	if(config.progname != NULL) FreeVec(config.progname);
 	if(dest_needs_free) free_dest_path();
 
-	xad_exit();
-	xfd_exit();
+	module_exit();
 	libs_close();
 
 	return 0;

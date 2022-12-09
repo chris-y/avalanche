@@ -28,6 +28,7 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len), ULONG *pud);
 char *xad_error(long code);
 void xad_show_arc_info(void *awin);
+const char *xad_get_arc_format(void *awin);
 void xad_free(void *awin);
 void xad_exit(void);
 #endif

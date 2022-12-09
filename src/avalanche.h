@@ -43,6 +43,7 @@ ULONG ask_quit(void *awin);
 void savesettings(Object *win);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
 void free_dest_path(void);
+ULONG vscan(void *awin, char *file, UBYTE *buf, ULONG len);
 
 /* window list */
 void add_to_window_list(void *awin);

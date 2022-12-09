@@ -52,6 +52,14 @@ const char *xfd_get_filename(void *userdata)
 	return userdata;
 }
 
+const char *xfd_get_arc_format(void *awin)
+{
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	if(!xu->bi) return;
+	
+	return xu->bi->xfdbi_PackerName;
+}
+
 void xfd_show_arc_info(void *awin)
 {
 	char message[100];

@@ -47,6 +47,7 @@
 #include "config.h"
 #include "libs.h"
 #include "locale.h"
+#include "module.h"
 #include "req.h"
 #include "win.h"
 #include "xad.h"
@@ -146,8 +147,7 @@ static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") stru
 	strcpy(fullfilename, fr->fr_Drawer);
 	AddPart(fullfilename, ap->ap_Info.fib_FileName, 256);
 
-	found = xad_recog(fullfilename);
-	if(found == FALSE) found = xfd_recog(fullfilename);
+	found = module_recog(fullfilename);
 
 	return found;
 }
@@ -211,25 +211,6 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->lblist,
 			TAG_DONE);
-}
-
-static const char *get_item_filename(struct avalanche_window *aw, struct Node *node)
-{
-	void *userdata = NULL;
-	const char *fn = NULL;
-
-	GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
-
-	switch(aw->archiver) {
-		case ARC_XAD:
-			fn = xad_get_filename(userdata, aw);
-		break;
-		case ARC_XFD:
-			fn = xfd_get_filename(userdata);
-		break;
-	}
-
-	return fn;
 }
 
 static void delete_delete_list(struct avalanche_window *aw)
@@ -456,6 +437,15 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 	}
 }
 
+static const char *get_item_filename(void *awin, struct Node *node)
+{
+	void *userdata = NULL;
+	const char *fn = NULL;
+
+	GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
+
+	return module_get_item_filename(awin, userdata);
+}
 
 
 /* Window functions */
@@ -656,15 +646,7 @@ void window_dispose(void *awin)
 
 	delete_delete_list(aw);
 	
-	switch(window_get_archiver(aw)) {
-		case ARC_XAD:
-			xad_free(aw);
-		break;
-
-		case ARC_XFD:
-			xfd_free(aw);
-		break;
-	}
+	module_free(aw);
 
 	window_free_archive_userdata(aw);
 	FreeVec(aw);
@@ -957,14 +939,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 							
 							case 2: //info
-								switch(aw->archiver) {
-									case ARC_XAD:
-										xad_show_arc_info(awin);
-									break;
-									case ARC_XFD:
-										xfd_show_arc_info(awin);
-									break;
-								}
+								module_show_info(awin);
 							break;
 
 							case 3: //about

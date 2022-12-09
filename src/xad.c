@@ -198,6 +198,16 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 	return XADPIF_OK;
 }
 
+const char *xad_get_arc_format(void *awin)
+{
+	char *type;
+
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	if(!xu->ai) return;
+
+	return xu->ai->xai_Client->xc_ArchiverName;
+}
+
 void xad_show_arc_info(void *awin)
 {
 	char message[100];
