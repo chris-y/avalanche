@@ -1,7 +1,7 @@
-CC := vc +aosppc
+CC := vc +aosppcpl
 #CC := gcc -std=c99
 CFLAGS := -D__USE_INLINE__ -ISDK:local/common/include
-LIBS := -lamiga
+LIBS := -lamiga -lposix
 
 OBJS := avalanche.o arexx.o config.o libs.o locale.o module.o req.o win.o xad.o xfd.o xvs.o modules/zip.o
 DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h modules/zip.h
@@ -22,5 +22,6 @@ install: AvalanchePPC
 
 clean:
 	delete #?.o
+	delete modules/#?.o
 	delete locale_strings.h
 	delete AvalanchePPC

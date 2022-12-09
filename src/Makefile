@@ -1,6 +1,6 @@
-CC := vc +aos68k
+CC := vc +aos68kpl
 CFLAGS := -c99 -g
-LIBS := -lamiga
+LIBS := -lamiga -lposix
 
 OBJS := avalanche.o arexx.o config.o libs.o locale.o module.o req.o win.o xad.o xfd.o xvs.o modules/zip.o
 DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h modules/zip.h
@@ -40,6 +40,7 @@ distrib: install
 
 clean:
 	delete #?.o
+	delete modules/#?.o
 	delete Avalanche
 
 version:
