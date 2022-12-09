@@ -654,6 +654,7 @@ int main(int argc, char **argv)
 		/* ARexx port did not already exist */
 		gui(WBenchMsg, rxsig);
 	} else {
+		BOOL arc_opened = FALSE;
 		if(WBenchMsg) {
 			struct WBArg *wbarg;
 
@@ -668,11 +669,11 @@ int main(int argc, char **argv)
 							open_archive_from_wbarg_arexx(wbarg);
 						}
 					}
+				arc_opened = TRUE;
 				}
-			} else {
-				ami_arexx_send("SHOW");
 			}
 		}
+		if(arc_opened == FALSE) ami_arexx_send("SHOW");
 	}
 
 	ami_arexx_cleanup();
