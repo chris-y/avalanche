@@ -457,6 +457,12 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	struct avalanche_window *aw = AllocVec(sizeof(struct avalanche_window), MEMF_CLEAR | MEMF_PRIVATE);
 	if(!aw) return NULL;
 	
+	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
+	
+	if(config->disable_asl_hook) {
+		asl_hook = NULL;
+	}
+
 	ULONG tag_default_position = WINDOW_Position;
 
 	aw->lbci = AllocLBColumnInfo(3, 
@@ -535,7 +541,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 						GETFILE_FullFile, aw->archive,
 						GETFILE_ReadOnly, TRUE,
-						GETFILE_FilterFunc, &(aw->aslfilterhook),
+						GETFILE_FilterFunc, asl_hook,
 					End,
 					CHILD_WeightedHeight, 0,
 					CHILD_Label, LabelObj,

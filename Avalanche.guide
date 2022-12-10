@@ -42,6 +42,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
 @{b}VIRUSSCAN@{ub} Use xvs.library to @{"scan files" link vscan} after extraction
 @{b}CONFIRMQUIT@{ub} Display confirmation requester on quit
+@{b}NOASLHOOK@{ub} Disables the ASL filter so it shows all files
 @{b}CX_POPUP@{ub} Whether to open the window on startup
 @{b}CX_PRIORITY@{ub} Commodities priority
 @{b}CX_POPKEY@{ub} Hotkey to show the window if hidden (default = ctrl alt a)
@@ -113,6 +114,7 @@ This is mostly for internal use, but has the following commands:
 @{u}1.9 (xx.xx.xxxx)@{uu}
 * Add "snapshot window" option
    - note that the position is not saved unless save is clicked in prefs
+* Add ToolType to disable the ASL hook (filters ASL req to only show archives)
 * Fix iconify
 
 @{u}1.8 (07.12.2022)@{uu}

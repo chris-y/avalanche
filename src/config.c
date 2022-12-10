@@ -119,11 +119,10 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[1] = "(HBROWSER)";
 		}
 
-		/* Not used */
-		if(config->save_win_posn) {
-			newtooltypes[2] = "SAVEWINPOSN";
+		if(config->disable_asl_hook) {
+			newtooltypes[2] = "NOASLHOOK";
 		} else {
-			newtooltypes[2] = "(SAVEWINPOSN)";
+			newtooltypes[2] = "NOASLHOOK)";
 		}
 
 		if(config->win_x) {
