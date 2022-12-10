@@ -22,7 +22,7 @@ struct avalanche_config {
 	char *tmpdir;
 	int tmpdirlen;
 
-	BOOL save_win_posn;
+	BOOL disable_asl_hook;
 	BOOL h_browser;
 	BOOL virus_scan;
 	BOOL debug;

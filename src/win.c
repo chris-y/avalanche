@@ -126,7 +126,8 @@ struct NewMenu menu[] = {
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
 	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Preferences
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Snapshot
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -456,6 +457,12 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	struct avalanche_window *aw = AllocVec(sizeof(struct avalanche_window), MEMF_CLEAR | MEMF_PRIVATE);
 	if(!aw) return NULL;
 	
+	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
+	
+	if(config->disable_asl_hook) {
+		asl_hook = NULL;
+	}
+
 	ULONG tag_default_position = WINDOW_Position;
 
 	aw->lbci = AllocLBColumnInfo(3, 
@@ -534,7 +541,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 						GETFILE_FullFile, aw->archive,
 						GETFILE_ReadOnly, TRUE,
-						GETFILE_FilterFunc, &(aw->aslfilterhook),
+						GETFILE_FilterFunc, asl_hook,
 					End,
 					CHILD_WeightedHeight, 0,
 					CHILD_Label, LabelObj,
@@ -989,7 +996,15 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								window_req_open_archive(awin, config, TRUE);
 							break;
 								
-							case 2: //prefs
+							case 2: //snapshot
+								/* fetch current win posn */
+								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_x);
+								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_y);
+								GetAttr(WA_Width, aw->objects[OID_MAIN], (APTR)&config->win_w);
+								GetAttr(WA_Height, aw->objects[OID_MAIN], (APTR)&config->win_h);
+							break;
+								
+							case 3: //prefs
 								config_window_open(config);
 							break;
 						}
@@ -1078,7 +1093,8 @@ void fill_menu_labels(void)
 	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
 	menu[11].nm_Label = locale_get_string( MSG_SETTINGS );
 	menu[12].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[14].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[14].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[15].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

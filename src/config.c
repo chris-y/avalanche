@@ -119,17 +119,10 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[1] = "(HBROWSER)";
 		}
 
-		if(config->save_win_posn) {
-			newtooltypes[2] = "SAVEWINPOSN";
-#if 0 /* TODO: Re-implement window snapshotting */
-			/* fetch current win posn */
-			GetAttr(WA_Top, win, (APTR)&config->win_x);
-			GetAttr(WA_Left, win, (APTR)&config->win_y);
-			GetAttr(WA_Width, win, (APTR)&config->win_w);
-			GetAttr(WA_Height, win, (APTR)&config->win_h);
-#endif
+		if(config->disable_asl_hook) {
+			newtooltypes[2] = "NOASLHOOK";
 		} else {
-			newtooltypes[2] = "(SAVEWINPOSN)";
+			newtooltypes[2] = "NOASLHOOK)";
 		}
 
 		if(config->win_x) {

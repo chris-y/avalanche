@@ -535,7 +535,7 @@ static void gettooltypes(UBYTE **tooltypes)
 
 	if(FindToolType(tooltypes, "HBROWSER")) config.h_browser = TRUE;
 	if(FindToolType(tooltypes, "VIRUSSCAN")) config.virus_scan = TRUE;
-	if(FindToolType(tooltypes, "SAVEWINPOSN")) config.save_win_posn = TRUE;
+	if(FindToolType(tooltypes, "NOASLHOOK")) config.disable_asl_hook = TRUE;
 	if(FindToolType(tooltypes, "CONFIRMQUIT")) config.confirmquit = TRUE;
 	if(FindToolType(tooltypes, "IGNOREFS")) config.ignorefs = TRUE;
 	if(FindToolType(tooltypes, "DEBUG")) config.debug = TRUE;
@@ -563,7 +563,7 @@ int main(int argc, char **argv)
 	/* Initialise config default values */
 	config.progname = NULL;
 	config.dest = NULL;
-	config.save_win_posn = FALSE;
+	config.disable_asl_hook = FALSE;
 	config.h_browser = FALSE;
 	config.virus_scan = FALSE;
 	config.debug = FALSE;
