@@ -111,6 +111,9 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}1.9 (xx.xx.xxxx)@{uu}
+* Fix iconify
+
 @{u}1.8 (07.12.2022)@{uu}
 * Multiple windows supported internally. Limitations:
    - Commodities events only operate on the main (first) window

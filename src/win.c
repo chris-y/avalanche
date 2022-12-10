@@ -102,6 +102,7 @@ struct avalanche_window {
 	BOOL archive_needs_free;
 	void *archive_userdata;
 	BOOL h_mode;
+	BOOL iconified;
 };
 
 struct List winlist;
@@ -610,8 +611,9 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
 			window_menu_set_enable_state(aw);
 
-			add_to_window_list(awin);
+			if(aw->iconified == FALSE) add_to_window_list(awin);
 		}
+		aw->iconified = FALSE;
 	}
 }
 
@@ -621,11 +623,19 @@ void window_close(void *awin, BOOL iconify)
 	
 	if(aw->windows[WID_MAIN]) {
 		RemoveAppWindow(aw->appwin);
-		RA_CloseWindow(aw->objects[OID_MAIN]);
+		if(iconify) {
+			RA_Iconify(aw->objects[OID_MAIN]);
+		} else {
+			RA_CloseWindow(aw->objects[OID_MAIN]);
+		}
 		aw->windows[WID_MAIN] = NULL;
-	}
 
-	del_from_window_list(awin);
+		if(iconify) {
+			aw->iconified = TRUE;
+		} else {
+			del_from_window_list(awin);
+		}
+	}
 }
 
 void window_dispose(void *awin)
