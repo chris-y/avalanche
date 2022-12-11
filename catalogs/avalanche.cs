@@ -175,3 +175,6 @@ Extract here
 MSG_SNAPSHOT
 Snapshot window
 ;
+MSG_ADDFILES
+Add files...
+;
