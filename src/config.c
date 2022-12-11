@@ -92,8 +92,9 @@ static void config_save(struct avalanche_config *config)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[17];
+	UBYTE *newtooltypes[18];
 	char tt_dest[100];
+	char tt_srcdir[100];
 	char tt_tmp[100];
 	char tt_winx[15];
 	char tt_winy[15];
@@ -108,7 +109,7 @@ static void config_save(struct avalanche_config *config)
 
 		if(config->dest && (strcmp("RAM:", config->dest) != 0)) {
 			strcpy(tt_dest, "DEST=");
-			newtooltypes[0] = strcat(tt_dest, config->dest);
+			newtooltypes[0] = strncat(tt_dest, config->dest, 100);
 		} else {
 			newtooltypes[0] = "(DEST=RAM:)";
 		}
@@ -122,7 +123,7 @@ static void config_save(struct avalanche_config *config)
 		if(config->disable_asl_hook) {
 			newtooltypes[2] = "NOASLHOOK";
 		} else {
-			newtooltypes[2] = "NOASLHOOK)";
+			newtooltypes[2] = "(NOASLHOOK)";
 		}
 
 		if(config->win_x) {
@@ -208,7 +209,14 @@ static void config_save(struct avalanche_config *config)
 
 		newtooltypes[15] = "DONOTWAIT";
 
-		newtooltypes[16] = NULL;
+		if(config->sourcedir && (strcmp("RAM:", config->sourcedir) != 0)) {
+			strcpy(tt_srcdir, "SOURCEDIR=");
+			newtooltypes[16] = strncat(tt_srcdir, config->sourcedir, 100);
+		} else {
+			newtooltypes[16] = "(SOURCEDIR=RAM:)";
+		}
+
+		newtooltypes[17] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(config->progname, dobj, NULL);

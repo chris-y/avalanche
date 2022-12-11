@@ -525,6 +525,7 @@ static void gettooltypes(UBYTE **tooltypes)
 		strcat(config.cx_popkey, s);
 	}
 
+	config.sourcedir = strdup(ArgString(tooltypes, "SOURCEDIR", "RAM:"));
 	config.dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
 	dest_needs_free = TRUE;
 
@@ -648,6 +649,7 @@ int main(int argc, char **argv)
 
 	if(config.cx_popkey) FreeVec(config.cx_popkey);
 	if(config.tmpdir) FreeVec(config.tmpdir);
+	if(config.sourcedir) free(config.sourcedir);
 	if(config.progname != NULL) FreeVec(config.progname);
 	if(dest_needs_free) free_dest_path();
 

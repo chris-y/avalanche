@@ -541,6 +541,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 						GETFILE_FullFile, aw->archive,
 						GETFILE_ReadOnly, TRUE,
+						GETFILE_Drawer, config->sourcedir,
 						GETFILE_FilterFunc, asl_hook,
 					End,
 					CHILD_WeightedHeight, 0,
