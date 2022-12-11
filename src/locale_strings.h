@@ -97,6 +97,7 @@
 #define MSG_CXDESCRIPTION 53
 #define MSG_APPMENU_EXTRACTHERE 54
 #define MSG_SNAPSHOT 55
+#define MSG_ADDFILES 56
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -162,6 +163,7 @@
 #define MSG_CXDESCRIPTION_STR "Unarchive GUI for XAD/XFD"
 #define MSG_APPMENU_EXTRACTHERE_STR "Extract here"
 #define MSG_SNAPSHOT_STR "Snapshot window"
+#define MSG_ADDFILES_STR "Add files..."
 
 #endif /* CATCOMP_STRINGS */
 
@@ -285,6 +287,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_APPMENU_EXTRACTHERE_STR "\x00\x00"
     "\x00\x00\x00\x37\x00\x10"
     MSG_SNAPSHOT_STR "\x00"
+    "\x00\x00\x00\x38\x00\x0E"
+    MSG_ADDFILES_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

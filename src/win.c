@@ -122,11 +122,13 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
 	{NM_ITEM,   NULL ,  "Z", NM_ITEMDISABLED, 0, 0,}, // 1 Clear Selection
 	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
+	{NM_ITEM,   NULL,       "+", NM_ITEMDISABLED, 0, 0,}, // 4 Add files
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
 	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Snapshot
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 1 Snapshot
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
 	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
@@ -174,11 +176,17 @@ static void window_menu_activation(void *awin, BOOL enable)
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
+		if(module_is_editable(awin)) {
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
+		} else {
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
+		}
 	} else {
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
 	}
 }
 
@@ -996,7 +1004,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								window_req_open_archive(awin, config, TRUE);
 							break;
 								
-							case 2: //snapshot
+							case 1: //snapshot
 								/* fetch current win posn */
 								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_x);
 								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_y);
@@ -1091,10 +1099,11 @@ void fill_menu_labels(void)
 	menu[8].nm_Label = locale_get_string( MSG_SELECTALL );
 	menu[9].nm_Label = locale_get_string( MSG_CLEARSELECTION );
 	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
-	menu[11].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[12].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[14].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[15].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[12].nm_Label = locale_get_string( MSG_ADDFILES );
+	menu[13].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[14].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
+	menu[15].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[17].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

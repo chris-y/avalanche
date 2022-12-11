@@ -86,7 +86,7 @@ void module_show_info(void *awin)
 	}
 }
 
-const char *module_get_format(void *awin)
+static const char *module_get_format(void *awin)
 {
 	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
@@ -94,6 +94,8 @@ const char *module_get_format(void *awin)
 		break;
 		case ARC_XFD:
 			return xfd_get_arc_format(awin);
+		break;
+		default:
 		break;
 	}
 
@@ -134,4 +136,15 @@ BOOL module_recog(void* fullfilename)
 	if(found == FALSE) found = xfd_recog(fullfilename);
 	
 	return found;
+}
+
+/*** Editing ***/
+
+BOOL module_is_editable(void *awin)
+{
+	char *format = module_get_format(awin);
+	
+	if(format && (strcmp(format, "Zip") == 0)) return TRUE;
+	
+	return FALSE;
 }
