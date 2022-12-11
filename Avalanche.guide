@@ -34,7 +34,8 @@ The install script additionally modifies the default tool for "archive" type fil
 @node config "Configuration"
 Configuration is done via ToolTypes or through the equivalent options in the GUI.  Currently the following ToolTypes are recognised:
 
-@{b}DEST@{ub} Destination to extract the archive to. (default = RAM:)
+@{b}SOURCEDIR@{ub} Initial drawer to show in ASL requester (default = RAM:)
+@{b}DEST@{ub} Destination to extract the archive to (default = RAM:)
 @{b}TMPDIR@{ub} Path for temporary directory (default = T:)
 @{b}HBROWSER@{ub} Enable @{"hierarchical browser" link hbrowser} mode
 @{b}IGNOREFS@{ub} Enables the "Ignore filesystems" option
@@ -115,6 +116,7 @@ This is mostly for internal use, but has the following commands:
 * Add "snapshot window" option
    - note that the position is not saved unless save is clicked in prefs
 * Add ToolType to disable the ASL hook (filters ASL req to only show archives)
+* Add ToolType to set the initial drawer visible in ASL requester
 * Fix iconify
 
 @{u}1.8 (07.12.2022)@{uu}
