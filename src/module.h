@@ -20,6 +20,7 @@
 struct module_functions {
 	/* TODO: Register extraction modules here too */
 	BOOL (*add)(void *awin, char *archive, char *file); /* Returns TRUE on success */
+	BOOL (*del)(void *awin, char *archive, char *file); /* Returns TRUE on success */
 };
 
 const char *module_get_item_filename(void *awin, void *userdata);

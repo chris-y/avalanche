@@ -129,7 +129,7 @@ const char *xad_get_filename(void *userdata, void *awin)
 	
 	if(xu && (xu->arctype == XDISK)) return "disk.img";
 
-	struct xadFileInfo *fi = (struct xadFileInfo *)userdata;
+	struct xadFileInfo *fi = (struct xadFileInfo *)userdata; /* userdata is userdata from the node! */
 
 	return fi->xfi_FileName;
 }

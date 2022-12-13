@@ -12,6 +12,8 @@
  * GNU General Public License for more details.
 */
 
+#include <proto/dos.h>
+
 #include <exec/types.h>
 
 #include "modules/zip.h"
@@ -31,7 +33,7 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file)
 	struct zip_t *zip = zip_open(archive, ZIP_DEFAULT_COMPRESSION_LEVEL, 'a');
 
 	if(zip) {
-		err = zip_entry_open(zip, file);
+		err = zip_entry_open(zip, FilePart(file));
 		if(err < 0) {
 			mod_zip_show_error(awin, err);
 			zip_close(zip);
@@ -51,12 +53,34 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file)
 		}
 
 		zip_close(zip);
+		return TRUE;
 	}
 	
-	return TRUE;
+	return FALSE;
+}
+
+static BOOL mod_zip_del(void *awin, char *archive, char *file)
+{
+	long err = 0;
+	struct zip_t *zip = zip_open(archive, 0, 'd');
+
+	if(zip) {
+		err = zip_entries_delete(zip, &file, 1);
+		if(err < 0) {
+			mod_zip_show_error(awin, err);
+			zip_close(zip);
+			return FALSE;
+		}
+
+		zip_close(zip);
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 void mod_zip_register(struct module_functions *funcs)
 {
 	funcs->add = mod_zip_add;
+	funcs->del = mod_zip_del;
 }

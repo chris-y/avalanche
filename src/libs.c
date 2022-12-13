@@ -120,11 +120,13 @@
 
 #endif
 
+ALIB_STRUCT(Asl)
 #ifdef __amigaos4__
 ALIB_STRUCT(Commodities)
 #else
 ALIB_STRUCT(Cx)
 #endif
+
 ALIB_STRUCT(Icon)
 ALIB_STRUCT(Intuition)
 //ALIB_STRUCT(Locale)
@@ -170,6 +172,7 @@ static void libs_xvs_exit(void)
 
 BOOL libs_open(void)
 {
+	ALIB_OPEN("asl.library",          36, Asl)
 #ifdef __amigaos4__
 	ALIB_OPEN("commodities.library",  37, Commodities)
 #else
@@ -210,6 +213,7 @@ void libs_close(void)
 	CLASS_CLOSE(Window)
 	CLASS_CLOSE(ARexx)
 
+	ALIB_CLOSE(Asl)
 #ifdef __amigaos4__
 	ALIB_CLOSE(Commodities)
 #else

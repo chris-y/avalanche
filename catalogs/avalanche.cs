@@ -178,3 +178,6 @@ Snapshot window
 MSG_ADDFILES
 Add files...
 ;
+MSG_DELFILES
+Delete selected items...
+;

@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <proto/asl.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -128,6 +129,7 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL,       "+", NM_ITEMDISABLED, 0, 0,}, // 4 Add files
+	{NM_ITEM,   NULL,       0, NM_ITEMDISABLED, 0, 0,}, // 5 Delete files
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
 	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
@@ -137,6 +139,8 @@ struct NewMenu menu[] = {
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
+
+#define MENU_SETTINGS_HBROWSER 15
 
 #define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
@@ -209,12 +213,18 @@ static void window_menu_activation(void *awin, BOOL enable)
 		} else {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
 		}
+		if(aw->mf.del) {
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+		} else {
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+		}
 	} else {
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
 	}
 }
 
@@ -647,7 +657,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	if(aw->windows[WID_MAIN]) {
 		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
-		if(aw->h_mode) aw->menu[12].nm_Flags |= CHECKED;
+		if(aw->h_mode) aw->menu[MENU_SETTINGS_HBROWSER].nm_Flags |= CHECKED;
 	
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
@@ -964,6 +974,9 @@ BOOL window_edit_add(void *awin, char *file)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
+	/* virus scan - disabled currently as don't want random files to be deleted */
+	//module_vscan(awin, file, NULL, NULL);
+	
 	if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
 }
 
@@ -971,15 +984,61 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	BOOL ok = FALSE;
-	
+	char *file;
+
 	if(aw->mf.add == NULL) return;
 	
-	char *file = strdup("T:usb.log"); // testing
-
-	ok = window_edit_add(aw, file);
+	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
+	if(aslreq) {
+		if(AslRequest(aslreq, NULL)) {
+			ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
+			file = AllocVec(len, MEMF_PRIVATE);
+			strcpy(file, aslreq->fr_Drawer);
+			AddPart(file, aslreq->fr_File, len);
+			ok = window_edit_add(aw, file);
+		}
+		FreeAslRequest(aslreq);
+	}
 
 	/* Refresh the archive */
 	if(ok) window_req_open_archive(aw, config, TRUE);
+}
+
+static void window_edit_del(void *awin, struct avalanche_config *config)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	char *filename;
+	struct Node *node;
+	struct List *list = window_get_lblist(awin);
+	
+	if(aw->mf.del == NULL) return;
+
+	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
+										WA_BusyPointer, TRUE,
+										WA_PointerDelay, TRUE,
+										TAG_DONE);
+
+	window_reset_count(awin);
+	window_disable_gadgets(awin, TRUE);
+
+	for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+		void *userdata = window_get_lbnode(awin, node);
+		if(userdata) {
+			filename = xad_get_filename(userdata, awin);
+			aw->mf.del(aw, filename);
+		}
+	}
+
+	window_disable_gadgets(awin, FALSE);
+	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
+											WA_BusyPointer, FALSE,
+											TAG_DONE);
+
+	/* Refresh the archive */
+	window_req_open_archive(aw, config, TRUE);
+
+	return;
+}
 }
 
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code)
@@ -1080,6 +1139,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							
 							case 4: //add files
 								window_edit_add_req(awin, config);
+							break;
+							
+							case 5: //del files
+								window_edit_del(awin, config);
 							break;
 						}
 					break;
@@ -1189,10 +1252,11 @@ void fill_menu_labels(void)
 	menu[9].nm_Label = locale_get_string( MSG_CLEARSELECTION );
 	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
 	menu[12].nm_Label = locale_get_string( MSG_ADDFILES );
-	menu[13].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[14].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[15].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[17].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[13].nm_Label = locale_get_string( MSG_DELFILES );
+	menu[14].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[MENU_SETTINGS_HBROWSER].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
+	menu[16].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[18].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)
