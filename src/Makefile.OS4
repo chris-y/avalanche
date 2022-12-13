@@ -3,7 +3,7 @@ CC := vc +aosppcpl
 CFLAGS := -D__USE_INLINE__ -ISDK:local/common/include
 LIBS := -lamiga -lposix
 
-OBJS := avalanche.o arexx.o config.o libs.o locale.o module.o req.o win.o xad.o xfd.o xvs.o modules/zip.o
+OBJS := avalanche.o arexx.o config.o libs.o locale.o mod_zip.o module.o req.o win.o xad.o xfd.o xvs.o modules/zip.o
 DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h modules/zip.h
 
 all: locale_strings.h AvalanchePPC

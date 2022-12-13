@@ -24,6 +24,7 @@
 #include <proto/wb.h>
 #include <clib/alib_protos.h>
 
+#include <intuition/pointerclass.h>
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 
@@ -92,7 +93,9 @@ struct avalanche_window {
 	struct ColumnInfo *lbci;
 	struct List lblist;
 	struct Hook aslfilterhook;
+	struct Hook appwindzhook;
 	struct AppWindow *appwin;
+	struct AppWindowDropZone *appwindz;
 	char *archive;
 	char *dest;
 	struct MinList deletelist;
@@ -103,6 +106,7 @@ struct avalanche_window {
 	void *archive_userdata;
 	BOOL h_mode;
 	BOOL iconified;
+	struct module_functions mf;
 };
 
 struct List winlist;
@@ -156,6 +160,30 @@ static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") stru
 	return found;
 }
 
+#ifdef __amigaos4__
+static LONG appwindzhookfunc(struct Hook *h, APTR reserved, struct AppWindowDropZoneMsg *awdzm)
+#else
+static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") APTR reserved, __reg("a1") struct AppWindowDropZoneMsg *awdzm)
+#endif
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awdzm->adzm_UserData;
+	
+	/* Only change pointer if we are able to add files */
+	if(aw->mf.add == NULL) return 0;
+
+	switch(awdzm->adzm_Action) {
+		case ADZMACTION_Enter:
+			SetWindowPointer(aw->windows[WID_MAIN], WA_PointerType, POINTERTYPE_COPY, TAG_DONE);
+		break;
+		
+		case ADZMACTION_Leave:
+			SetWindowPointer(aw->windows[WID_MAIN], TAG_DONE);
+		break;
+	}
+
+	return 0;
+}
+
 static void window_free_archive_path(struct avalanche_window *aw)
 {
 	/* NB: uses free() not FreeVec() */
@@ -176,7 +204,7 @@ static void window_menu_activation(void *awin, BOOL enable)
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
-		if(module_is_editable(awin)) {
+		if(aw->mf.add) {
 			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
 		} else {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
@@ -625,6 +653,35 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
+#if 0			
+			aw->appwindzhook.h_Entry = appwindzhookfunc;
+			aw->appwindzhook.h_SubEntry = NULL;
+			aw->appwindzhook.h_Data = NULL;
+			
+			/* listbrowser */
+			ULONG left, top, width, height;
+			
+			GetAttr(GA_Top, aw->objects[GID_LIST], &top);
+			GetAttr(GA_Left, aw->objects[GID_LIST], &left);
+			GetAttr(GA_Width, aw->objects[GID_LIST], &width);
+			GetAttr(GA_Height, aw->objects[GID_LIST], &height);
+			
+			aw->appwindz = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
+											WBDZA_Left, left,
+											WBDZA_Top, top, 
+											WBDZA_Width, width,
+											WBDZA_Height, height,						
+											WBDZA_Hook, &aw->appwindzhook,
+										TAG_END);
+										
+			/* whole window */
+			aw->appwindz = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
+											WBDZA_Left, 0,
+											WBDZA_Top, 0, 
+											WBDZA_Width, aw->windows[WID_MAIN]->Width,
+											WBDZA_Height, aw->windows[WID_MAIN]->Height,						
+										TAG_END);
+#endif
 			window_menu_set_enable_state(aw);
 
 			if(aw->iconified == FALSE) add_to_window_list(awin);
@@ -638,6 +695,10 @@ void window_close(void *awin, BOOL iconify)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	if(aw->windows[WID_MAIN]) {
+		if(aw->appwindz) {
+			RemoveAppWindowDropZone(aw->appwin, aw->appwindz);
+			aw->appwindz = NULL;
+		}
 		RemoveAppWindow(aw->appwin);
 		if(iconify) {
 			RA_Iconify(aw->objects[OID_MAIN]);
@@ -821,6 +882,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		aw->archiver = ARC_NONE;
 	}
 
+	module_register(aw, &aw->mf);
 	window_menu_set_enable_state(aw);
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
@@ -896,6 +958,28 @@ ULONG window_get_archiver(void *awin)
 ULONG window_handle_input(void *awin, UWORD *code)
 {
 	return RA_HandleInput(window_get_object(awin), code);
+}
+
+BOOL window_edit_add(void *awin, char *file)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
+}
+
+static void window_edit_add_req(void *awin, struct avalanche_config *config)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	BOOL ok = FALSE;
+	
+	if(aw->mf.add == NULL) return;
+	
+	char *file = strdup("T:usb.log"); // testing
+
+	ok = window_edit_add(aw, file);
+
+	/* Refresh the archive */
+	if(ok) window_req_open_archive(aw, config, TRUE);
 }
 
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code)
@@ -992,6 +1076,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 							case 2: //invert selection
 								window_modify_all_list(awin, 2);
+							break;
+							
+							case 4: //add files
+								window_edit_add_req(awin, config);
 							break;
 						}
 					break;

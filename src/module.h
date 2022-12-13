@@ -17,11 +17,20 @@
 
 #include <exec/types.h>
 
+struct module_functions {
+	/* TODO: Register extraction modules here too */
+	BOOL (*add)(void *awin, char *archive, char *file); /* Returns TRUE on success */
+};
+
 const char *module_get_item_filename(void *awin, void *userdata);
 void module_free(void *awin);
 void module_show_info(void *awin);
 long module_extract(void *awin, void *node, void *archive, void *newdest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);
-BOOL module_is_editable(void *awin);
+void module_register(void *awin, struct module_functions *mf);
+
+/*** Register extended modules ***/
+void mod_zip_register(struct module_functions *funcs);
+
 #endif

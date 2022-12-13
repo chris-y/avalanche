@@ -140,11 +140,13 @@ BOOL module_recog(void* fullfilename)
 
 /*** Editing ***/
 
-BOOL module_is_editable(void *awin)
+void module_register(void *awin, struct module_functions *mf)
 {
-	char *format = module_get_format(awin);
-	
-	if(format && (strcmp(format, "Zip") == 0)) return TRUE;
-	
-	return FALSE;
+	const char *format = module_get_format(awin);
+
+	/* Remove existing registration */
+	mf->add = NULL;
+
+	/* Register correct module */
+	if(format && (strcmp(format, "Zip") == 0)) mod_zip_register(mf);
 }

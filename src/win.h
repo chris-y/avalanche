@@ -45,6 +45,9 @@ void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
 ULONG window_get_archiver(void *awin);
 
+/* Modify archive */
+BOOL window_edit_add(void *awin, char *file);
+
 /* Misc */
 void window_disable_gadgets(void *awin, BOOL disable);
 BOOL check_abort(void *awin);

@@ -421,6 +421,27 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 								}
 							}
 						break;
+						case AMTYPE_APPWINDOWZONE:
+							switch(appmsg->am_ID) {
+								case 0: // full window
+								case 1: // listbrowser
+									for(int i = 0; i < appmsg->am_NumArgs; i++) {
+										if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+											char *file = NULL;
+											if(file = AllocVec(512, MEMF_CLEAR)) {
+												NameFromLock(wbarg->wa_Lock, file, 512);
+												AddPart(file, wbarg->wa_Name, 512);
+												window_edit_add((void *)appmsg->am_UserData, file);
+												FreeVec(file);
+											}
+										}
+										wbarg++;
+									}
+									//TODO needs refresh
+
+								break;
+							}
+						break;
 						case AMTYPE_APPMENUITEM:
 							for(int i=0; i<appmsg->am_NumArgs; i++) {
 								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
