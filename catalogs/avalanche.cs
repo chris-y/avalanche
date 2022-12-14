@@ -181,3 +181,6 @@ Add files...
 MSG_DELFILES
 Delete selected items...
 ;
+MSG_UNABLETOOPENZIP
+Unable to open Zip for writing
+;

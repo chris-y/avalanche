@@ -54,6 +54,8 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file)
 
 		zip_close(zip);
 		return TRUE;
+	} else {
+		open_error_req(locale_get_string(MSG_UNABLETOOPENZIP), locale_get_string(MSG_OK), awin);
 	}
 	
 	return FALSE;
@@ -74,6 +76,8 @@ static BOOL mod_zip_del(void *awin, char *archive, char *file)
 
 		zip_close(zip);
 		return TRUE;
+	} else {
+		open_error_req(locale_get_string(MSG_UNABLETOOPENZIP), locale_get_string(MSG_OK), awin);
 	}
 
 	return FALSE;

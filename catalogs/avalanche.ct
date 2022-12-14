@@ -227,3 +227,15 @@ MSG_SNAPSHOT
 Snapshot window
 ; Snapshot window
 ;
+MSG_ADDFILES
+Add files...
+; Add files...
+;
+MSG_DELFILES
+Delete selected items...
+; Delete selected items...
+;
+MSG_UNABLETOOPENZIP
+Unable to open Zip for writing
+; Unable to open Zip for writing
+;

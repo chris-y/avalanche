@@ -1025,7 +1025,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 		void *userdata = window_get_lbnode(awin, node);
 		if(userdata) {
 			filename = xad_get_filename(userdata, awin);
-			aw->mf.del(aw, filename);
+			aw->mf.del(aw, aw->archive, filename);
 		}
 	}
 

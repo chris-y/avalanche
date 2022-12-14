@@ -99,6 +99,7 @@
 #define MSG_SNAPSHOT 55
 #define MSG_ADDFILES 56
 #define MSG_DELFILES 57
+#define MSG_UNABLETOOPENZIP 58
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -166,6 +167,7 @@
 #define MSG_SNAPSHOT_STR "Snapshot window"
 #define MSG_ADDFILES_STR "Add files..."
 #define MSG_DELFILES_STR "Delete selected items..."
+#define MSG_UNABLETOOPENZIP_STR "Unable to open Zip for writing"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -293,6 +295,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_ADDFILES_STR "\x00\x00"
     "\x00\x00\x00\x39\x00\x1A"
     MSG_DELFILES_STR "\x00\x00"
+    "\x00\x00\x00\x3A\x00\x20"
+    MSG_UNABLETOOPENZIP_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */
