@@ -617,6 +617,9 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
+			
+			/* Refresh archive on window open */
+			if(aw->archiver != ARC_NONE) window_req_open_archive(awin, get_config(), TRUE);
 			window_menu_set_enable_state(aw);
 
 			if(aw->iconified == FALSE) add_to_window_list(awin);
@@ -643,6 +646,10 @@ void window_close(void *awin, BOOL iconify)
 		} else {
 			del_from_window_list(awin);
 		}
+
+		/* Release archive when window is closed */
+		module_free(aw);
+		window_free_archive_userdata(aw);
 	}
 }
 
@@ -663,10 +670,7 @@ void window_dispose(void *awin)
 	if(aw->menu) FreeVec(aw->menu);
 
 	delete_delete_list(aw);
-	
-	module_free(aw);
 
-	window_free_archive_userdata(aw);
 	FreeVec(aw);
 }
 
