@@ -16,65 +16,64 @@
 
 #include <exec/types.h>
 
-#include "modules/zip.h"
+#include "lib/zipc.h"
 
 #include "locale.h"
 #include "module.h"
 #include "req.h"
 
-static void mod_zip_show_error(void *awin, long err)
+static void mod_zip_show_error(void *awin, zipc_file_t *zip)
 {
-	open_error_req(zip_strerror(err), locale_get_string(MSG_OK), awin);
+	open_error_req(zipcError(zip), locale_get_string(MSG_OK), awin);
 }
 
 static BOOL mod_zip_add(void *awin, char *archive, char *file)
 {
-	long err = 0;
-	struct zip_t *zip = zip_open(archive, ZIP_DEFAULT_COMPRESSION_LEVEL, 'a');
+	int err = 0;
+	zipc_file_t *zip = zipcOpen(archive, "w");
 
 	if(zip) {
-		err = zip_entry_open(zip, FilePart(file));
-		if(err < 0) {
-			mod_zip_show_error(awin, err);
-			zip_close(zip);
-			return FALSE;
-		}
-		err = zip_entry_fwrite(zip, file);
-		if(err < 0) {
-			mod_zip_show_error(awin, err);
-			zip_close(zip);
-			return FALSE;
-		}
-		err = zip_entry_close(zip);
-		if(err < 0) {
+		err = zipcCopyFile(zip, FilePart(file), file, 0, 1);
+		if(err != 0) {
 			mod_zip_show_error(awin, err);
 			zip_close(zip);
 			return FALSE;
 		}
 
-		zip_close(zip);
+		err = zipcClose(zip);
+		if(err != 0) {
+			mod_zip_show_error(awin, err);
+			zip_close(zip);
+			return FALSE;
+		}
 		return TRUE;
 	} else {
 		open_error_req(locale_get_string(MSG_UNABLETOOPENZIP), locale_get_string(MSG_OK), awin);
 	}
-	
+
 	return FALSE;
 }
 
 static BOOL mod_zip_del(void *awin, char *archive, char *file)
 {
 	long err = 0;
-	struct zip_t *zip = zip_open(archive, 0, 'd');
+	zipc_file_t *zip = zip_open(archive, "w");
 
 	if(zip) {
+/* No delete support in zipc yet
 		err = zip_entries_delete(zip, &file, 1);
 		if(err < 0) {
 			mod_zip_show_error(awin, err);
 			zip_close(zip);
 			return FALSE;
 		}
-
-		zip_close(zip);
+*/
+		err = zipcClose(zip);
+		if(err != 0) {
+			mod_zip_show_error(awin, err);
+			zip_close(zip);
+			return FALSE;
+		}
 		return TRUE;
 	} else {
 		open_error_req(locale_get_string(MSG_UNABLETOOPENZIP), locale_get_string(MSG_OK), awin);
@@ -86,5 +85,5 @@ static BOOL mod_zip_del(void *awin, char *archive, char *file)
 void mod_zip_register(struct module_functions *funcs)
 {
 	funcs->add = mod_zip_add;
-	funcs->del = mod_zip_del;
+//	funcs->del = mod_zip_del;
 }
