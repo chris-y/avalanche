@@ -16,7 +16,7 @@
 
 #include <exec/types.h>
 
-#include "lib/zipc.h"
+#include "lib/zipc/zipc.h"
 
 #include "locale.h"
 #include "module.h"
@@ -36,14 +36,14 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file)
 		err = zipcCopyFile(zip, FilePart(file), file, 0, 1);
 		if(err != 0) {
 			mod_zip_show_error(awin, zip);
-			zip_close(zip);
+			zipcClose(zip);
 			return FALSE;
 		}
 
 		err = zipcClose(zip);
 		if(err != 0) {
 			mod_zip_show_error(awin, zip);
-			zip_close(zip);
+			zipcClose(zip);
 			return FALSE;
 		}
 		return TRUE;
