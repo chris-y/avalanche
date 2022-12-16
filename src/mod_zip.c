@@ -35,42 +35,14 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file)
 	if(zip) {
 		err = zipcCopyFile(zip, FilePart(file), file, 0, 1);
 		if(err != 0) {
-			mod_zip_show_error(awin, err);
+			mod_zip_show_error(awin, zip);
 			zip_close(zip);
 			return FALSE;
 		}
 
 		err = zipcClose(zip);
 		if(err != 0) {
-			mod_zip_show_error(awin, err);
-			zip_close(zip);
-			return FALSE;
-		}
-		return TRUE;
-	} else {
-		open_error_req(locale_get_string(MSG_UNABLETOOPENZIP), locale_get_string(MSG_OK), awin);
-	}
-
-	return FALSE;
-}
-
-static BOOL mod_zip_del(void *awin, char *archive, char *file)
-{
-	long err = 0;
-	zipc_file_t *zip = zip_open(archive, "w");
-
-	if(zip) {
-/* No delete support in zipc yet
-		err = zip_entries_delete(zip, &file, 1);
-		if(err < 0) {
-			mod_zip_show_error(awin, err);
-			zip_close(zip);
-			return FALSE;
-		}
-*/
-		err = zipcClose(zip);
-		if(err != 0) {
-			mod_zip_show_error(awin, err);
+			mod_zip_show_error(awin, zip);
 			zip_close(zip);
 			return FALSE;
 		}

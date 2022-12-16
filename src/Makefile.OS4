@@ -3,8 +3,8 @@ CC := vc +aosppcpl
 CFLAGS := -D__USE_INLINE__ -DZIPC_ONLY_WRITE -ISDK:local/common/include
 LIBS := -lamiga -lposix -lz
 
-OBJS := avalanche.o arexx.o config.o libs.o locale.o mod_zip.o module.o req.o win.o xad.o xfd.o xvs.o lib/zipc.o
-DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h lib/zipc.h
+OBJS := avalanche.o arexx.o config.o libs.o locale.o mod_zip.o module.o req.o win.o xad.o xfd.o xvs.o lib/zipc/zipc.o
+DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h lib/zipc/zipc.h
 
 all: locale_strings.h AvalanchePPC
 
@@ -22,6 +22,6 @@ install: AvalanchePPC
 
 clean:
 	delete #?.o
-	delete lib/#?.o
+	delete lib/zipc/#?.o
 	delete locale_strings.h
 	delete AvalanchePPC

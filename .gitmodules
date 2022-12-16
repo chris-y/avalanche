@@ -1,0 +1,3 @@
+[submodule "src/lib/zipc"]
+	path = src/lib/zipc
+	url = https://github.com/chris-y/zipc.git

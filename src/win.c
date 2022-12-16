@@ -1044,7 +1044,6 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 
 	return;
 }
-}
 
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code)
 {
