@@ -980,8 +980,10 @@ BOOL window_edit_add(void *awin, char *file)
 	
 	/* virus scan - disabled currently as don't want random files to be deleted */
 	//module_vscan(awin, file, NULL, NULL);
-	
+
+	module_free(aw);
 	if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
+	window_req_open_archive(awin, get_config(), TRUE);
 }
 
 static void window_edit_add_req(void *awin, struct avalanche_config *config)
