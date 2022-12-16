@@ -663,7 +663,6 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
-
 #if 0			
 			aw->appwindzhook.h_Entry = appwindzhookfunc;
 			aw->appwindzhook.h_SubEntry = NULL;
