@@ -1,9 +1,9 @@
 CC := vc +aos68kpl
-CFLAGS := -c99 -g
+CFLAGS := -c99 -O3
 LIBS := -lamiga -lposix
 
-OBJS := avalanche.o arexx.o config.o libs.o locale.o mod_zip.o module.o req.o win.o xad.o xfd.o xvs.o modules/zip.o
-DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h modules/zip.h
+OBJS := avalanche.o arexx.o config.o libs.o locale.o mod_zip.o module.o req.o win.o xad.o xfd.o xvs.o lib/zipc/zipc.o
+DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h lib/zipc/zipc.h
 
 all: install
 
@@ -40,7 +40,7 @@ distrib: install
 
 clean:
 	delete #?.o
-	delete modules/#?.o
+	delete lib/zipc/#?.o
 	delete Avalanche
 
 version:

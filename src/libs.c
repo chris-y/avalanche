@@ -142,6 +142,10 @@ ALIB_STRUCT(XadMaster)
 ALIB_STRUCT(xadMaster)
 #endif
 
+#ifdef __amigaos4__
+ALIB_STRUCT(Z)
+#endif
+
 CLASS_STRUCT(ARexx)
 CLASS_STRUCT(Button)
 CLASS_STRUCT(CheckBox)
@@ -183,6 +187,9 @@ BOOL libs_open(void)
 //	ALIB_OPEN("locale.library",       38, Locale)
 	ALIB_OPEN("utility.library",      36, Utility)
 	ALIB_OPEN("workbench.library",    40, Workbench)
+#ifdef __amigaos4__
+	ALIB_OPEN("z.library",  53, Z)
+#endif
 
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON,      FALSE)
 	CLASS_OPEN("gadgets/checkbox.gadget",      41, CheckBox,      CHECKBOX,    FALSE)
@@ -223,6 +230,9 @@ void libs_close(void)
 	ALIB_CLOSE(Intuition)
 //	ALIB_CLOSE(Locale)
 	ALIB_CLOSE(Workbench)
+#ifdef __amigaos4__
+	ALIB_CLOSE(Z)
+#endif
 }
 
 BOOL libs_xad_init(void)
