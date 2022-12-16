@@ -203,7 +203,7 @@ const char *xad_get_arc_format(void *awin)
 	char *type;
 
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
-	if(!xu->ai) return;
+	if(!xu->ai) return NULL;
 
 	return xu->ai->xai_Client->xc_ArchiverName;
 }

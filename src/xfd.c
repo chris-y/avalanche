@@ -55,7 +55,7 @@ const char *xfd_get_filename(void *userdata)
 const char *xfd_get_arc_format(void *awin)
 {
 	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
-	if(!xu->bi) return;
+	if(!xu->bi) return NULL;
 	
 	return xu->bi->xfdbi_PackerName;
 }
