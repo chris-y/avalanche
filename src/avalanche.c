@@ -515,7 +515,7 @@ static void gettooltypes(UBYTE **tooltypes)
 	config.cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
 
 	s = ArgString(tooltypes, "CX_POPKEY", "ctrl alt a");
-	if(config.cx_popkey = AllocVec(strlen("rawkey ") + strlen(s) + 1, MEMF_ANY)) {
+	if(config.cx_popkey = AllocVec(strlen("rawkey ") + strlen(s) + 1, MEMF_ANY | MEMF_CLEAR)) {
 		strcpy(config.cx_popkey, "rawkey ");
 		strcat(config.cx_popkey, s);
 	}
