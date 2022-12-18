@@ -239,7 +239,7 @@ void xad_show_arc_info(void *awin)
 BOOL xad_recog(char *file)
 {
 	BPTR fh = 0;
-	ULONG len = 0;
+	ULONG len;
 	struct xadClient *xc = NULL;
 
 	libs_xad_init();
@@ -280,7 +280,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	struct xadArchiveInfo *ai = NULL;
 	ULONG total = 0;
 	ULONG i = 0;
-	ULONG size = 0;
+	ULONG size;
 	BOOL fs = !config->ignorefs;
 
 	libs_xad_init();
@@ -375,7 +375,6 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len), ULONG *pud)
 {
 	long err = 0;
-	char destfile[1024];
 	struct xadFileInfo *fi = NULL;
 	struct xadDiskInfo *di = NULL;
 	struct DateStamp ds;
@@ -399,6 +398,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	}
 
 	if(fi || di) {
+		char destfile[1024];
 		strcpy(destfile, dest);
 
 		if(fi) {
@@ -477,8 +477,6 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 				}
 			}
 		}
-		if(fi) fi = fi->xfi_Next;
-		if(di) di = di->xdi_Next;
 	}
 
 	if(xu->pw) FreeVec(xu->pw);

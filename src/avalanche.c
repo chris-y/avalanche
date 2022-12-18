@@ -217,11 +217,9 @@ void del_from_window_list(void *awin)
 
 static void close_all_windows()
 {
-	struct Node *node;
-	struct Node *nnode;
-
 	if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
-		node = (void *)GetHead((struct List *)&win_list);
+		struct Node *node = (void *)GetHead((struct List *)&win_list);
+		struct Node *nnode;
 		do {
 			nnode = (struct Node *)GetSucc(node);
 
@@ -298,10 +296,8 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 	ULONG done = WIN_DONE_OK;
 	ULONG result;
 	UWORD code;
-	long ret = 0;
 	ULONG tmp = 0;
 	struct Node *node;
-	struct Node *nnode;
 	
 	void *awin = NULL;
 	void *main_awin = NULL;
@@ -333,11 +329,9 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 		main_awin = awin;
 
 		if(WBenchMsg) {
-			struct WBArg *wbarg;
-
 			if(WBenchMsg->sm_NumArgs > 0) {
 				/* Started as default tool, get the path+filename of the (first) project */
-				wbarg = WBenchMsg->sm_ArgList + 1;
+				struct WBArg *wbarg = WBenchMsg->sm_ArgList + 1;
 
 				if(open_archive_from_wbarg_existing(awin, wbarg)) {
 					if(WBenchMsg->sm_NumArgs > 2) {
@@ -436,7 +430,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 											window_open(appmenu_awin, appwin_mp);
 											window_req_open_archive(appmenu_awin, &config, TRUE);
 											if(window_get_archiver(appmenu_awin) != ARC_NONE) {
-												ret = extract(appmenu_awin, am_archive, tempdest, NULL);
+												long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
 												free(tempdest);
 												if(ret != 0) show_error(ret, awin);
 											}
@@ -481,6 +475,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
+					struct Node *nnode;
 
 					do {
 						nnode = (struct Node *)GetSucc((struct Node *)awin);

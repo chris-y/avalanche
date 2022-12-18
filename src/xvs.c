@@ -27,9 +27,8 @@
 
 static long xvs_init(void *awin)
 {
-	char *msg;
-
 	if(xvsBase == NULL) {
+		char *msg;
 		libs_xvs_init();
 		if(xvsBase == NULL) {
 			if(msg = AllocVec(strlen(locale_get_string( MSG_UNABLETOOPENLIBRARY )) + strlen(locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED )) + strlen("xvs.library") + 4, MEMF_CLEAR)) {
