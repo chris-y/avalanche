@@ -143,7 +143,7 @@ ALIB_STRUCT(xadMaster)
 #endif
 
 #ifdef __amigaos4__
-ALIB_STRUCT(Z)
+ALIB_STRUCT(Zip)
 #endif
 
 CLASS_STRUCT(ARexx)
@@ -188,7 +188,7 @@ BOOL libs_open(void)
 	ALIB_OPEN("utility.library",      36, Utility)
 	ALIB_OPEN("workbench.library",    40, Workbench)
 #ifdef __amigaos4__
-	ALIB_OPEN("z.library",  53, Z)
+	ALIB_OPEN("zip.library",  53, Zip)
 #endif
 
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON,      FALSE)
@@ -231,7 +231,7 @@ void libs_close(void)
 //	ALIB_CLOSE(Locale)
 	ALIB_CLOSE(Workbench)
 #ifdef __amigaos4__
-	ALIB_CLOSE(Z)
+	ALIB_CLOSE(Zip)
 #endif
 }
 
