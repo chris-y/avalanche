@@ -74,7 +74,7 @@ void xfd_show_arc_info(void *awin)
 BOOL xfd_recog(char *file)
 {
 	BPTR fh = 0;
-	ULONG len = 0;
+	ULONG len;
 	BOOL res = FALSE;
 
 	libs_xfd_init();
@@ -130,7 +130,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 #ifdef __amigaos4__
 		len = (ULONG)GetFileSize(fh);
 #else
-		len = Seek(fh, 0, OFFSET_END);
+		Seek(fh, 0, OFFSET_END);
 		len = Seek(fh, 0, OFFSET_BEGINNING);
 #endif
 
@@ -165,11 +165,10 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 
 long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len))
 {
-	char destfile[1024];
-	BPTR fh = 0;
+	BPTR fh;
 	char *pw = NULL;
 	ULONG pwlen = 100;
-	ULONG err = 0;
+	ULONG err;
 	ULONG res = 1;
 
 	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
@@ -190,6 +189,7 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 
 	if(xfdDecrunchBuffer(bi) == TRUE) {
 		if(scan(awin, NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen) < 4) {
+			char destfile[1024];
 			strcpy(destfile, dest);
 			if(AddPart(destfile, xu->fn, 1024)) {
 				if(fh = Open(destfile, MODE_OLDFILE)) {

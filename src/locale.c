@@ -114,13 +114,12 @@ void Locale_Close(void)
 STRPTR locale_get_string(long id)
 {
 LONG   *l;
-UWORD  *w;
 STRPTR  builtin;
 
 	l = (LONG *)CatCompBlock;
 
     while (*l != id ) {
-        w = (UWORD *)((ULONG)l + 4);
+        UWORD *w = (UWORD *)((ULONG)l + 4);
         l = (LONG *)((ULONG)l + (ULONG)*w + 6);
     }
     builtin = (STRPTR)((ULONG)l + 6);

@@ -108,8 +108,8 @@ static void config_save(struct avalanche_config *config)
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
 
 		if(config->dest && (strcmp("RAM:", config->dest) != 0)) {
-			strcpy(tt_dest, "DEST=");
-			newtooltypes[0] = strncat(tt_dest, config->dest, 100);
+			snprintf(tt_dest, 100, "DEST=%s", config->dest);
+			newtooltypes[0] = tt_dest;
 		} else {
 			newtooltypes[0] = "(DEST=RAM:)";
 		}
@@ -210,8 +210,9 @@ static void config_save(struct avalanche_config *config)
 		newtooltypes[15] = "DONOTWAIT";
 
 		if(config->sourcedir && (strcmp("RAM:", config->sourcedir) != 0)) {
-			strcpy(tt_srcdir, "SOURCEDIR=");
-			newtooltypes[16] = strncat(tt_srcdir, config->sourcedir, 100);
+			snprintf(tt_srcdir, 100, "SOURCEDIR=%s", config->sourcedir);
+			newtooltypes[16] = tt_srcdir;
+
 		} else {
 			newtooltypes[16] = "(SOURCEDIR=RAM:)";
 		}
