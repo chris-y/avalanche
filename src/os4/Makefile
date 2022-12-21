@@ -1,12 +1,13 @@
 CC := vc +aosppc
-#CC := gcc -std=c99
-CFLAGS := -D__USE_INLINE__ -ISDK:local/common/include
+CFLAGS := -O3 -D__USE_INLINE__ -ISDK:local/common/include
 LIBS := -lamiga
+OBJDIR := objs_os4
+VPATH := ..
 
 OBJS := avalanche.o arexx.o config.o libs.o locale.o module.o req.o win.o xad.o xfd.o xvs.o
 DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h module.h req.h win.h xad.h xfd.h xvs.h
 
-all: locale_strings.h AvalanchePPC
+all: AvalanchePPC
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -14,13 +15,6 @@ all: locale_strings.h AvalanchePPC
 AvalanchePPC: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
 
-locale_strings.h: ../catalogs/avalanche.cd
-	catcomp /catalogs/avalanche.cd CFILE locale_strings.h NOCODE NOARRAY
-
-install: AvalanchePPC
-	copy AvalanchePPC /
-
 clean:
 	delete #?.o
-	delete locale_strings.h
 	delete AvalanchePPC
