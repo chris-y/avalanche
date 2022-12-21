@@ -1,18 +1,18 @@
 VERSION		EQU	1
-REVISION	EQU	8
+REVISION	EQU	9
 
 DATE	MACRO
-		dc.b '9.12.2022'
+		dc.b '21.12.2022'
 		ENDM
 
 VERS	MACRO
-		dc.b 'Avalanche 1.8'
+		dc.b 'Avalanche 1.9'
 		ENDM
 
 VSTRING	MACRO
-		dc.b 'Avalanche 1.8 (9.12.2022)',13,10,0
+		dc.b 'Avalanche 1.9 (21.12.2022)',13,10,0
 		ENDM
 
 VERSTAG	MACRO
-		dc.b 0,'$VER: Avalanche 1.8 (9.12.2022)',0
+		dc.b 0,'$VER: Avalanche 1.9 (21.12.2022)',0
 		ENDM

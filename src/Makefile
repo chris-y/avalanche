@@ -28,9 +28,9 @@ distrib: install
 	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info ram:AutoInstall
 
 clean:
+	make -i -C os3 clean
+	make -i -C os4 clean
 	delete locale_strings.h
-	make -i -f Makefile.OS3 -C os3 clean
-	make -i -f Makefile.OS4 -C os4 clean
 
 version:
 	bumprev 1 Avalanche
