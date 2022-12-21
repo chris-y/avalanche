@@ -14,6 +14,7 @@
 
 #include "avalanche.h"
 #include "config.h"
+#include "libs.h"
 #include "module.h"
 #include "win.h"
 
@@ -63,7 +64,7 @@ const char *module_get_item_filename(void *awin, void *userdata)
 
 void module_free(void *awin)
 {
-		switch(window_get_archiver(awin)) {
+	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
 			xad_free(awin);
 		break;
@@ -147,6 +148,9 @@ void module_register(void *awin, struct module_functions *mf)
 	/* Remove existing registration */
 	mf->add = NULL;
 	mf->del = NULL;
+	
+	/* Close any existing libs */
+	libs_zip_exit();
 
 	/* Register correct module */
 	if(format && (strcmp(format, "Zip") == 0)) mod_zip_register(mf);

@@ -173,6 +173,29 @@ static void libs_xvs_exit(void)
 	}
 }
 
+BOOL libs_zip_init(void)
+{
+#ifdef __amigaos4__
+	if(ZipBase == NULL) {
+		ALIB_OPEN("zip.library",  53, Zip)
+	}
+	
+	return TRUE;
+#else
+	return FALSE;
+#endif
+
+}
+
+void libs_zip_exit(void)
+{
+#ifdef __amigaos4__
+	if(ZipBase != NULL) {
+		ALIB_CLOSE(Zip);
+	}
+#endif
+}
+
 
 BOOL libs_open(void)
 {
@@ -187,9 +210,6 @@ BOOL libs_open(void)
 //	ALIB_OPEN("locale.library",       38, Locale)
 	ALIB_OPEN("utility.library",      36, Utility)
 	ALIB_OPEN("workbench.library",    40, Workbench)
-#ifdef __amigaos4__
-	ALIB_OPEN("zip.library",  53, Zip)
-#endif
 
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON,      FALSE)
 	CLASS_OPEN("gadgets/checkbox.gadget",      41, CheckBox,      CHECKBOX,    FALSE)
@@ -208,6 +228,7 @@ BOOL libs_open(void)
 void libs_close(void)
 {
 	libs_xvs_exit();
+	libs_zip_exit();
 
 	CLASS_CLOSE(Button)
 	CLASS_CLOSE(CheckBox)
@@ -230,9 +251,6 @@ void libs_close(void)
 	ALIB_CLOSE(Intuition)
 //	ALIB_CLOSE(Locale)
 	ALIB_CLOSE(Workbench)
-#ifdef __amigaos4__
-	ALIB_CLOSE(Zip)
-#endif
 }
 
 BOOL libs_xad_init(void)

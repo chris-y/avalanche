@@ -1,7 +1,6 @@
-CC := vc +aosppc
+CC := vc +aosppcpl
 CFLAGS := -O3 -D__USE_INLINE__ -ISDK:local/common/include
-LIBS := -lamiga
-OBJDIR := objs_os4
+LIBS := -lamiga -lposix
 VPATH := ..
 
 OBJS := avalanche.o arexx.o config.o libs.o locale.o mod_zip.o module.o req.o win.o xad.o xfd.o xvs.o

@@ -1027,6 +1027,9 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 	window_reset_count(awin);
 	window_disable_gadgets(awin, TRUE);
 
+	/* module_free(aw);
+	 * TODO: copy the files to delete into a list so we can release the archive */
+
 	for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
 		void *userdata = window_get_lbnode(awin, node);
 		if(userdata) {

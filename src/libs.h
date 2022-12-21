@@ -54,4 +54,8 @@ BOOL libs_xfd_init(void);
 void libs_xfd_exit(void);
 
 BOOL libs_xvs_init(void);
+
+BOOL libs_zip_init(void);
+void libs_zip_exit(void);
+
 #endif

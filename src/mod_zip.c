@@ -16,46 +16,97 @@
 
 #include <exec/types.h>
 
-#include "lib/zipc/zipc.h"
+#ifdef __amigaos4__
+#include <proto/zip.h>
+#include <libraries/zip.h>
+#endif
 
+#include "libs.h"
 #include "locale.h"
 #include "module.h"
 #include "req.h"
 
-static void mod_zip_show_error(void *awin, zipc_file_t *zip)
+static void mod_zip_show_error(void *awin, zip_t *zip)
 {
-	open_error_req(zipcError(zip), locale_get_string(MSG_OK), awin);
+	open_error_req(zip_error_strerror(zip_get_error(zip)), locale_get_string(MSG_OK), awin);
 }
 
-static BOOL mod_zip_add(void *awin, char *archive, char *file)
+static BOOL mod_zip_del(void *awin, char *archive, char *file)
 {
+#ifdef __amigaos4__
 	int err = 0;
-	zipc_file_t *zip = zipcOpen(archive, "w");
+	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
-		err = zipcCopyFile(zip, FilePart(file), file, 0, 1);
-		if(err != 0) {
+		zip_int64_t index = zip_name_locate(zip, file, 0);
+		if(index == -1) {
 			mod_zip_show_error(awin, zip);
-			zipcClose(zip);
+			zip_discard(zip);
 			return FALSE;
 		}
 
-		err = zipcClose(zip);
-		if(err != 0) {
+		err = zip_delete(zip, index);
+		if(err == -1) {
 			mod_zip_show_error(awin, zip);
-			zipcClose(zip);
+			zip_discard(zip);
+			return FALSE;
+		}
+
+		err = zip_close(zip);
+		if(err == -1) {
+			mod_zip_show_error(awin, zip);
+			zip_discard(zip);
 			return FALSE;
 		}
 		return TRUE;
 	} else {
-		open_error_req(locale_get_string(MSG_UNABLETOOPENZIP), locale_get_string(MSG_OK), awin);
+		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
 	}
 
 	return FALSE;
+#endif
+}
+
+static BOOL mod_zip_add(void *awin, char *archive, char *file)
+{
+#ifdef __amigaos4__
+	int err = 0;
+	zip_t *zip = zip_open(archive, 0, &err);
+
+	if(zip) {
+		zip_source_t *src = zip_source_file(zip, file, 0, -1);
+		if(zip == NULL) {
+			mod_zip_show_error(awin, zip);
+			zip_discard(zip);
+			return FALSE;
+		}
+
+		err = zip_file_add(zip, FilePart(file), src, 0);
+		if(err == -1) {
+			mod_zip_show_error(awin, zip);
+			zip_discard(zip);
+			return FALSE;
+		}
+
+		err = zip_close(zip);
+		if(err == -1) {
+			mod_zip_show_error(awin, zip);
+			zip_discard(zip);
+			return FALSE;
+		}
+		return TRUE;
+	} else {
+		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
+	}
+
+	return FALSE;
+#endif
 }
 
 void mod_zip_register(struct module_functions *funcs)
 {
-	funcs->add = mod_zip_add;
-//	funcs->del = mod_zip_del;
+	if(libs_zip_init()) {
+		funcs->add = mod_zip_add;
+		funcs->del = mod_zip_del;
+	}
 }
