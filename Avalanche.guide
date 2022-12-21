@@ -112,12 +112,13 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}1.9 (xx.xx.xxxx)@{uu}
+@{u}1.9 (21.12.2022)@{uu}
 * Add "snapshot window" option
    - note that the position is not saved unless save is clicked in prefs
 * Add ToolType to disable the ASL hook (filters ASL req to only show archives)
 * Add ToolType to set the initial drawer visible in ASL requester
 * Fix iconify
+* Rebuilt with optimisations
 
 @{u}1.8 (07.12.2022)@{uu}
 * Multiple windows supported internally. Limitations:
