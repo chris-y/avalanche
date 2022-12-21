@@ -70,7 +70,7 @@ STATIC struct ARexxCmd Commands[] =
 	{ NULL, 		0, 				NULL, 		NULL, 		0, 	NULL, 	0, 	0, 	NULL }
 };
 
-bool ami_arexx_init(ULONG *rxsig)
+BOOL ami_arexx_init(ULONG *rxsig)
 {
 	if((arexx_obj = ARexxObj,
 			AREXX_HostName, "AVALANCHE",
@@ -81,7 +81,7 @@ bool ami_arexx_init(ULONG *rxsig)
 			End))
 	{
 		GetAttr(AREXX_SigMask, arexx_obj, rxsig);
-		return true;
+		return TRUE;
 	}
 	else
 	{
@@ -94,7 +94,7 @@ bool ami_arexx_init(ULONG *rxsig)
 			AREXX_DefExtension, "arx",
 			End;
 
-		return false;
+		return FALSE;
 	}
 }
 

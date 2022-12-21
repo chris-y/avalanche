@@ -27,9 +27,10 @@
 #include <proto/listbrowser.h>
 #include <proto/requester.h>
 #include <proto/window.h>
+#else
+#include <proto/utility.h>
 #endif
 
-#include <stdbool.h>
 #include <stdio.h>
 
 #include "libs.h"
@@ -62,7 +63,7 @@
 
 #define CLASS_OPEN(CLASS, CLASSVER, PREFIX, CLASSGET, NEEDINTERFACE)	\
 	if((PREFIX##Base = OpenClass(CLASS, CLASSVER, &PREFIX##Class))) {	\
-		if(NEEDINTERFACE == true) {	\
+		if(NEEDINTERFACE == TRUE) {	\
 			I##PREFIX = (struct PREFIX##IFace *)GetInterface((struct Library *)PREFIX##Base, "main", 1, NULL);	\
 			if(I##PREFIX == NULL) {	\
 				printf(locale_get_string(MSG_INTERFACE));	\
@@ -130,7 +131,11 @@ ALIB_STRUCT(Cx)
 ALIB_STRUCT(Icon)
 ALIB_STRUCT(Intuition)
 //ALIB_STRUCT(Locale)
+
+#ifndef __amigaos4__
 ALIB_STRUCT(Utility)
+#endif
+
 ALIB_STRUCT(Workbench)
 
 ALIB_STRUCT(xfdMaster)

@@ -17,15 +17,13 @@
 
 #include <exec/types.h>
 
-#include <stdbool.h>
-
 enum {
 	RXEVT_NONE = 0,
 	RXEVT_OPEN,
 	RXEVT_SHOW
 };
 
-bool ami_arexx_init(ULONG *rxsig);
+BOOL ami_arexx_init(ULONG *rxsig);
 ULONG ami_arexx_handle(void);
 void ami_arexx_send(const char *);
 void ami_arexx_cleanup(void);
