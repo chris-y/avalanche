@@ -84,6 +84,8 @@ struct arc_entries {
 	void *userdata;
 };
 
+#define AVALANCHE_DROPZONES 2
+
 struct avalanche_window {
 	struct MinNode node;
 	struct Window *windows[WID_LAST];
@@ -96,7 +98,7 @@ struct avalanche_window {
 	struct Hook aslfilterhook;
 	struct Hook appwindzhook;
 	struct AppWindow *appwin;
-	struct AppWindowDropZone *appwindz;
+	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
 	char *archive;
 	char *dest;
 	struct MinList deletelist;
@@ -171,6 +173,8 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 #endif
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awdzm->adzm_UserData;
+
+DebugPrintF("%ld\n", awdzm->adzm_Action);
 	
 	/* Only change pointer if we are able to add files */
 	if(aw->mf.add == NULL) return 0;
@@ -663,7 +667,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
-#if 0			
+		
 			aw->appwindzhook.h_Entry = appwindzhookfunc;
 			aw->appwindzhook.h_SubEntry = NULL;
 			aw->appwindzhook.h_Data = NULL;
@@ -671,27 +675,26 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 			/* listbrowser */
 			ULONG left, top, width, height;
 			
-			GetAttr(GA_Top, aw->objects[GID_LIST], &top);
-			GetAttr(GA_Left, aw->objects[GID_LIST], &left);
-			GetAttr(GA_Width, aw->objects[GID_LIST], &width);
-			GetAttr(GA_Height, aw->objects[GID_LIST], &height);
-			
-			aw->appwindz = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
+			GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
+			GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
+			GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
+			GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
+
+			aw->appwindz[1] = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
 											WBDZA_Left, left,
 											WBDZA_Top, top, 
 											WBDZA_Width, width,
 											WBDZA_Height, height,						
 											WBDZA_Hook, &aw->appwindzhook,
 										TAG_END);
-										
+
 			/* whole window */
-			aw->appwindz = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
+			aw->appwindz[0] = AddAppWindowDropZone(aw->appwin, 0, (ULONG)aw,
 											WBDZA_Left, 0,
 											WBDZA_Top, 0, 
 											WBDZA_Width, aw->windows[WID_MAIN]->Width,
 											WBDZA_Height, aw->windows[WID_MAIN]->Height,						
 										TAG_END);
-#endif
 		
 			/* Refresh archive on window open */
 			if(aw->archiver != ARC_NONE) window_req_open_archive(awin, get_config(), TRUE);
@@ -709,8 +712,10 @@ void window_close(void *awin, BOOL iconify)
 	
 	if(aw->windows[WID_MAIN]) {
 		if(aw->appwindz) {
-			RemoveAppWindowDropZone(aw->appwin, aw->appwindz);
-			aw->appwindz = NULL;
+			for(int i=0; i<AVALANCHE_DROPZONES; i++) {
+				RemoveAppWindowDropZone(aw->appwin, aw->appwindz[i]);
+				aw->appwindz[i] = NULL;
+			}
 		}
 		RemoveAppWindow(aw->appwin);
 		if(iconify) {
@@ -983,7 +988,7 @@ BOOL window_edit_add(void *awin, char *file)
 
 	module_free(aw);
 	if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
-	window_req_open_archive(awin, get_config(), TRUE);
+	return FALSE;
 }
 
 static void window_edit_add_req(void *awin, struct avalanche_config *config)
