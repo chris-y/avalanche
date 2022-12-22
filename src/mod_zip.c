@@ -31,25 +31,27 @@ static void mod_zip_show_error(void *awin, zip_t *zip)
 	open_error_req(zip_error_strerror(zip_get_error(zip)), locale_get_string(MSG_OK), awin);
 }
 
-static BOOL mod_zip_del(void *awin, char *archive, char *file)
+static BOOL mod_zip_del(void *awin, char *archive, char **files, ULONG count)
 {
 #ifdef __amigaos4__
 	int err = 0;
 	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
-		zip_int64_t index = zip_name_locate(zip, file, 0);
-		if(index == -1) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
-		}
+		for(int i = 0; i < count; i++) {
+			zip_int64_t index = zip_name_locate(zip, files[i], 0);
+			if(index == -1) {
+				mod_zip_show_error(awin, zip);
+				zip_discard(zip);
+				return FALSE;
+			}
 
-		err = zip_delete(zip, index);
-		if(err == -1) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
+			err = zip_delete(zip, index);
+			if(err == -1) {
+				mod_zip_show_error(awin, zip);
+				zip_discard(zip);
+				return FALSE;
+			}
 		}
 
 		err = zip_close(zip);
