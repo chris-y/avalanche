@@ -154,4 +154,5 @@ void module_register(void *awin, struct module_functions *mf)
 
 	/* Register correct module */
 	if(format && (strcmp(format, "Zip") == 0)) mod_zip_register(mf);
+	if(format && (strcmp(format, "LhA") == 0)) mod_lha_register(mf);
 }

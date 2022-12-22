@@ -33,5 +33,6 @@ void module_register(void *awin, struct module_functions *mf);
 
 /*** Register extended modules ***/
 void mod_zip_register(struct module_functions *funcs);
+void mod_lha_register(struct module_functions *funcs);
 
 #endif
