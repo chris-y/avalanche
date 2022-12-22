@@ -74,18 +74,6 @@ void module_free(void *awin)
 	}
 }
 
-void module_show_info(void *awin)
-{
-	switch(window_get_archiver(awin)) {
-		case ARC_XAD:
-			xad_show_arc_info(awin);
-		break;
-		case ARC_XFD:
-			xfd_show_arc_info(awin);
-		break;
-	}
-}
-
 const char *module_get_format(void *awin)
 {
 	switch(window_get_archiver(awin)) {
@@ -94,6 +82,31 @@ const char *module_get_format(void *awin)
 		break;
 		case ARC_XFD:
 			return xfd_get_arc_format(awin);
+		break;
+	}
+
+	return NULL;
+}
+
+const char *module_get_subformat(void *awin)
+{
+	switch(window_get_archiver(awin)) {
+		case ARC_XAD:
+			return xad_get_arc_subformat(awin);
+		break;
+	}
+
+	return NULL;
+}
+
+const char *module_get_read_module(void *awin)
+{
+	switch(window_get_archiver(awin)) {
+		case ARC_XAD:
+			return "XAD";
+		break;
+		case ARC_XFD:
+			return "XFD";
 		break;
 	}
 

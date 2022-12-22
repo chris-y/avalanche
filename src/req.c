@@ -27,6 +27,7 @@
 #include "avalanche.h"
 #include "libs.h"
 #include "locale.h"
+#include "module.h"
 #include "req.h"
 #include "win.h"
 #include "xad.h"
@@ -160,4 +161,22 @@ ULONG ask_password(void *awin, char *pw, ULONG pwlen)
 	}
 
 	return ret;
+}
+
+void req_show_arc_info(void *awin)
+{
+	char message[100];
+	const char *modname = module_get_read_module(awin);
+	
+	if(modname == NULL) return;
+
+	const char *subf = module_get_subformat(awin);
+	
+	if(subf) {
+		snprintf(message, 100, "%s (%s) - %s", module_get_format(awin), subf, modname);	
+	} else {
+		snprintf(message, 100, "%s - %s", module_get_format(awin), modname);	
+	}
+	
+	open_info_req(message, locale_get_string(MSG_OK), awin);
 }
