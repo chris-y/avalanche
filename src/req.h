@@ -24,4 +24,5 @@ void show_error(long code, void *awin);
 void show_about(void *awin);
 void open_error_req(char *message, char *button, void *awin);
 void open_info_req(char *message, char *buttons, void *awin);
+void req_show_arc_info(void *awin);
 #endif

@@ -29,6 +29,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 char *xad_error(long code);
 void xad_show_arc_info(void *awin);
 const char *xad_get_arc_format(void *awin);
+const char *xad_get_arc_subformat(void *awin);
 void xad_free(void *awin);
 void xad_exit(void);
 #endif

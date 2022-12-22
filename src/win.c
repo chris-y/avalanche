@@ -1145,7 +1145,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 							
 							case 2: //info
-								module_show_info(awin);
+								req_show_arc_info(awin);
 							break;
 
 							case 3: //about

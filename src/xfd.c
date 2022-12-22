@@ -60,17 +60,6 @@ const char *xfd_get_arc_format(void *awin)
 	return xu->bi->xfdbi_PackerName;
 }
 
-void xfd_show_arc_info(void *awin)
-{
-	char message[100];
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
-	if(!xu->bi) return;
-
-	sprintf(message,  locale_get_string( MSG_CRUNCHED ) , xu->bi->xfdbi_PackerName);
-
-	open_info_req(message, locale_get_string(MSG_OK), awin);
-}
-
 BOOL xfd_recog(char *file)
 {
 	BPTR fh = 0;

@@ -200,21 +200,18 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 
 const char *xad_get_arc_format(void *awin)
 {
-	char *type;
-
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 	if(!xu->ai) return NULL;
 
 	return xu->ai->xai_Client->xc_ArchiverName;
 }
 
-void xad_show_arc_info(void *awin)
+const char *xad_get_arc_subformat(void *awin)
 {
-	char message[100];
 	char *type;
 
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
-	if(!xu->ai) return;
+	if(!xu->ai) return NULL;
 
 	switch(xu->arctype) {
 		case XFILE:
@@ -230,10 +227,8 @@ void xad_show_arc_info(void *awin)
 			type =  locale_get_string( MSG_UNKNOWN ) ;
 		break;
 	}
-
-	sprintf(message, "%s %s", xu->ai->xai_Client->xc_ArchiverName, type);	
-
-	open_info_req(message, locale_get_string(MSG_OK), awin);
+	
+	return type;
 }
 
 BOOL xad_recog(char *file)
