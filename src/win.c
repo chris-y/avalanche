@@ -720,6 +720,14 @@ void window_update_archive(void *awin, char *archive)
 					GETFILE_FullFile, aw->archive, TAG_DONE);
 }
 
+void window_update_sourcedir(void *awin, char *sourcedir)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
+					GETFILE_Drawer, sourcedir, TAG_DONE);
+}
+
 void window_toggle_hbrowser(void *awin, BOOL h_browser)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;

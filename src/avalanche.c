@@ -234,32 +234,40 @@ static void close_all_windows()
 static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window, BOOL arexx,
 				struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
-	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+	if(wbarg->wa_Lock) {
+		if(*wbarg->wa_Name) {
+			char *appwin_archive = NULL;
+			if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
+				NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
+				AddPart(appwin_archive, wbarg->wa_Name, 512);
+				if(arexx) {
+					char cmd[1024];
+					snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
+					ami_arexx_send(cmd);
+					return TRUE;
+				}
+				if(new_window == FALSE) {
+					window_update_archive(awin, appwin_archive);
+				} else {
+					awin = window_create(&config, appwin_archive, win_port, app_port);
+				}
+				FreeVec(appwin_archive);
+				if(awin) {
+					/* Ensure our window is open to avoid confusion */
+					window_open(awin, appwin_mp);
+					window_req_open_archive(awin, &config, TRUE);
+				}
+			}
 
-		char *appwin_archive = NULL;
-		if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
-			NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
-			AddPart(appwin_archive, wbarg->wa_Name, 512);
-			if(arexx) {
-				char cmd[1024];
-				snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
-				ami_arexx_send(cmd);
-				return TRUE;
-			}
-			if(new_window == FALSE) {
-				window_update_archive(awin, appwin_archive);
-			} else {
-				awin = window_create(&config, appwin_archive, win_port, app_port);
-			}
-			FreeVec(appwin_archive);
-			if(awin) {
-				/* Ensure our window is open to avoid confusion */
-				window_open(awin, appwin_mp);
-				window_req_open_archive(awin, &config, TRUE);
+			return TRUE;
+		} else {
+			char *appwin_dir = NULL;
+			if(appwin_dir = AllocVec(512, MEMF_CLEAR)) {
+				NameFromLock(wbarg->wa_Lock, appwin_dir, 512);
+				window_update_sourcedir(awin, appwin_dir);
+				FreeVec(appwin_dir);
 			}
 		}
-
-		return TRUE;
 	}
 
 	return FALSE;

@@ -27,6 +27,7 @@ void window_dispose(void *awin);
 
 /* Update window */
 void window_update_archive(void *awin, char *archive);
+void window_update_sourcedir(void *awin, char *sourcedir);
 void window_toggle_hbrowser(void *awin, BOOL h_browser);
 void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size);
 void window_modify_all_list(void *awin, ULONG select);
