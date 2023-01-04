@@ -243,6 +243,7 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 				if(arexx) {
 					char cmd[1024];
 					snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
+					FreeVec(appwin_archive);
 					ami_arexx_send(cmd);
 					return TRUE;
 				}
@@ -261,6 +262,9 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 
 			return TRUE;
 		} else {
+			if(arexx) return FALSE;
+			if(awin == NULL) return FALSE;
+
 			char *appwin_dir = NULL;
 			if(appwin_dir = AllocVec(512, MEMF_CLEAR)) {
 				NameFromLock(wbarg->wa_Lock, appwin_dir, 512);
