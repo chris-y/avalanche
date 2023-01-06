@@ -146,7 +146,8 @@ static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") stru
 
 	if(ap->ap_Info.fib_DirEntryType > 0) return(TRUE); /* Drawer */
 
-	strcpy(fullfilename, fr->fr_Drawer);
+	strncpy(fullfilename, fr->fr_Drawer, 255);
+	fullfilename[255] = 0;
 	AddPart(fullfilename, ap->ap_Info.fib_FileName, 256);
 
 	found = module_recog(fullfilename);
@@ -328,7 +329,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
 
-	sprintf(datestr, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+	snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
 
 	struct Node *node = AllocListBrowserNode(3,
 		LBNA_UserData, userdata,
@@ -695,7 +696,8 @@ it's incompatible with doube-clicking as it resets the listview */
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
 			toggle_item(aw, node, 1); /* ensure selected */
 			char fn[1024];
-			strcpy(fn, tmpdir);
+			strncpy(fn, tmpdir, 1023);
+			fn[1023] = 0;
 			ret = extract(aw, aw->archive, fn, node);
 			if(ret == 0) {
 				AddPart(fn, get_item_filename(aw, node), 1024);
@@ -870,7 +872,7 @@ void *window_get_lbnode(void *awin, struct Node *node)
 		TAG_DONE);
 
 	aw->current_item++;
-	sprintf(msg, "%lu/%lu", aw->current_item, aw->total_items);
+	snprintf(msg, 20, "%lu/%lu", aw->current_item, aw->total_items);
 
 	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
 			GA_Text, msg,

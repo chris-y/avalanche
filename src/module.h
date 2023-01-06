@@ -22,6 +22,7 @@ void module_free(void *awin);
 const char *module_get_format(void *awin);
 const char *module_get_subformat(void *awin);
 const char *module_get_read_module(void *awin);
+const char *module_get_error(void *awin, long code);
 long module_extract(void *awin, void *node, void *archive, void *newdest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);

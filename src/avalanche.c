@@ -309,7 +309,6 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 	ULONG result;
 	UWORD code;
 	ULONG tmp = 0;
-	struct Node *node;
 	
 	void *awin = NULL;
 	void *main_awin = NULL;
@@ -527,9 +526,10 @@ static void gettooltypes(UBYTE **tooltypes)
 	config.cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
 
 	s = ArgString(tooltypes, "CX_POPKEY", "ctrl alt a");
-	if(config.cx_popkey = AllocVec(strlen("rawkey ") + strlen(s) + 1, MEMF_ANY | MEMF_CLEAR)) {
-		strcpy(config.cx_popkey, "rawkey ");
-		strcat(config.cx_popkey, s);
+	int len = strlen("rawkey ") + strlen(s) + 1;
+	if(config.cx_popkey = AllocVec(len, MEMF_ANY | MEMF_CLEAR)) {
+		strncpy(config.cx_popkey, "rawkey ", len);
+		strncat(config.cx_popkey, s, len);
 	}
 
 	config.sourcedir = strdup(ArgString(tooltypes, "SOURCEDIR", "RAM:"));
@@ -600,7 +600,7 @@ int main(int argc, char **argv)
 
 		if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
 			if(config.progname = AllocVec(40, MEMF_CLEAR)) {
-				strcpy(config.progname, "PROGDIR:");
+				strncpy(config.progname, "PROGDIR:", 40);
 				AddPart(config.progname, wbarg->wa_Name, 40);
 			}
 		}
@@ -617,7 +617,7 @@ int main(int argc, char **argv)
 	fill_menu_labels();
 
 	if(tmp = AllocVec(20, MEMF_CLEAR)) {
-		sprintf(tmp, "Avalanche.%lx", GetUniqueID());
+		snprintf(tmp, 20, "Avalanche.%lx", GetUniqueID());
 		AddPart(config.tmpdir, tmp, 100);
 		UnLock(CreateDir(config.tmpdir));
 		FreeVec(tmp);
@@ -629,11 +629,9 @@ int main(int argc, char **argv)
 	} else {
 		BOOL arc_opened = FALSE;
 		if(WBenchMsg) {
-			struct WBArg *wbarg;
-
 			if(WBenchMsg->sm_NumArgs > 0) {
 				/* Started as default tool, get the path+filename of the (first) project */
-				wbarg = WBenchMsg->sm_ArgList + 1;
+				struct WBArg *wbarg = WBenchMsg->sm_ArgList + 1;
 
 				if(open_archive_from_wbarg_arexx(wbarg)) {
 					if(WBenchMsg->sm_NumArgs > 2) {
@@ -642,7 +640,7 @@ int main(int argc, char **argv)
 							open_archive_from_wbarg_arexx(wbarg);
 						}
 					}
-				arc_opened = TRUE;
+					arc_opened = TRUE;
 				}
 			}
 		}

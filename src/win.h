@@ -19,6 +19,8 @@
 
 #include "avalanche.h"
 
+struct MsgPort;
+
 /* Basic window functions */
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
 void window_open(void *awin, struct MsgPort *appwin_mp);

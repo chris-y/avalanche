@@ -30,7 +30,6 @@
 #include "module.h"
 #include "req.h"
 #include "win.h"
-#include "xad.h"
 
 #include "Avalanche_rev.h"
 
@@ -54,10 +53,11 @@ void open_info_req(char *message, char *buttons, void *awin)
 
 void show_about(void *awin)
 {
-	char *msg = AllocVec(strlen(MSG_COPYRIGHT) + strlen(locale_get_string( MSG_GPL )) + 1, MEMF_CLEAR);
+	int len = strlen(MSG_COPYRIGHT) + strlen(locale_get_string( MSG_GPL )) + 1;
+	char *msg = AllocVec(len, MEMF_PRIVATE | MEMF_CLEAR);
 
 	if(msg) {
-		sprintf(msg, "%s%s", MSG_COPYRIGHT, locale_get_string(MSG_GPL));
+		snprintf(msg, len, "%s%s", MSG_COPYRIGHT, locale_get_string(MSG_GPL));
 		open_info_req(msg, locale_get_string(MSG_OK), awin);
 		FreeVec(msg);
 	}
@@ -86,9 +86,9 @@ void show_error(long code, void *awin)
 	char message[100];
 
 	if(code == -1) {
-		sprintf(message,  locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xadmaster.library", 12 );
+		snprintf(message, 100, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xadmaster.library", 12 );
 	} else {
-		sprintf(message, "%s", xad_error(code));
+		snprintf(message, 100, "%s", module_get_error(awin, code));
 	}
 
 	open_error_req(message, locale_get_string(MSG_OK), awin);
@@ -118,7 +118,7 @@ ULONG ask_question(void *awin, char *q, char *f)
 	char message[200];
 	int ret = 0;
 
-	sprintf(message, q, f);
+	snprintf(message, 200, q, f);
 
 	Object *obj = RequesterObj,
 			REQ_TitleText, VERS,
