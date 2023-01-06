@@ -127,37 +127,37 @@ static void config_save(struct avalanche_config *config)
 		}
 
 		if(config->win_x) {
-			sprintf(tt_winx, "WINX=%lu", config->win_x);
+			snprintf(tt_winx, 15, "WINX=%lu", config->win_x);
 			newtooltypes[3] = tt_winx;
 		} else {
 			newtooltypes[3] = "(WINX=0)";
 		}
 
 		if(config->win_y) {
-			sprintf(tt_winy, "WINY=%lu", config->win_y);
+			snprintf(tt_winy, 15,"WINY=%lu", config->win_y);
 			newtooltypes[4] = tt_winy;
 		} else {
 			newtooltypes[4] = "(WINY=0)";
 		}
 
 		if(config->win_w) {
-			sprintf(tt_winw, "WINW=%lu", config->win_w);
+			snprintf(tt_winw, 15, "WINW=%lu", config->win_w);
 			newtooltypes[5] = tt_winw;
 		} else {
 			newtooltypes[5] = "(WINW=0)";
 		}
 
 		if(config->win_h) {
-			sprintf(tt_winh, "WINH=%lu", config->win_h);
+			snprintf(tt_winh, 15, "WINH=%lu", config->win_h);
 			newtooltypes[6] = tt_winh;
 		} else {
 			newtooltypes[6] = "(WINH=0)";
 		}
 
 		if(config->progress_size != PROGRESS_SIZE_DEFAULT) {
-			sprintf(tt_progresssize, "PROGRESSSIZE=%lu", config->progress_size);
+			snprintf(tt_progresssize, 20, "PROGRESSSIZE=%lu", config->progress_size);
 		} else {
-			sprintf(tt_progresssize, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
+			snprintf(tt_progresssize, 20, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
 		}
 
 		newtooltypes[7] = tt_progresssize;
@@ -194,16 +194,16 @@ static void config_save(struct avalanche_config *config)
 		}
 
 		if(config->cx_pri != 0) {
-			sprintf(tt_cxpri, "CX_PRIORITY=%d", config->cx_pri);
+			snprintf(tt_cxpri, 20, "CX_PRIORITY=%d", config->cx_pri);
 		} else {
-			sprintf(tt_cxpri, "(CX_PRIORITY=0)");
+			snprintf(tt_cxpri, 20, "(CX_PRIORITY=0)");
 		}
 		newtooltypes[13] = tt_cxpri;
 
 		if((config->cx_popkey) && (strcmp(config->cx_popkey, "rawkey ctrl alt a") != 0)) {
-			sprintf(tt_cxpopkey, "CX_POPKEY=%s", config->cx_popkey + 7);
+			snprintf(tt_cxpopkey, 50, "CX_POPKEY=%s", config->cx_popkey + 7);
 		} else {
-			sprintf(tt_cxpopkey, "(CX_POPKEY=ctrl alt a)");
+			snprintf(tt_cxpopkey, 50, "(CX_POPKEY=ctrl alt a)");
 		}
 		newtooltypes[14] = tt_cxpopkey;
 

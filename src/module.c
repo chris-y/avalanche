@@ -100,6 +100,17 @@ const char *module_get_subformat(void *awin)
 	return NULL;
 }
 
+const char *module_get_error(void *awin, long code)
+{
+	switch(window_get_archiver(awin)) {
+		case ARC_XAD:
+			return xad_error(code);
+		break;
+	}
+
+	return NULL;
+}
+
 const char *module_get_read_module(void *awin)
 {
 	switch(window_get_archiver(awin)) {

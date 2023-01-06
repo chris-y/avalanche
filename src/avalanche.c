@@ -234,32 +234,44 @@ static void close_all_windows()
 static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window, BOOL arexx,
 				struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
-	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+	if(wbarg->wa_Lock) {
+		if(*wbarg->wa_Name) {
+			char *appwin_archive = NULL;
+			if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
+				NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
+				AddPart(appwin_archive, wbarg->wa_Name, 512);
+				if(arexx) {
+					char cmd[1024];
+					snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
+					FreeVec(appwin_archive);
+					ami_arexx_send(cmd);
+					return TRUE;
+				}
+				if(new_window == FALSE) {
+					window_update_archive(awin, appwin_archive);
+				} else {
+					awin = window_create(&config, appwin_archive, win_port, app_port);
+				}
+				FreeVec(appwin_archive);
+				if(awin) {
+					/* Ensure our window is open to avoid confusion */
+					window_open(awin, appwin_mp);
+					window_req_open_archive(awin, &config, TRUE);
+				}
+			}
 
-		char *appwin_archive = NULL;
-		if(appwin_archive = AllocVec(512, MEMF_CLEAR)) {
-			NameFromLock(wbarg->wa_Lock, appwin_archive, 512);
-			AddPart(appwin_archive, wbarg->wa_Name, 512);
-			if(arexx) {
-				char cmd[1024];
-				snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
-				ami_arexx_send(cmd);
-				return TRUE;
-			}
-			if(new_window == FALSE) {
-				window_update_archive(awin, appwin_archive);
-			} else {
-				awin = window_create(&config, appwin_archive, win_port, app_port);
-			}
-			FreeVec(appwin_archive);
-			if(awin) {
-				/* Ensure our window is open to avoid confusion */
-				window_open(awin, appwin_mp);
-				window_req_open_archive(awin, &config, TRUE);
+			return TRUE;
+		} else {
+			if(arexx) return FALSE;
+			if(awin == NULL) return FALSE;
+
+			char *appwin_dir = NULL;
+			if(appwin_dir = AllocVec(512, MEMF_CLEAR)) {
+				NameFromLock(wbarg->wa_Lock, appwin_dir, 512);
+				window_update_sourcedir(awin, appwin_dir);
+				FreeVec(appwin_dir);
 			}
 		}
-
-		return TRUE;
 	}
 
 	return FALSE;
@@ -297,7 +309,6 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 	ULONG result;
 	UWORD code;
 	ULONG tmp = 0;
-	struct Node *node;
 	
 	void *awin = NULL;
 	void *main_awin = NULL;
@@ -548,9 +559,10 @@ static void gettooltypes(UBYTE **tooltypes)
 	config.cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
 
 	s = ArgString(tooltypes, "CX_POPKEY", "ctrl alt a");
-	if(config.cx_popkey = AllocVec(strlen("rawkey ") + strlen(s) + 1, MEMF_ANY | MEMF_CLEAR)) {
-		strcpy(config.cx_popkey, "rawkey ");
-		strcat(config.cx_popkey, s);
+	int len = strlen("rawkey ") + strlen(s) + 1;
+	if(config.cx_popkey = AllocVec(len, MEMF_ANY | MEMF_CLEAR)) {
+		strncpy(config.cx_popkey, "rawkey ", len);
+		strncat(config.cx_popkey, s, len);
 	}
 
 	config.sourcedir = strdup(ArgString(tooltypes, "SOURCEDIR", "RAM:"));
@@ -621,7 +633,7 @@ int main(int argc, char **argv)
 
 		if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
 			if(config.progname = AllocVec(40, MEMF_CLEAR)) {
-				strcpy(config.progname, "PROGDIR:");
+				strncpy(config.progname, "PROGDIR:", 40);
 				AddPart(config.progname, wbarg->wa_Name, 40);
 			}
 		}
@@ -638,7 +650,7 @@ int main(int argc, char **argv)
 	fill_menu_labels();
 
 	if(tmp = AllocVec(20, MEMF_CLEAR)) {
-		sprintf(tmp, "Avalanche.%lx", GetUniqueID());
+		snprintf(tmp, 20, "Avalanche.%lx", GetUniqueID());
 		AddPart(config.tmpdir, tmp, 100);
 		UnLock(CreateDir(config.tmpdir));
 		FreeVec(tmp);
@@ -650,11 +662,9 @@ int main(int argc, char **argv)
 	} else {
 		BOOL arc_opened = FALSE;
 		if(WBenchMsg) {
-			struct WBArg *wbarg;
-
 			if(WBenchMsg->sm_NumArgs > 0) {
 				/* Started as default tool, get the path+filename of the (first) project */
-				wbarg = WBenchMsg->sm_ArgList + 1;
+				struct WBArg *wbarg = WBenchMsg->sm_ArgList + 1;
 
 				if(open_archive_from_wbarg_arexx(wbarg)) {
 					if(WBenchMsg->sm_NumArgs > 2) {
@@ -663,7 +673,7 @@ int main(int argc, char **argv)
 							open_archive_from_wbarg_arexx(wbarg);
 						}
 					}
-				arc_opened = TRUE;
+					arc_opened = TRUE;
 				}
 			}
 		}

@@ -79,7 +79,7 @@ void xad_exit(void)
 	libs_xad_exit();
 }
 
-char *xad_error(long code)
+const char *xad_error(long code)
 {
 	return xadGetErrorText((ULONG)code);
 }
@@ -394,7 +394,8 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 
 	if(fi || di) {
 		char destfile[1024];
-		strcpy(destfile, dest);
+		strncpy(destfile, dest, 1023);
+		destfile[1023] = 0;
 
 		if(fi) {
 			fn = fi->xfi_FileName;
