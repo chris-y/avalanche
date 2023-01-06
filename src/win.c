@@ -1020,7 +1020,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 	}
 
 	/* Refresh the archive */
-	if(ok) window_req_open_archive(aw, config, TRUE);
+	window_req_open_archive(aw, config, TRUE);
 }
 
 static void window_edit_del(void *awin, struct avalanche_config *config)
