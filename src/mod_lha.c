@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 #include <exec/types.h>
 
 #include "module.h"
@@ -21,10 +22,10 @@
 static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 {
 	int err;
-	char cmd[100];
+	char cmd[1024];
 	
 	for(int i = 0; i < count; i++) {
-		snprintf(cmd, 100, "lha -I d \"%s\" \"%s\"", archive, files[i]);
+		snprintf(cmd, 1024, "lha -I d \"%s\" \"%s\"", archive, files[i]);
 		err = SystemTags(cmd,
 					SYS_Input, NULL,
 					SYS_Output, NULL,
@@ -39,8 +40,9 @@ static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 static BOOL mod_lha_add(void *awin, char *archive, char *file)
 {
 	int err;
-	char cmd[100];
-	snprintf(cmd, 100, "lha -I a \"%s\" \"%s\"", archive, file);
+	char cmd[1024];
+	snprintf(cmd, 1024, "lha -I a \"%s\" \"%s\"", archive, file);
+DebugPrintF("%s\n", cmd);
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, NULL,

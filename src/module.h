@@ -25,7 +25,6 @@ struct module_functions {
 
 const char *module_get_item_filename(void *awin, void *userdata);
 void module_free(void *awin);
-const char *module_get_format(void *awin);
 const char *module_get_subformat(void *awin);
 const char *module_get_read_module(void *awin);
 const char *module_get_error(void *awin, long code);

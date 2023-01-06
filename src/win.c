@@ -175,8 +175,6 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awdzm->adzm_UserData;
 
-DebugPrintF("%ld\n", awdzm->adzm_Action);
-	
 	/* Only change pointer if we are able to add files */
 	if(aw->mf.add == NULL) return 0;
 

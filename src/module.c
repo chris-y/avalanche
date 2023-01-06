@@ -75,7 +75,7 @@ void module_free(void *awin)
 	}
 }
 
-static const char *module_get_format(void *awin)
+const char *module_get_format(void *awin)
 {
 	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
