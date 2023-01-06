@@ -446,9 +446,8 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 											if(file = AllocVec(512, MEMF_CLEAR)) {
 												NameFromLock(wbarg->wa_Lock, file, 512);
 												AddPart(file, wbarg->wa_Name, 512);
-												if(window_edit_add((void *)appmsg->am_UserData, file)) {
-													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
-												}
+												window_edit_add((void *)appmsg->am_UserData, file);
+												window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 												FreeVec(file);
 											}
 										}
