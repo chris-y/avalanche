@@ -1,5 +1,5 @@
-CC := vc +newlib
-CFLAGS := -static -O3 -D__USE_INLINE__ -ISDK:local/common/include
+CC := gcc -std=c99
+CFLAGS := -gstabs -D__USE_INLINE__
 LIBS := -lamiga
 VPATH := ..
 
