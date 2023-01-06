@@ -26,9 +26,12 @@ static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 	
 	for(int i = 0; i < count; i++) {
 		snprintf(cmd, 1024, "lha -I d \"%s\" \"%s\"", archive, files[i]);
+
 		err = SystemTags(cmd,
 					SYS_Input, NULL,
 					SYS_Output, NULL,
+//					SYS_Error, NULL,
+					NP_Name, "Avalanche LhA Delete process",
 					TAG_DONE);
 
 		if(err == -1) return FALSE;
@@ -42,10 +45,12 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file)
 	int err;
 	char cmd[1024];
 	snprintf(cmd, 1024, "lha -I a \"%s\" \"%s\"", archive, file);
-DebugPrintF("%s\n", cmd);
+
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, NULL,
+//				SYS_Error, NULL,
+				NP_Name, "Avalanche LhA Add process",
 				TAG_DONE);
 	
 	if(err == -1) return FALSE;
