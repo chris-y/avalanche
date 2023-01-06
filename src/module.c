@@ -165,6 +165,14 @@ BOOL module_recog(void* fullfilename)
 
 /*** Editing ***/
 
+BOOL module_has_add(void *awin)
+{
+	struct module_functions *mf = window_get_module_funcs(awin);
+	
+	if(mf->add != NULL) return TRUE;
+	return FALSE;
+}
+
 void module_register(void *awin, struct module_functions *mf)
 {
 	const char *format = module_get_format(awin);

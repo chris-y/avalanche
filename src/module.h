@@ -33,6 +33,8 @@ void module_exit(void);
 BOOL module_recog(void* fullfilename);
 void module_register(void *awin, struct module_functions *mf);
 
+BOOL module_has_add(void *awin);
+
 /*** Register extended modules ***/
 void mod_zip_register(struct module_functions *funcs);
 void mod_lha_register(struct module_functions *funcs);

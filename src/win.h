@@ -20,6 +20,7 @@
 #include "avalanche.h"
 
 struct MsgPort;
+struct module_functions;
 
 /* Basic window functions */
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
@@ -47,6 +48,7 @@ Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
 ULONG window_get_archiver(void *awin);
+struct module_functions *window_get_module_funcs(void *awin);
 
 /* Modify archive */
 BOOL window_edit_add(void *awin, char *file);

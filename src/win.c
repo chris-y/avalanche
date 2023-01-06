@@ -1003,6 +1003,13 @@ ULONG window_get_archiver(void *awin)
 	return aw->archiver;
 }
 
+struct module_functions *window_get_module_funcs(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	return &aw->mf;
+}
+
 ULONG window_handle_input(void *awin, UWORD *code)
 {
 	return RA_HandleInput(window_get_object(awin), code);

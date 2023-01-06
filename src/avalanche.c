@@ -440,21 +440,30 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 								break;
 
 								case 1: // listbrowser
-									for(int i = 0; i < appmsg->am_NumArgs; i++) {
-										if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-											char *file = NULL;
-											if(file = AllocVec(512, MEMF_CLEAR)) {
-												NameFromLock(wbarg->wa_Lock, file, 512);
-												AddPart(file, wbarg->wa_Name, 512);
-												window_edit_add((void *)appmsg->am_UserData, file);
-												window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
-												FreeVec(file);
+									if(module_has_add((void *)appmsg->am_UserData)) {
+										for(int i = 0; i < appmsg->am_NumArgs; i++) {
+											if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+												char *file = NULL;
+												if(file = AllocVec(512, MEMF_CLEAR)) {
+													NameFromLock(wbarg->wa_Lock, file, 512);
+													AddPart(file, wbarg->wa_Name, 512);
+													window_edit_add((void *)appmsg->am_UserData, file);
+													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
+													FreeVec(file);
+												}
+											}
+											wbarg++;
+										}
+									} else {
+										if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+											if(appmsg->am_NumArgs > 1) {
+												for(int i = 1; i < appmsg->am_NumArgs; i++) {
+													wbarg++;
+													open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+												}
 											}
 										}
-										wbarg++;
 									}
-									//TODO needs refresh
-
 								break;
 							}
 						break;
