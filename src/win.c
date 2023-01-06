@@ -19,6 +19,7 @@
 #include <proto/asl.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/locale.h>
 #include <proto/utility.h>
@@ -175,16 +176,36 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awdzm->adzm_UserData;
 
-	/* Only change pointer if we are able to add files */
+	/* Only change if we are able to add files */
 	if(aw->mf.add == NULL) return 0;
+
+	/* This hook function does some very basic drawing to highlight the listbrowser
+	 * in event that writing is allowed and the user is dragging a file over the listbrowser */
+
+	ULONG left, top, width, height;
+	
+	GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
+	GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
+	GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
+	GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
 
 	switch(awdzm->adzm_Action) {
 		case ADZMACTION_Enter:
-			SetWindowPointer(aw->windows[WID_MAIN], WA_PointerType, POINTERTYPE_COPY, TAG_DONE);
+			SetAPen(awdzm->adzm_RastPort, 3);
+			Move(awdzm->adzm_RastPort, left -1, top - 1);
+			Draw(awdzm->adzm_RastPort, left + width + 1, top - 1);
+			Draw(awdzm->adzm_RastPort, left + width + 1, top + height + 1);
+			Draw(awdzm->adzm_RastPort, left - 1, top + height + 1);
+			Draw(awdzm->adzm_RastPort, left - 1, top - 1);
 		break;
 		
 		case ADZMACTION_Leave:
-			SetWindowPointer(aw->windows[WID_MAIN], TAG_DONE);
+			SetAPen(awdzm->adzm_RastPort, 0);
+			Move(awdzm->adzm_RastPort, left -1, top - 1);
+			Draw(awdzm->adzm_RastPort, left + width + 1, top - 1);
+			Draw(awdzm->adzm_RastPort, left + width + 1, top + height + 1);
+			Draw(awdzm->adzm_RastPort, left - 1, top + height + 1);
+			Draw(awdzm->adzm_RastPort, left - 1, top - 1);
 		break;
 	}
 

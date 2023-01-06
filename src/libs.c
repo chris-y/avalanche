@@ -124,8 +124,10 @@
 ALIB_STRUCT(Asl)
 #ifdef __amigaos4__
 ALIB_STRUCT(Commodities)
+ALIB_STRUCT(Graphics)
 #else
 ALIB_STRUCT(Cx)
+ALIB_STRUCT(Gfx)
 #endif
 
 ALIB_STRUCT(Icon)
@@ -207,8 +209,10 @@ BOOL libs_open(void)
 	ALIB_OPEN("asl.library",          36, Asl)
 #ifdef __amigaos4__
 	ALIB_OPEN("commodities.library",  37, Commodities)
+	ALIB_OPEN("graphics.library",     39, Graphics)
 #else
 	ALIB_OPEN("commodities.library",  37, Cx)
+	ALIB_OPEN("graphics.library",     39, Gfx)
 #endif
 	ALIB_OPEN("icon.library",         44, Icon)
 	ALIB_OPEN("intuition.library",    40, Intuition)
@@ -249,8 +253,10 @@ void libs_close(void)
 	ALIB_CLOSE(Asl)
 #ifdef __amigaos4__
 	ALIB_CLOSE(Commodities)
+	ALIB_CLOSE(Graphics)
 #else
 	ALIB_CLOSE(Cx)
+	ALIB_CLOSE(Gfx)
 #endif
 	ALIB_CLOSE(Icon)
 	ALIB_CLOSE(Intuition)
