@@ -184,7 +184,7 @@ BOOL libs_zip_init(void)
 {
 #ifdef __amigaos4__
 	if(ZipBase == NULL) {
-		ALIB_OPEN("zip.library",  53, Zip)
+		ALIB_OPEN("zip.library",  54, Zip)
 	}
 	
 	return TRUE;
