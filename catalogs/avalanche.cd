@@ -189,3 +189,9 @@ Skip|Retry|Abort
 MSG_ARCHIVEMUSTHAVEENTRIES (//)
 Archive must contain at least one file.
 ;
+MSG_UNABLETOOPENFILE (//)
+Unable to open file
+;
+MSG_OUTOFMEMORY (//)
+Not enough memory
+;

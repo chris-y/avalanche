@@ -104,7 +104,11 @@ const char *module_get_error(void *awin, long code)
 {
 	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
+		case ARC_NONE:
 			return xad_error(code);
+		break;
+		case ARC_XFD:
+			return xfd_error(code);
 		break;
 	}
 

@@ -103,6 +103,8 @@
 #define MSG_LHAERROR 59
 #define MSG_SKIPRETRYABORT 60
 #define MSG_ARCHIVEMUSTHAVEENTRIES 61
+#define MSG_UNABLETOOPENFILE 62
+#define MSG_OUTOFMEMORY 63
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -174,6 +176,8 @@
 #define MSG_LHAERROR_STR "Error processing file: %s"
 #define MSG_SKIPRETRYABORT_STR "Skip|Retry|Abort"
 #define MSG_ARCHIVEMUSTHAVEENTRIES_STR "Archive must contain at least one file."
+#define MSG_UNABLETOOPENFILE_STR "Unable to open file"
+#define MSG_OUTOFMEMORY_STR "Not enough memory"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -309,6 +313,10 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_SKIPRETRYABORT_STR "\x00\x00"
     "\x00\x00\x00\x3D\x00\x28"
     MSG_ARCHIVEMUSTHAVEENTRIES_STR "\x00"
+    "\x00\x00\x00\x3E\x00\x14"
+    MSG_UNABLETOOPENFILE_STR "\x00"
+    "\x00\x00\x00\x3F\x00\x12"
+    MSG_OUTOFMEMORY_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

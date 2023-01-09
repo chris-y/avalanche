@@ -26,6 +26,10 @@
 #include "req.h"
 #include "win.h"
 
+#define XFD_ERR_LIBOPEN -1
+#define XFD_ERR_MEM -2
+#define XFD_ERR_FILEOPEN -3
+
 struct xfd_userdata {
 	struct xfdBufferInfo *bi;
 	char *fn;
@@ -58,6 +62,22 @@ const char *xfd_get_arc_format(void *awin)
 	if(!xu->bi) return NULL;
 	
 	return xu->bi->xfdbi_PackerName;
+}
+
+const char *xfd_error(long code)
+{
+	if(code < 0) {
+		switch(code) {
+			case XFD_ERR_MEM:
+				return locale_get_string(MSG_OUTOFMEMORY);
+			break;
+			case XFD_ERR_FILEOPEN:
+				return locale_get_string(MSG_UNABLETOOPENFILE);
+			break;	
+		}
+	}
+
+	return NULL;
 }
 
 BOOL xfd_recog(char *file)
@@ -104,7 +124,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	BOOL res = FALSE;
 
 	libs_xfd_init();
-	if(xfdMasterBase == NULL) return -1;
+	if(xfdMasterBase == NULL) return XFD_ERR_LIBOPEN;
 
 	struct xfdMasterBase *xfdmb = (struct xfdMasterBase *)xfdMasterBase;
 	
@@ -112,7 +132,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	struct xfd_userdata *xu = (struct xfd_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xfd_userdata));
 
 	xu->bi = xfdAllocObject(XFDOBJ_BUFFERINFO);
-	if(xu->bi == NULL) return -2;
+	if(xu->bi == NULL) return XFD_ERR_MEM;
 	struct xfdBufferInfo *bi = xu->bi;
 
 	if(fh = Open(file, MODE_OLDFILE)) {
@@ -128,7 +148,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 			Close(fh);
 			xfdFreeObject(xu->bi);
 			xu->bi = NULL;
-			return -2;
+			return XFD_ERR_MEM;
 		}
 
 		len = Read(fh, xu->buffer, len);
@@ -149,7 +169,8 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 		return 0;
 	}
 
-	return -3;
+	xfd_free(awin);
+	return XFD_ERR_FILEOPEN;
 }
 
 long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len))
