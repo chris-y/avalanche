@@ -100,6 +100,9 @@
 #define MSG_ADDFILES 56
 #define MSG_DELFILES 57
 #define MSG_UNABLETOOPENZIP 58
+#define MSG_LHAERROR 59
+#define MSG_SKIPRETRYABORT 60
+#define MSG_ARCHIVEMUSTHAVEENTRIES 61
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -168,6 +171,9 @@
 #define MSG_ADDFILES_STR "Add files..."
 #define MSG_DELFILES_STR "Delete selected items..."
 #define MSG_UNABLETOOPENZIP_STR "Unable to open Zip for writing"
+#define MSG_LHAERROR_STR "Error processing file: %s"
+#define MSG_SKIPRETRYABORT_STR "Skip|Retry|Abort"
+#define MSG_ARCHIVEMUSTHAVEENTRIES_STR "Archive must contain at least one file."
 
 #endif /* CATCOMP_STRINGS */
 
@@ -297,6 +303,12 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_DELFILES_STR "\x00\x00"
     "\x00\x00\x00\x3A\x00\x20"
     MSG_UNABLETOOPENZIP_STR "\x00\x00"
+    "\x00\x00\x00\x3B\x00\x1A"
+    MSG_LHAERROR_STR "\x00"
+    "\x00\x00\x00\x3C\x00\x12"
+    MSG_SKIPRETRYABORT_STR "\x00\x00"
+    "\x00\x00\x00\x3D\x00\x28"
+    MSG_ARCHIVEMUSTHAVEENTRIES_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

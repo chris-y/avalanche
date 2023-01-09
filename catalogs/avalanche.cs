@@ -184,3 +184,12 @@ Delete selected items...
 MSG_UNABLETOOPENZIP
 Unable to open Zip for writing
 ;
+MSG_LHAERROR
+Error processing file: %s
+;
+MSG_SKIPRETRYABORT
+Skip|Retry|Abort
+;
+MSG_ARCHIVEMUSTHAVEENTRIES
+Archive must contain at least one file.
+;

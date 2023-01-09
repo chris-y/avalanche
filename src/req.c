@@ -63,8 +63,10 @@ void show_about(void *awin)
 	}
 }
 
-void open_error_req(char *message, char *button, void *awin)
+int open_error_req(char *message, char *button, void *awin)
 {
+	int ret = 0;
+
 	Object *obj = RequesterObj,
 			REQ_TitleText, VERS,
 			REQ_Type, REQTYPE_INFO,
@@ -74,11 +76,13 @@ void open_error_req(char *message, char *button, void *awin)
 		End;
 
 	if(obj) {
-		OpenRequester(obj, window_get_window(awin));
+		ret = OpenRequester(obj, window_get_window(awin));
 		DisposeObject(obj);
 	} else {
 		printf( locale_get_string( MSG_UNABLETOOPENREQUESTERTOSHOWERRORS ) , message, button);
 	}
+	
+	return ret;
 }
 
 void show_error(long code, void *awin)

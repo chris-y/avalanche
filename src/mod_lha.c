@@ -17,11 +17,22 @@
 #include <proto/exec.h>
 #include <exec/types.h>
 
+#include "locale.h"
 #include "module.h"
+#include "req.h"
+
+static int mod_lha_error(void *awin, int err, char *file)
+{
+	char msg[100];
+
+	snprintf(msg, 100, locale_get_string(MSG_LHAERROR), file);
+	return open_error_req(msg, locale_get_string(MSG_SKIPRETRYABORT), awin);
+}
 
 static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 {
 	int err;
+	int user_choice;
 	char cmd[1024];
 	
 	for(int i = 0; i < count; i++) {
@@ -30,11 +41,26 @@ static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 		err = SystemTags(cmd,
 					SYS_Input, NULL,
 					SYS_Output, NULL,
-//					SYS_Error, NULL,
+					SYS_Error, NULL,
 					NP_Name, "Avalanche LhA Delete process",
 					TAG_DONE);
 
-		if(err == -1) return FALSE;
+		if(err != 0) {
+			user_choice = mod_lha_error(awin, err, files[i]);
+			
+			switch(user_choice) {
+				case 0: // abort
+					return FALSE;
+				break;
+				
+				case 1: // skip
+				break;
+				
+				case 2: // retry
+					i--;
+				break;
+			}
+		}
 	}
 
 	return TRUE;
@@ -49,12 +75,27 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file)
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, NULL,
-//				SYS_Error, NULL,
+				SYS_Error, NULL,
 				NP_Name, "Avalanche LhA Add process",
 				TAG_DONE);
 	
-	if(err == -1) return FALSE;
-	
+	if(err != 0) {
+		int user_choice = mod_lha_error(awin, err, file);
+		
+		switch(user_choice) {
+			case 0: // abort
+				return FALSE;
+			break;
+			
+			case 1: // skip
+			break;
+			
+			case 2: // retry
+				return mod_lha_add(awin, archive, file);
+			break;
+		}
+	}
+
 	return TRUE;
 }
 

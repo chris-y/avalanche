@@ -594,6 +594,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WA_Left, config->win_x,
 		WA_Width, config->win_w,
 		WA_Height, config->win_h,
+		WA_IDCMP, IDCMP_MENUPICK | IDCMP_RAWKEY | IDCMP_GADGETUP | IDCMP_NEWSIZE,
 		WINDOW_NewMenu, aw->menu,
 		WINDOW_IconifyGadget, TRUE,
 		WINDOW_IconTitle, "Avalanche",
@@ -674,6 +675,49 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	}
 }
 
+static void window_remove_dropzones(struct avalanche_window *aw)
+{
+	if(aw->appwindz) {
+		for(int i=0; i<AVALANCHE_DROPZONES; i++) {
+			RemoveAppWindowDropZone(aw->appwin, aw->appwindz[i]);
+			aw->appwindz[i] = NULL;
+		}
+	}
+}
+
+static void window_add_dropzones(struct avalanche_window *aw)
+{
+	if(aw->appwin) {
+		aw->appwindzhook.h_Entry = appwindzhookfunc;
+		aw->appwindzhook.h_SubEntry = NULL;
+		aw->appwindzhook.h_Data = NULL;
+		
+		/* listbrowser */
+		ULONG left, top, width, height;
+		
+		GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
+		GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
+		GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
+		GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
+
+		aw->appwindz[1] = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
+										WBDZA_Left, left,
+										WBDZA_Top, top, 
+										WBDZA_Width, width,
+										WBDZA_Height, height,						
+										WBDZA_Hook, &aw->appwindzhook,
+									TAG_END);
+
+		/* whole window */
+		aw->appwindz[0] = AddAppWindowDropZone(aw->appwin, 0, (ULONG)aw,
+										WBDZA_Left, 0,
+										WBDZA_Top, 0, 
+										WBDZA_Width, aw->windows[WID_MAIN]->Width,
+										WBDZA_Height, aw->windows[WID_MAIN]->Height,						
+									TAG_END);
+	}
+}
+
 void window_open(void *awin, struct MsgPort *appwin_mp)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -687,34 +731,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
-		
-			aw->appwindzhook.h_Entry = appwindzhookfunc;
-			aw->appwindzhook.h_SubEntry = NULL;
-			aw->appwindzhook.h_Data = NULL;
-			
-			/* listbrowser */
-			ULONG left, top, width, height;
-			
-			GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
-			GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
-			GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
-			GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
-
-			aw->appwindz[1] = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
-											WBDZA_Left, left,
-											WBDZA_Top, top, 
-											WBDZA_Width, width,
-											WBDZA_Height, height,						
-											WBDZA_Hook, &aw->appwindzhook,
-										TAG_END);
-
-			/* whole window */
-			aw->appwindz[0] = AddAppWindowDropZone(aw->appwin, 0, (ULONG)aw,
-											WBDZA_Left, 0,
-											WBDZA_Top, 0, 
-											WBDZA_Width, aw->windows[WID_MAIN]->Width,
-											WBDZA_Height, aw->windows[WID_MAIN]->Height,						
-										TAG_END);
+			window_add_dropzones(aw);
 		
 			/* Refresh archive on window open */
 			if(aw->archiver != ARC_NONE) window_req_open_archive(awin, get_config(), TRUE);
@@ -731,12 +748,7 @@ void window_close(void *awin, BOOL iconify)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	if(aw->windows[WID_MAIN]) {
-		if(aw->appwindz) {
-			for(int i=0; i<AVALANCHE_DROPZONES; i++) {
-				RemoveAppWindowDropZone(aw->appwin, aw->appwindz[i]);
-				aw->appwindz[i] = NULL;
-			}
-		}
+		window_remove_dropzones(aw);
 		RemoveAppWindow(aw->appwin);
 		if(iconify) {
 			RA_Iconify(aw->objects[OID_MAIN]);
@@ -1042,7 +1054,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 			file = AllocVec(len, MEMF_PRIVATE);
 			strcpy(file, aslreq->fr_Drawer);
 			AddPart(file, aslreq->fr_File, len);
-			ok = window_edit_add(aw, file);
+			ok = window_edit_add(aw, file); /* TRUE = cont, FALSE = abort */
 		}
 		FreeAslRequest(aslreq);
 	}
@@ -1073,34 +1085,38 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 
 	/* Count selected nodes */
 	ULONG entries = 0;
+	ULONG total = 0;
 	for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
 		void *userdata = window_get_lbnode(awin, node);
-		if(userdata) {
-			entries++;
-		}
+		if(userdata) entries++;
+		total++;
 	}
 
-	/* Create array of names */
-	char **name_array = AllocVec(entries * sizeof(char *), MEMF_CLEAR | MEMF_PRIVATE);
-	ULONG i = 0;
+	if(entries < total) {
+		/* Create array of names */
+		char **name_array = AllocVec(entries * sizeof(char *), MEMF_CLEAR | MEMF_PRIVATE);
+		ULONG i = 0;
 
-	if(name_array) {
+		if(name_array) {
 
-		for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
-			void *userdata = window_get_lbnode(awin, node);
-			if(userdata) {
-				name_array[i] = strdup(module_get_item_filename(awin, userdata));
-				i++;
+			for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+				void *userdata = window_get_lbnode(awin, node);
+				if(userdata) {
+					name_array[i] = strdup(module_get_item_filename(awin, userdata));
+					i++;
+				}
 			}
-		}
 
-		module_free(aw);
-		aw->mf.del(aw, aw->archive, name_array, entries);
+			module_free(aw);
+			aw->mf.del(aw, aw->archive, name_array, entries);
 
-		for(i = 0; i<entries; i++) {
-			free(name_array[i]);
+			for(i = 0; i<entries; i++) {
+				free(name_array[i]);
+			}
+			FreeVec(name_array);
 		}
-		FreeVec(name_array);
+	} else {
+		open_error_req(locale_get_string(MSG_ARCHIVEMUSTHAVEENTRIES), locale_get_string(MSG_OK), awin);
 	}
 
 	window_disable_gadgets(awin, FALSE);
@@ -1168,8 +1184,13 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		case WMHI_UNICONIFY:
 			window_open(awin, appwin_mp);
 		break;
+		
+		case WMHI_NEWSIZE:
+			window_remove_dropzones(aw);
+			window_add_dropzones(aw);
+		break;
 				
-		 case WMHI_MENUPICK:
+		case WMHI_MENUPICK:
 			while((code != MENUNULL) && (done != WIN_DONE_CLOSED)) {
 				if(aw->windows[WID_MAIN] == NULL) continue;
 				struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
