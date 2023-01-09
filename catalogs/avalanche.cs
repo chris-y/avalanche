@@ -175,3 +175,9 @@ Extract here
 MSG_SNAPSHOT
 Snapshot window
 ;
+MSG_UNABLETOOPENFILE
+Unable to open file
+;
+MSG_OUTOFMEMORY
+Not enough memory
+;

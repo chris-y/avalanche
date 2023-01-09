@@ -97,6 +97,8 @@
 #define MSG_CXDESCRIPTION 53
 #define MSG_APPMENU_EXTRACTHERE 54
 #define MSG_SNAPSHOT 55
+#define MSG_UNABLETOOPENFILE 56
+#define MSG_OUTOFMEMORY 57
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -162,6 +164,8 @@
 #define MSG_CXDESCRIPTION_STR "Unarchive GUI for XAD/XFD"
 #define MSG_APPMENU_EXTRACTHERE_STR "Extract here"
 #define MSG_SNAPSHOT_STR "Snapshot window"
+#define MSG_UNABLETOOPENFILE_STR "Unable to open file"
+#define MSG_OUTOFMEMORY_STR "Not enough memory"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -285,6 +289,10 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_APPMENU_EXTRACTHERE_STR "\x00\x00"
     "\x00\x00\x00\x37\x00\x10"
     MSG_SNAPSHOT_STR "\x00"
+    "\x00\x00\x00\x38\x00\x14"
+    MSG_UNABLETOOPENFILE_STR "\x00"
+    "\x00\x00\x00\x39\x00\x12"
+    MSG_OUTOFMEMORY_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

@@ -86,6 +86,7 @@ void show_error(long code, void *awin)
 	char message[100];
 
 	if(code == -1) {
+		/* TODO: check this, code is the same for xfd */
 		snprintf(message, 100, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xadmaster.library", 12 );
 	} else {
 		snprintf(message, 100, "%s", module_get_error(awin, code));

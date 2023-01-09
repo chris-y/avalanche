@@ -364,6 +364,8 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 		}
 	}
 
+	if(err != 0) xad_free(awin);
+
 	return err;
 }
 
