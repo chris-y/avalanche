@@ -47,6 +47,7 @@
 #include "config.h"
 #include "libs.h"
 #include "locale.h"
+#include "misc.h"
 #include "module.h"
 #include "req.h"
 #include "win.h"
