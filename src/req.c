@@ -99,7 +99,7 @@ void show_error(long code, void *awin)
 	open_error_req(message, locale_get_string(MSG_OK), awin);
 }
 
-ULONG ask_quit_req(void *awin)
+ULONG ask_yesno_req(void *awin, char *message)
 {
 	int ret = 1;
 
@@ -107,7 +107,7 @@ ULONG ask_quit_req(void *awin)
 			REQ_TitleText, VERS,
 			REQ_Type, REQTYPE_INFO,
 			REQ_Image, REQIMAGE_WARNING,
-			REQ_BodyText,  locale_get_string( MSG_AREYOUSUREYOUWANTTOEXIT ) ,
+			REQ_BodyText,  message ,
 			REQ_GadgetText,  locale_get_string( MSG_YESNO ) ,
 		End;
 

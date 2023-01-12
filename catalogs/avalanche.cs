@@ -199,3 +199,6 @@ Unable to open file
 MSG_OUTOFMEMORY
 Not enough memory
 ;
+MSG_CONFIRMDELETE
+Are you sure you want to delete the selected entries?
+;

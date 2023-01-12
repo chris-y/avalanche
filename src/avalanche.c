@@ -70,7 +70,7 @@ void free_dest_path(void)
 ULONG ask_quit(void *awin)
 {
 	if(config.confirmquit) {
-		return ask_quit_req(awin);
+		return ask_yesno_req(awin, locale_get_string( MSG_AREYOUSUREYOUWANTTOEXIT ));
 	}
 
 	return 1;

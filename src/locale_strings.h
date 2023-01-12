@@ -105,6 +105,7 @@
 #define MSG_ARCHIVEMUSTHAVEENTRIES 61
 #define MSG_UNABLETOOPENFILE 62
 #define MSG_OUTOFMEMORY 63
+#define MSG_CONFIRMDELETE 64
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -178,6 +179,7 @@
 #define MSG_ARCHIVEMUSTHAVEENTRIES_STR "Archive must contain at least one file."
 #define MSG_UNABLETOOPENFILE_STR "Unable to open file"
 #define MSG_OUTOFMEMORY_STR "Not enough memory"
+#define MSG_CONFIRMDELETE_STR "Are you sure you want to delete the selected entries?"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -317,6 +319,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_UNABLETOOPENFILE_STR "\x00"
     "\x00\x00\x00\x3F\x00\x12"
     MSG_OUTOFMEMORY_STR "\x00"
+    "\x00\x00\x00\x40\x00\x36"
+    MSG_CONFIRMDELETE_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

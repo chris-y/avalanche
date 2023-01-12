@@ -1127,27 +1127,30 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 	}
 
 	if(entries < total) {
-		/* Create array of names */
-		char **name_array = AllocVec(entries * sizeof(char *), MEMF_CLEAR | MEMF_PRIVATE);
-		ULONG i = 0;
+		if(ask_yesno_req(awin, locale_get_string(MSG_CONFIRMDELETE))) {
 
-		if(name_array) {
+			/* Create array of names */
+			char **name_array = AllocVec(entries * sizeof(char *), MEMF_CLEAR | MEMF_PRIVATE);
+			ULONG i = 0;
 
-			for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
-				void *userdata = window_get_lbnode(awin, node);
-				if(userdata) {
-					name_array[i] = strdup(module_get_item_filename(awin, userdata));
-					i++;
+			if(name_array) {
+
+				for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+					void *userdata = window_get_lbnode(awin, node);
+					if(userdata) {
+						name_array[i] = strdup(module_get_item_filename(awin, userdata));
+						i++;
+					}
 				}
-			}
 
-			module_free(aw);
-			aw->mf.del(aw, aw->archive, name_array, entries);
+				module_free(aw);
+				aw->mf.del(aw, aw->archive, name_array, entries);
 
-			for(i = 0; i<entries; i++) {
-				free(name_array[i]);
+				for(i = 0; i<entries; i++) {
+					free(name_array[i]);
+				}
+				FreeVec(name_array);
 			}
-			FreeVec(name_array);
 		}
 	} else {
 		open_error_req(locale_get_string(MSG_ARCHIVEMUSTHAVEENTRIES), locale_get_string(MSG_OK), awin);
