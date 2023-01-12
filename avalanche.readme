@@ -3,7 +3,7 @@ Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
 Version: 1.9
-Architecture: m68k-amigaos >= 3.2.0; ppc-amigaos >= 4.1.0
+Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
 This is a simple GUI for xadmaster.library using the ReAction
@@ -11,7 +11,7 @@ gadget set, written as all the others on Aminet appear to
 require MUI.  It also supports decrunching with xfdmaster.library,
 and scanning for viruses with xvs.library.
 
-This is designed for AmigaOS 3.2 (and tested on that and OS4). It
+This is designed for AmigaOS 3.2.1 (and tested on that and OS4). It
 probably won't work on older versions as it needs a new window.class :)
 All use is at your own risk.
 
