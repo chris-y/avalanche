@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 1.9
+Version: 1.10
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -18,11 +18,9 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Add "snapshot window" option
-   - note that the position is not saved unless save is clicked in prefs
-* Add ToolType to disable the ASL hook (filters ASL req to only show archives)
-* Add ToolType to set the initial drawer visible in ASL requester
-* Fix iconify
-* Rebuilt with optimisations
+* Dragging a drawer into the window now sets the source directory, if
+  an archive hasn't already been opened.
+* Fixed some problems opening archives in certain circumstances.
+* OS4 build now uses newlib.
 
 For full history see documentation inside the archive.

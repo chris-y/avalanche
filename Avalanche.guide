@@ -112,6 +112,12 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}1.10 (12.01.2023)@{uu}
+* Dragging a drawer into the window now sets the source directory, if
+  an archive hasn't already been opened.
+* Fixed some problems opening archives in certain circumstances.
+* OS4 build now uses newlib.
+
 @{u}1.9 (21.12.2022)@{uu}
 * Add "snapshot window" option
    - note that the position is not saved unless save is clicked in prefs

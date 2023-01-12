@@ -18,6 +18,10 @@
 #include <proto/arexx.h>
 #include <classes/arexx.h>
 
+#ifndef __amigaos4__
+#include <clib/alib_protos.h>
+#endif
+
 #include <reaction/reaction_macros.h>
 
 #include "arexx.h"

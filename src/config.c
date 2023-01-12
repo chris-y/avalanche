@@ -22,6 +22,9 @@
 #include <proto/locale.h>
 #include <proto/utility.h>
 
+#ifndef __amigaos4__
+#include <clib/alib_protos.h>
+#endif
 #include <libraries/asl.h>
 
 #include <proto/button.h>

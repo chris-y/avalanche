@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 
 #include "Avalanche_rev.h"
 
-#define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
+#define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022-3 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
 
 void open_info_req(char *message, char *buttons, void *awin)
 {
