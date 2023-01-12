@@ -50,6 +50,7 @@
 #include "config.h"
 #include "libs.h"
 #include "locale.h"
+#include "misc.h"
 #include "module.h"
 #include "req.h"
 #include "win.h"
@@ -532,6 +533,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	struct avalanche_window *aw = AllocVec(sizeof(struct avalanche_window), MEMF_CLEAR | MEMF_PRIVATE);
 	if(!aw) return NULL;
 	
+	ULONG getfile_drawer = GETFILE_Drawer;
 	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
 	
 	if(config->disable_asl_hook) {
@@ -582,6 +584,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	if(archive) {
 		aw->archive = strdup(archive);
 		aw->archive_needs_free = TRUE;
+		getfile_drawer = TAG_IGNORE;
 	}
 	
 	NewMinList(&aw->deletelist);
@@ -617,7 +620,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 						GETFILE_FullFile, aw->archive,
 						GETFILE_ReadOnly, TRUE,
-						GETFILE_Drawer, config->sourcedir,
+						getfile_drawer, config->sourcedir,
 						GETFILE_FilterFunc, asl_hook,
 					End,
 					CHILD_WeightedHeight, 0,
