@@ -442,7 +442,17 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 								case 1: // listbrowser
 									if(module_has_add((void *)appmsg->am_UserData)) {
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
-											BOOL ret = window_edit_add_wbarg(awin, wbarg);
+											BOOL ret = TRUE;
+											if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+												char *file = NULL;
+												if(file = AllocVec(512, MEMF_CLEAR)) {
+													NameFromLock(wbarg->wa_Lock, file, 512);
+													AddPart(file, wbarg->wa_Name, 512);
+													ret = window_edit_add((void *)appmsg->am_UserData, file);
+													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
+													FreeVec(file);
+												}
+											}
 											wbarg++;
 											if(ret == FALSE) break;
 										}

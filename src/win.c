@@ -1032,7 +1032,7 @@ ULONG window_handle_input(void *awin, UWORD *code)
 	return RA_HandleInput(window_get_object(awin), code);
 }
 
-static BOOL window_edit_add(void *awin, char *file)
+BOOL window_edit_add(void *awin, char *file)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
@@ -1044,15 +1044,15 @@ static BOOL window_edit_add(void *awin, char *file)
 	return FALSE;
 }
 
-BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
+static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 {
 	BOOL ret = TRUE;
 	
 	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
 		char *file = NULL;
-		if(file = AllocVec(512, MEMF_CLEAR)) {
-			NameFromLock(wbarg->wa_Lock, file, 512);
-			AddPart(file, wbarg->wa_Name, 512);
+		if(file = AllocVec(1024, MEMF_CLEAR)) {
+			NameFromLock(wbarg->wa_Lock, file, 1024);
+			AddPart(file, wbarg->wa_Name, 1024);
 			ret = window_edit_add(awin, file);
 			window_req_open_archive(awin, get_config(), TRUE);
 			FreeVec(file);
