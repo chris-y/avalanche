@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+
+#include <dos/dostags.h>
 #include <exec/types.h>
 
 #include "locale.h"

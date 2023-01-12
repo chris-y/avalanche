@@ -51,7 +51,7 @@ ULONG window_get_archiver(void *awin);
 struct module_functions *window_get_module_funcs(void *awin);
 
 /* Modify archive */
-BOOL window_edit_add(void *awin, char *file);
+BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
 
 /* Misc */
 void window_disable_gadgets(void *awin, BOOL disable);

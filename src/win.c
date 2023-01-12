@@ -115,6 +115,11 @@ struct avalanche_window {
 
 struct List winlist;
 
+#ifndef __amigaos4__
+#define fr_NumArgs rf_NumArgs
+#define fr_ArgList rf_ArgList
+#endif
+
 /** Menu **/
 
 struct NewMenu menu[] = {
@@ -1027,7 +1032,7 @@ ULONG window_handle_input(void *awin, UWORD *code)
 	return RA_HandleInput(window_get_object(awin), code);
 }
 
-BOOL window_edit_add(void *awin, char *file)
+static BOOL window_edit_add(void *awin, char *file)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
@@ -1037,6 +1042,23 @@ BOOL window_edit_add(void *awin, char *file)
 	module_free(aw);
 	if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
 	return FALSE;
+}
+
+BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
+{
+	BOOL ret = TRUE;
+	
+	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+		char *file = NULL;
+		if(file = AllocVec(512, MEMF_CLEAR)) {
+			NameFromLock(wbarg->wa_Lock, file, 512);
+			AddPart(file, wbarg->wa_Name, 512);
+			ret = window_edit_add(awin, file);
+			window_req_open_archive(awin, get_config(), TRUE);
+			FreeVec(file);
+		}
+	}
+	return ret;
 }
 
 static void window_edit_add_req(void *awin, struct avalanche_config *config)
@@ -1049,12 +1071,21 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 	
 	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
 	if(aslreq) {
-		if(AslRequest(aslreq, NULL)) {
-			ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
-			file = AllocVec(len, MEMF_PRIVATE);
-			strcpy(file, aslreq->fr_Drawer);
-			AddPart(file, aslreq->fr_File, len);
-			ok = window_edit_add(aw, file); /* TRUE = cont, FALSE = abort */
+		if(AslRequestTags(aslreq, ASLFR_DoMultiSelect, TRUE, TAG_DONE)) {
+			if(aslreq->fr_NumArgs) {
+				struct WBArg *frargs = aslreq->fr_ArgList;
+				for(int i = 0; i < aslreq->fr_NumArgs; i++) {
+					BOOL ret = window_edit_add_wbarg(awin, frargs);
+					if(ret == FALSE) break; /* FALSE = Abort */
+					frargs++;
+				}
+			} else {
+				ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
+				file = AllocVec(len, MEMF_PRIVATE);
+				strcpy(file, aslreq->fr_Drawer);
+				AddPart(file, aslreq->fr_File, len);
+				ok = window_edit_add(aw, file); /* TRUE = cont, FALSE = abort */
+			}
 		}
 		FreeAslRequest(aslreq);
 	}

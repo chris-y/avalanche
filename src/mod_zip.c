@@ -26,6 +26,7 @@
 #include "module.h"
 #include "req.h"
 
+#ifdef __amigaos4__
 static void mod_zip_show_error(void *awin, zip_t *zip)
 {
 	open_error_req(zip_error_strerror(zip_get_error(zip)), locale_get_string(MSG_OK), awin);
@@ -33,7 +34,6 @@ static void mod_zip_show_error(void *awin, zip_t *zip)
 
 static BOOL mod_zip_del(void *awin, char *archive, char **files, ULONG count)
 {
-#ifdef __amigaos4__
 	int err = 0;
 	zip_t *zip = zip_open(archive, 0, &err);
 
@@ -66,12 +66,10 @@ static BOOL mod_zip_del(void *awin, char *archive, char **files, ULONG count)
 	}
 
 	return FALSE;
-#endif
 }
 
 static BOOL mod_zip_add(void *awin, char *archive, char *file)
 {
-#ifdef __amigaos4__
 	int err = 0;
 	zip_t *zip = zip_open(archive, 0, &err);
 
@@ -102,13 +100,15 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file)
 	}
 
 	return FALSE;
-#endif
 }
+#endif
 
 void mod_zip_register(struct module_functions *funcs)
 {
+#ifdef __amigaos4__
 	if(libs_zip_init()) {
 		funcs->add = mod_zip_add;
 		funcs->del = mod_zip_del;
 	}
+#endif
 }
