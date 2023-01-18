@@ -263,3 +263,31 @@ MSG_CONFIRMDELETE
 Are you sure you want to delete the selected entries?
 ; Are you sure you want to delete the selected entries?
 ;
+MSG_LASTWINDOWCLOSED
+Last window closed.
+; Last window closed.
+;
+MSG_QUITHIDECANCEL
+Quit|Hide|Cancel
+; Quit|Hide|Cancel
+;
+MSG_NEWWINDOW
+New window...
+; New window...
+;
+MSG_QUITCFG_ASK
+Ask
+; Ask
+;
+MSG_QUITCFG_QUIT
+Quit
+; Quit
+;
+MSG_QUITCFG_HIDE
+Hide
+; Hide
+;
+MSG_LASTWINDOWACTION
+When last window closed:
+; When last window closed:
+;

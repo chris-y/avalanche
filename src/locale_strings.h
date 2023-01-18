@@ -106,6 +106,13 @@
 #define MSG_UNABLETOOPENFILE 62
 #define MSG_OUTOFMEMORY 63
 #define MSG_CONFIRMDELETE 64
+#define MSG_LASTWINDOWCLOSED 65
+#define MSG_QUITHIDECANCEL 66
+#define MSG_NEWWINDOW 67
+#define MSG_QUITCFG_ASK 68
+#define MSG_QUITCFG_QUIT 69
+#define MSG_QUITCFG_HIDE 70
+#define MSG_LASTWINDOWACTION 71
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -180,6 +187,13 @@
 #define MSG_UNABLETOOPENFILE_STR "Unable to open file"
 #define MSG_OUTOFMEMORY_STR "Not enough memory"
 #define MSG_CONFIRMDELETE_STR "Are you sure you want to delete the selected entries?"
+#define MSG_LASTWINDOWCLOSED_STR "Last window closed."
+#define MSG_QUITHIDECANCEL_STR "Quit|Hide|Cancel"
+#define MSG_NEWWINDOW_STR "New window..."
+#define MSG_QUITCFG_ASK_STR "Ask"
+#define MSG_QUITCFG_QUIT_STR "Quit"
+#define MSG_QUITCFG_HIDE_STR "Hide"
+#define MSG_LASTWINDOWACTION_STR "When last window closed:"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -321,6 +335,20 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_OUTOFMEMORY_STR "\x00"
     "\x00\x00\x00\x40\x00\x36"
     MSG_CONFIRMDELETE_STR "\x00"
+    "\x00\x00\x00\x41\x00\x14"
+    MSG_LASTWINDOWCLOSED_STR "\x00"
+    "\x00\x00\x00\x42\x00\x12"
+    MSG_QUITHIDECANCEL_STR "\x00\x00"
+    "\x00\x00\x00\x43\x00\x0E"
+    MSG_NEWWINDOW_STR "\x00"
+    "\x00\x00\x00\x44\x00\x04"
+    MSG_QUITCFG_ASK_STR "\x00"
+    "\x00\x00\x00\x45\x00\x06"
+    MSG_QUITCFG_QUIT_STR "\x00\x00"
+    "\x00\x00\x00\x46\x00\x06"
+    MSG_QUITCFG_HIDE_STR "\x00\x00"
+    "\x00\x00\x00\x47\x00\x1A"
+    MSG_LASTWINDOWACTION_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

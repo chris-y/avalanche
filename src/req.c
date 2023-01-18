@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@
 
 #include "Avalanche_rev.h"
 
-#define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
+#define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022-3 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
 
 void open_info_req(char *message, char *buttons, void *awin)
 {
@@ -113,6 +113,25 @@ ULONG ask_yesno_req(void *awin, char *message)
 
 	if(obj) {
 		ret = OpenRequester(obj, window_get_window(awin));
+		DisposeObject(obj);
+	}
+	return ret;
+}
+
+ULONG ask_quithide_req(void)
+{
+	int ret = 1;
+
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
+			REQ_Type, REQTYPE_INFO,
+			REQ_Image, REQIMAGE_WARNING,
+			REQ_BodyText,  locale_get_string( MSG_LASTWINDOWCLOSED ) ,
+			REQ_GadgetText,  locale_get_string( MSG_QUITHIDECANCEL ) ,
+		End;
+
+	if(obj) {
+		ret = OpenRequester(obj, NULL);
 		DisposeObject(obj);
 	}
 	return ret;

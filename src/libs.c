@@ -20,6 +20,7 @@
 #include <proto/arexx.h>
 #include <proto/button.h>
 #include <proto/checkbox.h>
+#include <proto/chooser.h>
 #include <proto/fuelgauge.h>
 #include <proto/getfile.h>
 #include <proto/label.h>
@@ -156,6 +157,7 @@ ALIB_STRUCT(Zip)
 CLASS_STRUCT(ARexx)
 CLASS_STRUCT(Button)
 CLASS_STRUCT(CheckBox)
+CLASS_STRUCT(Chooser)
 CLASS_STRUCT(FuelGauge)
 CLASS_STRUCT(GetFile)
 CLASS_STRUCT(Label)
@@ -222,6 +224,7 @@ BOOL libs_open(void)
 
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON,      FALSE)
 	CLASS_OPEN("gadgets/checkbox.gadget",      41, CheckBox,      CHECKBOX,    FALSE)
+	CLASS_OPEN("gadgets/chooser.gadget",       45, Chooser,       CHOOSER,     TRUE)
 	CLASS_OPEN("gadgets/fuelgauge.gadget",     41, FuelGauge,     FUELGAUGE,   FALSE)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE,     FALSE)
 	CLASS_OPEN("images/label.image",           41, Label,         LABEL,       FALSE)
@@ -241,6 +244,7 @@ void libs_close(void)
 
 	CLASS_CLOSE(Button)
 	CLASS_CLOSE(CheckBox)
+	CLASS_CLOSE(Chooser)
 	CLASS_CLOSE(FuelGauge)
 	CLASS_CLOSE(GetFile)
 	CLASS_CLOSE(Label)

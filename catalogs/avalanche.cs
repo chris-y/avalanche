@@ -202,3 +202,24 @@ Not enough memory
 MSG_CONFIRMDELETE
 Are you sure you want to delete the selected entries?
 ;
+MSG_LASTWINDOWCLOSED
+Last window closed.
+;
+MSG_QUITHIDECANCEL
+Quit|Hide|Cancel
+;
+MSG_NEWWINDOW
+New window...
+;
+MSG_QUITCFG_ASK
+Ask
+;
+MSG_QUITCFG_QUIT
+Quit
+;
+MSG_QUITCFG_HIDE
+Hide
+;
+MSG_LASTWINDOWACTION
+When last window closed:
+;

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,10 +22,14 @@
 #include <proto/locale.h>
 #include <proto/utility.h>
 
+#ifndef __amigaos4__
+#include <clib/alib_protos.h>
+#endif
 #include <libraries/asl.h>
 
 #include <proto/button.h>
 #include <proto/checkbox.h>
+#include <proto/chooser.h>
 #include <proto/getfile.h>
 #include <proto/label.h>
 #include <proto/layout.h>
@@ -33,6 +37,7 @@
 
 #include <classes/window.h>
 #include <gadgets/checkbox.h>
+#include <gadgets/chooser.h>
 #include <gadgets/getfile.h>
 #include <images/label.h>
 
@@ -168,10 +173,16 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[8] = "(VIRUSSCAN)";
 		}
 
-		if(config->confirmquit) {
-			newtooltypes[9] = "CONFIRMQUIT";
-		} else {
-			newtooltypes[9] = "(CONFIRMQUIT)";
+		switch(config->closeaction) {
+			case 1:
+				newtooltypes[9] = "CLOSE=QUIT";
+			break;
+			case 2:
+				newtooltypes[9] = "CLOSE=HIDE";
+			break;
+			case 0:
+				newtooltypes[9] = "CLOSE=ASK";
+			break;
 		}
 
 		if(config->ignorefs) {
@@ -239,8 +250,8 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	GetAttr(GA_Selected, gadgets[GID_C_IGNOREFS],(ULONG *)&data);
 	config->ignorefs = (data ? TRUE : FALSE);
 	
-	GetAttr(GA_Selected, gadgets[GID_C_QUIT],(ULONG *)&data);
-	config->confirmquit = (data ? TRUE : FALSE);
+	GetAttr(CHOOSER_Selected, gadgets[GID_C_QUIT], (ULONG *)&data);
+	config->closeaction = data;
 
 	if(save) config_save(config);
 }
@@ -249,6 +260,12 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 void config_window_open(struct avalanche_config *config)
 {
 	BOOL save_disabled = FALSE;
+	STRPTR quit_opts[] = {
+			locale_get_string(MSG_QUITCFG_ASK),
+			locale_get_string(MSG_QUITCFG_QUIT),
+			locale_get_string(MSG_QUITCFG_HIDE),
+			NULL
+	};
 
 	if(windows[WID_MAIN]) { // already open
 		WindowToFront(windows[WID_MAIN]);
@@ -301,12 +318,16 @@ void config_window_open(struct avalanche_config *config)
 						GA_Text, locale_get_string( MSG_IGNOREFILESYSTEMS ) ,
 						GA_Selected, config->ignorefs,
 					End,
-					LAYOUT_AddChild,  gadgets[GID_C_QUIT] = CheckBoxObj,
+					LAYOUT_AddChild,  gadgets[GID_C_QUIT] = ChooserObj,
 						GA_ID, GID_C_QUIT,
 						GA_RelVerify, TRUE,
-						GA_Text, locale_get_string( MSG_CONFIRMQUIT ) ,
-						GA_Selected, config->confirmquit,
+						GA_Selected, config->closeaction,
+						CHOOSER_PopUp, TRUE,
+						CHOOSER_LabelArray, quit_opts,
 					End,
+					CHILD_Label, LabelObj,
+						LABEL_Text,  locale_get_string(MSG_LASTWINDOWACTION),
+					LabelEnd,
 					LAYOUT_AddChild,  LayoutHObj,
 						LAYOUT_AddChild,  gadgets[GID_C_SAVE] = ButtonObj,
 							GA_ID, GID_C_SAVE,

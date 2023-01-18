@@ -20,6 +20,7 @@
 ULONG ask_question(void *awin, char *q, char *f);
 ULONG ask_password(void *awin, char *pw, ULONG pwlen);
 ULONG ask_yesno_req(void *awin, char *message);
+ULONG ask_quithide_req(void);
 void show_error(long code, void *awin);
 void show_about(void *awin);
 int open_error_req(char *message, char *button, void *awin);

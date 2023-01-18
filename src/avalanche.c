@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,6 +57,7 @@ static struct avalanche_config config;
 /** Shared variables **/
 static struct Locale *locale = NULL;
 static struct MinList win_list;
+ULONG window_count = 0;
 
 void free_dest_path(void)
 {
@@ -69,11 +70,16 @@ void free_dest_path(void)
 
 ULONG ask_quit(void *awin)
 {
-	if(config.confirmquit) {
-		return ask_yesno_req(awin, locale_get_string( MSG_AREYOUSUREYOUWANTTOEXIT ));
+	return ask_yesno_req(awin, locale_get_string( MSG_AREYOUSUREYOUWANTTOEXIT ));
+}
+
+ULONG ask_quithide(void *awin)
+{
+	if(config.closeaction == 0) {
+		return ask_quithide_req();
 	}
 
-	return 1;
+	return config.closeaction;
 }
 
 struct avalanche_config *get_config(void)
@@ -165,6 +171,7 @@ void add_to_window_list(void *awin)
 
 	if(node) {
 		AddTail((struct List *)&win_list, (struct Node *)node);
+		window_count++;
 	}
 }
 
@@ -174,22 +181,40 @@ void del_from_window_list(void *awin)
 
 	if(node) {
 		Remove((struct Node *)node);
+		window_count--;
+	}
+}
+
+static void show_hide_all(struct MsgPort *appwin_mp, struct MsgPort *winport, struct MsgPort *AppPort, BOOL show, BOOL dispose)
+{
+	void *awin;
+
+	if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
+		awin = (void *)GetHead((struct List *)&win_list);
+		struct Node *nnode;
+
+		do {
+			nnode = (struct Node *)GetSucc((struct Node *)awin);
+			if(show) {
+				window_open(awin, appwin_mp);
+			} else {
+				window_close(awin, FALSE);
+				if(dispose) window_dispose(awin);
+			}
+		} while(awin = (void *)nnode);
+	} else {
+		if(show) {
+			/* No windows, create one */
+			awin = window_create(&config, NULL, winport, AppPort);
+			if(awin == NULL) return;
+			window_open(awin, appwin_mp);
+		}
 	}
 }
 
 static void close_all_windows()
 {
-	if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
-		struct Node *node = (void *)GetHead((struct List *)&win_list);
-		struct Node *nnode;
-		do {
-			nnode = (struct Node *)GetSucc(node);
-
-			window_close(node, FALSE);
-			window_dispose(node);
-
-		} while((node = nnode));
-	}
+	show_hide_all(NULL, NULL, NULL, FALSE, TRUE);
 }
 
 /* Do not call this directly! */
@@ -273,11 +298,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 	ULONG tmp = 0;
 	
 	void *awin = NULL;
-	void *main_awin = NULL;
 
 	NewMinList(&win_list);
 
 	if((AppPort = CreateMsgPort()) && (winport = CreateMsgPort())) {
+		BOOL window_is_open = FALSE;
 
 		/* Register CX */
 		if(cx_mp = RegisterCx(&cx_broker)) {
@@ -293,28 +318,26 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 			appwin_sig = 1L << appwin_mp->mp_SigBit;
 		}
 
-		awin = window_create(&config, NULL, winport, AppPort);
-		if(awin == NULL) return;
-
-		/* NB: Window will alway open (below) if we opened as default tool */
-		if(config.cx_popup) window_open(awin, appwin_mp);
-		
-		main_awin = awin;
-
 		if(WBenchMsg) {
-			if(WBenchMsg->sm_NumArgs > 0) {
+			if(WBenchMsg->sm_NumArgs > 1) {
 				/* Started as default tool, get the path+filename of the (first) project */
-				struct WBArg *wbarg = WBenchMsg->sm_ArgList + 1;
+				struct WBArg *wbarg = WBenchMsg->sm_ArgList;
 
-				if(open_archive_from_wbarg_existing(awin, wbarg)) {
-					if(WBenchMsg->sm_NumArgs > 2) {
-						for(int i = 2; i < WBenchMsg->sm_NumArgs; i++) {
-							wbarg++;
-							open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
-						}
-					}
+				for(int i = 1; i < WBenchMsg->sm_NumArgs; i++) {
+					wbarg++;
+					open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+					window_is_open = TRUE;
 				}
-			}				
+			}
+		}
+
+		if(window_is_open == FALSE) {
+			/* If we wanted cx_popup but there's no window yet, open one */
+			if(config.cx_popup) {
+				awin = window_create(&config, NULL, winport, AppPort);
+				if(awin == NULL) return;
+				window_open(awin, appwin_mp);
+			}
 		}
 
 		/* Input Event Loop
@@ -345,13 +368,13 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 									done = WIN_DONE_QUIT;
 								break;
 								case CXCMD_APPEAR:
-									window_open(main_awin, appwin_mp);
+									show_hide_all(appwin_mp, winport, AppPort, TRUE, FALSE);
 								break;
 								case CXCMD_UNIQUE:
 									//not unique, ignore
 								break;
 								case CXCMD_DISAPPEAR:
-									window_close(main_awin, FALSE);
+									show_hide_all(appwin_mp, winport, AppPort, FALSE, FALSE);
 								break;
 
 								case CXCMD_ENABLE:
@@ -367,7 +390,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 						case CXM_IEVENT:
 							switch(cx_msgid) {
 								case IEVENT_POPUP:
-									window_open(main_awin, appwin_mp);
+									show_hide_all(appwin_mp, winport, AppPort, TRUE, FALSE);
 								break;
 							}
 						default:
@@ -479,7 +502,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 					break;
 					
 					case RXEVT_SHOW:
-						window_open(main_awin, appwin_mp);
+						show_hide_all(appwin_mp, winport, AppPort, TRUE, FALSE);
 					break;
 				}
 				arexx_free_event();
@@ -497,14 +520,26 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 						nnode = (struct Node *)GetSucc((struct Node *)awin);
 
 						while((done == WIN_DONE_OK) && ((result = window_handle_input(awin, &code)) != WMHI_LASTMSG)) {
-							done = window_handle_input_events(awin, &config, result, appwin_mp, code);
+							done = window_handle_input_events(awin, &config, result, appwin_mp, code, winport, AppPort);
 						}
 					} while((done == WIN_DONE_OK) && (awin = (void *)nnode));
 				}
 			}
-			if((done == WIN_DONE_CLOSED) && (awin != main_awin)) {
-				/* DISPOSE IF NOT MAIN WINDOW */
-				window_dispose(awin);
+			if(done == WIN_DONE_CLOSED) {
+				if(window_count == 1) {
+					ULONG ret = ask_quithide(NULL);
+					/* Last window closed */
+					if(ret) {
+						window_close(awin, FALSE);
+						if(ret == 1) {
+							window_dispose(awin);
+							done = WIN_DONE_QUIT;
+						}
+					}
+				} else {
+					window_close(awin, FALSE);
+					window_dispose(awin);
+				}
 			}
 		} // while
 	}
@@ -549,9 +584,17 @@ static void gettooltypes(UBYTE **tooltypes)
 	if(FindToolType(tooltypes, "HBROWSER")) config.h_browser = TRUE;
 	if(FindToolType(tooltypes, "VIRUSSCAN")) config.virus_scan = TRUE;
 	if(FindToolType(tooltypes, "NOASLHOOK")) config.disable_asl_hook = TRUE;
-	if(FindToolType(tooltypes, "CONFIRMQUIT")) config.confirmquit = TRUE;
 	if(FindToolType(tooltypes, "IGNOREFS")) config.ignorefs = TRUE;
 	if(FindToolType(tooltypes, "DEBUG")) config.debug = TRUE;
+
+	s = ArgString(tooltypes, "CLOSE", "ASK");
+	if(MatchToolValue(s, "HIDE")) {
+		config.closeaction = 2;
+	} else if(MatchToolValue(s, "CLOSE")) {
+		config.closeaction = 1;
+	} else {
+		config.closeaction = 0;
+	}
 
 	config.progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
 
@@ -580,9 +623,9 @@ int main(int argc, char **argv)
 	config.h_browser = FALSE;
 	config.virus_scan = FALSE;
 	config.debug = FALSE;
-	config.confirmquit = FALSE;
 	config.ignorefs = FALSE;
 	config.disable_vscan_menu = FALSE;
+	config.closeaction = 0; // Ask
 
 	config.win_x = 0;
 	config.win_y = 0;
