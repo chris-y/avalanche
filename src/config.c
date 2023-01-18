@@ -171,10 +171,16 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[8] = "(VIRUSSCAN)";
 		}
 
-		if(config->confirmquit) {
-			newtooltypes[9] = "CONFIRMQUIT";
-		} else {
-			newtooltypes[9] = "(CONFIRMQUIT)";
+		switch(config->closeaction) {
+			case 1:
+				newtooltypes[9] = "CLOSE=QUIT";
+			break;
+			case 2:
+				newtooltypes[9] = "CLOSE=HIDE";
+			break;
+			case 0:
+				newtooltypes[9] = "CLOSE=ASK";
+			break;
 		}
 
 		if(config->ignorefs) {
@@ -243,7 +249,7 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	config->ignorefs = (data ? TRUE : FALSE);
 	
 	GetAttr(GA_Selected, gadgets[GID_C_QUIT],(ULONG *)&data);
-	config->confirmquit = (data ? TRUE : FALSE);
+	config->closeaction = (data ? 0 : 1);
 
 	if(save) config_save(config);
 }
@@ -308,7 +314,7 @@ void config_window_open(struct avalanche_config *config)
 						GA_ID, GID_C_QUIT,
 						GA_RelVerify, TRUE,
 						GA_Text, locale_get_string( MSG_CONFIRMQUIT ) ,
-						GA_Selected, config->confirmquit,
+						GA_Selected, (config->closeaction ? FALSE : TRUE),
 					End,
 					LAYOUT_AddChild,  LayoutHObj,
 						LAYOUT_AddChild,  gadgets[GID_C_SAVE] = ButtonObj,

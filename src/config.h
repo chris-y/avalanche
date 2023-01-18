@@ -27,9 +27,9 @@ struct avalanche_config {
 	BOOL h_browser;
 	BOOL virus_scan;
 	BOOL debug;
-	BOOL confirmquit;
 	BOOL ignorefs;
 	BOOL disable_vscan_menu;
+	ULONG closeaction; /* [1 = quit, 2 = hide, 0 = cancel] -- same as quit req */
 
 	ULONG win_x;
 	ULONG win_y;

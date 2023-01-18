@@ -181,3 +181,12 @@ Unable to open file
 MSG_OUTOFMEMORY
 Not enough memory
 ;
+MSG_LASTWINDOWCLOSED
+Last window closed.
+;
+MSG_QUITHIDECANCEL
+Quit|Hide|Cancel
+;
+MSG_NEWWINDOW
+New window...
+;

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,11 +113,12 @@ struct List winlist;
 struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
 	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 0 Open
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 1
-	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 2 Archive Info
-	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 3 About
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 4
-	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 5 Quit
+	{NM_ITEM,   NULL,         "+", 0, 0, 0,}, // 1 New window
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 2
+	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 3 Archive Info
+	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 4 About
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 5
+	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 6 Quit
 
 	{NM_TITLE,  NULL,               0,  0, 0, 0,}, // 1 Edit
 	{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
@@ -172,12 +173,12 @@ static void window_menu_activation(void *awin, BOOL enable)
 	if(aw->windows[WID_MAIN] == NULL) return;
 
 	if(enable) {
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,3,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
 	} else {
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0));
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,3,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
@@ -601,6 +602,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	 */
 	if (aw->objects[OID_MAIN]) {
 		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest); /* Ensure we have a local dest */
+		
+		/* Add to our window list */
+		add_to_window_list(aw);
 		return aw;
 	} else {
 		FreeVec(aw);
@@ -625,8 +629,6 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 			/* Refresh archive on window open */
 			if(aw->archiver != ARC_NONE) window_req_open_archive(awin, get_config(), TRUE);
 			window_menu_set_enable_state(aw);
-
-			if(aw->iconified == FALSE) add_to_window_list(awin);
 		}
 		aw->iconified = FALSE;
 	}
@@ -647,8 +649,6 @@ void window_close(void *awin, BOOL iconify)
 
 		if(iconify) {
 			aw->iconified = TRUE;
-		} else {
-			del_from_window_list(awin);
 		}
 
 		/* Release archive when window is closed */
@@ -660,7 +660,10 @@ void window_close(void *awin, BOOL iconify)
 void window_dispose(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
+
+	/* Remove from window list */
+	del_from_window_list(awin);
+
 	/* Ensure appwindow is removed */
 	if(aw->windows[WID_MAIN]) window_close(aw, FALSE);
 	
@@ -907,7 +910,7 @@ ULONG window_handle_input(void *awin, UWORD *code)
 	return RA_HandleInput(window_get_object(awin), code);
 }
 
-ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code)
+ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -916,7 +919,6 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
-			window_close(awin, FALSE);
 			done = WIN_DONE_CLOSED;
 		break;
 
@@ -965,6 +967,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		 case WMHI_MENUPICK:
 			while((code != MENUNULL) && (done != WIN_DONE_CLOSED)) {
 				if(aw->windows[WID_MAIN] == NULL) continue;
+				void *new_awin;
 				struct MenuItem *item = ItemAddress(aw->windows[WID_MAIN]->MenuStrip, code);
 				switch(MENUNUM(code)) {
 					case 0: //project
@@ -973,15 +976,21 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								window_req_open_archive(awin, config, FALSE);
 							break;
 							
-							case 2: //info
+							case 1: // new window
+								new_awin = window_create(config, NULL, winport, AppPort);
+								if(new_awin == NULL) break;
+								window_open(new_awin, appwin_mp);
+							break;
+							
+							case 3: //info
 								req_show_arc_info(awin);
 							break;
 
-							case 3: //about
+							case 4: //about
 								show_about(awin);
 							break;
 							
-							case 5: //quit
+							case 6: //quit
 								if(ask_quit(awin)) {
 									done = WIN_DONE_QUIT;
 								}
@@ -1102,17 +1111,18 @@ void fill_menu_labels(void)
 {
 	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
 	menu[1].nm_Label = locale_get_string( MSG_OPEN );
-	menu[3].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
-	menu[4].nm_Label = locale_get_string( MSG_ABOUT );
-	menu[6].nm_Label = locale_get_string( MSG_QUIT );
-	menu[7].nm_Label = locale_get_string( MSG_EDIT );
-	menu[8].nm_Label = locale_get_string( MSG_SELECTALL );
-	menu[9].nm_Label = locale_get_string( MSG_CLEARSELECTION );
-	menu[10].nm_Label = locale_get_string( MSG_INVERTSELECTION );
-	menu[11].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[12].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[14].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[15].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[2].nm_Label = locale_get_string( MSG_NEWWINDOW );
+	menu[4].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
+	menu[5].nm_Label = locale_get_string( MSG_ABOUT );
+	menu[7].nm_Label = locale_get_string( MSG_QUIT );
+	menu[8].nm_Label = locale_get_string( MSG_EDIT );
+	menu[9].nm_Label = locale_get_string( MSG_SELECTALL );
+	menu[10].nm_Label = locale_get_string( MSG_CLEARSELECTION );
+	menu[11].nm_Label = locale_get_string( MSG_INVERTSELECTION );
+	menu[12].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[13].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
+	menu[15].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[16].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

@@ -235,3 +235,15 @@ MSG_OUTOFMEMORY
 Not enough memory
 ; Not enough memory
 ;
+MSG_LASTWINDOWCLOSED
+Last window closed.
+; Last window closed.
+;
+MSG_QUITHIDECANCEL
+Quit|Hide|Cancel
+; Quit|Hide|Cancel
+;
+MSG_NEWWINDOW
+New window...
+; New window...
+;

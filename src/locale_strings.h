@@ -99,6 +99,9 @@
 #define MSG_SNAPSHOT 55
 #define MSG_UNABLETOOPENFILE 56
 #define MSG_OUTOFMEMORY 57
+#define MSG_LASTWINDOWCLOSED 58
+#define MSG_QUITHIDECANCEL 59
+#define MSG_NEWWINDOW 60
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -166,6 +169,9 @@
 #define MSG_SNAPSHOT_STR "Snapshot window"
 #define MSG_UNABLETOOPENFILE_STR "Unable to open file"
 #define MSG_OUTOFMEMORY_STR "Not enough memory"
+#define MSG_LASTWINDOWCLOSED_STR "Last window closed."
+#define MSG_QUITHIDECANCEL_STR "Quit|Hide|Cancel"
+#define MSG_NEWWINDOW_STR "New window..."
 
 #endif /* CATCOMP_STRINGS */
 
@@ -293,6 +299,12 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_UNABLETOOPENFILE_STR "\x00"
     "\x00\x00\x00\x39\x00\x12"
     MSG_OUTOFMEMORY_STR "\x00"
+    "\x00\x00\x00\x3A\x00\x14"
+    MSG_LASTWINDOWCLOSED_STR "\x00"
+    "\x00\x00\x00\x3B\x00\x12"
+    MSG_QUITHIDECANCEL_STR "\x00\x00"
+    "\x00\x00\x00\x3C\x00\x0E"
+    MSG_NEWWINDOW_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

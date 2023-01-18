@@ -114,6 +114,25 @@ ULONG ask_quit_req(void *awin)
 	return ret;
 }
 
+ULONG ask_quithide_req(void)
+{
+	int ret = 1;
+
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
+			REQ_Type, REQTYPE_INFO,
+			REQ_Image, REQIMAGE_WARNING,
+			REQ_BodyText,  locale_get_string( MSG_LASTWINDOWCLOSED ) ,
+			REQ_GadgetText,  locale_get_string( MSG_QUITHIDECANCEL ) ,
+		End;
+
+	if(obj) {
+		ret = OpenRequester(obj, NULL);
+		DisposeObject(obj);
+	}
+	return ret;
+}
+
 ULONG ask_question(void *awin, char *q, char *f)
 {
 	char message[200];
