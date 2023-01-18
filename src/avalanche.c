@@ -76,7 +76,7 @@ ULONG ask_quit(void *awin)
 ULONG ask_quithide(void *awin)
 {
 	if(config.closeaction == 0) {
-		return ask_quithide_req(awin);
+		return ask_quithide_req();
 	}
 
 	return config.closeaction;

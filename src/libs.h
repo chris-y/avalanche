@@ -24,6 +24,7 @@
 extern Class *ARexxClass;
 extern Class *ButtonClass;
 extern Class *CheckBoxClass;
+extern Class *ChooserClass;
 extern Class *FuelGaugeClass;
 extern Class *GetFileClass;
 extern Class *LabelClass;
@@ -35,6 +36,7 @@ extern Class *WindowClass;
 #define ARexxObj		NewObject(ARexxClass, NULL
 #define ButtonObj		NewObject(ButtonClass, NULL
 #define CheckBoxObj		NewObject(CheckBoxClass, NULL
+#define ChooserObj		NewObject(ChooserClass, NULL
 #define FuelGaugeObj	NewObject(FuelGaugeClass, NULL
 #define GetFileObj		NewObject(GetFileClass, NULL
 #define LabelObj		NewObject(LabelClass, NULL

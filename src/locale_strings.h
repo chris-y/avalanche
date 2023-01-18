@@ -102,6 +102,10 @@
 #define MSG_LASTWINDOWCLOSED 58
 #define MSG_QUITHIDECANCEL 59
 #define MSG_NEWWINDOW 60
+#define MSG_QUITCFG_ASK 61
+#define MSG_QUITCFG_QUIT 62
+#define MSG_QUITCFG_HIDE 63
+#define MSG_LASTWINDOWACTION 64
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -172,6 +176,10 @@
 #define MSG_LASTWINDOWCLOSED_STR "Last window closed."
 #define MSG_QUITHIDECANCEL_STR "Quit|Hide|Cancel"
 #define MSG_NEWWINDOW_STR "New window..."
+#define MSG_QUITCFG_ASK_STR "Ask"
+#define MSG_QUITCFG_QUIT_STR "Quit"
+#define MSG_QUITCFG_HIDE_STR "Hide"
+#define MSG_LASTWINDOWACTION_STR "When last window closed:"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -305,6 +313,14 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_QUITHIDECANCEL_STR "\x00\x00"
     "\x00\x00\x00\x3C\x00\x0E"
     MSG_NEWWINDOW_STR "\x00"
+    "\x00\x00\x00\x3D\x00\x04"
+    MSG_QUITCFG_ASK_STR "\x00"
+    "\x00\x00\x00\x3E\x00\x06"
+    MSG_QUITCFG_QUIT_STR "\x00\x00"
+    "\x00\x00\x00\x3F\x00\x06"
+    MSG_QUITCFG_HIDE_STR "\x00\x00"
+    "\x00\x00\x00\x40\x00\x1A"
+    MSG_LASTWINDOWACTION_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

@@ -42,7 +42,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}WINX@{ub}/@{b}WINY@{ub}/@{b}WINW@{ub}/@{b}WINH@{ub} Window position/width/height
 @{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
 @{b}VIRUSSCAN@{ub} Use xvs.library to @{"scan files" link vscan} after extraction
-@{b}CONFIRMQUIT@{ub} Display confirmation requester on quit
+@{b}CLOSE@{ub} Action to take when last window closed ASK|HIDE|QUIT (default = ASK)
 @{b}NOASLHOOK@{ub} Disables the ASL filter so it shows all files
 @{b}CX_POPUP@{ub} Whether to open the window on startup
 @{b}CX_PRIORITY@{ub} Commodities priority
@@ -112,6 +112,12 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}1.11 (xx.xx.xxxx)@{uu}
+* Improve window handling
+  - Can now open new window from the GUI
+  - Can select to ask/hide/quit when last window closed
+    (NB: CONFIRMQUIT tooltype no longer used)
+
 @{u}1.10 (12.01.2023)@{uu}
 * Dragging a drawer into the window now sets the source directory, if
   an archive hasn't already been opened.

@@ -190,3 +190,15 @@ Quit|Hide|Cancel
 MSG_NEWWINDOW
 New window...
 ;
+MSG_QUITCFG_ASK
+Ask
+;
+MSG_QUITCFG_QUIT
+Quit
+;
+MSG_QUITCFG_HIDE
+Hide
+;
+MSG_LASTWINDOWACTION
+When last window closed:
+;
