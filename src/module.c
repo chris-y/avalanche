@@ -23,14 +23,14 @@
 #include "xvs.h"
 
 /*** Virus Scanning ***/
-static ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len)
+static ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 {
 	long res = 0;
 	struct avalanche_config *config = get_config();
 
 	if(config->virus_scan) {
 		if(buf == NULL) {
-			res = xvs_scan(file, len, awin);
+			res = xvs_scan(file, len, delete, awin);
 		} else {
 			res = xvs_scan_buffer(buf, len, awin);
 		}

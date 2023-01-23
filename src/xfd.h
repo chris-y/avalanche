@@ -20,7 +20,7 @@ const char *xfd_get_filename(void *userdata);
 BOOL xfd_recog(char *file);
 const char *xfd_get_arc_format(void *awin);
 long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin));
-long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len));
+long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete));
 void xfd_exit(void);
 const char *xfd_error(long code);
 #endif

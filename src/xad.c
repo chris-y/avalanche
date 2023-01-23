@@ -369,7 +369,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	return err;
 }
 
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len), ULONG *pud)
+long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete), ULONG *pud)
 {
 	long err = 0;
 	struct xadFileInfo *fi = NULL;
@@ -453,8 +453,8 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 				}
 
 				if(err == XADERR_OK) {
-					if(fi) scan(awin, destfile, NULL, fi->xfi_Size);
-					if(di) scan(awin, destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors);
+					if(fi) scan(awin, destfile, NULL, fi->xfi_Size, TRUE);
+					if(di) scan(awin, destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors, TRUE);
 				}
 
 				if(fi) {
@@ -483,17 +483,17 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 }
 
 /* returns 0 on success */
-long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len))
+long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete))
 {
 	long err = XADERR_OK;
-	struct Node *node;
+	struct Node *fnode;
 	ULONG pud = 0;
 
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
 	if(xu->ai) {
-		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-			err = xad_extract_file(awin, file, dest, node, getnode, scan, &pud);
+		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
+			err = xad_extract_file(awin, file, dest, fnode, getnode, scan, &pud);
 			if(err != XADERR_OK) {
 				if(err == XADERR_BREAK) err = XADERR_OK; // user abort
 				 return err;
