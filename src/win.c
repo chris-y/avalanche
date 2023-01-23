@@ -822,7 +822,10 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	ret = xad_info(aw->archive, config, aw, addlbnode_cb);
 	if(ret != 0) { /* if xad failed try xfd */
 		retxfd = xfd_info(aw->archive, aw, addlbnodexfd_cb);
-		if(retxfd != 0) show_error(ret, aw);
+		if(retxfd != 0) {
+			/* Failed to open with any lib - show generic error rather than XAD's */
+			open_error_req(locale_get_string(MSG_UNABLETOOPENFILE), locale_get_string(MSG_OK), aw);
+		}
 	}
 
 	if(ret == 0) {
