@@ -54,7 +54,7 @@ static long xvs_init(void *awin)
 	return 0;
 }
 
-static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, void *awin)
+static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, BOOL delete, void *awin)
 {
 	struct xvsFileInfo *xvsfi = NULL;
 	ULONG result;
@@ -78,14 +78,18 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, void *awin)
 		char message[200];
 
 		if(file) {
-			BOOL deleted = DeleteFile(file);
+			if(delete == TRUE) {
+				BOOL deleted = DeleteFile(file);
 
-			if(deleted) {
-				snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
-				strncat(message, locale_get_string(MSG_FILEHASBEENDELETED), 200);
+				if(deleted) {
+					snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
+					strncat(message, locale_get_string(MSG_FILEHASBEENDELETED), 200);
+				} else {
+					snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
+					strncat(message, locale_get_string(MSG_FILECOULDNOTBEDELETED), 200);
+				}
 			} else {
 				snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
-				strncat(message, locale_get_string(MSG_FILECOULDNOTBEDELETED), 200);
 			}
 		} else {
 			snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , "----", xvsfi->xvsfi_Name);
@@ -101,10 +105,10 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, void *awin)
 
 long xvs_scan_buffer(UBYTE *buf, ULONG len, void *awin)
 {
-	return xvs_scan_virus(NULL, buf, len, awin);
+	return xvs_scan_virus(NULL, buf, len, FALSE, awin);
 }
 
-long xvs_scan(char *file, ULONG len, void *awin)
+long xvs_scan(char *file, ULONG len, BOOL delete, void *awin)
 {
 	UBYTE *buffer = NULL;
 	BPTR fh = 0;
@@ -125,7 +129,7 @@ long xvs_scan(char *file, ULONG len, void *awin)
 		Close(fh);
 	}
 
-	res = xvs_scan_virus(file, buffer, len, awin);
+	res = xvs_scan_virus(file, buffer, len, delete, awin);
 
 	FreeVec(buffer);
 
