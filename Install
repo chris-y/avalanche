@@ -9,7 +9,6 @@
 )
 
 ; START
-
 (set #os-vernum (getversion "libs:version.library"))
 (set #os-ver (/ #os-vernum 65536))
 
@@ -32,6 +31,8 @@
 		(set #arc-tar   "")
 		(set #arc-zip   "")
 		(set #arc-zoo   "")
+
+		(set #xvs-ver 0)
 	)
 	; else
 	(
@@ -55,6 +56,9 @@
 		(set #arc-zip   "zip")
 		(set #arc-zoo   "zoo")
 
+		(set #xvs-vernum (getversion "libs:xvs.library"))
+		(set #xvs-ver (/ #xvs-vernum 65536))
+		(transcript "xvs.library v" #xvs-ver)
 	)
 )
 
@@ -96,6 +100,18 @@
 	(help @copyfiles-help)
 	(source #Avalanche)
 	(dest @default-dest)
+)
+
+; copy xvs.l.main on os4
+(if (>= #xvs-ver 33)
+	(
+		(copyfiles
+			(prompt "Copying xvs.l.main")
+			(help @copyfiles-help)
+			(source "libs/xvs.l.main")
+			(dest "libs:")
+		)
+	)
 )
 
 ; Don't overwrite existing icon
