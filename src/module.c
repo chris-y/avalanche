@@ -23,7 +23,7 @@
 #include "xvs.h"
 
 /*** Virus Scanning ***/
-static ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
+ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 {
 	long res = 0;
 	struct avalanche_config *config = get_config();

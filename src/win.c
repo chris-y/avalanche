@@ -1045,11 +1045,10 @@ BOOL window_edit_add(void *awin, char *file)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
-	/* virus scan - disabled currently as don't want random files to be deleted */
-	//module_vscan(awin, file, NULL, NULL);
-
-	module_free(aw);
-	if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
+	if(module_vscan(awin, file, NULL, NULL, FALSE) == 0) {
+		module_free(aw);
+		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
+	}
 	return FALSE;
 }
 

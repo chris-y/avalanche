@@ -23,6 +23,10 @@ struct module_functions {
 	BOOL (*del)(void *awin, char *archive, char **files, ULONG count); /* Returns TRUE on success */
 };
 
+/* Virus scan */
+ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete);
+
+/* Extraction */
 const char *module_get_item_filename(void *awin, void *userdata);
 void module_free(void *awin);
 const char *module_get_subformat(void *awin);
@@ -31,8 +35,9 @@ const char *module_get_error(void *awin, long code);
 long module_extract(void *awin, void *node, void *archive, void *newdest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);
-void module_register(void *awin, struct module_functions *mf);
 
+/* Editing */
+void module_register(void *awin, struct module_functions *mf);
 BOOL module_has_add(void *awin);
 
 /*** Register extended modules ***/
