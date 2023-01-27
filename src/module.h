@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,15 @@
 #include <exec/types.h>
 
 struct module_functions {
-	/* TODO: Register extraction modules here too */
+	/* Extraction */
+	char module[4];
+	const char *(*get_filename)(void *userdata, void *awin);
+	const char *(*get_format)(void *awin);
+	const char *(*get_subformat)(void *awin);
+	const char *(*get_error)(long code);
+	void (*free)(void *awin);
+
+	/* Editing */
 	BOOL (*add)(void *awin, char *archive, char *file); /* Returns TRUE on success */
 	BOOL (*del)(void *awin, char *archive, char **files, ULONG count); /* Returns TRUE on success */
 };
@@ -37,8 +45,10 @@ void module_exit(void);
 BOOL module_recog(void* fullfilename);
 
 /* Editing */
-void module_register(void *awin, struct module_functions *mf);
 BOOL module_has_add(void *awin);
+
+/*** Register modules ***/
+void module_register(void *awin, struct module_functions *mf);
 
 /*** Register extended modules ***/
 void mod_zip_register(struct module_functions *funcs);

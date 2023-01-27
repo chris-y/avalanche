@@ -96,6 +96,8 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, BOOL delete, void 
 		}
 
 		open_error_req(message,  locale_get_string( MSG_OK ), awin );
+	} else {
+		result = 0; // clean
 	}
 
 	xvsFreeObject(xvsfi);
@@ -108,30 +110,36 @@ long xvs_scan_buffer(UBYTE *buf, ULONG len, void *awin)
 	return xvs_scan_virus(NULL, buf, len, FALSE, awin);
 }
 
-long xvs_scan(char *file, ULONG len, BOOL delete, void *awin)
+long xvs_scan(char *file, BOOL delete, void *awin)
 {
 	UBYTE *buffer = NULL;
 	BPTR fh = 0;
 	long res = 0;
 
-	if(len == 0) return 0;
-
-	buffer = AllocVec(len, MEMF_ANY | MEMF_PRIVATE);
-	if(buffer == NULL) {
-		char message[200];
-		sprintf(message, locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ), file);
-		open_error_req(message, locale_get_string( MSG_OK ), awin);
-		return -2;
-	}
-
 	if(fh = Open(file, MODE_OLDFILE)) {
+#ifdef __amigaos4__
+		int64 len = GetFileSize(fh);
+#else
+		Seek(fh, 0, OFFSET_END);
+		long len = Seek(fh, 0, OFFSET_BEGINNING);
+#endif
+
+		if(len <= 0) return 0;
+
+		buffer = AllocVec(len, MEMF_ANY | MEMF_PRIVATE);
+		if(buffer == NULL) {
+			char message[200];
+			sprintf(message, locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ), file);
+			open_error_req(message, locale_get_string( MSG_OK ), awin);
+			return -2;
+		}
+
 		Read(fh, buffer, len);
 		Close(fh);
+
+		res = xvs_scan_virus(file, buffer, len, delete, awin);
+		FreeVec(buffer);
 	}
-
-	res = xvs_scan_virus(file, buffer, len, delete, awin);
-
-	FreeVec(buffer);
 
 	return res;
 }

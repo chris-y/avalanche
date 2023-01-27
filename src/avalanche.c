@@ -707,6 +707,7 @@ int main(int argc, char **argv)
 	if(dest_needs_free) free_dest_path();
 
 	module_exit();
+	libs_zip_exit();
 	libs_close();
 
 	return 0;

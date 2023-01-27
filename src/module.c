@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -11,6 +11,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
 */
+
+#include <string.h>
 
 #include "avalanche.h"
 #include "config.h"
@@ -30,7 +32,7 @@ ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 
 	if(config->virus_scan) {
 		if(buf == NULL) {
-			res = xvs_scan(file, len, delete, awin);
+			res = xvs_scan(file, delete, awin);
 		} else {
 			res = xvs_scan_buffer(buf, len, awin);
 		}
@@ -48,87 +50,52 @@ ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 /*** Extraction ***/
 const char *module_get_item_filename(void *awin, void *userdata)
 {
-	const char *fn = NULL;
+	struct module_functions *mf = window_get_module_funcs(awin);
 
-	switch(window_get_archiver(awin)) {
-		case ARC_XAD:
-			fn = xad_get_filename(userdata, awin);
-		break;
-		case ARC_XFD:
-			fn = xfd_get_filename(userdata);
-		break;
-	}
+	if(mf->get_filename) return mf->get_filename(userdata, awin);
 
-	return fn;
+	return NULL;
 }
 
 void module_free(void *awin)
 {
-	switch(window_get_archiver(awin)) {
-		case ARC_XAD:
-			xad_free(awin);
-		break;
+	struct module_functions *mf = window_get_module_funcs(awin);
 
-		case ARC_XFD:
-			xfd_free(awin);
-		break;
-	}
+	if(mf->free) mf->free(awin);
 }
 
 const char *module_get_format(void *awin)
 {
-	switch(window_get_archiver(awin)) {
-		case ARC_XAD:
-			return xad_get_arc_format(awin);
-		break;
-		case ARC_XFD:
-			return xfd_get_arc_format(awin);
-		break;
-	}
+	struct module_functions *mf = window_get_module_funcs(awin);
+
+	if(mf->get_format) return mf->get_format(awin);
 
 	return NULL;
 }
 
 const char *module_get_subformat(void *awin)
 {
-	switch(window_get_archiver(awin)) {
-		case ARC_XAD:
-			return xad_get_arc_subformat(awin);
-		break;
-	}
+	struct module_functions *mf = window_get_module_funcs(awin);
+
+	if(mf->get_subformat) return mf->get_subformat(awin);
 
 	return NULL;
 }
 
 const char *module_get_error(void *awin, long code)
 {
-	switch(window_get_archiver(awin)) {
-		case ARC_XAD:
-		case ARC_NONE:
-			return xad_error(code);
-		break;
-		case ARC_XFD:
-			return xfd_error(code);
-		break;
-	}
+	struct module_functions *mf = window_get_module_funcs(awin);
+
+	if(mf->get_error) return mf->get_error(code);
 
 	return NULL;
 }
 
 const char *module_get_read_module(void *awin)
 {
-	switch(window_get_archiver(awin)) {
-		case ARC_XAD:
-			return "XAD";
-		break;
-		case ARC_XFD:
-			return "XFD";
-		break;
-		default:
-		break;
-	}
+	struct module_functions *mf = window_get_module_funcs(awin);
 
-	return NULL;
+	return mf->module;
 }
 
 long module_extract(void *awin, void *node, void *archive, void *newdest)
@@ -138,14 +105,14 @@ long module_extract(void *awin, void *node, void *archive, void *newdest)
 	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
 			if(node == NULL) {
-				ret = xad_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode, module_vscan);
+				ret = xad_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode);
 			} else {
 				ULONG pud = 0;
-				ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, module_vscan, &pud);
+				ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, &pud);
 			}
 		break;
 		case ARC_XFD:
-			ret = xfd_extract(awin, archive, newdest, module_vscan);
+			ret = xfd_extract(awin, archive, newdest);
 		break;
 	}
 
@@ -154,6 +121,10 @@ long module_extract(void *awin, void *node, void *archive, void *newdest)
 
 void module_exit(void)
 {
+	/* Close libraries associated with all modules */
+	/* TODO: This only happens at program exit,
+	 * keep track of whether modules are being used
+	 * and close the libs early. */
 	xad_exit();
 	xfd_exit();
 }
@@ -165,6 +136,31 @@ BOOL module_recog(void* fullfilename)
 	if(found == FALSE) found = xfd_recog(fullfilename);
 	
 	return found;
+}
+
+static void module_extract_register(void *awin, struct module_functions *mf)
+{
+	/* Remove existing registration */
+	mf->module[0] = 'N';
+	mf->module[1] = '/';
+	mf->module[2] = 'A';
+	mf->module[3] = 0;
+
+	mf->get_filename = NULL;
+	mf->get_format = NULL;
+	mf->get_subformat = NULL;
+	mf->get_error = NULL;
+	mf->free = NULL;
+
+	/* Register correct module */
+	switch(window_get_archiver(awin)) {
+		case ARC_XAD:
+			xad_register(mf);
+		break;
+		case ARC_XFD:
+			xfd_register(mf);
+		break;
+	}
 }
 
 /*** Editing ***/
@@ -179,15 +175,16 @@ BOOL module_has_add(void *awin)
 
 void module_register(void *awin, struct module_functions *mf)
 {
+	module_extract_register(awin, mf);
+
 	const char *format = module_get_format(awin);
+
+	/* TODO: close libs if possible, see module_close() */
 
 	/* Remove existing registration */
 	mf->add = NULL;
 	mf->del = NULL;
 	
-	/* Close any existing libs */
-	libs_zip_exit();
-
 	/* Register correct module */
 	if(format && (strcmp(format, "Zip") == 0)) mod_zip_register(mf);
 	if(format && (strcmp(format, "LhA") == 0)) mod_lha_register(mf);

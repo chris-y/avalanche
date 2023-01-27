@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "config.h"
 #include "libs.h"
 #include "locale.h"
+#include "module.h"
 #include "req.h"
 #include "win.h"
 #include "xad.h"
@@ -63,7 +64,7 @@ static void xad_free_ai(struct xadArchiveInfo *a)
 	xadFreeObjectA(a, NULL);
 }
 
-void xad_free(void *awin)
+static void xad_free(void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 	if(xu && xu->ai) {
@@ -79,7 +80,7 @@ void xad_exit(void)
 	libs_xad_exit();
 }
 
-const char *xad_error(long code)
+static const char *xad_error(long code)
 {
 	return xadGetErrorText((ULONG)code);
 }
@@ -123,7 +124,7 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 				TAG_DONE);
 }
 
-const char *xad_get_filename(void *userdata, void *awin)
+static const char *xad_get_filename(void *userdata, void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 	
@@ -198,7 +199,7 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 	return XADPIF_OK;
 }
 
-const char *xad_get_arc_format(void *awin)
+static const char *xad_get_arc_format(void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 	if(!xu->ai) return NULL;
@@ -206,7 +207,7 @@ const char *xad_get_arc_format(void *awin)
 	return xu->ai->xai_Client->xc_ArchiverName;
 }
 
-const char *xad_get_arc_subformat(void *awin)
+static const char *xad_get_arc_subformat(void *awin)
 {
 	char *type;
 
@@ -369,7 +370,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	return err;
 }
 
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete), ULONG *pud)
+long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
 {
 	long err = 0;
 	struct xadFileInfo *fi = NULL;
@@ -453,8 +454,8 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 				}
 
 				if(err == XADERR_OK) {
-					if(fi) scan(awin, destfile, NULL, fi->xfi_Size, TRUE);
-					if(di) scan(awin, destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors, TRUE);
+					if(fi) module_vscan(awin, destfile, NULL, fi->xfi_Size, TRUE);
+					if(di) module_vscan(awin, destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors, TRUE);
 				}
 
 				if(fi) {
@@ -483,7 +484,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 }
 
 /* returns 0 on success */
-long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete))
+long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
 {
 	long err = XADERR_OK;
 	struct Node *fnode;
@@ -493,7 +494,7 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 
 	if(xu->ai) {
 		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
-			err = xad_extract_file(awin, file, dest, fnode, getnode, scan, &pud);
+			err = xad_extract_file(awin, file, dest, fnode, getnode, &pud);
 			if(err != XADERR_OK) {
 				if(err == XADERR_BREAK) err = XADERR_OK; // user abort
 				 return err;
@@ -502,4 +503,18 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 	}
 
 	return err;
+}
+
+void xad_register(struct module_functions *funcs)
+{
+	funcs->module[0] = 'X';
+	funcs->module[1] = 'A';
+	funcs->module[2] = 'D';
+	funcs->module[3] = 0;
+
+	funcs->get_filename = xad_get_filename;
+	funcs->free = xad_free;
+	funcs->get_format = xad_get_arc_format;
+	funcs->get_subformat = xad_get_arc_subformat;
+	funcs->get_error = xad_error;
 }

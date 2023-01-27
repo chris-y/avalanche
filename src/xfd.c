@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,10 @@
 #include "avalanche.h"
 #include "libs.h"
 #include "locale.h"
+#include "module.h"
 #include "req.h"
 #include "win.h"
+#include "xfd.h"
 
 #define XFD_ERR_LIBOPEN -1
 #define XFD_ERR_MEM -2
@@ -36,7 +38,7 @@ struct xfd_userdata {
 	UBYTE *buffer;
 };
 
-void xfd_free(void *awin)
+static void xfd_free(void *awin)
 {
 	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
 	if(xu) {
@@ -51,12 +53,12 @@ void xfd_free(void *awin)
 	window_free_archive_userdata(awin);
 }
 
-const char *xfd_get_filename(void *userdata)
+static const char *xfd_get_filename(void *userdata, void *awin)
 {
 	return userdata;
 }
 
-const char *xfd_get_arc_format(void *awin)
+static const char *xfd_get_arc_format(void *awin)
 {
 	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
 	if(!xu->bi) return NULL;
@@ -64,7 +66,7 @@ const char *xfd_get_arc_format(void *awin)
 	return xu->bi->xfdbi_PackerName;
 }
 
-const char *xfd_error(long code)
+static const char *xfd_error(long code)
 {
 	if(code < 0) {
 		switch(code) {
@@ -173,7 +175,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	return XFD_ERR_FILEOPEN;
 }
 
-long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete))
+long xfd_extract(void *awin, char *file, char *dest)
 {
 	BPTR fh;
 	char *pw = NULL;
@@ -198,7 +200,7 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 	}
 
 	if(xfdDecrunchBuffer(bi) == TRUE) {
-		if(scan(awin, NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen, TRUE) < 4) {
+		if(module_vscan(awin, NULL, bi->xfdbi_TargetBuffer, bi->xfdbi_TargetBufSaveLen, TRUE) < 4) {
 			char destfile[1024];
 			strncpy(destfile, dest, 1023);
 			destfile[1023] = 0;
@@ -226,4 +228,18 @@ long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, ch
 void xfd_exit(void)
 {
 	libs_xfd_exit();
+}
+
+void xfd_register(struct module_functions *funcs)
+{
+	funcs->module[0] = 'X';
+	funcs->module[1] = 'F';
+	funcs->module[2] = 'D';
+	funcs->module[3] = 0;
+
+	funcs->get_filename = xfd_get_filename;
+	funcs->free = xfd_free;
+	funcs->get_format = xfd_get_arc_format;
+	funcs->get_subformat = NULL;
+	funcs->get_error = xfd_error;
 }

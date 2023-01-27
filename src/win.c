@@ -1045,7 +1045,7 @@ BOOL window_edit_add(void *awin, char *file)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
-	if(module_vscan(awin, file, NULL, NULL, FALSE) == 0) {
+	if(module_vscan(awin, file, NULL, 0, FALSE) == 0) {
 		module_free(aw);
 		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
 	}

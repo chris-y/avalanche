@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,10 @@
 #ifndef XFD_H
 #define XFD_H 1
 
-void xfd_free(void *awin);
-const char *xfd_get_filename(void *userdata);
-BOOL xfd_recog(char *file);
-const char *xfd_get_arc_format(void *awin);
-long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin));
-long xfd_extract(void *awin, char *file, char *dest, ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete));
 void xfd_exit(void);
-const char *xfd_error(long code);
+BOOL xfd_recog(char *file);
+long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin));
+long xfd_extract(void *awin, char *file, char *dest);
+
+void xfd_register(struct module_functions *funcs);
 #endif
