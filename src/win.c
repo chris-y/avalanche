@@ -1052,16 +1052,84 @@ BOOL window_edit_add(void *awin, char *file)
 	return FALSE;
 }
 
+#ifdef __amigaos4__
+static int32 recursive_scan(void *awin, CONST_STRPTR name )
+{
+    int32 success = FALSE;
+    APTR  context = ObtainDirContextTags( EX_StringNameInput,name,
+                     EX_DoCurrentDir,TRUE, /* for recursion cd etc */
+                     EX_DataFields,(EXF_NAME|EXF_LINK|EXF_TYPE),
+                     TAG_END);
+    if( context )
+    {
+        struct ExamineData *dat;
+
+        while((dat = ExamineDir(context)))
+        {
+            if( EXD_IS_LINK(dat) ) /* all link types - check first ! */
+            {
+                if( EXD_IS_SOFTLINK(dat) ) 
+                {
+                }
+                else   /* a hardlink */
+                {
+                }
+            }
+            else if( EXD_IS_FILE(dat) )
+            {
+				char *file;
+				if(file = AllocVec(1024, MEMF_CLEAR)) {
+					NameFromLock(GetCurrentDir(), file, 1024);
+					AddPart(file, dat->Name, 1024);
+					DebugPrintF("%s\n", file);
+					window_edit_add(awin, file);
+				}
+            }
+            else if( EXD_IS_DIRECTORY(dat) )
+            {
+                if( ! recursive_scan(awin, dat->Name ) )  /* recurse */
+                {
+                    break;
+                }
+            }
+        }
+
+        if( ERROR_NO_MORE_ENTRIES == IoErr() )
+        {
+            success = TRUE;           /* normal success exit */
+        }
+        else
+        {
+            PrintFault(IoErr(),NULL); /* failure - why ? */
+        }
+	        
+    }
+    else
+    {
+        PrintFault(IoErr(),NULL);  /* no context - why ? */
+    }
+
+    ReleaseDirContext(context);          /* NULL safe */
+    return(success);
+}
+#endif
+
 static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 {
 	BOOL ret = TRUE;
 	
-	if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+	if(wbarg->wa_Lock) {
 		char *file = NULL;
 		if(file = AllocVec(1024, MEMF_CLEAR)) {
 			NameFromLock(wbarg->wa_Lock, file, 1024);
-			AddPart(file, wbarg->wa_Name, 1024);
-			ret = window_edit_add(awin, file);
+			if(*wbarg->wa_Name) {
+				AddPart(file, wbarg->wa_Name, 1024);
+				ret = window_edit_add(awin, file);
+			} else {
+#ifdef __amigaos4__
+				recursive_scan(awin, file);
+#endif
+			}
 			window_req_open_archive(awin, get_config(), TRUE);
 			FreeVec(file);
 		}
