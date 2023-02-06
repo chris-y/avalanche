@@ -279,7 +279,7 @@ static BOOL open_archive_from_wbarg_arexx(struct WBArg *wbarg)
 	return open_archive_from_wbarg(NULL, wbarg, FALSE, TRUE, NULL, NULL, NULL);
 }
 
-static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
+static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 {
 	struct MsgPort *cx_mp = NULL;
 	CxObj *cx_broker = NULL;
@@ -329,6 +329,12 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig)
 					window_is_open = TRUE;
 				}
 			}
+		} else if(initial_archive) {
+			awin = window_create(&config, initial_archive, winport, AppPort);
+			free(initial_archive);
+			if(awin == NULL) return;
+			window_open(awin, appwin_mp);
+			window_is_open = TRUE;
 		}
 
 		if(window_is_open == FALSE) {
@@ -566,7 +572,16 @@ int main(int argc, char **argv)
 {
 	char *tmp = NULL;
 	struct WBStartup *WBenchMsg = NULL;
+	char *archive = NULL; /* Archive provided on command line */
 	ULONG rxsig = 0;
+	LONG rarray[] = {0};
+	struct RDArgs *args;
+	STRPTR template = "FILE";
+
+	enum
+	{
+		A_FILE
+	};
 
 	if(libs_open() == FALSE) {
 		return 10;
@@ -609,6 +624,19 @@ int main(int argc, char **argv)
 				AddPart(config.progname, wbarg->wa_Name, 40);
 			}
 		}
+	} else {
+		args = ReadArgs(template, rarray, NULL);
+
+		if(args) {
+			if(rarray[A_FILE]) {
+				archive = strdup((char *)rarray[A_FILE]);
+			}
+
+			FreeArgs(args);
+		} else {
+			return(10); /* TODO: Will never get here, but if we add required args
+						 * then will need to do proper cleanup */
+		}
 	}
 
 	config.tmpdir = AllocVec(100, MEMF_CLEAR);
@@ -630,7 +658,7 @@ int main(int argc, char **argv)
 
 	if(ami_arexx_init(&rxsig)) {
 		/* ARexx port did not already exist */
-		gui(WBenchMsg, rxsig);
+		gui(WBenchMsg, rxsig, archive);
 	} else {
 		BOOL arc_opened = FALSE;
 		if(WBenchMsg) {
@@ -648,6 +676,11 @@ int main(int argc, char **argv)
 					arc_opened = TRUE;
 				}
 			}
+		} else if(archive) {
+			char cmd[1024];
+			snprintf(cmd, 1024, "OPEN \"%s\"", archive);
+			ami_arexx_send(cmd);
+			arc_opened = TRUE;
 		}
 		if(arc_opened == FALSE) ami_arexx_send("SHOW");
 	}
