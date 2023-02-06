@@ -679,6 +679,7 @@ int main(int argc, char **argv)
 		} else if(archive) {
 			char cmd[1024];
 			snprintf(cmd, 1024, "OPEN \"%s\"", archive);
+			free(archive);
 			ami_arexx_send(cmd);
 			arc_opened = TRUE;
 		}
