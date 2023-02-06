@@ -517,54 +517,81 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 	DeleteMsgPort(AppPort);
 }
 
-static void gettooltypes(UBYTE **tooltypes)
+static void gettooltypes(struct WBArg *wbarg)
 {
+	struct DiskObject *dobj;
+	STRPTR *toolarray;
 	char *s;
 
-	s = ArgString(tooltypes, "CX_POPUP", "YES");
-	if(MatchToolValue(s, "NO")) {
-		config.cx_popup = FALSE;
+	if((*wbarg->wa_Name) && (dobj = GetDiskObject(wbarg->wa_Name))) {
+		toolarray = (STRPTR *)dobj->do_ToolTypes;
+
+		if(s = (char *)FindToolType(toolarray, "CX_POPUP")) {
+			if(MatchToolValue(s, "NO")) {
+				config.cx_popup = FALSE;
+			} else {
+				config.cx_popup = TRUE;
+			}
+		}
+
+		if(s = (char *)FindToolType(toolarray,"CX_PRIORITY")) config.cx_pri = atoi(s);
+
+		s = (char *)FindToolType(toolarray, "CX_POPKEY");
+		if(s == NULL) s = "ctrl alt a";
+
+		int len = strlen("rawkey ") + strlen(s) + 1;
+		if(config.cx_popkey = AllocVec(len, MEMF_ANY | MEMF_CLEAR)) {
+			strncpy(config.cx_popkey, "rawkey ", len);
+			strncat(config.cx_popkey, s, len);
+		}
+
+		if(s = (char *)FindToolType(toolarray, "SOURCEDIR")) {
+			config.sourcedir = strdup(s);
+		} else {
+			config.sourcedir = strdup("RAM:");
+		}
+
+		if(s = (char *)FindToolType(toolarray, "DEST")) {
+			config.dest = strdup(s);
+		} else {
+			config.dest = strdup("RAM:");
+		}
+
+		dest_needs_free = TRUE;
+
+		s = (char *)FindToolType(toolarray, "TMPDIR");
+		if(s == NULL) s = "T:";
+
+		if(config.tmpdir) {
+			strncpy(config.tmpdir, s, 90);
+			config.tmpdirlen = strlen(config.tmpdir);
+		}
+
+		if(FindToolType(toolarray, "HBROWSER")) config.h_browser = TRUE;
+		if(FindToolType(toolarray, "VIRUSSCAN")) config.virus_scan = TRUE;
+		if(FindToolType(toolarray, "NOASLHOOK")) config.disable_asl_hook = TRUE;
+		if(FindToolType(toolarray, "IGNOREFS")) config.ignorefs = TRUE;
+		if(FindToolType(toolarray, "DEBUG")) config.debug = TRUE;
+
+		if(s = (char *)FindToolType(toolarray, "CLOSE")) {
+			if(MatchToolValue(s, "HIDE")) {
+				config.closeaction = 2;
+			} else if(MatchToolValue(s, "QUIT")) {
+				config.closeaction = 1;
+			} else {
+				config.closeaction = 0;
+			}
+		}
+
+		if(s = (char *)FindToolType(toolarray,"PROGRESSSIZE")) config.progress_size = atoi(s);
+
+		if(s = (char *)FindToolType(toolarray,"WINX")) config.win_x = atoi(s);
+		if(s = (char *)FindToolType(toolarray,"WINY")) config.win_y = atoi(s);
+		if(s = (char *)FindToolType(toolarray,"WINW")) config.win_w = atoi(s);
+		if(s = (char *)FindToolType(toolarray,"WINH")) config.win_h = atoi(s);
+
+		FreeDiskObject(dobj);
 	}
-
-	config.cx_pri = ArgInt(tooltypes, "CX_PRIORITY", 0);
-
-	s = ArgString(tooltypes, "CX_POPKEY", "ctrl alt a");
-	int len = strlen("rawkey ") + strlen(s) + 1;
-	if(config.cx_popkey = AllocVec(len, MEMF_ANY | MEMF_CLEAR)) {
-		strncpy(config.cx_popkey, "rawkey ", len);
-		strncat(config.cx_popkey, s, len);
-	}
-
-	config.sourcedir = strdup(ArgString(tooltypes, "SOURCEDIR", "RAM:"));
-	config.dest = strdup(ArgString(tooltypes, "DEST", "RAM:"));
-	dest_needs_free = TRUE;
-
-	if(config.tmpdir) {
-		strncpy(config.tmpdir, ArgString(tooltypes, "TMPDIR", "T:"), 90);
-		config.tmpdirlen = strlen(config.tmpdir);
-	}
-
-	if(FindToolType(tooltypes, "HBROWSER")) config.h_browser = TRUE;
-	if(FindToolType(tooltypes, "VIRUSSCAN")) config.virus_scan = TRUE;
-	if(FindToolType(tooltypes, "NOASLHOOK")) config.disable_asl_hook = TRUE;
-	if(FindToolType(tooltypes, "IGNOREFS")) config.ignorefs = TRUE;
-	if(FindToolType(tooltypes, "DEBUG")) config.debug = TRUE;
-
-	s = ArgString(tooltypes, "CLOSE", "ASK");
-	if(MatchToolValue(s, "HIDE")) {
-		config.closeaction = 2;
-	} else if(MatchToolValue(s, "CLOSE")) {
-		config.closeaction = 1;
-	} else {
-		config.closeaction = 0;
-	}
-
-	config.progress_size = ArgInt(tooltypes, "PROGRESSSIZE", PROGRESS_SIZE_DEFAULT);
-
-	config.win_x = ArgInt(tooltypes, "WINX", 0);
-	config.win_y = ArgInt(tooltypes, "WINY", 0);
-	config.win_w = ArgInt(tooltypes, "WINW", 0);
-	config.win_h = ArgInt(tooltypes, "WINH", 0);
 }
 
 /** Main program **/
@@ -609,9 +636,8 @@ int main(int argc, char **argv)
 	config.cx_popup = TRUE;
 	config.cx_popkey = NULL;
 
-	config.tmpdir = NULL;
+	config.tmpdir = AllocVec(100, MEMF_CLEAR);
 	config.tmpdirlen = 0;
-
 
 	if(argc == 0) {
 		/* Started from WB */
@@ -623,6 +649,15 @@ int main(int argc, char **argv)
 				strncpy(config.progname, "PROGDIR:", 40);
 				AddPart(config.progname, wbarg->wa_Name, 40);
 			}
+		}
+
+		for(int i=0, wbarg=WBenchMsg->sm_ArgList; i<WBenchMsg->sm_NumArgs; i++, wbarg++) {
+			BPTR olddir =-1;
+			if((wbarg->wa_Lock)&&(*wbarg->wa_Name))
+				olddir = SetCurrentDir(wbarg->wa_Lock);
+
+			gettooltypes(wbarg);
+			if(olddir !=-1) SetCurrentDir(olddir);
 		}
 	} else {
 		args = ReadArgs(template, rarray, NULL);
@@ -638,12 +673,6 @@ int main(int argc, char **argv)
 						 * then will need to do proper cleanup */
 		}
 	}
-
-	config.tmpdir = AllocVec(100, MEMF_CLEAR);
-	
-	UBYTE **tooltypes = ArgArrayInit(argc, (CONST_STRPTR *) argv);
-	gettooltypes(tooltypes);
-	ArgArrayDone();
 
 	Locale_Open("avalanche.catalog", 0, 0);
 
