@@ -334,6 +334,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			free(initial_archive);
 			if(awin == NULL) return;
 			window_open(awin, appwin_mp);
+			window_req_open_archive(awin, &config, TRUE);
 			window_is_open = TRUE;
 		}
 
@@ -640,6 +641,7 @@ int main(int argc, char **argv)
 	config.tmpdirlen = 0;
 
 	if(argc == 0) {
+		int i;
 		/* Started from WB */
 		WBenchMsg = (struct WBStartup *)argv;
 		struct WBArg *wbarg = WBenchMsg->sm_ArgList;
@@ -651,13 +653,13 @@ int main(int argc, char **argv)
 			}
 		}
 
-		for(int i=0, wbarg=WBenchMsg->sm_ArgList; i<WBenchMsg->sm_NumArgs; i++, wbarg++) {
+		for(i=0, wbarg=WBenchMsg->sm_ArgList; i<WBenchMsg->sm_NumArgs; i++, wbarg++) {
 			BPTR olddir =-1;
 			if((wbarg->wa_Lock)&&(*wbarg->wa_Name))
-				olddir = SetCurrentDir(wbarg->wa_Lock);
+				olddir = CurrentDir(wbarg->wa_Lock);
 
 			gettooltypes(wbarg);
-			if(olddir !=-1) SetCurrentDir(olddir);
+			if(olddir !=-1) CurrentDir(olddir);
 		}
 	} else {
 		args = ReadArgs(template, rarray, NULL);
