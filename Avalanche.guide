@@ -117,6 +117,7 @@ This is mostly for internal use, but has the following commands:
   - Can now open new window from the GUI
   - Can select to ask/hide/quit when last window closed
     (NB: CONFIRMQUIT tooltype no longer used)
+* Can now specify an archive on the command line
 
 @{u}1.10 (12.01.2023)@{uu}
 * Dragging a drawer into the window now sets the source directory, if
