@@ -1,6 +1,6 @@
 CC := vc +newlib
 CFLAGS := -static -O3 -D__USE_INLINE__ -ISDK:local/common/include
-LIBS := -lamiga
+LIBS := 
 VPATH := ..
 
 OBJS := avalanche.o arexx.o config.o libs.o locale.o misc.o module.o mod_lha.o mod_zip.o req.o win.o xad.o xfd.o xvs.o

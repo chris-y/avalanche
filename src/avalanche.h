@@ -37,7 +37,6 @@ enum {
 	WIN_DONE_QUIT,
 };
 
-char *strdup(const char *s);
 struct avalanche_config *get_config(void);
 ULONG ask_quit(void *awin);
 void savesettings(Object *win);
@@ -47,9 +46,5 @@ void free_dest_path(void);
 /* window list */
 void add_to_window_list(void *awin);
 void del_from_window_list(void *awin);
-
-#ifndef __amigaos4__
-#define IsMinListEmpty(L) (L)->mlh_Head->mln_Succ == 0
-#endif
 
 #endif

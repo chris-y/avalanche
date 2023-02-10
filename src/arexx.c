@@ -27,6 +27,7 @@
 #include "arexx.h"
 #include "avalanche.h"
 #include "libs.h"
+#include "misc.h"
 #include "Avalanche_rev.h"
 
 #include <stdint.h>

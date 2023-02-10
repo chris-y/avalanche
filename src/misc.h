@@ -26,6 +26,10 @@ struct Node *GetPred(struct Node *node);
 struct Node *GetSucc(struct Node *node);
 #endif
 
+#ifdef __amigaos4__
+#define CurrentDir SetCurrentDir
+#endif
+
 char *strdup(const char *s);
 
 #endif
