@@ -28,6 +28,9 @@ struct Node *GetSucc(struct Node *node);
 
 #ifdef __amigaos4__
 #define CurrentDir SetCurrentDir
+
+int32 recursive_scan(void *awin, CONST_STRPTR name);
+BOOL object_is_dir(char *filename);
 #endif
 
 char *strdup(const char *s);

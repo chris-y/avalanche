@@ -435,12 +435,18 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 									if(module_has_add((void *)appmsg->am_UserData)) {
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
 											BOOL ret = TRUE;
-											if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+											if(wbarg->wa_Lock) {
 												char *file = NULL;
-												if(file = AllocVec(512, MEMF_CLEAR)) {
-													NameFromLock(wbarg->wa_Lock, file, 512);
-													AddPart(file, wbarg->wa_Name, 512);
-													ret = window_edit_add((void *)appmsg->am_UserData, file);
+												if(file = AllocVec(1024, MEMF_CLEAR)) {
+													NameFromLock(wbarg->wa_Lock, file, 1024);
+													if(*wbarg->wa_Name) {
+														AddPart(file, wbarg->wa_Name, 1024);
+														ret = window_edit_add((void *)appmsg->am_UserData, file);
+													} else {
+#ifdef __amigaos4__
+														recursive_scan((void *)appmsg->am_UserData, file);
+#endif
+													}
 													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 													FreeVec(file);
 												}

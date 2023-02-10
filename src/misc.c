@@ -16,6 +16,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <proto/dos.h>
+#include <proto/exec.h>
+
+#include "win.h"
 #include "misc.h"
 
 /** Useful functions **/
@@ -52,3 +56,79 @@ char *strdup(const char *s)
   return (char*) 0;
   return (char*) memcpy (result, s, len);
 }
+
+#ifdef __amigaos4__
+int32 recursive_scan(void *awin, CONST_STRPTR name)
+{
+    int32 success = FALSE;
+    APTR  context = ObtainDirContextTags( EX_StringNameInput,name,
+                     EX_DoCurrentDir,TRUE, /* for recursion cd etc */
+                     EX_DataFields,(EXF_NAME|EXF_LINK|EXF_TYPE),
+                     TAG_END);
+    if(context)
+    {
+        struct ExamineData *dat;
+
+        while((dat = ExamineDir(context)))
+        {
+            if( EXD_IS_LINK(dat) ) /* all link types - check first ! */
+            {
+                if( EXD_IS_SOFTLINK(dat) ) 
+                {
+                }
+                else   /* a hardlink */
+                {
+                }
+            }
+            else if( EXD_IS_FILE(dat) )
+            {
+				char *file;
+				if(file = AllocVec(1024, MEMF_CLEAR)) {
+					NameFromLock(GetCurrentDir(), file, 1024);
+					AddPart(file, dat->Name, 1024);
+					DebugPrintF("%s\n", file);
+					window_edit_add(awin, file);
+				}
+            }
+            else if( EXD_IS_DIRECTORY(dat) )
+            {
+                if( ! recursive_scan(awin, dat->Name ) )  /* recurse */
+                {
+                    break;
+                }
+            }
+        }
+
+        if( ERROR_NO_MORE_ENTRIES == IoErr() )
+        {
+            success = TRUE;           /* normal success exit */
+        }
+        else
+        {
+            PrintFault(IoErr(),NULL); /* failure - why ? */
+        }
+	        
+    }
+    else
+    {
+        PrintFault(IoErr(),NULL);  /* no context - why ? */
+    }
+
+    ReleaseDirContext(context);          /* NULL safe */
+    return(success);
+}
+
+BOOL object_is_dir(char *filename)
+{
+	BOOL ret = FALSE;
+	struct ExamineData *exd = ExamineObjectTags(EX_StringNameInput, filename, TAG_END);
+
+	if(exd) {
+		if(EXD_IS_DIRECTORY(exd)) ret = TRUE;
+	}
+
+	FreeDosObject(DOS_EXAMINEDATA, exd);
+
+	return ret;
+}
+#endif
