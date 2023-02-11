@@ -23,6 +23,7 @@
 #include "avalanche.h"
 #include "libs.h"
 #include "locale.h"
+#include "misc.h"
 #include "req.h"
 #include "win.h"
 
