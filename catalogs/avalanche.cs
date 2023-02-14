@@ -223,3 +223,6 @@ Hide
 MSG_LASTWINDOWACTION
 When last window closed:
 ;
+MSG_NEWARCHIVE
+New archive...
+;

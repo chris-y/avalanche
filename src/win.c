@@ -127,11 +127,12 @@ struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
 	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 0 Open
 	{NM_ITEM,   NULL,         "+", 0, 0, 0,}, // 1 New window
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 2
-	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 3 Archive Info
-	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 4 About
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 5
-	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 6 Quit
+	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 2 New archive
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
+	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
+	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 5 About
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 6
+	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 7 Quit
 
 	{NM_TITLE,  NULL,               0,  0, 0, 0,}, // 1 Edit
 	{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
@@ -150,7 +151,7 @@ struct NewMenu menu[] = {
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
-#define MENU_SETTINGS_HBROWSER 16
+#define MENU_SETTINGS_HBROWSER 17
 
 #define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
@@ -1259,15 +1260,19 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								window_open(new_awin, appwin_mp);
 							break;
 							
-							case 3: //info
+							case 2: // new archive
+							
+							break;
+
+							case 4: //info
 								req_show_arc_info(awin);
 							break;
 
-							case 4: //about
+							case 5: //about
 								show_about(awin);
 							break;
 							
-							case 6: //quit
+							case 7: //quit
 								if(ask_quit(awin)) {
 									done = WIN_DONE_QUIT;
 								}
@@ -1397,19 +1402,20 @@ void fill_menu_labels(void)
 	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
 	menu[1].nm_Label = locale_get_string( MSG_OPEN );
 	menu[2].nm_Label = locale_get_string( MSG_NEWWINDOW );
-	menu[4].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
-	menu[5].nm_Label = locale_get_string( MSG_ABOUT );
-	menu[7].nm_Label = locale_get_string( MSG_QUIT );
-	menu[8].nm_Label = locale_get_string( MSG_EDIT );
-	menu[9].nm_Label = locale_get_string( MSG_SELECTALL );
-	menu[10].nm_Label = locale_get_string( MSG_CLEARSELECTION );
-	menu[11].nm_Label = locale_get_string( MSG_INVERTSELECTION );
-	menu[13].nm_Label = locale_get_string( MSG_ADDFILES );
-	menu[14].nm_Label = locale_get_string( MSG_DELFILES );
-	menu[15].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[3].nm_Label = locale_get_string( MSG_NEWARCHIVE );
+	menu[5].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
+	menu[6].nm_Label = locale_get_string( MSG_ABOUT );
+	menu[8].nm_Label = locale_get_string( MSG_QUIT );
+	menu[9].nm_Label = locale_get_string( MSG_EDIT );
+	menu[10].nm_Label = locale_get_string( MSG_SELECTALL );
+	menu[11].nm_Label = locale_get_string( MSG_CLEARSELECTION );
+	menu[12].nm_Label = locale_get_string( MSG_INVERTSELECTION );
+	menu[14].nm_Label = locale_get_string( MSG_ADDFILES );
+	menu[15].nm_Label = locale_get_string( MSG_DELFILES );
+	menu[16].nm_Label = locale_get_string( MSG_SETTINGS );
 	menu[MENU_SETTINGS_HBROWSER].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[17].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[19].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[18].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[20].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)
