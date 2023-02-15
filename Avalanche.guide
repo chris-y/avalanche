@@ -112,7 +112,7 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}1.11 (xx.xx.xxxx)@{uu}
+@{u}1.11 (11.02.2023)@{uu}
 * Improve window handling
   - Can now open new window from the GUI
   - Can select to ask/hide/quit when last window closed
