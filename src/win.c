@@ -125,9 +125,9 @@ struct List winlist;
 
 struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
-	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 0 Open
+	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
 	{NM_ITEM,   NULL,         "+", 0, 0, 0,}, // 1 New window
-	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 2 New archive
+	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 2 Open
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
 	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 5 About
@@ -1250,18 +1250,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				switch(MENUNUM(code)) {
 					case 0: //project
 						switch(ITEMNUM(code)) {
-							case 0: //open
-								window_req_open_archive(awin, config, FALSE);
-							break;
+							case 0: // new archive
 							
+							break;
+
 							case 1: // new window
 								new_awin = window_create(config, NULL, winport, AppPort);
 								if(new_awin == NULL) break;
 								window_open(new_awin, appwin_mp);
 							break;
 							
-							case 2: // new archive
-							
+							case 2: //open
+								window_req_open_archive(awin, config, FALSE);
 							break;
 
 							case 4: //info
@@ -1400,9 +1400,9 @@ void window_disable_gadgets(void *awin, BOOL disable)
 void fill_menu_labels(void)
 {
 	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
-	menu[1].nm_Label = locale_get_string( MSG_OPEN );
+	menu[1].nm_Label = locale_get_string( MSG_NEWARCHIVE );
 	menu[2].nm_Label = locale_get_string( MSG_NEWWINDOW );
-	menu[3].nm_Label = locale_get_string( MSG_NEWARCHIVE );
+	menu[3].nm_Label = locale_get_string( MSG_OPEN );
 	menu[5].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
 	menu[6].nm_Label = locale_get_string( MSG_ABOUT );
 	menu[8].nm_Label = locale_get_string( MSG_QUIT );
