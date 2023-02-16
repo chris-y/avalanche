@@ -226,3 +226,9 @@ When last window closed:
 MSG_NEWARCHIVE
 New archive...
 ;
+MSG_TYPE
+_Type
+;
+MSG_CREATE
+_Create
+;

@@ -114,6 +114,8 @@
 #define MSG_QUITCFG_HIDE 70
 #define MSG_LASTWINDOWACTION 71
 #define MSG_NEWARCHIVE 72
+#define MSG_TYPE 73
+#define MSG_CREATE 74
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -196,6 +198,8 @@
 #define MSG_QUITCFG_HIDE_STR "Hide"
 #define MSG_LASTWINDOWACTION_STR "When last window closed:"
 #define MSG_NEWARCHIVE_STR "New archive..."
+#define MSG_TYPE_STR "_Type"
+#define MSG_CREATE_STR "_Create"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -353,6 +357,10 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_LASTWINDOWACTION_STR "\x00\x00"
     "\x00\x00\x00\x48\x00\x10"
     MSG_NEWARCHIVE_STR "\x00\x00"
+    "\x00\x00\x00\x49\x00\x06"
+    MSG_TYPE_STR "\x00"
+    "\x00\x00\x00\x4A\x00\x08"
+    MSG_CREATE_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */
