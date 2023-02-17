@@ -103,7 +103,9 @@ struct avalanche_window {
 	BOOL archive_needs_free;
 	void *archive_userdata;
 	BOOL h_mode;
+	BOOL flat_mode;
 	BOOL iconified;
+	struct MinList arc_list;
 };
 
 struct List winlist;
@@ -127,12 +129,16 @@ struct NewMenu menu[] = {
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
 	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Snapshot
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Preferences
+	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1 Flat Browser
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Snapshot
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 4 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
+
+#define MENU_HMODE 13
+#define MENU_FLATMODE 14
 
 #define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
@@ -502,6 +508,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	/* Copy global to local config */
 	aw->h_mode = config->h_browser;
+	aw->flat_mode = FALSE; /* TODO: Add to global config */
 
 	/* ASL hook */
 	aw->aslfilterhook.h_Entry = aslfilterfunc;
@@ -619,8 +626,9 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	if(aw->windows[WID_MAIN]) {
 		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
-		if(aw->h_mode) aw->menu[12].nm_Flags |= CHECKED;
-	
+		if(aw->h_mode) aw->menu[MENU_HMODE].nm_Flags |= CHECKED;
+		if(aw->flat_mode) aw->menu[MENU_FLATMODE].nm_Flags |= CHECKED;
+
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
 		if(aw->windows[WID_MAIN]) {
@@ -1025,8 +1033,14 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								window_toggle_hbrowser(awin, aw->h_mode);
 								window_req_open_archive(awin, config, TRUE);
 							break;
-								
-							case 2: //snapshot
+					
+							case 1: //flat browser mode TODO: this should be MX with above
+								aw->flat_mode = !aw->flat_mode;
+
+								window_req_open_archive(awin, config, TRUE);
+							break;
+										
+							case 3: //snapshot
 								/* fetch current win posn */
 								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_x);
 								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_y);
@@ -1034,7 +1048,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								GetAttr(WA_Height, aw->objects[OID_MAIN], (APTR)&config->win_h);
 							break;
 								
-							case 3: //prefs
+							case 4: //prefs
 								config_window_open(config);
 							break;
 						}
@@ -1123,9 +1137,10 @@ void fill_menu_labels(void)
 	menu[10].nm_Label = locale_get_string( MSG_CLEARSELECTION );
 	menu[11].nm_Label = locale_get_string( MSG_INVERTSELECTION );
 	menu[12].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[13].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[15].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[16].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[MENU_HMODE].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
+	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_FLATBROWSER );
+	menu[16].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[17].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)
