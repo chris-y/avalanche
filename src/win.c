@@ -487,7 +487,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 				
 				for(int i = 0; i < aw->total_items; i++) {
 					/* Only show root */
-					if(aw->arc_array[i]->level == 0) addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, FALSE, aw);
+					if((aw->arc_array[i]->level == 0) && (aw->arc_array[i]->dir == FALSE)) addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, FALSE, aw);
 				}
 				
 				/* Add fake dir entries */
