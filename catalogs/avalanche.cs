@@ -202,3 +202,6 @@ Hide
 MSG_LASTWINDOWACTION
 When last window closed:
 ;
+MSG_FLATBROWSER
+Flat browser
+;

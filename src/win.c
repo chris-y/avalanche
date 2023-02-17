@@ -81,6 +81,7 @@ struct arc_entries {
 	ULONG *size;
 	BOOL dir;
 	void *userdata;
+	ULONG level;
 };
 
 struct avalanche_window {
@@ -251,6 +252,17 @@ static void add_to_delete_list(struct avalanche_window *aw, char *fn)
 		node->ln_Name = strdup(fn);
 		AddTail((struct List *)&aw->deletelist, (struct Node *)node);
 	}
+}
+
+static void free_arc_array(struct avalanche_window *aw)
+{
+	if((aw->arc_array == NULL) || (aw->total_items == 0)) return;
+	
+	for(int i = 0; i < aw->total_items; i++) {
+		FreeVec(aw->arc_array[i]);
+	}
+	FreeVec(aw->arc_array);
+	aw->arc_array = NULL;
 }
 
 static int sort(const char *a, const char *b)
@@ -441,6 +453,37 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 				}
 				FreeVec(aw->arc_array);
 				aw->arc_array = NULL;
+			}
+		}
+	} else if(aw->flat_mode) {
+		if(item == 0) {
+			if(aw->arc_array) free_arc_array(aw);
+			aw->arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
+		}
+
+		if(aw->arc_array) {
+			int i = 0;
+			
+			aw->arc_array[item] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+			
+			aw->arc_array[item]->name = name;
+			aw->arc_array[item]->size = size;
+			aw->arc_array[item]->dir = dir;
+			aw->arc_array[item]->userdata = userdata;
+			
+			aw->arc_array[item]->level = 0;
+		
+			/* Count the slashes to find directory level */
+			while(name[i+1]) { /* ignore any trailing slash */
+				if(name[i] == '/') aw->arc_array[item]->level++;
+				i++;
+			}
+			
+			if(item == (total - 1)) {
+				for(int i = 0; i < aw->total_items; i++) {
+					/* Only show root */
+					if(aw->arc_array[i]->level == 0) addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, FALSE, aw);
+				}
 			}
 		}
 	} else {
@@ -683,6 +726,7 @@ void window_dispose(void *awin)
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	if(aw->menu) FreeVec(aw->menu);
+	free_arc_array(aw);
 
 	delete_delete_list(aw);
 
@@ -814,6 +858,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
 		if(ret == 0) return;
 	}
+
+	free_arc_array(aw);
 
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	GetAttr(GETFILE_FullFile, aw->gadgets[GID_ARCHIVE], (APTR)&aw->archive);

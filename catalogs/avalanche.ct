@@ -263,3 +263,7 @@ MSG_LASTWINDOWACTION
 When last window closed:
 ; When last window closed:
 ;
+MSG_FLATBROWSER
+Flat browser
+; Flat browser
+;

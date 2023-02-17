@@ -106,6 +106,7 @@
 #define MSG_QUITCFG_QUIT 62
 #define MSG_QUITCFG_HIDE 63
 #define MSG_LASTWINDOWACTION 64
+#define MSG_FLATBROWSER 65
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -180,6 +181,7 @@
 #define MSG_QUITCFG_QUIT_STR "Quit"
 #define MSG_QUITCFG_HIDE_STR "Hide"
 #define MSG_LASTWINDOWACTION_STR "When last window closed:"
+#define MSG_FLATBROWSER_STR "Flat browser"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -321,6 +323,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_QUITCFG_HIDE_STR "\x00\x00"
     "\x00\x00\x00\x40\x00\x1A"
     MSG_LASTWINDOWACTION_STR "\x00\x00"
+    "\x00\x00\x00\x41\x00\x0E"
+    MSG_FLATBROWSER_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */
