@@ -482,11 +482,17 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			}
 			
 			if(item == (total - 1)) {
+				/* Sort the array */
+				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
+				
 				for(int i = 0; i < aw->total_items; i++) {
 					/* Only show root */
 					if(aw->arc_array[i]->level == 0) addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, FALSE, aw);
 				}
 				
+				/* Add fake dir entries */
+				char *prev_dir_name = NULL;
+
 				for(int it = 0; it < aw->total_items; it++) {
 					char dir_name[104];
 					i = 0;
@@ -501,8 +507,13 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 						dir_name[i] = aw->arc_array[it]->name[i];
 						i++;
 					}
-					addlbnode(dir_name, &zero, TRUE, NULL, FALSE, aw);
+					if((prev_dir_name == NULL) || (prev_dir_name && (strcmp(prev_dir_name, dir_name) != 0))) {
+						addlbnode(dir_name, &zero, TRUE, NULL, FALSE, aw);
+						if(prev_dir_name) free(prev_dir_name);
+						prev_dir_name = strdup(dir_name);
+					}
 				}
+				if(prev_dir_name != NULL) free(prev_dir_name);
 			}
 		}
 	} else {
