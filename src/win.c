@@ -778,7 +778,7 @@ void window_list_handle(void *awin, char *tmpdir)
 	GetAttr(LISTBROWSER_RelEvent, aw->gadgets[GID_LIST], (APTR)&tmp);
 	switch(tmp) {
 #if 0 /* This selects items when single-clicked off the checkbox -
-it's incompatible with doube-clicking as it resets the listview */
+it's incompatible with double-clicking as it resets the listview */
 		case LBRE_NORMAL:
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
 			toggle_item(aw, node, 2);
@@ -786,6 +786,37 @@ it's incompatible with doube-clicking as it resets the listview */
 #endif
 		case LBRE_DOUBLECLICK:
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+
+			if(aw->flat_mode) {
+				void *userdata = NULL;
+
+				GetListBrowserNodeAttrs(node,
+					LBNA_UserData, &userdata,
+				TAG_DONE);
+
+				if(userdata == NULL) {
+					/* this is currently one of our fake dir nodes
+					 * NB: this is likely to change to point to the array! */
+
+					char *dir = NULL;
+
+					/* this will be easier with the array pointer -
+					 * we need to get the full path which isn't here! */
+					GetListBrowserNodeAttrs(node,
+						LBNA_Column, 0,
+						LBNCA_Text, &dir, 
+					TAG_DONE);
+#ifdef __amigaos4__
+					DebugPrintF("%s\n", dir);
+#endif
+
+					/* switch to dir here! */
+
+					break;
+
+				}
+			}
+
 			toggle_item(aw, node, 1); /* ensure selected */
 			char fn[1024];
 			strncpy(fn, tmpdir, 1023);
