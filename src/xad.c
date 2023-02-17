@@ -113,7 +113,8 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-	if(xu->arctype == XDISK) return 0;
+	if(xu && xu->arctype == XDISK) return 0;
+	if(xfi == NULL) return 0;
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
@@ -125,6 +126,8 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 
 const char *xad_get_filename(void *userdata, void *awin)
 {
+	if(userdata == NULL) return NULL;
+	
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 	
 	if(xu && (xu->arctype == XDISK)) return "disk.img";

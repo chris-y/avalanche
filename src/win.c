@@ -109,7 +109,8 @@ struct avalanche_window {
 	struct MinList arc_list;
 };
 
-struct List winlist;
+static struct List winlist;
+static ULONG zero = 0;
 
 /** Menu **/
 
@@ -358,6 +359,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 		LBNA_Flags, flags,
 		LBNA_Generation, gen,
 		LBNA_Column, 0,
+			LBNCA_CopyText, TRUE,
 			LBNCA_Text, name,
 		LBNA_Column, 1,
 			LBNCA_Integer, size,
@@ -483,6 +485,23 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 				for(int i = 0; i < aw->total_items; i++) {
 					/* Only show root */
 					if(aw->arc_array[i]->level == 0) addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, FALSE, aw);
+				}
+				
+				for(int it = 0; it < aw->total_items; it++) {
+					char dir_name[104];
+					i = 0;
+					
+					if(aw->arc_array[it]->level == 0) continue;
+										
+					while(aw->arc_array[it]->name[i+1]) {
+						if(aw->arc_array[it]->name[i] == '/') {
+							dir_name[i] = '\0';
+							break;
+						}
+						dir_name[i] = aw->arc_array[it]->name[i];
+						i++;
+					}
+					addlbnode(dir_name, &zero, TRUE, NULL, FALSE, aw);
 				}
 			}
 		}
