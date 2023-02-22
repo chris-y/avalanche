@@ -106,7 +106,7 @@ struct avalanche_window {
 	BOOL h_mode;
 	BOOL flat_mode;
 	BOOL iconified;
-	struct MinList arc_list;
+	char *current_dir;
 };
 
 static struct List winlist;
@@ -412,11 +412,40 @@ static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG 
 	return;
 }
 
-static void window_flat_browser_construct(struct avalanche_window *aw, ULONG level, char *dir)
+static ULONG count_dir_level(char *filename)
 {
+	ULONG i = 0;
+	ULONG level = 0;
+	while(filename[i+1]) { /* ignore any trailing slash */
+		if(filename[i] == '/') level++;
+		i++;
+	}
+	
+	#ifdef __amigaos4__
+	DebugPrintF("%s - level %d\n", filename, level);
+	#endif
+	
+	return level;
+}
+
+static void window_flat_browser_construct(struct avalanche_window *aw)
+{
+	ULONG level = 0;
+
+	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+										WA_BusyPointer, TRUE,
+										TAG_DONE);
+
+	FreeListBrowserList(&aw->lblist);
+
+	if(aw->current_dir) level = count_dir_level(aw->current_dir) + 1;
+
 	for(int it = 0; it < aw->total_items; it++) {
-		/* Only show current level (TODO: currently ignored; show root) */
-		if((aw->arc_array[it]->level == 0) && (aw->arc_array[it]->dir == FALSE)) addlbnode(aw->arc_array[it]->name, aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it]->userdata, FALSE, aw);
+		/* Only show current level */
+		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
+			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
+			addlbnode(aw->arc_array[it]->name, aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it]->userdata, FALSE, aw);
+		}
 	}
 	
 	/* Add fake dir entries */
@@ -425,13 +454,17 @@ static void window_flat_browser_construct(struct avalanche_window *aw, ULONG lev
 	for(int it = 0; it < aw->total_items; it++) {
 		char dir_name[104];
 		int i = 0;
-		
-		if(aw->arc_array[it]->level == 0) continue;
+		int slash = 0;
+
+		if(aw->arc_array[it]->level != (level + 1)) continue;
 							
 		while(aw->arc_array[it]->name[i+1]) {
 			if(aw->arc_array[it]->name[i] == '/') {
-				dir_name[i] = '\0';
-				break;
+				slash++;
+				if(slash == (level + 1)) {
+					dir_name[i] = '\0';
+					break;
+				}
 			}
 			dir_name[i] = aw->arc_array[it]->name[i];
 			i++;
@@ -443,6 +476,11 @@ static void window_flat_browser_construct(struct avalanche_window *aw, ULONG lev
 		}
 	}
 	if(prev_dir_name != NULL) free(prev_dir_name);
+
+	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+											WA_BusyPointer, FALSE,
+											TAG_DONE);
+
 }
 
 static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin)
@@ -509,15 +547,12 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			aw->arc_array[item]->level = 0;
 		
 			/* Count the slashes to find directory level */
-			while(name[i+1]) { /* ignore any trailing slash */
-				if(name[i] == '/') aw->arc_array[item]->level++;
-				i++;
-			}
+			aw->arc_array[item]->level = count_dir_level(name);
 			
 			if(item == (total - 1)) {
 				/* Sort the array */
 				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
-				window_flat_browser_construct(aw, 0, NULL);
+				window_flat_browser_construct(aw);
 			}
 		}
 	} else {
@@ -806,11 +841,33 @@ it's incompatible with double-clicking as it resets the listview */
 						LBNA_Column, 0,
 						LBNCA_Text, &dir, 
 					TAG_DONE);
+
+					ULONG cdir_len = 0;
+					if(aw->current_dir) cdir_len = strlen(aw->current_dir);
+					
+					char *cdir = AllocVec(cdir_len + 1 + strlen(dir) + 2, MEMF_CLEAR);
+					
+					if(aw->current_dir) {
+						strncpy(cdir, aw->current_dir, cdir_len);
+						FreeVec(aw->current_dir);
+					}
+					
+					AddPart(cdir, dir, cdir_len + 1 + strlen(dir) + 2);
+					strcat(cdir, "/"); // add trailing slash
+					aw->current_dir = cdir;
 #ifdef __amigaos4__
-					DebugPrintF("%s\n", dir);
+					DebugPrintF("%s\n", aw->current_dir);
 #endif
 
 					/* switch to dir here! */
+					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+						LISTBROWSER_Labels, ~0, TAG_DONE);
+
+					window_flat_browser_construct(aw);
+
+					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+						LISTBROWSER_Labels, &aw->lblist,
+					TAG_DONE);
 
 					break;
 
