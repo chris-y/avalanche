@@ -444,6 +444,7 @@ static ULONG count_dir_level(char *filename)
 static void window_flat_browser_construct(struct avalanche_window *aw)
 {
 	ULONG level = 0;
+	ULONG skip_dir_len = 0;
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 										WA_BusyPointer, TRUE,
@@ -451,13 +452,16 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 
 	FreeListBrowserList(&aw->lblist);
 
-	if(aw->current_dir) level = count_dir_level(aw->current_dir) + 1;
+	if(aw->current_dir) {
+		level = count_dir_level(aw->current_dir) + 1;
+		skip_dir_len = strlen(aw->current_dir);
+	}
 
 	for(int it = 0; it < aw->total_items; it++) {
 		/* Only show current level */
 		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
 			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
-			addlbnode(aw->arc_array[it]->name, aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it]->userdata, FALSE, aw);
+			addlbnode(aw->arc_array[it]->name + skip_dir_len, aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it]->userdata, FALSE, aw);
 		}
 	}
 	
@@ -483,7 +487,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 			i++;
 		}
 		if((prev_dir_name == NULL) || (prev_dir_name && (strcmp(prev_dir_name, dir_name) != 0))) {
-			addlbnode(dir_name, &zero, TRUE, NULL, FALSE, aw);
+			addlbnode(dir_name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw);
 			if(prev_dir_name) free(prev_dir_name);
 			prev_dir_name = strdup(dir_name);
 		}
@@ -1000,6 +1004,10 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	}
 
 	free_arc_array(aw);
+	if(aw->current_dir) {
+		FreeVec(aw->current_dir);
+		aw->current_dir = NULL;
+	}
 
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	GetAttr(GETFILE_FullFile, aw->gadgets[GID_ARCHIVE], (APTR)&aw->archive);
