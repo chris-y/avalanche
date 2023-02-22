@@ -23,6 +23,7 @@
 #include <proto/chooser.h>
 #include <proto/fuelgauge.h>
 #include <proto/getfile.h>
+#include <proto/glyph.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
@@ -152,6 +153,7 @@ CLASS_STRUCT(CheckBox)
 CLASS_STRUCT(Chooser)
 CLASS_STRUCT(FuelGauge)
 CLASS_STRUCT(GetFile)
+CLASS_STRUCT(Glyph)
 CLASS_STRUCT(Label)
 CLASS_STRUCT(Layout)
 CLASS_STRUCT(ListBrowser)
@@ -193,6 +195,7 @@ BOOL libs_open(void)
 	CLASS_OPEN("gadgets/chooser.gadget",       45, Chooser,       CHOOSER,     TRUE)
 	CLASS_OPEN("gadgets/fuelgauge.gadget",     41, FuelGauge,     FUELGAUGE,   FALSE)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE,     FALSE)
+	CLASS_OPEN("images/glyph.image",           41, Glyph,         GLYPH,       FALSE)
 	CLASS_OPEN("images/label.image",           41, Label,         LABEL,       FALSE)
 	CLASS_OPEN("gadgets/layout.gadget",        41, Layout,        LAYOUT,      FALSE)
 	CLASS_OPEN("gadgets/listbrowser.gadget",   45, ListBrowser,   LISTBROWSER, TRUE)
@@ -212,6 +215,7 @@ void libs_close(void)
 	CLASS_CLOSE(Chooser)
 	CLASS_CLOSE(FuelGauge)
 	CLASS_CLOSE(GetFile)
+	CLASS_CLOSE(Glyph)
 	CLASS_CLOSE(Label)
 	CLASS_CLOSE(Layout)
 	CLASS_CLOSE(ListBrowser)

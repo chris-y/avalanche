@@ -29,6 +29,7 @@
 
 #include <proto/button.h>
 #include <proto/getfile.h>
+#include <proto/glyph.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
@@ -38,6 +39,7 @@
 #include <gadgets/fuelgauge.h>
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
+#include <images/glyph.h>
 #include <images/label.h>
 
 #include <reaction/reaction.h>
@@ -301,6 +303,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 	ULONG gen = 0;
 	int i = 0;
 	char *name_copy = NULL;
+	ULONG glyph = GLYPH_POPFILE;
 	BOOL debug = get_config()->debug;
 
 	if(h) {
@@ -352,18 +355,24 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 
 	snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
 
-	struct Node *node = AllocListBrowserNode(3,
+	if(dir) glyph = GLYPH_POPDRAWER;
+
+	struct Node *node = AllocListBrowserNode(4,
 		LBNA_UserData, userdata,
 		LBNA_CheckBox, TRUE,
 		LBNA_Checked, TRUE,
 		LBNA_Flags, flags,
 		LBNA_Generation, gen,
 		LBNA_Column, 0,
+			LBNCA_Image, GlyphObj,
+						GLYPH_Glyph, glyph,
+						GlyphEnd,
+		LBNA_Column, 1,
 			LBNCA_CopyText, TRUE,
 			LBNCA_Text, name,
-		LBNA_Column, 1,
-			LBNCA_Integer, size,
 		LBNA_Column, 2,
+			LBNCA_Integer, size,
+		LBNA_Column, 3,
 			LBNCA_CopyText, TRUE,
 			LBNCA_Text, datestr,
 		TAG_DONE);
@@ -373,17 +382,19 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 
 static void addlbnodesinglefile(char *name, LONG *size, void *userdata, struct avalanche_window *aw)
 {
-	struct Node *node = AllocListBrowserNode(3,
+	struct Node *node = AllocListBrowserNode(4,
 		LBNA_UserData, userdata,
 		LBNA_CheckBox, TRUE,
 		LBNA_Checked, TRUE,
 		LBNA_Flags, 0,
 		LBNA_Generation, 0,
 		LBNA_Column, 0,
-			LBNCA_Text, name,
+			LBNCA_Text, "",
 		LBNA_Column, 1,
-			LBNCA_Integer, size,
+			LBNCA_Text, name,
 		LBNA_Column, 2,
+			LBNCA_Integer, size,
+		LBNA_Column, 3,
 			//LBNCA_CopyText, TRUE,
 			LBNCA_Text, NULL,
 		TAG_DONE);
@@ -587,22 +598,27 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	ULONG tag_default_position = WINDOW_Position;
 
-	aw->lbci = AllocLBColumnInfo(3, 
+	aw->lbci = AllocLBColumnInfo(4, 
 		LBCIA_Column, 0,
+			LBCIA_Title, "",
+			LBCIA_Weight, 10,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, FALSE,
+		LBCIA_Column, 1,
 			LBCIA_Title,  locale_get_string(MSG_NAME),
 			LBCIA_Weight, 65,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
-		LBCIA_Column, 1,
+		LBCIA_Column, 2,
 			LBCIA_Title,  locale_get_string(MSG_SIZE),
 			LBCIA_Weight, 15,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
-		LBCIA_Column, 2,
+		LBCIA_Column, 3,
 			LBCIA_Title,  locale_get_string(MSG_DATE),
 			LBCIA_Weight, 20,
 			LBCIA_DraggableSeparator, TRUE,
@@ -838,7 +854,7 @@ it's incompatible with double-clicking as it resets the listview */
 					/* this will be easier with the array pointer -
 					 * we need to get the full path which isn't here! */
 					GetListBrowserNodeAttrs(node,
-						LBNA_Column, 0,
+						LBNA_Column, 1,
 						LBNCA_Text, &dir, 
 					TAG_DONE);
 

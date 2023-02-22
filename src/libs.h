@@ -27,6 +27,7 @@ extern Class *CheckBoxClass;
 extern Class *ChooserClass;
 extern Class *FuelGaugeClass;
 extern Class *GetFileClass;
+extern Class *GlyphClass;
 extern Class *LabelClass;
 extern Class *LayoutClass;
 extern Class *ListBrowserClass;
@@ -39,6 +40,7 @@ extern Class *WindowClass;
 #define ChooserObj		NewObject(ChooserClass, NULL
 #define FuelGaugeObj	NewObject(FuelGaugeClass, NULL
 #define GetFileObj		NewObject(GetFileClass, NULL
+#define GlyphObj		NewObject(GlyphClass, NULL
 #define LabelObj		NewObject(LabelClass, NULL
 #define LayoutHObj		NewObject(LayoutClass, NULL, LAYOUT_Orientation, LAYOUT_ORIENT_HORIZ
 #define LayoutVObj		NewObject(LayoutClass, NULL, LAYOUT_Orientation, LAYOUT_ORIENT_VERT
