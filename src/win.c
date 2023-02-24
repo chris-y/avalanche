@@ -83,6 +83,7 @@ enum {
 struct arc_entries {
 	char *name;
 	ULONG *size;
+	BOOL selected;
 	BOOL dir;
 	void *userdata;
 	ULONG level;
@@ -224,6 +225,12 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 	}
 
 	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
+
+	if(aw->flat_mode) {
+		struct arc_entries *userdata;
+		GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&userdata, TAG_DONE);
+		userdata->selected = TRUE;
+	}
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->lblist,
@@ -406,27 +413,6 @@ static void addlbnodesinglefile(char *name, LONG *size, void *userdata, struct a
 	AddTail(&aw->lblist, node);
 }
 
-static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	if(aw->gadgets[GID_PROGRESS]) {
-		char msg[20];
-		sprintf(msg, "%d/%lu", 0, total);
-		aw->total_items = total;
-
-		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-						GA_Text, msg,
-						FUELGAUGE_Percent, FALSE,
-						FUELGAUGE_Justification, FGJ_CENTER,
-						FUELGAUGE_Level, 0,
-						TAG_DONE);
-	}
-
-	addlbnodesinglefile(name, size, userdata, aw);
-	return;
-}
-
 static ULONG count_dir_level(char *filename)
 {
 	ULONG i = 0;
@@ -435,11 +421,7 @@ static ULONG count_dir_level(char *filename)
 		if(filename[i] == '/') level++;
 		i++;
 	}
-	
-	#ifdef __amigaos4__
-	DebugPrintF("%s - level %d\n", filename, level);
-	#endif
-	
+
 	return level;
 }
 
@@ -463,7 +445,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		/* Only show current level */
 		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
 			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
-			addlbnode(aw->arc_array[it]->name + skip_dir_len, aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it]->userdata, FALSE, aw);
+			addlbnode(aw->arc_array[it]->name + skip_dir_len, aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], FALSE, aw);
 		}
 	}
 	
@@ -536,11 +518,12 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			aw->arc_array[item]->size = size;
 			aw->arc_array[item]->dir = dir;
 			aw->arc_array[item]->userdata = userdata;
+			aw->arc_array[item]->selected = TRUE;
 			
 			if(item == (total - 1)) {
 				if(config->debug) qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
 				for(int i=0; i<total; i++) {
-					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, aw->h_mode, aw);
+					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i], aw->h_mode, aw);
 					FreeVec(aw->arc_array[i]);
 				}
 				FreeVec(aw->arc_array);
@@ -579,14 +562,60 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 	}
 }
 
+static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->gadgets[GID_PROGRESS]) {
+		char msg[20];
+		sprintf(msg, "%d/%lu", 0, total);
+		aw->total_items = total;
+
+		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
+						GA_Text, msg,
+						FUELGAUGE_Percent, FALSE,
+						FUELGAUGE_Justification, FGJ_CENTER,
+						FUELGAUGE_Level, 0,
+						TAG_DONE);
+	}
+
+	if(aw->flat_mode) {
+		if(aw->arc_array) free_arc_array(aw);
+		aw->arc_array = AllocVec(sizeof(struct arc_entries *), MEMF_CLEAR);
+
+		if(aw->arc_array) {
+			aw->arc_array[0] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+			
+			aw->arc_array[0]->name = name;
+			aw->arc_array[0]->size = size;
+			aw->arc_array[0]->dir = dir;
+			aw->arc_array[0]->userdata = userdata;
+			
+			aw->arc_array[0]->level = 0;
+		
+			window_flat_browser_construct(aw);
+		}
+	} else {
+		addlbnodesinglefile(name, size, userdata, aw);
+	}
+
+	return;
+}
+
 static const char *get_item_filename(void *awin, struct Node *node)
 {
 	void *userdata = NULL;
 	const char *fn = NULL;
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
 
-	return module_get_item_filename(awin, userdata);
+	if(aw->flat_mode) {
+		struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+		return module_get_item_filename(awin, arc_entry->userdata);
+	} else {
+		return module_get_item_filename(awin, userdata);
+	}
 }
 
 
@@ -998,6 +1027,13 @@ void window_modify_all_list(void *awin, ULONG select)
 		}
 
 		SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
+
+		if(aw->flat_mode) {
+			struct arc_entries *arc_entry;
+			GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&arc_entry, TAG_DONE);
+			arc_entry->selected = selected;
+		}
+
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
@@ -1110,6 +1146,12 @@ void *window_get_lbnode(void *awin, struct Node *node)
 			LBNA_Checked, &checked,
 			LBNA_UserData, &userdata,
 		TAG_DONE);
+
+	if(aw->flat_mode) {
+		struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+		if(arc_entry == NULL) return NULL; /* dummy entry */
+		userdata = arc_entry->userdata;
+	}
 
 	aw->current_item++;
 	snprintf(msg, 20, "%lu/%lu", aw->current_item, aw->total_items);
