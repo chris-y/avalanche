@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ extern Class *LabelClass;
 extern Class *LayoutClass;
 extern Class *ListBrowserClass;
 extern Class *RequesterClass;
+extern Class *StringClass;
 extern Class *WindowClass;
 
 #define ARexxObj		NewObject(ARexxClass, NULL
@@ -46,6 +47,7 @@ extern Class *WindowClass;
 #define LayoutVObj		NewObject(LayoutClass, NULL, LAYOUT_Orientation, LAYOUT_ORIENT_VERT
 #define ListBrowserObj	NewObject(ListBrowserClass, NULL
 #define RequesterObj	NewObject(RequesterClass, NULL
+#define StringObj		NewObject(StringClass, NULL
 #define WindowObj		NewObject(WindowClass, NULL
 
 BOOL libs_open(void);

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
 #include <proto/requester.h>
+#include <proto/string.h>
 #include <proto/window.h>
 #else
 #include <proto/utility.h>
@@ -158,6 +159,7 @@ CLASS_STRUCT(Label)
 CLASS_STRUCT(Layout)
 CLASS_STRUCT(ListBrowser)
 CLASS_STRUCT(Requester)
+CLASS_STRUCT(String)
 CLASS_STRUCT(Window)
 
 BOOL libs_xvs_init(void)
@@ -200,6 +202,7 @@ BOOL libs_open(void)
 	CLASS_OPEN("gadgets/layout.gadget",        41, Layout,        LAYOUT,      FALSE)
 	CLASS_OPEN("gadgets/listbrowser.gadget",   45, ListBrowser,   LISTBROWSER, TRUE)
 	CLASS_OPEN("requester.class",              41, Requester,     REQUESTER,   FALSE)
+	CLASS_OPEN("gadgets/string.gadget",        41, String,        STRING,      FALSE)
 	CLASS_OPEN("window.class",                 47, Window,        WINDOW,      FALSE)
 	CLASS_OPEN("arexx.class",                  41, ARexx,         AREXX,       FALSE)
 	
@@ -220,6 +223,7 @@ void libs_close(void)
 	CLASS_CLOSE(Layout)
 	CLASS_CLOSE(ListBrowser)
 	CLASS_CLOSE(Requester)
+	CLASS_CLOSE(String)
 	CLASS_CLOSE(Window)
 	CLASS_CLOSE(ARexx)
 

@@ -62,6 +62,8 @@ enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
+	GID_PARENT,
+	GID_DIR,
 	GID_LIST,
 	GID_EXTRACT,
 	GID_PROGRESS,
@@ -715,6 +717,24 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				CHILD_WeightedWidth, config->progress_size,
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
+			LAYOUT_AddChild, LayoutHObj,
+				LAYOUT_AddChild,  aw->gadgets[GID_PARENT] = ButtonObj,
+					GA_ID, GID_PARENT,
+					GA_RelVerify, TRUE,
+					GA_Image, GlyphObj,
+						GLYPH_Glyph, GLYPH_UPARROW,
+					GlyphEnd,
+					GA_Disabled, !aw->flat_mode,
+				ButtonEnd,
+				CHILD_WeightedWidth, 0,
+				LAYOUT_AddChild,  aw->gadgets[GID_DIR] = StringObj,
+					GA_ID, GID_DIR,
+					GA_ReadOnly, TRUE,
+					GA_Disabled, !aw->flat_mode,
+				StringEnd,
+				CHILD_WeightedHeight, 0,
+			LayoutEnd,
+			CHILD_WeightedHeight, 0,
 			LAYOUT_AddChild, LayoutVObj,
 				LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
 					GA_ID, GID_LIST,
@@ -877,11 +897,12 @@ it's incompatible with double-clicking as it resets the listview */
 					AddPart(cdir, dir, cdir_len + 1 + strlen(dir) + 2);
 					strcat(cdir, "/"); // add trailing slash
 					aw->current_dir = cdir;
-#ifdef __amigaos4__
-					DebugPrintF("%s\n", aw->current_dir);
-#endif
 
-					/* switch to dir here! */
+					/* switch to dir */
+					SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+						STRINGA_TextVal, aw->current_dir,
+					TAG_DONE);
+
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -1015,6 +1036,10 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 										WA_BusyPointer, TRUE,
 										TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+		STRINGA_TextVal, aw->current_dir,
+	TAG_DONE);
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -1231,6 +1256,13 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							case 1: //flat browser mode TODO: this should be MX with above
 								aw->flat_mode = !aw->flat_mode;
 
+								SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
+									GA_Disabled, !aw->flat_mode,
+								TAG_DONE);
+								SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+									GA_Disabled, !aw->flat_mode,
+								TAG_DONE);
+
 								window_req_open_archive(awin, config, TRUE);
 							break;
 										
@@ -1314,6 +1346,15 @@ void window_disable_gadgets(void *awin, BOOL disable)
 			GA_Disabled, disable,
 		TAG_DONE);
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+
+	if((disable == FALSE) && (aw->flat_mode == FALSE)) disable = TRUE;
+
+	SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
 }
