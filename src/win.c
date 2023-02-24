@@ -903,6 +903,10 @@ it's incompatible with double-clicking as it resets the listview */
 						STRINGA_TextVal, aw->current_dir,
 					TAG_DONE);
 
+					SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
+						GA_Disabled, FALSE,
+					TAG_DONE);
+
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -1162,6 +1166,39 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					window_req_dest(awin);
 				break;
 
+				case GID_PARENT:
+					if(aw->current_dir) {
+						aw->current_dir[strlen(aw->current_dir) - 1] = '\0';
+
+						char *slash = strrchr(aw->current_dir, '/');
+					
+						if(slash == NULL) {
+							FreeVec(aw->current_dir);
+							aw->current_dir = NULL;
+
+							SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
+								GA_Disabled, TRUE,
+							TAG_DONE);
+
+						} else {
+							*(slash+1) = '\0';
+						}
+
+						SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+							STRINGA_TextVal, aw->current_dir,
+						TAG_DONE);
+
+						SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+							LISTBROWSER_Labels, ~0, TAG_DONE);
+
+						window_flat_browser_construct(aw);
+
+						SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+							LISTBROWSER_Labels, &aw->lblist,
+						TAG_DONE);
+					}
+				break;
+
 				case GID_EXTRACT:
 					ret = extract(awin, aw->archive, aw->dest, NULL);
 					if(ret != 0) show_error(ret, awin);
@@ -1255,13 +1292,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					
 							case 1: //flat browser mode TODO: this should be MX with above
 								aw->flat_mode = !aw->flat_mode;
+								BOOL disable = !aw->flat_mode;
+
+								SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+									GA_Disabled, disable,
+								TAG_DONE);
+
+								if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
 
 								SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-									GA_Disabled, !aw->flat_mode,
+									GA_Disabled, disable,
 								TAG_DONE);
-								SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-									GA_Disabled, !aw->flat_mode,
-								TAG_DONE);
+
 
 								window_req_open_archive(awin, config, TRUE);
 							break;
@@ -1351,12 +1393,16 @@ void window_disable_gadgets(void *awin, BOOL disable)
 
 	if((disable == FALSE) && (aw->flat_mode == FALSE)) disable = TRUE;
 
-	SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
 	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
+
+	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
+
+	SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable ,
+		TAG_DONE);
+
 }
 
 void fill_menu_labels(void)
