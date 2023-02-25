@@ -305,7 +305,7 @@ static int sort_array(const void *a, const void *b)
 	return sort(c->name, d->name);
 }
 
-static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, struct avalanche_window *aw)
+static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, BOOL selected, struct avalanche_window *aw)
 {
 	BOOL dir_seen = FALSE;
 	ULONG flags = 0;
@@ -445,7 +445,8 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		/* Only show current level */
 		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
 			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
-			addlbnode(aw->arc_array[it]->name + skip_dir_len, aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], FALSE, aw);
+			addlbnode(aw->arc_array[it]->name + skip_dir_len,
+				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], FALSE, aw->arc_array[it]->selected, aw);
 		}
 	}
 	
@@ -471,7 +472,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 			i++;
 		}
 		if((prev_dir_name == NULL) || (prev_dir_name && (strcmp(prev_dir_name, dir_name) != 0))) {
-			addlbnode(dir_name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw);
+			addlbnode(dir_name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw);
 			if(prev_dir_name) free(prev_dir_name);
 			prev_dir_name = strdup(dir_name);
 		}
@@ -523,7 +524,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			if(item == (total - 1)) {
 				if(config->debug) qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
 				for(int i=0; i<total; i++) {
-					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i], aw->h_mode, aw);
+					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i], aw->h_mode, TRUE, aw);
 					FreeVec(aw->arc_array[i]);
 				}
 				FreeVec(aw->arc_array);
@@ -545,6 +546,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			aw->arc_array[item]->size = size;
 			aw->arc_array[item]->dir = dir;
 			aw->arc_array[item]->userdata = userdata;
+			aw->arc_array[item]->selected = TRUE;
 			
 			aw->arc_array[item]->level = 0;
 		
@@ -558,7 +560,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			}
 		}
 	} else {
-		addlbnode(name, size, dir, userdata, aw->h_mode, aw);
+		addlbnode(name, size, dir, userdata, aw->h_mode, TRUE, aw);
 	}
 }
 
@@ -883,6 +885,40 @@ void window_list_handle(void *awin, char *tmpdir)
 	
 	GetAttr(LISTBROWSER_RelEvent, aw->gadgets[GID_LIST], (APTR)&tmp);
 	switch(tmp) {
+		case LBRE_CHECKED:
+			if(aw->flat_mode) {
+				GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+
+				void *userdata = NULL;
+
+				GetListBrowserNodeAttrs(node,
+					LBNA_UserData, &userdata,
+				TAG_DONE);
+
+				if(userdata != NULL) {
+					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+					arc_entry->selected = TRUE;
+				}
+			}
+		break;
+
+		case LBRE_UNCHECKED:
+			if(aw->flat_mode) {
+				GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+
+				void *userdata = NULL;
+
+				GetListBrowserNodeAttrs(node,
+					LBNA_UserData, &userdata,
+				TAG_DONE);
+
+				if(userdata != NULL) {
+					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+					arc_entry->selected = FALSE;
+				}
+			}
+		break;
+
 #if 0 /* This selects items when single-clicked off the checkbox -
 it's incompatible with double-clicking as it resets the listview */
 		case LBRE_NORMAL:
