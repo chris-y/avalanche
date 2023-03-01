@@ -211,13 +211,21 @@ static void window_menu_set_enable_state(void *awin)
 	}
 }
 
-static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select)
+static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select, BOOL detach_list)
 {
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+	if(detach_list) {
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
+	}
 
 	ULONG current;
 	ULONG selected;
+	struct arc_entries *userdata;
+
+	if(aw->flat_mode) {
+		GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&userdata, TAG_DONE);
+		if(userdata == NULL) return;
+	}
 
 	if(select == 2) {
 		GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
@@ -229,14 +237,14 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
 
 	if(aw->flat_mode) {
-		struct arc_entries *userdata;
-		GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&userdata, TAG_DONE);
-		userdata->selected = TRUE;
+		userdata->selected = selected;
 	}
 
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+	if(detach_list) {
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->lblist,
 			TAG_DONE);
+	}
 }
 
 static void delete_delete_list(struct avalanche_window *aw)
@@ -965,7 +973,7 @@ void window_list_handle(void *awin, char *tmpdir)
 it's incompatible with double-clicking as it resets the listview */
 		case LBRE_NORMAL:
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
-			toggle_item(aw, node, 2);
+			toggle_item(aw, node, 2, TRUE);
 		break;
 #endif
 		case LBRE_DOUBLECLICK:
@@ -1028,7 +1036,7 @@ it's incompatible with double-clicking as it resets the listview */
 				}
 			}
 
-			toggle_item(aw, node, 1); /* ensure selected */
+			toggle_item(aw, node, 1, TRUE); /* ensure selected */
 			char fn[1024];
 			strncpy(fn, tmpdir, 1023);
 			fn[1023] = 0;
@@ -1082,6 +1090,7 @@ void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
 					TAG_DONE);
 }
 
+/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
 void window_modify_all_list(void *awin, ULONG select)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -1089,28 +1098,12 @@ void window_modify_all_list(void *awin, ULONG select)
 	struct Node *node;
 	BOOL selected;
 
-	/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
-	if(select == 0) selected = FALSE;
-	if(select == 1) selected = TRUE;
-
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
 	for(node = aw->lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
 
-		if(select == 2) {
-			ULONG current;
-			GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
-			selected = !current;
-		}
-
-		SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
-
-		if(aw->flat_mode) {
-			struct arc_entries *arc_entry;
-			GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&arc_entry, TAG_DONE);
-			arc_entry->selected = selected;
-		}
+		toggle_item(aw, node, select, FALSE);
 
 	}
 
