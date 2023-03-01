@@ -149,6 +149,19 @@ long module_extract(void *awin, void *node, void *archive, void *newdest)
 	return ret;
 }
 
+long module_extract_array(void *awin, void **array, ULONG total_items, void *dest)
+{
+	long ret = 0;
+	
+	switch(window_get_archiver(awin)) {
+		case ARC_XAD:
+			ret = xad_extract_array(awin, total_items, dest, array, array_get_userdata, module_vscan);
+		break;
+	}
+	
+	return ret;
+}
+
 void module_exit(void)
 {
 	xad_exit();

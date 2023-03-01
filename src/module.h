@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ const char *module_get_subformat(void *awin);
 const char *module_get_read_module(void *awin);
 const char *module_get_error(void *awin, long code);
 long module_extract(void *awin, void *node, void *archive, void *newdest);
+long module_extract_array(void *awin, void **array, ULONG total_items, void *dest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);
 #endif

@@ -24,6 +24,8 @@
 #include <proto/wb.h>
 #include <clib/alib_protos.h>
 
+#include <intuition/pointerclass.h>
+
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 
@@ -303,6 +305,34 @@ static int sort_array(const void *a, const void *b)
 	struct arc_entries *d = *(struct arc_entries **)b;
 
 	return sort(c->name, d->name);
+}
+
+long extract(void *awin, char *archive, char *newdest, struct Node *node)
+{
+	long ret = 0;
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(archive && newdest) {
+		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
+										WA_PointerType, POINTERTYPE_PROGRESS,
+										TAG_DONE);
+		window_reset_count(awin);
+		window_disable_gadgets(awin, TRUE);
+
+		if((node == NULL) && (aw->flat_mode)) {
+			ret = module_extract_array(awin, aw->arc_array, aw->total_items, newdest);
+		} else {
+			ret = module_extract(awin, node, archive, newdest);
+		}
+
+		window_disable_gadgets(awin, FALSE);
+
+		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
+											WA_BusyPointer, FALSE,
+											TAG_DONE);
+	}
+
+	return ret;
 }
 
 static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, BOOL selected, struct avalanche_window *aw)
@@ -602,6 +632,18 @@ static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG 
 	}
 
 	return;
+}
+
+void *array_get_userdata(void *awin, void *arc_entry)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->flat_mode) {
+		struct arc_entries *arc_e = (struct arc_entries *)arc_entry;
+		if(arc_e->selected) return arc_e->userdata;
+	}
+
+	return NULL;
 }
 
 static const char *get_item_filename(void *awin, struct Node *node)

@@ -47,12 +47,14 @@ Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
 ULONG window_get_archiver(void *awin);
+void *array_get_userdata(void *awin, void *arc_entry);
 
 /* Misc */
 void window_disable_gadgets(void *awin, BOOL disable);
 BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
+long extract(void *awin, char *archive, char *newdest, struct Node *node);
 
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);

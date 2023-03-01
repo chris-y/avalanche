@@ -26,6 +26,7 @@ BOOL xad_recog(char *file);
 long xad_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));
 long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete));
 long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete), ULONG *pud);
+long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, struct Node *node), ULONG (scan)(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete));
 const char *xad_error(long code);
 void xad_show_arc_info(void *awin);
 const char *xad_get_arc_format(void *awin);
