@@ -72,9 +72,9 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file)
 {
 	int err;
 	char cmd[1024];
-	snprintf(cmd, 1024, "lha -I -x a \"%s\" \"%s\"", archive, file);
+	snprintf(cmd, 1024, "lha -I a \"%s\" \"%s\"", archive, file);
 #ifdef __amigaos4__
-DebugPrintF("%s\n",cmd);
+	//DebugPrintF("%s\n",cmd);
 #endif
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
