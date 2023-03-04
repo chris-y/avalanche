@@ -463,6 +463,38 @@ static ULONG count_dir_level(char *filename)
 	return level;
 }
 
+static void window_flat_browser_tree_construct(struct avalanche_window *aw)
+{
+	char *prev_dir_name = NULL;
+
+	for(int it = 0; it < aw->total_items; it++) {
+		char dir_name[104];
+		int i = 0;
+		int slash = 0;
+		int last_slash = 0;
+
+		while(aw->arc_array[it]->name[i+1]) {
+			if(aw->arc_array[it]->name[i] == '/') {
+				slash++;
+				last_slash = i;
+			}
+			dir_name[i] = aw->arc_array[it]->name[i];
+			i++;
+		}
+		dir_name[last_slash] = '\0';
+
+		if((prev_dir_name == NULL) || (prev_dir_name && (strcmp(prev_dir_name, dir_name) != 0))) { /* TODO: search all previous entries */
+			#ifdef __amigaos4__
+			DebugPrintF("%s [%d]\n", dir_name, slash); //FilePart()
+			#endif
+			//addlbnode(dir_name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw);
+			if(prev_dir_name) free(prev_dir_name);  
+			prev_dir_name = strdup(dir_name);
+		}
+	}
+	if(prev_dir_name != NULL) free(prev_dir_name);
+}
+
 static void window_flat_browser_construct(struct avalanche_window *aw)
 {
 	ULONG level = 0;
@@ -594,6 +626,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			if(item == (total - 1)) {
 				/* Sort the array */
 				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
+				window_flat_browser_tree_construct(aw);
 				window_flat_browser_construct(aw);
 			}
 		}
