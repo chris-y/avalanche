@@ -465,13 +465,18 @@ static ULONG count_dir_level(char *filename)
 
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
-	char *prev_dir_name = NULL;
+	char **prev_dirs = AllocVec(sizeof(char *) * (aw->total_items + 1), MEMF_CLEAR);
 
 	for(int it = 0; it < aw->total_items; it++) {
-		char dir_name[104];
+		char *dir_name = AllocVec(strlen(aw->arc_array[it]->name)+1, MEMF_CLEAR);
 		int i = 0;
 		int slash = 0;
 		int last_slash = 0;
+		BOOL dupe = FALSE;
+
+		if(dir_name == NULL) continue;
+
+		prev_dirs[it] = NULL;
 
 		while(aw->arc_array[it]->name[i+1]) {
 			if(aw->arc_array[it]->name[i] == '/') {
@@ -483,16 +488,27 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 		}
 		dir_name[last_slash] = '\0';
 
-		if((prev_dir_name == NULL) || (prev_dir_name && (strcmp(prev_dir_name, dir_name) != 0))) { /* TODO: search all previous entries */
+		for(int j = 0; j < it; j++) {
+			if((prev_dirs[j]) && (strlen(dir_name) > 0) && (strcmp(prev_dirs[j], dir_name) == 0)) {
+				dupe = TRUE;
+			}
+		}
+
+		if((slash > 0) && (dupe == FALSE)) {
 			#ifdef __amigaos4__
 			DebugPrintF("%s [%d]\n", dir_name, slash); //FilePart()
 			#endif
-			//addlbnode(dir_name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw);
-			if(prev_dir_name) free(prev_dir_name);  
-			prev_dir_name = strdup(dir_name);
+			//addlbnode(dir_name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw); 
+			prev_dirs[it] = strdup(dir_name);
 		}
+
+		FreeVec(dir_name);
 	}
-	if(prev_dir_name != NULL) free(prev_dir_name);
+
+	for(int it = 0; it < aw->total_items; it++) {
+		if(prev_dirs[it] != NULL) free(prev_dirs[it]);
+	}
+	if(prev_dirs) FreeVec(prev_dirs);
 }
 
 static void window_flat_browser_construct(struct avalanche_window *aw)
@@ -524,9 +540,12 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 	char *prev_dir_name = NULL;
 
 	for(int it = 0; it < aw->total_items; it++) {
-		char dir_name[104];
+		if(aw->arc_array[it]->name == NULL) continue;
+		char *dir_name = AllocVec(strlen(aw->arc_array[it]->name) +1, MEMF_CLEAR);
 		int i = 0;
 		int slash = 0;
+
+		if(dir_name == NULL) continue;
 
 		if(aw->arc_array[it]->level != (level + 1)) continue;
 							
@@ -546,6 +565,8 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 			if(prev_dir_name) free(prev_dir_name);
 			prev_dir_name = strdup(dir_name);
 		}
+
+		FreeVec(dir_name);
 	}
 	if(prev_dir_name != NULL) free(prev_dir_name);
 
