@@ -540,7 +540,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 		}
 	}
 
-	ULONG flags = LBFLG_HASCHILDREN;
+	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 	if(dir_entry == 0) flags = 0;
 
 	struct Node *node = AllocListBrowserNode(1,
@@ -556,7 +556,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 	AddTail(&aw->dir_tree, node);
 
 	for(int i = 0; i <= dir_entry; i++) {
-		flags = LBFLG_HASCHILDREN;
+		flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 		if(aw->dir_array[i] == NULL) break;
 		if(aw->dir_array[i]->dir == FALSE) flags = 0;
 		
@@ -963,6 +963,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						LISTBROWSER_Hierarchical, TRUE,
 					ListBrowserEnd,
 					CHILD_WeightedWidth, 20,
+					LAYOUT_WeightBar, TRUE,
 					LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
 						GA_RelVerify, TRUE,
