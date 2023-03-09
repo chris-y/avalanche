@@ -1081,11 +1081,11 @@ void window_tree_handle(void *awin)
 	ULONG tmp = 0;
 	struct Node *node = NULL;
 
-	GetAttr(LISTBROWSER_RelEvent, aw->gadgets[GID_LIST], (APTR)&tmp);
+	GetAttr(LISTBROWSER_RelEvent, aw->gadgets[GID_TREE], (APTR)&tmp);
 
 	switch(tmp) {
 		case LBRE_NORMAL:
-			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_TREE], (APTR)&node);
 
 			if(aw->flat_mode) {
 				void *userdata = NULL;
