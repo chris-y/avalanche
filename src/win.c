@@ -410,7 +410,13 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 
 	char datestr[20];
 	struct ClockData cd;
-	xad_get_filedate(userdata, &cd, aw);
+
+	if((aw->archiver == ARC_XAD) && userdata && aw->flat_mode) {
+		struct arc_entries *ud = (struct arc_entries *)userdata;
+		xad_get_filedate(ud->userdata, &cd, aw);
+	} else {
+		xad_get_filedate(userdata, &cd, aw);
+	}
 
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
@@ -480,6 +486,8 @@ static ULONG count_dir_level(char *filename)
 
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
+	FreeListBrowserList(&aw->dir_tree);
+
 	char **prev_dirs = AllocVec(sizeof(char *) * (aw->total_items + 1), MEMF_CLEAR);
 	int dir_entry = 0;
 	aw->dir_array = AllocVec(sizeof(struct arc_entries *) * (aw->total_items + 1), MEMF_CLEAR);
@@ -1090,24 +1098,36 @@ void window_tree_handle(void *awin)
 
 			if(aw->flat_mode) {
 				void *userdata = NULL;
+				char *cdir = NULL;
 
 				GetListBrowserNodeAttrs(node,
 					LBNA_UserData, &userdata,
 				TAG_DONE);
 
-				if(userdata == NULL) return;
-				aw->current_dir = userdata;
+				if(userdata) {
+					cdir = AllocVec(strlen(userdata) + 2, MEMF_CLEAR);
+					if(cdir == NULL) return;
+				}
+
+				if(aw->current_dir) {
+					FreeVec(aw->current_dir);
+					aw->current_dir = NULL;
+				}
+
+				if(userdata) {
+					strncpy(cdir, userdata, strlen(userdata));
+					strcat(cdir, "/"); // add trailing slash
+					aw->current_dir = cdir;
+				}
 
 				/* switch to dir */
 				SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
 					STRINGA_TextVal, aw->current_dir,
 				TAG_DONE);
 
-				char *slash = strrchr(aw->current_dir, '/');
-				
-				if(slash) {
+				if(aw->current_dir) {
 					SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-						GA_Disabled, FALSE,
+							GA_Disabled, FALSE,
 					TAG_DONE);
 				} else {
 					SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
@@ -1339,7 +1359,15 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		if(ret == 0) return;
 	}
 
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	FreeListBrowserList(&aw->dir_tree);
 	free_arc_array(aw);
+
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
+
 	if(aw->current_dir) {
 		FreeVec(aw->current_dir);
 		aw->current_dir = NULL;
@@ -1616,6 +1644,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								BOOL disable = !aw->flat_mode;
 
 								SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+									GA_Disabled, disable,
+								TAG_DONE);
+
+								SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 									GA_Disabled, disable,
 								TAG_DONE);
 
