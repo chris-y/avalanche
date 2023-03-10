@@ -503,6 +503,37 @@ static char *extract_path_part(const char *path, int level)
 	return NULL;
 }
 
+
+static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const char *dir_name)
+{
+	char *dir_name_slash = AllocVec(strlen(dir_name) + 2, MEMF_PRIVATE);
+	if(dir_name_slash == NULL) return FALSE;
+	sprintf(dir_name_slash, "%s/", dir_name);
+
+	for(int j = 0; j < dir_entry; j++) {
+		#ifdef __amigaos4__
+		DebugPrintF("[%d] %s | %s | len %d\n", j, dir_name, aw->dir_array[j]->name, strlen(dir_name));
+		#endif
+		if((aw->dir_array[j]) && (strlen(aw->dir_array[j]->name) > strlen(dir_name_slash)) && (strncmp(aw->dir_array[j]->name, dir_name_slash, strlen(dir_name_slash)) == 0)) {
+			FreeVec(dir_name_slash);
+			return TRUE;
+		}
+	}
+	FreeVec(dir_name_slash);
+	return FALSE;
+}
+
+static BOOL check_duplicates(struct avalanche_window *aw, int dir_entry, const char *dir_name)
+{
+	for(int j = 0; j < dir_entry; j++) {
+		if((aw->dir_array[j]) && (strlen(dir_name) > 0) && (strcmp(aw->dir_array[j]->name, dir_name) == 0)) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
 	FreeListBrowserList(&aw->dir_tree);
@@ -535,37 +566,34 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 		}
 		dir_name[last_slash] = '\0';
 
-		for(int j = 0; j < dir_entry; j++) {
-			if((aw->dir_array[j]) && (strlen(dir_name) > 0) && (strcmp(aw->dir_array[j]->name, dir_name) == 0)) {
-				dupe = TRUE;
-			}
-		}
+		dupe = check_duplicates(aw, dir_entry, dir_name);
 
 		if((slash > 0) && (dupe == FALSE)) {
 			#ifdef __amigaos4__
 			DebugPrintF("%s [%d]\n", dir_name, slash); //FilePart()
 			#endif
 			
-			if((dir_entry > 0) && (aw->dir_array[dir_entry-1]->level < slash)) {
-				aw->dir_array[dir_entry-1]->dir = TRUE;  //LBFLG_HASCHILDREN
-
-				int level_diff = slash - aw->dir_array[dir_entry-1]->level;
-
-				if(level_diff > 1) {
-					ULONG prev_entry = dir_entry - 1;
-					for(int l = 1; l <= level_diff; l++) {
-						aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
-						if(aw->dir_array[dir_entry] == NULL) continue;
-						aw->dir_array[dir_entry]->name = extract_path_part(dir_name, l+aw->dir_array[prev_entry]->level-1);
-						aw->dir_array[dir_entry]->level = l+aw->dir_array[prev_entry]->level-1;
-						aw->dir_array[dir_entry]->dir = TRUE;
-						#ifdef __amigaos4__
-						DebugPrintF("*JUMP-%d* [find %d th slash] %s (=%s)\n", l, l+aw->dir_array[prev_entry]->level-1, dir_name, aw->dir_array[dir_entry]->name);
-						#endif
-
-						dir_entry++;
-					}
+			for(int l = 1; l < slash; l++) {
+				char *part_dir = extract_path_part(dir_name, l);
+				dupe = check_duplicates(aw, dir_entry, part_dir);
+				if(dupe) {
+					FreeVec(part_dir);
+					continue;
 				}
+				aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+				if(aw->dir_array[dir_entry] == NULL) continue;
+				aw->dir_array[dir_entry]->name = part_dir;
+				aw->dir_array[dir_entry]->level = l;
+/*				if(l < (slash - 1)) {
+					aw->dir_array[dir_entry]->dir = TRUE;
+				} else {
+					aw->dir_array[dir_entry]->dir = FALSE;
+				}*/
+				#ifdef __amigaos4__
+				DebugPrintF("*JUMP-%d*  %s (=%s)\n", l, dir_name, aw->dir_array[dir_entry]->name);
+				#endif
+
+				dir_entry++;
 			}
 
 			aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
@@ -578,6 +606,14 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 			dir_entry++;
 		} else {
 			FreeVec(dir_name);
+		}
+	}
+
+	for(int i = 0; i < dir_entry; i++) {
+		if((check_if_subdir(aw, dir_entry, aw->dir_array[i]->name))) {
+			aw->dir_array[i]->dir = TRUE;  //LBFLG_HASCHILDREN
+		} else {
+			aw->dir_array[i]->dir = FALSE;
 		}
 	}
 
