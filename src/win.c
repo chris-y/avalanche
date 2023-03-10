@@ -484,6 +484,25 @@ static ULONG count_dir_level(char *filename)
 	return level;
 }
 
+static char *extract_path_part(const char *path, int level)
+{
+	char *npath = NULL;
+	char *idx = path;
+	if(path == NULL) return NULL;
+
+	for(int i=0; i<level; i++) {
+		idx = strchr(idx + 1, '/');
+		if(idx == NULL) return NULL;
+	}
+	
+	if(npath = AllocVec(idx - path + 1, MEMF_CLEAR)) {
+		strncpy(npath, path, idx - path);
+		return npath;
+	}
+	
+	return NULL;
+}
+
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
 	FreeListBrowserList(&aw->dir_tree);
@@ -506,8 +525,6 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 
 		if(dir_name == NULL) continue;
 
-		prev_dirs[it] = NULL;
-
 		while(aw->arc_array[it]->name[i+1]) {
 			if(aw->arc_array[it]->name[i] == '/') {
 				slash++;
@@ -518,8 +535,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 		}
 		dir_name[last_slash] = '\0';
 
-		for(int j = 0; j < it; j++) {
-			if((prev_dirs[j]) && (strlen(dir_name) > 0) && (strcmp(prev_dirs[j], dir_name) == 0)) {
+		for(int j = 0; j < dir_entry; j++) {
+			if((aw->dir_array[j]) && (strlen(dir_name) > 0) && (strcmp(aw->dir_array[j]->name, dir_name) == 0)) {
 				dupe = TRUE;
 			}
 		}
@@ -529,20 +546,36 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 			DebugPrintF("%s [%d]\n", dir_name, slash); //FilePart()
 			#endif
 			
+			if((dir_entry > 0) && (aw->dir_array[dir_entry-1]->level < slash)) {
+				aw->dir_array[dir_entry-1]->dir = TRUE;  //LBFLG_HASCHILDREN
+
+				int level_diff = slash - aw->dir_array[dir_entry-1]->level;
+
+				if(level_diff > 1) {
+					ULONG prev_entry = dir_entry - 1;
+					for(int l = 1; l <= level_diff; l++) {
+						aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+						if(aw->dir_array[dir_entry] == NULL) continue;
+						aw->dir_array[dir_entry]->name = extract_path_part(dir_name, l+aw->dir_array[prev_entry]->level-1);
+						aw->dir_array[dir_entry]->level = l+aw->dir_array[prev_entry]->level-1;
+						aw->dir_array[dir_entry]->dir = TRUE;
+						#ifdef __amigaos4__
+						DebugPrintF("*JUMP-%d* [find %d th slash] %s (=%s)\n", l, l+aw->dir_array[prev_entry]->level-1, dir_name, aw->dir_array[dir_entry]->name);
+						#endif
+
+						dir_entry++;
+					}
+				}
+			}
+
 			aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
 			if(aw->dir_array[dir_entry] == NULL) continue;
 			
 			aw->dir_array[dir_entry]->name = dir_name;
 			aw->dir_array[dir_entry]->level = slash;
 			aw->dir_array[dir_entry]->dir = FALSE;
-							
-			if((dir_entry > 0) && (aw->dir_array[dir_entry-1]->level < slash)) {
-				aw->dir_array[dir_entry-1]->dir = TRUE;  //LBFLG_HASCHILDREN
-			}
 
 			dir_entry++;
-
-			prev_dirs[it] = strdup(dir_name);
 		} else {
 			FreeVec(dir_name);
 		}
