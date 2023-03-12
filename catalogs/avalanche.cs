@@ -205,3 +205,6 @@ When last window closed:
 MSG_FLATBROWSER
 Flat browser
 ;
+MSG_ERR_TREE_ALLOC
+Tree entries exceed allocated memory
+;

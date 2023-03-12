@@ -110,6 +110,7 @@ struct avalanche_window {
 	struct MinList deletelist;
 	struct arc_entries **arc_array;
 	struct arc_entries **dir_array;
+	ULONG dir_tree_size;
 	ULONG current_item;
 	ULONG total_items;
 	BOOL archive_needs_free;
@@ -511,9 +512,6 @@ static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const ch
 	sprintf(dir_name_slash, "%s/", dir_name);
 
 	for(int j = 0; j < dir_entry; j++) {
-		#ifdef __amigaos4__
-		DebugPrintF("[%d] %s | %s | len %d\n", j, dir_name, aw->dir_array[j]->name, strlen(dir_name));
-		#endif
 		if((aw->dir_array[j]) && (strlen(aw->dir_array[j]->name) > strlen(dir_name_slash)) && (strncmp(aw->dir_array[j]->name, dir_name_slash, strlen(dir_name_slash)) == 0)) {
 			FreeVec(dir_name_slash);
 			return TRUE;
@@ -538,9 +536,9 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
 	FreeListBrowserList(&aw->dir_tree);
 
-	char **prev_dirs = AllocVec(sizeof(char *) * (aw->total_items + 1), MEMF_CLEAR);
 	int dir_entry = 0;
-	aw->dir_array = AllocVec(sizeof(struct arc_entries *) * (aw->total_items + 1), MEMF_CLEAR);
+	aw->dir_tree_size = aw->total_items * 2;
+	aw->dir_array = AllocVec(sizeof(struct arc_entries *) * aw->dir_tree_size, MEMF_CLEAR);
 	if(aw->dir_array == NULL) return;
 
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
@@ -584,14 +582,6 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 				if(aw->dir_array[dir_entry] == NULL) continue;
 				aw->dir_array[dir_entry]->name = part_dir;
 				aw->dir_array[dir_entry]->level = l;
-/*				if(l < (slash - 1)) {
-					aw->dir_array[dir_entry]->dir = TRUE;
-				} else {
-					aw->dir_array[dir_entry]->dir = FALSE;
-				}*/
-				#ifdef __amigaos4__
-				DebugPrintF("*JUMP-%d*  %s (=%s)\n", l, dir_name, aw->dir_array[dir_entry]->name);
-				#endif
 
 				dir_entry++;
 			}
@@ -604,6 +594,12 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 			aw->dir_array[dir_entry]->dir = FALSE;
 
 			dir_entry++;
+
+			if(dir_entry > aw->dir_tree_size) {
+				open_error_req(locale_get_string(MSG_ERR_TREE_ALLOC), locale_get_string(MSG_OK), aw);
+				return;
+			}
+
 		} else {
 			FreeVec(dir_name);
 		}
@@ -616,6 +612,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 			aw->dir_array[i]->dir = FALSE;
 		}
 	}
+
+	aw->dir_tree_size = dir_entry;
 
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 	if(dir_entry == 0) flags = 0;
@@ -649,11 +647,6 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 		AddTail(&aw->dir_tree, node);
 	}
 
-	for(int it = 0; it < aw->total_items; it++) {
-		if(prev_dirs[it] != NULL) free(prev_dirs[it]);
-	}
-	if(prev_dirs) FreeVec(prev_dirs);
-	
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 					LISTBROWSER_Labels, &aw->dir_tree,
 					TAG_DONE);
@@ -685,38 +678,13 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 	}
 	
 	/* Add fake dir entries */
-	char *prev_dir_name = NULL;
-
-	for(int it = 0; it < aw->total_items; it++) {
-		if(aw->arc_array[it]->name == NULL) continue;
-		char *dir_name = AllocVec(strlen(aw->arc_array[it]->name) +1, MEMF_CLEAR);
-		int i = 0;
-		int slash = 0;
-
-		if(dir_name == NULL) continue;
-
-		if(aw->arc_array[it]->level != (level + 1)) continue;
-							
-		while(aw->arc_array[it]->name[i+1]) {
-			if(aw->arc_array[it]->name[i] == '/') {
-				slash++;
-				if(slash == (level + 1)) {
-					dir_name[i] = '\0';
-					break;
-				}
-			}
-			dir_name[i] = aw->arc_array[it]->name[i];
-			i++;
+	for(int it = 0; it < aw->dir_tree_size; it++) {
+		/* Only show current level - NB dir levels are different from file levels */
+		if((aw->dir_array[it] && ((aw->dir_array[it]->level - 1) == level)) &&
+			((aw->current_dir == NULL) || (strncmp(aw->dir_array[it]->name, aw->current_dir, skip_dir_len) == 0))) {
+			addlbnode(aw->dir_array[it]->name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw);
 		}
-		if((prev_dir_name == NULL) || (prev_dir_name && (strcmp(prev_dir_name, dir_name) != 0))) {
-			addlbnode(dir_name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw);
-			if(prev_dir_name) free(prev_dir_name);
-			prev_dir_name = strdup(dir_name);
-		}
-
-		FreeVec(dir_name);
 	}
-	if(prev_dir_name != NULL) free(prev_dir_name);
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,

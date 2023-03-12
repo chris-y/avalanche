@@ -267,3 +267,7 @@ MSG_FLATBROWSER
 Flat browser
 ; Flat browser
 ;
+MSG_ERR_TREE_ALLOC
+Tree entries exceed allocated memory
+; Tree entries exceed allocated memory
+;
