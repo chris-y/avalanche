@@ -120,6 +120,7 @@ struct avalanche_window {
 	BOOL flat_mode;
 	BOOL iconified;
 	char *current_dir;
+	struct Node *root_node;
 };
 
 static struct List winlist;
@@ -531,10 +532,42 @@ static BOOL check_duplicates(struct avalanche_window *aw, int dir_entry, const c
 	return FALSE;
 }
 
+static void highlight_current_dir(struct avalanche_window *aw)
+{
+	struct Node *cur_node = NULL;
+
+	if(aw->current_dir == NULL) {
+		cur_node = aw->root_node;
+	} else {
+		struct List *list = &aw->dir_tree;
+		struct Node *node;
+		char *userdata = NULL;
+		char *cur_dir = strdup(aw->current_dir);
+
+		if(cur_dir) cur_dir[strlen(cur_dir) - 1] = '\0';
+
+		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
+			GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
+
+			if((userdata) && (strcmp(cur_dir, userdata) == 0)) {
+				cur_node = node;
+				break;
+			}
+		}
+		if(cur_dir) free(cur_dir);
+	}
+
+	if(cur_node) {
+		SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_SelectedNode, cur_node,
+			TAG_DONE);
+	}
+}
 
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
 	FreeListBrowserList(&aw->dir_tree);
+	aw->root_node = NULL;
 
 	int dir_entry = 0;
 	aw->dir_tree_size = aw->total_items * 2;
@@ -564,10 +597,6 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 		dupe = check_duplicates(aw, dir_entry, dir_name);
 
 		if((slash > 0) && (dupe == FALSE)) {
-			#ifdef __amigaos4__
-			DebugPrintF("%s [%d]\n", dir_name, slash); //FilePart()
-			#endif
-			
 			for(int l = 1; l < slash; l++) {
 				char *part_dir = extract_path_part(dir_name, l);
 				dupe = check_duplicates(aw, dir_entry, part_dir);
@@ -615,7 +644,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 	if(dir_entry == 0) flags = 0;
 
-	struct Node *node = AllocListBrowserNode(1,
+	aw->root_node = AllocListBrowserNode(1,
 									LBNA_UserData, NULL,
 									LBNA_Flags, flags,
 									LBNA_Generation, 1,
@@ -625,7 +654,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 										GlyphEnd,
 									TAG_DONE);
 
-	AddTail(&aw->dir_tree, node);
+	AddTail(&aw->dir_tree, aw->root_node);
 
 	for(int i = 0; i <= dir_entry; i++) {
 		flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
@@ -991,6 +1020,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						LISTBROWSER_ColumnTitles, FALSE,
 						LISTBROWSER_FastRender, TRUE,
 						LISTBROWSER_Hierarchical, TRUE,
+						LISTBROWSER_ShowSelected, TRUE,
 					ListBrowserEnd,
 					CHILD_WeightedWidth, 20,
 					LAYOUT_WeightBar, TRUE,
@@ -1137,6 +1167,8 @@ static void parent_dir(struct avalanche_window *aw)
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->lblist,
 		TAG_DONE);
+
+		highlight_current_dir(aw);
 	}
 }
 
@@ -1309,6 +1341,7 @@ it's incompatible with double-clicking as it resets the listview */
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
 					window_flat_browser_construct(aw);
+					highlight_current_dir(aw);
 
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, &aw->lblist,
@@ -1468,6 +1501,12 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
+
+	if((aw->flat_mode) && (aw->root_node)) {
+		SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_SelectedNode, aw->root_node,
+			TAG_DONE);
+	}
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
