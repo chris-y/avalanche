@@ -104,6 +104,7 @@ struct avalanche_window {
 	struct ColumnInfo *dtci;
 	struct List dir_tree;
 	struct Hook aslfilterhook;
+	struct Hook lbsorthook;
 	struct AppWindow *appwin;
 	char *archive;
 	char *dest;
@@ -330,6 +331,27 @@ static int sort_array(const void *a, const void *b)
 
 	return sort(c->name, d->name);
 }
+
+#ifdef __amigaos4__
+static int32 lbsortfunc(struct Hook *h, APTR obj, struct LBSortMsg *msg)
+#else
+static int32 __saveds lbsortfunc(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
+#endif
+{
+	/* TODO: "top" is relative, maybe we need to check lbsm_Direction */
+
+	/* Always float ^Parent to the top */
+	if(strcmp(msg->lbsm_DataA.Text, "/") == 0) return -1;
+	if(strcmp(msg->lbsm_DataB.Text, "/") == 0) return 1;
+
+	/* Float directories above files */
+	if((msg->lbsm_UserDataA == NULL) && (msg->lbsm_UserDataB != NULL)) return -1;
+	if((msg->lbsm_UserDataB == NULL) && (msg->lbsm_UserDataA != NULL)) return 1;
+
+	/* Otherwise sort alphabetically */
+	return sort(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
+}
+
 
 long extract(void *awin, char *archive, char *newdest, struct Node *node)
 {
@@ -639,17 +661,32 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		skip_dir_len = strlen(aw->current_dir);
 	}
 
-	for(int it = 0; it < aw->total_items; it++) {
-		/* Only show current level */
-		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
-			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
-			addlbnode(aw->arc_array[it]->name + skip_dir_len,
-				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], FALSE, aw->arc_array[it]->selected, aw);
-		}
-	}
-	
 	if(aw->archiver == ARC_XAD) {
-		/* Add fake dir entries */
+		/* Add fake dir entries (first, so by default they're at the top) */
+		
+		if(level > 0) {
+			/* Add "parent" entry */
+			struct Node *node = AllocListBrowserNode(4,
+									LBNA_UserData, NULL,
+									LBNA_Generation, 1,
+									LBNA_CheckBox, FALSE,
+									LBNA_Column, 0,
+										LBNCA_Image, GlyphObj,
+											GLYPH_Glyph, GLYPH_UPARROW,
+										GlyphEnd,
+									LBNA_Column, 1,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "/",
+									LBNA_Column, 2,
+										LBNCA_Integer, &zero,
+									LBNA_Column, 3,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "",
+								TAG_DONE);
+
+			AddTail(&aw->lblist, node);
+		}
+		
 		for(int it = 0; it < aw->dir_tree_size; it++) {
 			/* Only show current level - NB dir levels are different from file levels */
 			if((aw->dir_array[it] && ((aw->dir_array[it]->level - 1) == level)) &&
@@ -659,6 +696,17 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		}
 	}
 
+	/* Add files */
+
+	for(int it = 0; it < aw->total_items; it++) {
+		/* Only show current level */
+		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
+			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
+			addlbnode(aw->arc_array[it]->name + skip_dir_len,
+				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], FALSE, aw->arc_array[it]->selected, aw);
+		}
+	}
+	
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
@@ -788,6 +836,11 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	ULONG tag_default_position = WINDOW_Position;
 
+	/* Listbrowser */
+	aw->lbsorthook.h_Entry = lbsortfunc;
+	aw->lbsorthook.h_SubEntry = NULL;
+	aw->lbsorthook.h_Data = NULL;
+
 	aw->lbci = AllocLBColumnInfo(4, 
 		LBCIA_Column, 0,
 			LBCIA_Title, "",
@@ -801,6 +854,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
+			LBCIA_CompareHook, &aw->lbsorthook,
 		LBCIA_Column, 2,
 			LBCIA_Title,  locale_get_string(MSG_SIZE),
 			LBCIA_Weight, 15,
@@ -947,7 +1001,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						LISTBROWSER_Labels, &(aw->lblist),
 						LISTBROWSER_ColumnTitles, TRUE,
 						LISTBROWSER_TitleClickable, TRUE,
-						LISTBROWSER_SortColumn, 0,
+						LISTBROWSER_SortColumn, 1,
 						LISTBROWSER_Striping, LBS_ROWS,
 						LISTBROWSER_FastRender, TRUE,
 						LISTBROWSER_Hierarchical, aw->h_mode,
@@ -1052,7 +1106,41 @@ void window_dispose(void *awin)
 	FreeVec(aw);
 }
 
-void window_tree_handle(void *awin)
+static void parent_dir(struct avalanche_window *aw)
+{
+	if(aw->current_dir) {
+		aw->current_dir[strlen(aw->current_dir) - 1] = '\0';
+
+		char *slash = strrchr(aw->current_dir, '/');
+	
+		if(slash == NULL) {
+			FreeVec(aw->current_dir);
+			aw->current_dir = NULL;
+
+			SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, TRUE,
+			TAG_DONE);
+
+		} else {
+			*(slash+1) = '\0';
+		}
+
+		SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+			STRINGA_TextVal, aw->current_dir,
+		TAG_DONE);
+
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+		window_flat_browser_construct(aw);
+
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, &aw->lblist,
+		TAG_DONE);
+	}
+}
+
+static void window_tree_handle(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	ULONG tmp = 0;
@@ -1117,7 +1205,7 @@ void window_tree_handle(void *awin)
 }
 					
 
-void window_list_handle(void *awin, char *tmpdir)
+static void window_list_handle(void *awin, char *tmpdir)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
@@ -1190,6 +1278,9 @@ it's incompatible with double-clicking as it resets the listview */
 						LBNA_Column, 1,
 						LBNCA_Text, &dir, 
 					TAG_DONE);
+
+					/* Special case: parent dir */
+					if(strcmp(dir, "/") == 0) return parent_dir(aw);
 
 					ULONG cdir_len = 0;
 					if(aw->current_dir) cdir_len = strlen(aw->current_dir);
@@ -1372,7 +1463,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, &aw->lblist,
-				LISTBROWSER_SortColumn, 0,
+				LISTBROWSER_SortColumn, 1,
 			TAG_DONE);
 
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
