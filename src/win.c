@@ -291,9 +291,9 @@ static void free_arc_array(struct avalanche_window *aw)
 	FreeVec(aw->arc_array);
 	aw->arc_array = NULL;
 	
-	if(aw->dir_array == NULL) return;
+	if((aw->dir_array == NULL) || (aw->dir_tree_size == 0)) return;
 
-	for(int i = 0; i < aw->total_items; i++) {
+	for(int i = 0; i < aw->dir_tree_size; i++) {
 		if(aw->dir_array[i]) {
 			if(aw->dir_array[i]->name) FreeVec(aw->dir_array[i]->name);
 			FreeVec(aw->dir_array[i]);
@@ -451,30 +451,6 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 	AddTail(&aw->lblist, node);
 }
 
-static void addlbnodesinglefile(char *name, LONG *size, void *userdata, struct avalanche_window *aw)
-{
-	struct Node *node = AllocListBrowserNode(4,
-		LBNA_UserData, userdata,
-		LBNA_CheckBox, TRUE,
-		LBNA_Checked, TRUE,
-		LBNA_Flags, 0,
-		LBNA_Generation, 0,
-		LBNA_Column, 0,
-			LBNCA_Image, GlyphObj,
-						GLYPH_Glyph, GLYPH_POPFILE,
-						GlyphEnd,
-		LBNA_Column, 1,
-			LBNCA_Text, name,
-		LBNA_Column, 2,
-			LBNCA_Integer, size,
-		LBNA_Column, 3,
-			//LBNCA_CopyText, TRUE,
-			LBNCA_Text, NULL,
-		TAG_DONE);
-
-	AddTail(&aw->lblist, node);
-}
-
 static ULONG count_dir_level(char *filename)
 {
 	ULONG i = 0;
@@ -542,9 +518,6 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 	aw->dir_tree_size = aw->total_items * 2;
 	aw->dir_array = AllocVec(sizeof(struct arc_entries *) * aw->dir_tree_size, MEMF_CLEAR);
 	if(aw->dir_array == NULL) return;
-
-	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-					LISTBROWSER_Labels, ~0, TAG_DONE);
 
 	for(int it = 0; it < aw->total_items; it++) {
 		char *dir_name = AllocVec(strlen(aw->arc_array[it]->name)+1, MEMF_CLEAR);
@@ -648,10 +621,6 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 
 		AddTail(&aw->dir_tree, node);
 	}
-
-	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-					LISTBROWSER_Labels, &aw->dir_tree,
-					TAG_DONE);
 }
 
 static void window_flat_browser_construct(struct avalanche_window *aw)
@@ -1364,8 +1333,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	FreeListBrowserList(&aw->dir_tree);
 	free_arc_array(aw);
 
-	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
+	module_free(awin);
 
 	if(aw->current_dir) {
 		FreeVec(aw->current_dir);
@@ -1406,6 +1374,9 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 				LISTBROWSER_Labels, &aw->lblist,
 				LISTBROWSER_SortColumn, 0,
 			TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
