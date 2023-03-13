@@ -343,7 +343,7 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 		window_reset_count(awin);
 		window_disable_gadgets(awin, TRUE);
 
-		if((node == NULL) && (aw->flat_mode)) {
+		if((node == NULL) && (aw->flat_mode) && (aw->archiver == ARC_XAD)) {
 			ret = module_extract_array(awin, aw->arc_array, aw->total_items, newdest);
 		} else {
 			ret = module_extract(awin, node, archive, newdest);
@@ -412,11 +412,13 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 	char datestr[20];
 	struct ClockData cd;
 
-	if((aw->archiver == ARC_XAD) && userdata && aw->flat_mode) {
-		struct arc_entries *ud = (struct arc_entries *)userdata;
-		xad_get_filedate(ud->userdata, &cd, aw);
-	} else {
-		xad_get_filedate(userdata, &cd, aw);
+	if(aw->archiver == ARC_XAD) {
+		if(userdata && aw->flat_mode) {
+			struct arc_entries *ud = (struct arc_entries *)userdata;
+			xad_get_filedate(ud->userdata, &cd, aw);
+		} else {
+			xad_get_filedate(userdata, &cd, aw);
+		}
 	}
 
 	if(CheckDate(&cd) == 0)
@@ -677,12 +679,14 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		}
 	}
 	
-	/* Add fake dir entries */
-	for(int it = 0; it < aw->dir_tree_size; it++) {
-		/* Only show current level - NB dir levels are different from file levels */
-		if((aw->dir_array[it] && ((aw->dir_array[it]->level - 1) == level)) &&
-			((aw->current_dir == NULL) || (strncmp(aw->dir_array[it]->name, aw->current_dir, skip_dir_len) == 0))) {
-			addlbnode(aw->dir_array[it]->name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw);
+	if(aw->archiver == ARC_XAD) {
+		/* Add fake dir entries */
+		for(int it = 0; it < aw->dir_tree_size; it++) {
+			/* Only show current level - NB dir levels are different from file levels */
+			if((aw->dir_array[it] && ((aw->dir_array[it]->level - 1) == level)) &&
+				((aw->current_dir == NULL) || (strncmp(aw->dir_array[it]->name, aw->current_dir, skip_dir_len) == 0))) {
+				addlbnode(aw->dir_array[it]->name + skip_dir_len, &zero, TRUE, NULL, FALSE, FALSE, aw);
+			}
 		}
 	}
 
@@ -712,7 +716,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		}
 	}
 
-	if(aw->archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata, aw); return; }
+//	if(aw->archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata, aw); return; }
 
 	if(aw->h_mode) {
 		if(item == 0) {
@@ -761,6 +765,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			aw->arc_array[item]->level = count_dir_level(name);
 			
 			if(item == (total - 1)) {
+				aw->archiver = ARC_XAD;
 				/* Sort the array */
 				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
 				window_flat_browser_tree_construct(aw);
@@ -802,7 +807,8 @@ static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG 
 			aw->arc_array[0]->userdata = userdata;
 			
 			aw->arc_array[0]->level = 0;
-		
+
+			aw->archiver = ARC_XFD;
 			window_flat_browser_construct(aw);
 		}
 	} else {
