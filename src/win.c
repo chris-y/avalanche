@@ -716,8 +716,6 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		}
 	}
 
-//	if(aw->archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata, aw); return; }
-
 	if(aw->h_mode) {
 		if(item == 0) {
 			aw->arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
@@ -765,7 +763,6 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			aw->arc_array[item]->level = count_dir_level(name);
 			
 			if(item == (total - 1)) {
-				aw->archiver = ARC_XAD;
 				/* Sort the array */
 				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
 				window_flat_browser_tree_construct(aw);
@@ -775,47 +772,6 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 	} else {
 		addlbnode(name, size, dir, userdata, aw->h_mode, TRUE, aw);
 	}
-}
-
-static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	if(aw->gadgets[GID_PROGRESS]) {
-		char msg[20];
-		sprintf(msg, "%d/%lu", 0, total);
-		aw->total_items = total;
-
-		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-						GA_Text, msg,
-						FUELGAUGE_Percent, FALSE,
-						FUELGAUGE_Justification, FGJ_CENTER,
-						FUELGAUGE_Level, 0,
-						TAG_DONE);
-	}
-
-	if(aw->flat_mode) {
-		if(aw->arc_array) free_arc_array(aw);
-		aw->arc_array = AllocVec(sizeof(struct arc_entries *), MEMF_CLEAR);
-
-		if(aw->arc_array) {
-			aw->arc_array[0] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
-			
-			aw->arc_array[0]->name = name;
-			aw->arc_array[0]->size = size;
-			aw->arc_array[0]->dir = dir;
-			aw->arc_array[0]->userdata = userdata;
-			
-			aw->arc_array[0]->level = 0;
-
-			aw->archiver = ARC_XFD;
-			window_flat_browser_construct(aw);
-		}
-	} else {
-		addlbnodesinglefile(name, size, userdata, aw);
-	}
-
-	return;
 }
 
 void *array_get_userdata(void *awin, void *arc_entry)
@@ -1432,21 +1388,16 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	FreeListBrowserList(&aw->lblist);
 
+	aw->archiver = ARC_XAD; /* Set in advance for flat browser tree use */
 	ret = xad_info(aw->archive, config, aw, addlbnode_cb);
 	if(ret != 0) { /* if xad failed try xfd */
-		retxfd = xfd_info(aw->archive, aw, addlbnodexfd_cb);
+		aw->archiver = ARC_XFD;
+		retxfd = xfd_info(aw->archive, aw, addlbnode_cb);
 		if(retxfd != 0) {
 			/* Failed to open with any lib - show generic error rather than XAD's */
+			aw->archiver = ARC_NONE;
 			open_error_req(locale_get_string(MSG_UNABLETOOPENFILE), locale_get_string(MSG_OK), aw);
 		}
-	}
-
-	if(ret == 0) {
-		aw->archiver = ARC_XAD;
-	} else if(retxfd == 0) {
-		aw->archiver = ARC_XFD;
-	} else {
-		aw->archiver = ARC_NONE;
 	}
 
 	window_menu_set_enable_state(aw);

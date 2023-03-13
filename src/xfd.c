@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -118,7 +118,7 @@ BOOL xfd_recog(char *file)
 	return res;
 }
 
-long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin))
+long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
 {
 	BPTR fh = 0;
 	ULONG len;
@@ -165,7 +165,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	if(res == TRUE) {
 		xu->fn = strdup(FilePart(file));
 		/* Add to list */
-		addnode(xu->fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, xu->fn, awin);
+		addnode(xu->fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, xu->fn, get_config(), awin);
 
 		return 0;
 	}
