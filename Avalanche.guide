@@ -112,6 +112,9 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}x.xx (xx.xx.xxxx)@{uu}
+* New browser mode
+
 @{u}1.11 (11.02.2023)@{uu}
 * Improve window handling
   - Can now open new window from the GUI

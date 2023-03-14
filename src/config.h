@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ struct avalanche_config {
 	int tmpdirlen;
 
 	BOOL disable_asl_hook;
-	BOOL h_browser;
+	ULONG viewmode; /* [1 = list, 0 = browser] */
 	BOOL virus_scan;
 	BOOL debug;
 	BOOL ignorefs;

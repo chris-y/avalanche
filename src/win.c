@@ -144,17 +144,18 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
-	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
-	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 1 Flat Browser
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Snapshot
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 4 Preferences
+	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 0 View mode
+	{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
+	{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Snapshot
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
-#define MENU_HMODE 13
 #define MENU_FLATMODE 14
+#define MENU_LISTMODE 15
 
 #define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
@@ -336,7 +337,7 @@ static int sort_array(const void *a, const void *b)
 #ifdef __amigaos4__
 static int32 lbsortfunc(struct Hook *h, APTR obj, struct LBSortMsg *msg)
 #else
-static int32 __saveds lbsortfunc(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
+static LONG __saveds lbsortfunc(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
 #endif
 {
 	/* TODO: "top" is relative, maybe we need to check lbsm_Direction */
@@ -918,8 +919,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
 	/* Copy global to local config */
-	aw->h_mode = config->h_browser;
-	aw->flat_mode = FALSE; /* TODO: Add to global config */
+	if(config->viewmode == 0) aw->flat_mode = TRUE;
 
 	/* ASL hook */
 	aw->aslfilterhook.h_Entry = aslfilterfunc;
@@ -1070,8 +1070,11 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	if(aw->windows[WID_MAIN]) {
 		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
-		if(aw->h_mode) aw->menu[MENU_HMODE].nm_Flags |= CHECKED;
-		if(aw->flat_mode) aw->menu[MENU_FLATMODE].nm_Flags |= CHECKED;
+		if(aw->flat_mode) {
+			aw->menu[MENU_FLATMODE].nm_Flags |= CHECKED;
+		} else {
+			aw->menu[MENU_LISTMODE].nm_Flags |= CHECKED;
+		}
 
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
@@ -1584,6 +1587,29 @@ ULONG window_handle_input(void *awin, UWORD *code)
 	return RA_HandleInput(window_get_object(awin), code);
 }
 
+static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_config *config, BOOL on)
+{
+	aw->flat_mode = on;
+
+	BOOL disable = !aw->flat_mode;
+
+	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+		GA_Disabled, disable,
+	TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+		GA_Disabled, disable,
+	TAG_DONE);
+
+	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
+
+	SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
+		GA_Disabled, disable,
+	TAG_DONE);
+
+	window_req_open_archive(aw, config, TRUE);
+}
+
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -1727,36 +1753,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					
 					case 2: //settings
 						switch(ITEMNUM(code)) {
-							case 0: //browser mode
-								aw->h_mode = !aw->h_mode;
-									
-								window_toggle_hbrowser(awin, aw->h_mode);
-								window_req_open_archive(awin, config, TRUE);
+							case 0: // view mode
+								switch(SUBNUM(code)) {
+									case 0: //flat browser mode
+										toggle_flat_mode(aw, config, TRUE);
+									break;
+									case 1: // list mode
+										toggle_flat_mode(aw, config, FALSE);
+									break;
+								}
 							break;
-					
-							case 1: //flat browser mode TODO: this should be MX with above
-								aw->flat_mode = !aw->flat_mode;
-								BOOL disable = !aw->flat_mode;
-
-								SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-									GA_Disabled, disable,
-								TAG_DONE);
-
-								SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-									GA_Disabled, disable,
-								TAG_DONE);
-
-								if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
-
-								SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-									GA_Disabled, disable,
-								TAG_DONE);
-
-
-								window_req_open_archive(awin, config, TRUE);
-							break;
-										
-							case 3: //snapshot
+				
+							case 2: //snapshot
 								/* fetch current win posn */
 								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_x);
 								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_y);
@@ -1764,7 +1772,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								GetAttr(WA_Height, aw->objects[OID_MAIN], (APTR)&config->win_h);
 							break;
 								
-							case 4: //prefs
+							case 3: //prefs
 								config_window_open(config);
 							break;
 						}
@@ -1866,10 +1874,11 @@ void fill_menu_labels(void)
 	menu[10].nm_Label = locale_get_string( MSG_CLEARSELECTION );
 	menu[11].nm_Label = locale_get_string( MSG_INVERTSELECTION );
 	menu[12].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[MENU_HMODE].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_FLATBROWSER );
-	menu[16].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[17].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[13].nm_Label = locale_get_string( MSG_VIEWMODE );
+	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
+	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
+	menu[17].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[18].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

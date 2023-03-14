@@ -106,8 +106,10 @@
 #define MSG_QUITCFG_QUIT 62
 #define MSG_QUITCFG_HIDE 63
 #define MSG_LASTWINDOWACTION 64
-#define MSG_FLATBROWSER 65
-#define MSG_ERR_TREE_ALLOC 66
+#define MSG_VIEWMODEBROWSER 65
+#define MSG_VIEWMODELIST 66
+#define MSG_VIEWMODE 67
+#define MSG_ERR_TREE_ALLOC 68
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -182,7 +184,9 @@
 #define MSG_QUITCFG_QUIT_STR "Quit"
 #define MSG_QUITCFG_HIDE_STR "Hide"
 #define MSG_LASTWINDOWACTION_STR "When last window closed:"
-#define MSG_FLATBROWSER_STR "Flat browser"
+#define MSG_VIEWMODEBROWSER_STR "Browser"
+#define MSG_VIEWMODELIST_STR "List"
+#define MSG_VIEWMODE_STR "View mode"
 #define MSG_ERR_TREE_ALLOC_STR "Tree entries exceed allocated memory"
 
 #endif /* CATCOMP_STRINGS */
@@ -325,9 +329,13 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_QUITCFG_HIDE_STR "\x00\x00"
     "\x00\x00\x00\x40\x00\x1A"
     MSG_LASTWINDOWACTION_STR "\x00\x00"
-    "\x00\x00\x00\x41\x00\x0E"
-    MSG_FLATBROWSER_STR "\x00\x00"
-    "\x00\x00\x00\x42\x00\x26"
+    "\x00\x00\x00\x41\x00\x08"
+    MSG_VIEWMODEBROWSER_STR "\x00"
+    "\x00\x00\x00\x42\x00\x06"
+    MSG_VIEWMODELIST_STR "\x00\x00"
+    "\x00\x00\x00\x43\x00\x0A"
+    MSG_VIEWMODE_STR "\x00"
+    "\x00\x00\x00\x44\x00\x26"
     MSG_ERR_TREE_ALLOC_STR "\x00\x00"
 };
 

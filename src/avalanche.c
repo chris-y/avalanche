@@ -544,7 +544,11 @@ static void gettooltypes(struct WBArg *wbarg)
 			config.tmpdirlen = strlen(config.tmpdir);
 		}
 
-		if(FindToolType(toolarray, "HBROWSER")) config.h_browser = TRUE;
+		if(FindToolType(toolarray, "VIEWMODE")) {
+			if(MatchToolValue(s, "LIST")) {
+				config.viewmode = 1;
+			}
+		}
 		if(FindToolType(toolarray, "VIRUSSCAN")) config.virus_scan = TRUE;
 		if(FindToolType(toolarray, "NOASLHOOK")) config.disable_asl_hook = TRUE;
 		if(FindToolType(toolarray, "IGNOREFS")) config.ignorefs = TRUE;
@@ -596,7 +600,7 @@ int main(int argc, char **argv)
 	config.progname = NULL;
 	config.dest = NULL;
 	config.disable_asl_hook = FALSE;
-	config.h_browser = FALSE;
+	config.viewmode = 0;
 	config.virus_scan = FALSE;
 	config.debug = FALSE;
 	config.ignorefs = FALSE;
