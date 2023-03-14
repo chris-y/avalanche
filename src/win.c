@@ -64,7 +64,6 @@ enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
-	GID_PARENT,
 	GID_DIR,
 	GID_TREE,
 	GID_LIST,
@@ -929,15 +928,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
 			LAYOUT_AddChild, LayoutHObj,
-				LAYOUT_AddChild,  aw->gadgets[GID_PARENT] = ButtonObj,
-					GA_ID, GID_PARENT,
-					GA_RelVerify, TRUE,
-					GA_Image, GlyphObj,
-						GLYPH_Glyph, GLYPH_UPARROW,
-					GlyphEnd,
-					GA_Disabled, !aw->flat_mode,
-				ButtonEnd,
-				CHILD_WeightedWidth, 0,
 				LAYOUT_AddChild,  aw->gadgets[GID_DIR] = StringObj,
 					GA_ID, GID_DIR,
 					GA_ReadOnly, TRUE,
@@ -1084,11 +1074,6 @@ static void parent_dir(struct avalanche_window *aw)
 		if(slash == NULL) {
 			FreeVec(aw->current_dir);
 			aw->current_dir = NULL;
-
-			SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-				GA_Disabled, TRUE,
-			TAG_DONE);
-
 		} else {
 			*(slash+1) = '\0';
 		}
@@ -1151,16 +1136,6 @@ static void window_tree_handle(void *awin)
 					STRINGA_TextVal, aw->current_dir,
 				TAG_DONE);
 
-				if(aw->current_dir) {
-					SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-							GA_Disabled, FALSE,
-					TAG_DONE);
-				} else {
-					SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-						GA_Disabled, TRUE,
-					TAG_DONE);
-				}
-				
 				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 					LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -1269,10 +1244,6 @@ it's incompatible with double-clicking as it resets the listview */
 					/* switch to dir */
 					SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
 						STRINGA_TextVal, aw->current_dir,
-					TAG_DONE);
-
-					SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-						GA_Disabled, FALSE,
 					TAG_DONE);
 
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
@@ -1530,10 +1501,6 @@ static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_confi
 
 	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
 
-	SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-		GA_Disabled, disable,
-	TAG_DONE);
-
 	window_req_open_archive(aw, config, TRUE);
 }
 
@@ -1557,39 +1524,6 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					
 				case GID_DEST:
 					window_req_dest(awin);
-				break;
-
-				case GID_PARENT:
-					if(aw->current_dir) {
-						aw->current_dir[strlen(aw->current_dir) - 1] = '\0';
-
-						char *slash = strrchr(aw->current_dir, '/');
-					
-						if(slash == NULL) {
-							FreeVec(aw->current_dir);
-							aw->current_dir = NULL;
-
-							SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-								GA_Disabled, TRUE,
-							TAG_DONE);
-
-						} else {
-							*(slash+1) = '\0';
-						}
-
-						SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-							STRINGA_TextVal, aw->current_dir,
-						TAG_DONE);
-
-						SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-							LISTBROWSER_Labels, ~0, TAG_DONE);
-
-						window_flat_browser_construct(aw);
-
-						SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-							LISTBROWSER_Labels, &aw->lblist,
-						TAG_DONE);
-					}
 				break;
 
 				case GID_EXTRACT:
@@ -1781,11 +1715,6 @@ void window_disable_gadgets(void *awin, BOOL disable)
 		TAG_DONE);
 
 	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
-
-	SetGadgetAttrs(aw->gadgets[GID_PARENT], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable ,
-		TAG_DONE);
-
 }
 
 void fill_menu_labels(void)
