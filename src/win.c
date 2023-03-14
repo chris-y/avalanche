@@ -219,6 +219,7 @@ static void window_menu_set_enable_state(void *awin)
 
 static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select, BOOL detach_list)
 {
+	/* detach_list detached the list and also doesn't update the underlying array */
 	if(detach_list) {
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -228,7 +229,7 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 	ULONG selected;
 	struct arc_entries *userdata;
 
-	if(aw->flat_mode) {
+	if(detach_list && aw->flat_mode) {
 		GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&userdata, TAG_DONE);
 		if(userdata == NULL) return;
 	}
@@ -242,7 +243,7 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 
 	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
 
-	if(aw->flat_mode) {
+	if(detach_list && aw->flat_mode) {
 		userdata->selected = selected;
 	}
 
@@ -1320,15 +1321,25 @@ void window_modify_all_list(void *awin, ULONG select)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	struct Node *node;
-	BOOL selected;
+	BOOL selected = FALSE;
+
+	if(select == 1) selected = TRUE;
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
+	if(aw->flat_mode) {
+		for(int i = 0; i < aw->total_items; i++) {
+			if(select == 2) {
+				aw->arc_array[i]->selected = !aw->arc_array[i]->selected;
+			} else {
+				aw->arc_array[i]->selected = selected;
+			}
+		}
+	}
+
 	for(node = aw->lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
-
 		toggle_item(aw, node, select, FALSE);
-
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
