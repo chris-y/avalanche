@@ -37,7 +37,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}SOURCEDIR@{ub} Initial drawer to show in ASL requester (default = RAM:)
 @{b}DEST@{ub} Destination to extract the archive to (default = RAM:)
 @{b}TMPDIR@{ub} Path for temporary directory (default = T:)
-@{b}HBROWSER@{ub} Enable @{"hierarchical browser" link hbrowser} mode
+@{b}VIEWMODE@{ub} LIST or BROWSER (default = BROWSER)
 @{b}IGNOREFS@{ub} Enables the "Ignore filesystems" option
 @{b}WINX@{ub}/@{b}WINY@{ub}/@{b}WINW@{ub}/@{b}WINH@{ub} Window position/width/height
 @{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
@@ -73,18 +73,6 @@ The option to "Ignore filesystems" is only useful for DMS and similar disk archi
 
 @endnode
 
-@node hbrowser "Hierarchical browser"
-Hierarchical mode switches the archive view from a flat list to a hierarchical view, where the directories and files are nested.
-
-This is experimental.  Known issues:
-* The internal list of files in the archive must be in the correct order
-* The archive must contain directory node stubs
-
-If no directory stubs are found, the browser will fall back to a flat list.
-
-For feedback on this feature, please see https://github.com/chris-y/avalanche/issues/6
-@endnode
-
 @node vscan "Virus scanning"
 Avalanche can use xvs.library to scan files for viruses on extraction.
 xvs.library can be downloaded from https://www.vht-dk.dk/
@@ -113,7 +101,7 @@ This is mostly for internal use, but has the following commands:
 @node history "Changelog"
 @rem keep this to <80 chars for readme
 @{u}x.xx (xx.xx.xxxx)@{uu}
-* New browser mode
+* New browser mode, removed old hierarchical browser.
 
 @{u}1.11 (11.02.2023)@{uu}
 * Improve window handling
