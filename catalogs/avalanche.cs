@@ -223,6 +223,18 @@ Hide
 MSG_LASTWINDOWACTION
 When last window closed:
 ;
+MSG_VIEWMODEBROWSER
+Browser
+;
+MSG_VIEWMODELIST
+List
+;
+MSG_VIEWMODE
+View mode
+;
+MSG_ERR_TREE_ALLOC
+Tree entries exceed allocated memory
+;
 MSG_NEWARCHIVE
 New archive...
 ;

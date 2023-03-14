@@ -28,7 +28,6 @@
 
 #include <exec/lists.h>
 #include <exec/nodes.h>
-#include <intuition/pointerclass.h>
 #include <workbench/startup.h>
 
 #include <classes/window.h>
@@ -85,29 +84,6 @@ ULONG ask_quithide(void *awin)
 struct avalanche_config *get_config(void)
 {
 	return &config;
-}
-
-long extract(void *awin, char *archive, char *newdest, struct Node *node)
-{
-	long ret = 0;
-
-	if(archive && newdest) {
-		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
-										WA_PointerType, POINTERTYPE_PROGRESS,
-										TAG_DONE);
-		window_reset_count(awin);
-		window_disable_gadgets(awin, TRUE);
-
-		ret = module_extract(awin, node, archive, newdest);
-
-		window_disable_gadgets(awin, FALSE);
-
-		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
-											WA_BusyPointer, FALSE,
-											TAG_DONE);
-	}
-
-	return ret;
 }
 
 static void UnregisterCx(CxObj *CXBroker, struct MsgPort *CXMP)
@@ -617,7 +593,11 @@ static void gettooltypes(struct WBArg *wbarg)
 			config.tmpdirlen = strlen(config.tmpdir);
 		}
 
-		if(FindToolType(toolarray, "HBROWSER")) config.h_browser = TRUE;
+		if(FindToolType(toolarray, "VIEWMODE")) {
+			if(MatchToolValue(s, "LIST")) {
+				config.viewmode = 1;
+			}
+		}
 		if(FindToolType(toolarray, "VIRUSSCAN")) config.virus_scan = TRUE;
 		if(FindToolType(toolarray, "NOASLHOOK")) config.disable_asl_hook = TRUE;
 		if(FindToolType(toolarray, "IGNOREFS")) config.ignorefs = TRUE;
@@ -669,7 +649,7 @@ int main(int argc, char **argv)
 	config.progname = NULL;
 	config.dest = NULL;
 	config.disable_asl_hook = FALSE;
-	config.h_browser = FALSE;
+	config.viewmode = 0;
 	config.virus_scan = FALSE;
 	config.debug = FALSE;
 	config.ignorefs = FALSE;

@@ -56,6 +56,7 @@ enum {
 	GID_C_SCAN,
 	GID_C_IGNOREFS,
 	GID_C_DEST,
+	GID_C_VIEWMODE,
 	GID_C_QUIT,
 	GID_C_SAVE,
 	GID_C_USE,
@@ -119,10 +120,10 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[0] = "(DEST=RAM:)";
 		}
 
-		if(config->h_browser) {
-			newtooltypes[1] = "HBROWSER";
+		if(config->viewmode == 1) {
+			newtooltypes[1] = "VIEWMODE=LIST";
 		} else {
-			newtooltypes[1] = "(HBROWSER)";
+			newtooltypes[1] = "(VIEWMODE=LIST|BROWSER)";
 		}
 
 		if(config->disable_asl_hook) {
@@ -253,6 +254,9 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	GetAttr(CHOOSER_Selected, gadgets[GID_C_QUIT], (ULONG *)&data);
 	config->closeaction = data;
 
+	GetAttr(CHOOSER_Selected, gadgets[GID_C_VIEWMODE], (ULONG *)&data);
+	config->viewmode = data;
+
 	if(save) config_save(config);
 }
 
@@ -264,6 +268,12 @@ void config_window_open(struct avalanche_config *config)
 			locale_get_string(MSG_QUITCFG_ASK),
 			locale_get_string(MSG_QUITCFG_QUIT),
 			locale_get_string(MSG_QUITCFG_HIDE),
+			NULL
+	};
+
+	STRPTR viewmode_opts[] = {
+			locale_get_string(MSG_VIEWMODEBROWSER),
+			locale_get_string(MSG_VIEWMODELIST),
 			NULL
 	};
 
@@ -318,7 +328,17 @@ void config_window_open(struct avalanche_config *config)
 						GA_Text, locale_get_string( MSG_IGNOREFILESYSTEMS ) ,
 						GA_Selected, config->ignorefs,
 					End,
-					LAYOUT_AddChild,  gadgets[GID_C_QUIT] = ChooserObj,
+					LAYOUT_AddChild, gadgets[GID_C_VIEWMODE] = ChooserObj,
+						GA_ID, GID_C_VIEWMODE,
+						GA_RelVerify, TRUE,
+						GA_Selected, config->viewmode,
+						CHOOSER_PopUp, TRUE,
+						CHOOSER_LabelArray, viewmode_opts,
+					End,
+					CHILD_Label, LabelObj,
+						LABEL_Text, locale_get_string(MSG_VIEWMODE),
+					LabelEnd,
+					LAYOUT_AddChild, gadgets[GID_C_QUIT] = ChooserObj,
 						GA_ID, GID_C_QUIT,
 						GA_RelVerify, TRUE,
 						GA_Selected, config->closeaction,
@@ -326,7 +346,7 @@ void config_window_open(struct avalanche_config *config)
 						CHOOSER_LabelArray, quit_opts,
 					End,
 					CHILD_Label, LabelObj,
-						LABEL_Text,  locale_get_string(MSG_LASTWINDOWACTION),
+						LABEL_Text, locale_get_string(MSG_LASTWINDOWACTION),
 					LabelEnd,
 					LAYOUT_AddChild,  LayoutHObj,
 						LAYOUT_AddChild,  gadgets[GID_C_SAVE] = ButtonObj,
