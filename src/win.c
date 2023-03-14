@@ -739,13 +739,15 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 			aw->arc_array[item]->selected = TRUE;
 			
 			aw->arc_array[item]->level = 0;
-		
+
 			/* Count the slashes to find directory level */
 			aw->arc_array[item]->level = count_dir_level(name);
 			
 			if(item == (total - 1)) {
 				/* Sort the array */
+				#ifdef __amigaos4__ /* doesn't like OS3, may not be needed anyway */
 				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
+				#endif
 				window_flat_browser_tree_construct(aw);
 				window_flat_browser_construct(aw);
 			}
@@ -793,7 +795,12 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	ULONG getfile_drawer = GETFILE_Drawer;
 	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
+	
+#ifdef __amigaos4__
 	struct Hook *lbsort_hook = (struct Hook *)&(aw->lbsorthook);
+#else
+	struct Hook *lbsort_hook = NULL;
+#endif
 
 	if(config->disable_asl_hook) {
 		asl_hook = NULL;
