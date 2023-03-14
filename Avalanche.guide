@@ -57,11 +57,9 @@ and selecting "Extract here" from the Tools menu.
 
 When a valid archive or crunched file is loaded, the contents will be displayed.  Unchecked items will not be extracted.
 
-The state of checkboxes can be toggled by clicking on them, or by choosing "Select all" or "Clear selection" from the Edit menu.
+The state of checkboxes can be toggled by clicking on them, or by choosing "Select all" or "Clear selection" from the Edit menu.  Note that this will act on everything in the current and subdirectories when in the browser mode.
 
 Clicking Extract will extract the archive to the chosen destination.  If @{"scan for viruses" link config} is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
-
-The browser can be put into a @{"hierarchical" link hbrowser} mode through the menu.  This is experimental - see the associated page for details.
 
 The option to "Ignore filesystems" is only useful for DMS and similar disk archives.  Normally Avalanche will check for a valid filesystem, and list the individual files.  With this option set, the raw disk image will be listed instead.
 
@@ -102,6 +100,8 @@ This is mostly for internal use, but has the following commands:
 @rem keep this to <80 chars for readme
 @{u}x.xx (xx.xx.xxxx)@{uu}
 * New browser mode, removed old hierarchical browser.
+* Select/Clear/Invert selection now act on the current directory and
+  all subdirectories when in the new browser mode.
 
 @{u}1.11 (11.02.2023)@{uu}
 * Improve window handling

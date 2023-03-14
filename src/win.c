@@ -1330,10 +1330,12 @@ void window_modify_all_list(void *awin, ULONG select)
 
 	if(aw->flat_mode) {
 		for(int i = 0; i < aw->total_items; i++) {
-			if(select == 2) {
-				aw->arc_array[i]->selected = !aw->arc_array[i]->selected;
-			} else {
-				aw->arc_array[i]->selected = selected;
+			if((aw->current_dir == NULL) || (strncmp(aw->arc_array[i]->name, aw->current_dir, strlen(aw->current_dir)) == 0)) {
+				if(select == 2) {
+					aw->arc_array[i]->selected = !aw->arc_array[i]->selected;
+				} else {
+					aw->arc_array[i]->selected = selected;
+				}
 			}
 		}
 	}
