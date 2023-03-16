@@ -68,12 +68,13 @@ static BOOL mod_zip_del(void *awin, char *archive, char **files, ULONG count)
 	return FALSE;
 }
 
-static BOOL mod_zip_add(void *awin, char *archive, char *file)
+static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir)
 {
 	int err = 0;
 	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
+		char *fullfile = NULL;
 		zip_source_t *src = zip_source_file(zip, file, 0, -1);
 		if(zip == NULL) {
 			mod_zip_show_error(awin, zip);
@@ -81,7 +82,22 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file)
 			return FALSE;
 		}
 
-		err = zip_file_add(zip, FilePart(file), src, 0);
+		if(dir != NULL) {
+			ULONG fullfile_len = strlen(FilePart(file)) + strlen(dir) + 1;
+			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
+
+			if(fullfile) {
+				strcpy(fullfile, dir);
+				AddPart(fullfile, FilePart(file), fullfile_len);
+			}
+		} else {
+			fullfile = FilePart(file);
+		}
+
+		err = zip_file_add(zip, fullfile, src, 0);
+
+		if(dir && fullfile) FreeVec(fullfile);
+
 		if(err == -1) {
 			mod_zip_show_error(awin, zip);
 			zip_discard(zip);

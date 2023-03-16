@@ -27,7 +27,7 @@ struct module_functions {
 	void (*free)(void *awin);
 
 	/* Editing */
-	BOOL (*add)(void *awin, char *archive, char *file); /* Returns TRUE on success */
+	BOOL (*add)(void *awin, char *archive, char *file, char *dir); /* Returns TRUE on success */
 	BOOL (*del)(void *awin, char *archive, char **files, ULONG count); /* Returns TRUE on success */
 };
 

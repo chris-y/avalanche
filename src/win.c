@@ -1048,7 +1048,7 @@ BOOL window_edit_add(void *awin, char *file)
 	
 	if(module_vscan(awin, file, NULL, 0, FALSE) == 0) {
 		module_free(aw);
-		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file);
+		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file, aw->current_dir);
 	}
 	return FALSE;
 }

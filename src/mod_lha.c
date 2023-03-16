@@ -68,7 +68,7 @@ static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 	return TRUE;
 }
 
-static BOOL mod_lha_add(void *awin, char *archive, char *file)
+static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir)
 {
 	int err;
 	char cmd[1024];
