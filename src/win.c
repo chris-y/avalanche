@@ -91,6 +91,8 @@ struct arc_entries {
 	ULONG level;
 };
 
+#define TITLE_MAX_SIZE 100
+
 struct avalanche_window {
 	struct MinNode node;
 	struct Window *windows[WID_LAST];
@@ -119,6 +121,7 @@ struct avalanche_window {
 	BOOL iconified;
 	char *current_dir;
 	struct Node *root_node;
+	char title[TITLE_MAX_SIZE];
 };
 
 static struct List winlist;
@@ -524,6 +527,26 @@ static void highlight_current_dir(struct avalanche_window *aw)
 	}
 }
 
+static void window_update_title(struct avalanche_window *aw)
+{
+	if(aw->archive != NULL) {
+		if(aw->current_dir) {
+			int title_len = strlen(VERS) + strlen(FilePart(aw->archive)) + strlen(aw->current_dir);
+
+			if((title_len < TITLE_MAX_SIZE) || ((title_len - TITLE_MAX_SIZE + 3) > strlen(aw->current_dir))) {
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, FilePart(aw->archive), aw->current_dir);
+			} else {
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, FilePart(aw->archive), aw->current_dir + (strlen(aw->current_dir) - (title_len - TITLE_MAX_SIZE + 3)));		
+			}
+		} else {
+			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, FilePart(aw->archive));
+		}
+		SetWindowTitle(window_get_window(aw), (UBYTE *) ~0, aw->title);
+	} else {
+		SetWindowTitle(window_get_window(aw), (UBYTE *) ~0, VERS);
+	}
+}
+
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
 	FreeListBrowserList(&aw->dir_tree);
@@ -632,6 +655,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 
 		AddTail(&aw->dir_tree, node);
 	}
+
+	window_update_title(aw);
 }
 
 static void window_flat_browser_construct(struct avalanche_window *aw)
@@ -1428,6 +1453,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 			LISTBROWSER_SelectedNode, aw->root_node,
 			TAG_DONE);
 	}
+
+	window_update_title(aw);
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
