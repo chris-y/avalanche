@@ -114,7 +114,8 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-	if(xu->arctype == XDISK) return 0;
+	if(xu && xu->arctype == XDISK) return 0;
+	if(xfi == NULL) return 0;
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
@@ -126,6 +127,8 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 
 static const char *xad_get_filename(void *userdata, void *awin)
 {
+	if(userdata == NULL) return NULL;
+	
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 	
 	if(xu && (xu->arctype == XDISK)) return "disk.img";
@@ -370,14 +373,13 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	return err;
 }
 
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
+static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata *xu, struct xadDiskInfo *di, struct xadFileInfo *fi, ULONG *pud)
 {
 	long err = 0;
-	struct xadFileInfo *fi = NULL;
-	struct xadDiskInfo *di = NULL;
+		
 	struct DateStamp ds;
 	char *fn = NULL;
-	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
 	struct xadArchiveInfo *ai = xu->ai;
 
 	struct xad_hookdata xhd;
@@ -389,11 +391,6 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	progress_hook.h_SubEntry = NULL;
 	progress_hook.h_Data = &xhd;
 
-	if(xu->arctype == XDISK) {
-		di = (struct xadDiskInfo *)getnode(awin, node);
-	} else {
-		fi = (struct xadFileInfo *)getnode(awin, node);
-	}
 
 	if(fi || di) {
 		char destfile[1024];
@@ -483,6 +480,22 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	return err;
 }
 
+
+long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
+{
+	struct xadFileInfo *fi = NULL;
+	struct xadDiskInfo *di = NULL;
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	if(xu->arctype == XDISK) {
+		di = (struct xadDiskInfo *)getnode(awin, node);
+	} else {
+		fi = (struct xadFileInfo *)getnode(awin, node);
+	}
+	
+	return xad_extract_file_private(awin, dest, xu, di, fi, pud);
+
+}
+
 /* returns 0 on success */
 long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
 {
@@ -504,6 +517,37 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 
 	return err;
 }
+
+long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
+{
+	long err = XADERR_OK;
+	ULONG pud = 0;
+	struct xadFileInfo *fi = NULL;
+	struct xadDiskInfo *di = NULL;
+
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu->ai) {
+		for(int i = 0; i < total_items; i++) {
+			if(xu->arctype == XDISK) {
+				di = (struct xadDiskInfo *)getuserdata(awin, array[i]);
+			} else {
+				fi = (struct xadFileInfo *)getuserdata(awin, array[i]);
+			}
+	
+			if((di == NULL) && (fi == NULL)) continue;
+
+			err = xad_extract_file_private(awin, dest, xu, di, fi, &pud);
+			if(err != XADERR_OK) {
+				if(err == XADERR_BREAK) err = XADERR_OK; // user abort
+				return err;
+			}
+		}
+	}
+
+	return err;
+}
+
 
 void xad_register(struct module_functions *funcs)
 {

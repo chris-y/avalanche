@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 1.10
+Version: 1.11
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -18,9 +18,11 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Dragging a drawer into the window now sets the source directory, if
-  an archive hasn't already been opened.
-* Fixed some problems opening archives in certain circumstances.
-* OS4 build now uses newlib.
+* Improve window handling
+  - Can now open new window from the GUI
+  - Can select to ask/hide/quit when last window closed
+    (NB: CONFIRMQUIT tooltype no longer used)
+* Can now specify an archive on the command line
+
 
 For full history see documentation inside the archive.

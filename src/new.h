@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2023 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,14 +12,12 @@
  * GNU General Public License for more details.
 */
 
-#ifndef XFD_H
-#define XFD_H 1
+#ifndef AVALANCHE_NEW_H
+#define AVALANCHE_NEW_H 1
 
-void xfd_exit(void);
-BOOL xfd_recog(char *file);
-long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));
-long xfd_extract(void *awin, char *file, char *dest);
-
-void xfd_register(struct module_functions *funcs);
+void newarc_window_open(void);
+ULONG newarc_window_get_signal(void);
+ULONG newarc_window_handle_input(UWORD *code);
+BOOL newarc_window_handle_input_events(ULONG result, UWORD code);
 
 #endif

@@ -291,3 +291,31 @@ MSG_LASTWINDOWACTION
 When last window closed:
 ; When last window closed:
 ;
+MSG_VIEWMODEBROWSER
+Browser
+; Browser
+;
+MSG_VIEWMODELIST
+List
+; List
+;
+MSG_VIEWMODE
+View mode
+; View mode
+;
+MSG_ERR_TREE_ALLOC
+Tree entries exceed allocated memory
+; Tree entries exceed allocated memory
+;
+MSG_NEWARCHIVE
+New archive...
+; New archive...
+;
+MSG_TYPE
+_Type
+; _Type
+;
+MSG_CREATE
+_Create
+; _Create
+;

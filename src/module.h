@@ -42,6 +42,7 @@ const char *module_get_subformat(void *awin);
 const char *module_get_read_module(void *awin);
 const char *module_get_error(void *awin, long code);
 long module_extract(void *awin, void *node, void *archive, void *newdest);
+long module_extract_array(void *awin, void **array, ULONG total_items, void *dest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);
 

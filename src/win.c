@@ -27,11 +27,13 @@
 #include <clib/alib_protos.h>
 
 #include <intuition/pointerclass.h>
+
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 
 #include <proto/button.h>
 #include <proto/getfile.h>
+#include <proto/glyph.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
@@ -41,6 +43,7 @@
 #include <gadgets/fuelgauge.h>
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
+#include <images/glyph.h>
 #include <images/label.h>
 
 #include <reaction/reaction.h>
@@ -63,6 +66,8 @@ enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
+	GID_DIR,
+	GID_TREE,
 	GID_LIST,
 	GID_EXTRACT,
 	GID_PROGRESS,
@@ -82,8 +87,10 @@ enum {
 struct arc_entries {
 	char *name;
 	ULONG *size;
+	BOOL selected;
 	BOOL dir;
 	void *userdata;
+	ULONG level;
 };
 
 #define AVALANCHE_DROPZONES 2
@@ -97,24 +104,32 @@ struct avalanche_window {
 	ULONG archiver;
 	struct ColumnInfo *lbci;
 	struct List lblist;
+	struct ColumnInfo *dtci;
+	struct List dir_tree;
 	struct Hook aslfilterhook;
 	struct Hook appwindzhook;
+	struct Hook lbsorthook;
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
 	char *archive;
 	char *dest;
 	struct MinList deletelist;
 	struct arc_entries **arc_array;
+	struct arc_entries **dir_array;
+	ULONG dir_tree_size;
 	ULONG current_item;
 	ULONG total_items;
 	BOOL archive_needs_free;
 	void *archive_userdata;
-	BOOL h_mode;
+	BOOL flat_mode;
 	BOOL iconified;
 	struct module_functions mf;
+	char *current_dir;
+	struct Node *root_node;
 };
 
-struct List winlist;
+static struct List winlist;
+static ULONG zero = 0;
 
 #ifndef __amigaos4__
 #define fr_NumArgs rf_NumArgs
@@ -125,9 +140,9 @@ struct List winlist;
 
 struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
-	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 0 Open
+	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
 	{NM_ITEM,   NULL,         "+", 0, 0, 0,}, // 1 New window
-	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 2 New archive
+	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 2 Open
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
 	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 5 About
@@ -143,15 +158,18 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NULL,       0, NM_ITEMDISABLED, 0, 0,}, // 5 Delete files
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
-	{NM_ITEM,	NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 0 HBrowser
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 1 Snapshot
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
+	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 0 View mode
+	{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
+	{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Snapshot
 	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
-#define MENU_SETTINGS_HBROWSER 17
+#define MENU_FLATMODE 18
+#define MENU_LISTMODE 19
 
 #define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
@@ -271,13 +289,22 @@ static void window_menu_set_enable_state(void *awin)
 	}
 }
 
-static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select)
+static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select, BOOL detach_list)
 {
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+	/* detach_list detached the list and also doesn't update the underlying array */
+	if(detach_list) {
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
+	}
 
 	ULONG current;
 	ULONG selected;
+	struct arc_entries *userdata;
+
+	if(detach_list && aw->flat_mode) {
+		GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&userdata, TAG_DONE);
+		if(userdata == NULL) return;
+	}
 
 	if(select == 2) {
 		GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
@@ -288,9 +315,15 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 
 	SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
 
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+	if(detach_list && aw->flat_mode) {
+		userdata->selected = selected;
+	}
+
+	if(detach_list) {
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->lblist,
 			TAG_DONE);
+	}
 }
 
 static void delete_delete_list(struct avalanche_window *aw)
@@ -322,6 +355,28 @@ static void add_to_delete_list(struct avalanche_window *aw, char *fn)
 	}
 }
 
+static void free_arc_array(struct avalanche_window *aw)
+{
+	if((aw->arc_array == NULL) || (aw->total_items == 0)) return;
+	
+	for(int i = 0; i < aw->total_items; i++) {
+		FreeVec(aw->arc_array[i]);
+	}
+	FreeVec(aw->arc_array);
+	aw->arc_array = NULL;
+	
+	if((aw->dir_array == NULL) || (aw->dir_tree_size == 0)) return;
+
+	for(int i = 0; i < aw->dir_tree_size; i++) {
+		if(aw->dir_array[i]) {
+			if(aw->dir_array[i]->name) FreeVec(aw->dir_array[i]->name);
+			FreeVec(aw->dir_array[i]);
+		}
+	}
+	FreeVec(aw->dir_array);
+	aw->dir_array = NULL;
+}
+
 static int sort(const char *a, const char *b)
 {
 	ULONG i = 0;
@@ -350,75 +405,100 @@ static int sort_array(const void *a, const void *b)
 	return sort(c->name, d->name);
 }
 
-static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, struct avalanche_window *aw)
+#ifdef __amigaos4__
+static int32 lbsortfunc(struct Hook *h, APTR obj, struct LBSortMsg *msg)
+#else
+static LONG __saveds lbsortfunc(__reg("a0") struct Hook *h, __reg("a2") APTR obj, __reg("a1") struct LBSortMsg *msg)
+#endif
+{
+	/* TODO: "top" is relative, maybe we need to check lbsm_Direction */
+
+	/* Always float ^Parent to the top */
+	if(strcmp(msg->lbsm_DataA.Text, "/") == 0) return -1;
+	if(strcmp(msg->lbsm_DataB.Text, "/") == 0) return 1;
+
+	/* Float directories above files */
+	if((msg->lbsm_UserDataA == NULL) && (msg->lbsm_UserDataB != NULL)) return -1;
+	if((msg->lbsm_UserDataB == NULL) && (msg->lbsm_UserDataA != NULL)) return 1;
+
+	/* Otherwise sort alphabetically */
+	return sort(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
+}
+
+
+long extract(void *awin, char *archive, char *newdest, struct Node *node)
+{
+	long ret = 0;
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(archive && newdest) {
+		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
+										WA_PointerType, POINTERTYPE_PROGRESS,
+										TAG_DONE);
+		window_reset_count(awin);
+		window_disable_gadgets(awin, TRUE);
+
+		if((node == NULL) && (aw->flat_mode) && (aw->archiver == ARC_XAD)) {
+			ret = module_extract_array(awin, aw->arc_array, aw->total_items, newdest);
+		} else {
+			ret = module_extract(awin, node, archive, newdest);
+		}
+
+		window_disable_gadgets(awin, FALSE);
+
+		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
+											WA_BusyPointer, FALSE,
+											TAG_DONE);
+	}
+
+	return ret;
+}
+
+static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw)
 {
 	BOOL dir_seen = FALSE;
 	ULONG flags = 0;
 	ULONG gen = 0;
 	int i = 0;
 	char *name_copy = NULL;
+	ULONG glyph = GLYPH_POPFILE;
 	BOOL debug = get_config()->debug;
-
-	if(h) {
-		gen = 1;
-		
-		/* Count the slashes to find directory level */
-		while(name[i+1]) { /* ignore any trailing slash */
-			if(name[i] == '/') gen++;
-			i++;
-		}
-
-		if(get_xad_ver() == 12) {
-			/* In xadmaster.library 12, sometimes directories aren't marked as such */
-			if(name[i] == '/') {
-				dir = TRUE;
-				name_copy = strdup(name);
-				name_copy[i] = '\0';
-			}
-		}
-
-		if (dir) {
-			dir_seen = TRUE;
-			flags = LBFLG_HASCHILDREN;
-			if(debug) flags |= LBFLG_SHOWCHILDREN;
-		}
-
-		if((gen > 1) && (dir_seen == FALSE)) {
-			/* Probably we have an archive which doesn't have directory nodes */
-			gen = 1;
-		} else {
-			if(debug == FALSE) {
-				if(gen > 1) flags |= LBFLG_HIDDEN;
-				if(name_copy == NULL) {
-					name = FilePart(name);
-				} else {
-					name = name + (FilePart(name_copy) - name_copy);
-					free(name_copy);
-				}
-			}
-		}
-	}
 
 	char datestr[20];
 	struct ClockData cd;
-	xad_get_filedate(userdata, &cd, aw);
+
+	if(aw->archiver == ARC_XAD) {
+		if(userdata && aw->flat_mode) {
+			struct arc_entries *ud = (struct arc_entries *)userdata;
+			xad_get_filedate(ud->userdata, &cd, aw);
+		} else {
+			xad_get_filedate(userdata, &cd, aw);
+		}
+	}
 
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
 
 	snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
 
-	struct Node *node = AllocListBrowserNode(3,
+	if(dir) glyph = GLYPH_POPDRAWER;
+
+	struct Node *node = AllocListBrowserNode(4,
 		LBNA_UserData, userdata,
-		LBNA_CheckBox, TRUE,
-		LBNA_Checked, TRUE,
+		LBNA_CheckBox, !dir,
+		LBNA_Checked, selected,
 		LBNA_Flags, flags,
 		LBNA_Generation, gen,
 		LBNA_Column, 0,
-			LBNCA_Text, name,
+			LBNCA_Image, GlyphObj,
+						GLYPH_Glyph, glyph,
+						GlyphEnd,
 		LBNA_Column, 1,
-			LBNCA_Integer, size,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, name,
 		LBNA_Column, 2,
+			LBNCA_Integer, size,
+		LBNA_Column, 3,
 			LBNCA_CopyText, TRUE,
 			LBNCA_Text, datestr,
 		TAG_DONE);
@@ -426,45 +506,272 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL h, 
 	AddTail(&aw->lblist, node);
 }
 
-static void addlbnodesinglefile(char *name, LONG *size, void *userdata, struct avalanche_window *aw)
+static ULONG count_dir_level(char *filename)
 {
-	struct Node *node = AllocListBrowserNode(3,
-		LBNA_UserData, userdata,
-		LBNA_CheckBox, TRUE,
-		LBNA_Checked, TRUE,
-		LBNA_Flags, 0,
-		LBNA_Generation, 0,
-		LBNA_Column, 0,
-			LBNCA_Text, name,
-		LBNA_Column, 1,
-			LBNCA_Integer, size,
-		LBNA_Column, 2,
-			//LBNCA_CopyText, TRUE,
-			LBNCA_Text, NULL,
-		TAG_DONE);
-
-	AddTail(&aw->lblist, node);
-}
-
-static void addlbnodexfd_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	if(aw->gadgets[GID_PROGRESS]) {
-		char msg[20];
-		sprintf(msg, "%d/%lu", 0, total);
-		aw->total_items = total;
-
-		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-						GA_Text, msg,
-						FUELGAUGE_Percent, FALSE,
-						FUELGAUGE_Justification, FGJ_CENTER,
-						FUELGAUGE_Level, 0,
-						TAG_DONE);
+	ULONG i = 0;
+	ULONG level = 0;
+	while(filename[i+1]) { /* ignore any trailing slash */
+		if(filename[i] == '/') level++;
+		i++;
 	}
 
-	addlbnodesinglefile(name, size, userdata, aw);
-	return;
+	return level;
+}
+
+static char *extract_path_part(const char *path, int level)
+{
+	char *npath = NULL;
+	char *idx = path;
+	if(path == NULL) return NULL;
+
+	for(int i=0; i<level; i++) {
+		idx = strchr(idx + 1, '/');
+		if(idx == NULL) return NULL;
+	}
+	
+	if(npath = AllocVec(idx - path + 1, MEMF_CLEAR)) {
+		strncpy(npath, path, idx - path);
+		return npath;
+	}
+	
+	return NULL;
+}
+
+
+static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const char *dir_name)
+{
+	char *dir_name_slash = AllocVec(strlen(dir_name) + 2, MEMF_PRIVATE);
+	if(dir_name_slash == NULL) return FALSE;
+	sprintf(dir_name_slash, "%s/", dir_name);
+
+	for(int j = 0; j < dir_entry; j++) {
+		if((aw->dir_array[j]) && (strlen(aw->dir_array[j]->name) > strlen(dir_name_slash)) && (strncmp(aw->dir_array[j]->name, dir_name_slash, strlen(dir_name_slash)) == 0)) {
+			FreeVec(dir_name_slash);
+			return TRUE;
+		}
+	}
+	FreeVec(dir_name_slash);
+	return FALSE;
+}
+
+static BOOL check_duplicates(struct avalanche_window *aw, int dir_entry, const char *dir_name)
+{
+	for(int j = 0; j < dir_entry; j++) {
+		if((aw->dir_array[j]) && (strlen(dir_name) > 0) && (strcmp(aw->dir_array[j]->name, dir_name) == 0)) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static void highlight_current_dir(struct avalanche_window *aw)
+{
+	struct Node *cur_node = NULL;
+
+	if(aw->current_dir == NULL) {
+		cur_node = aw->root_node;
+	} else {
+		struct List *list = &aw->dir_tree;
+		struct Node *node;
+		char *userdata = NULL;
+		char *cur_dir = strdup(aw->current_dir);
+
+		if(cur_dir) cur_dir[strlen(cur_dir) - 1] = '\0';
+
+		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
+			GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
+
+			if((userdata) && (strcmp(cur_dir, userdata) == 0)) {
+				cur_node = node;
+				break;
+			}
+		}
+		if(cur_dir) free(cur_dir);
+	}
+
+	if(cur_node) {
+		SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_SelectedNode, cur_node,
+			TAG_DONE);
+	}
+}
+
+static void window_flat_browser_tree_construct(struct avalanche_window *aw)
+{
+	FreeListBrowserList(&aw->dir_tree);
+	aw->root_node = NULL;
+
+	int dir_entry = 0;
+	aw->dir_tree_size = aw->total_items * 2;
+	aw->dir_array = AllocVec(sizeof(struct arc_entries *) * aw->dir_tree_size, MEMF_CLEAR);
+	if(aw->dir_array == NULL) return;
+
+	for(int it = 0; it < aw->total_items; it++) {
+		char *dir_name = AllocVec(strlen(aw->arc_array[it]->name)+1, MEMF_CLEAR);
+		int i = 0;
+		int slash = 0;
+		int last_slash = 0;
+
+		BOOL dupe = FALSE;
+
+		if(dir_name == NULL) continue;
+
+		while(aw->arc_array[it]->name[i+1]) {
+			if(aw->arc_array[it]->name[i] == '/') {
+				slash++;
+				last_slash = i;
+			}
+			dir_name[i] = aw->arc_array[it]->name[i];
+			i++;
+		}
+		dir_name[last_slash] = '\0';
+
+		dupe = check_duplicates(aw, dir_entry, dir_name);
+
+		if((slash > 0) && (dupe == FALSE)) {
+			for(int l = 1; l < slash; l++) {
+				char *part_dir = extract_path_part(dir_name, l);
+				dupe = check_duplicates(aw, dir_entry, part_dir);
+				if(dupe) {
+					FreeVec(part_dir);
+					continue;
+				}
+				aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+				if(aw->dir_array[dir_entry] == NULL) continue;
+				aw->dir_array[dir_entry]->name = part_dir;
+				aw->dir_array[dir_entry]->level = l;
+
+				dir_entry++;
+			}
+
+			aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+			if(aw->dir_array[dir_entry] == NULL) continue;
+			
+			aw->dir_array[dir_entry]->name = dir_name;
+			aw->dir_array[dir_entry]->level = slash;
+			aw->dir_array[dir_entry]->dir = FALSE;
+
+			dir_entry++;
+
+			if(dir_entry > aw->dir_tree_size) {
+				open_error_req(locale_get_string(MSG_ERR_TREE_ALLOC), locale_get_string(MSG_OK), aw);
+				return;
+			}
+
+		} else {
+			FreeVec(dir_name);
+		}
+	}
+
+	for(int i = 0; i < dir_entry; i++) {
+		if((check_if_subdir(aw, dir_entry, aw->dir_array[i]->name))) {
+			aw->dir_array[i]->dir = TRUE;  //LBFLG_HASCHILDREN
+		} else {
+			aw->dir_array[i]->dir = FALSE;
+		}
+	}
+
+	aw->dir_tree_size = dir_entry;
+
+	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+	if(dir_entry == 0) flags = 0;
+
+	aw->root_node = AllocListBrowserNode(1,
+									LBNA_UserData, NULL,
+									LBNA_Flags, flags,
+									LBNA_Generation, 1,
+									LBNA_Column, 0,
+										LBNCA_Image, GlyphObj,
+											GLYPH_Glyph, GLYPH_POPDRAWER,
+										GlyphEnd,
+									TAG_DONE);
+
+	AddTail(&aw->dir_tree, aw->root_node);
+
+	for(int i = 0; i <= dir_entry; i++) {
+		flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+		if(aw->dir_array[i] == NULL) break;
+		if(aw->dir_array[i]->dir == FALSE) flags = 0;
+		
+		struct Node *node = AllocListBrowserNode(1,
+									LBNA_UserData, aw->dir_array[i]->name,
+									LBNA_Flags, flags,
+									LBNA_Generation, aw->dir_array[i]->level + 1,
+									LBNA_Column, 0,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, FilePart(aw->dir_array[i]->name),
+									TAG_DONE);
+
+		AddTail(&aw->dir_tree, node);
+	}
+}
+
+static void window_flat_browser_construct(struct avalanche_window *aw)
+{
+	ULONG level = 0;
+	ULONG skip_dir_len = 0;
+
+	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+										WA_BusyPointer, TRUE,
+										TAG_DONE);
+
+	FreeListBrowserList(&aw->lblist);
+
+	if(aw->current_dir) {
+		level = count_dir_level(aw->current_dir) + 1;
+		skip_dir_len = strlen(aw->current_dir);
+	}
+
+	if(aw->archiver == ARC_XAD) {
+		/* Add fake dir entries (first, so by default they're at the top) */
+		
+		if(level > 0) {
+			/* Add "parent" entry */
+			struct Node *node = AllocListBrowserNode(4,
+									LBNA_UserData, NULL,
+									LBNA_Generation, 1,
+									LBNA_CheckBox, FALSE,
+									LBNA_Column, 0,
+										LBNCA_Image, GlyphObj,
+											GLYPH_Glyph, GLYPH_UPARROW,
+										GlyphEnd,
+									LBNA_Column, 1,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "/",
+									LBNA_Column, 2,
+										LBNCA_Integer, &zero,
+									LBNA_Column, 3,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "",
+								TAG_DONE);
+
+			AddTail(&aw->lblist, node);
+		}
+		
+		for(int it = 0; it < aw->dir_tree_size; it++) {
+			/* Only show current level - NB dir levels are different from file levels */
+			if((aw->dir_array[it] && ((aw->dir_array[it]->level - 1) == level)) &&
+				((aw->current_dir == NULL) || (strncmp(aw->dir_array[it]->name, aw->current_dir, skip_dir_len) == 0))) {
+				addlbnode(aw->dir_array[it]->name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw);
+			}
+		}
+	}
+
+	/* Add files */
+
+	for(int it = 0; it < aw->total_items; it++) {
+		/* Only show current level */
+		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
+			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
+			addlbnode(aw->arc_array[it]->name + skip_dir_len,
+				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], aw->arc_array[it]->selected, aw);
+		}
+	}
+	
+	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+											WA_BusyPointer, FALSE,
+											TAG_DONE);
+
 }
 
 static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin)
@@ -487,44 +794,68 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		}
 	}
 
-	if(aw->archiver == ARC_XFD) { addlbnodesinglefile(name, size, userdata, aw); return; }
-
-	if(aw->h_mode) {
+	if(aw->flat_mode) {
 		if(item == 0) {
+			if(aw->arc_array) free_arc_array(aw);
 			aw->arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
 		}
 
 		if(aw->arc_array) {
+			int i = 0;
+			
 			aw->arc_array[item] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
 			
 			aw->arc_array[item]->name = name;
 			aw->arc_array[item]->size = size;
 			aw->arc_array[item]->dir = dir;
 			aw->arc_array[item]->userdata = userdata;
+			aw->arc_array[item]->selected = TRUE;
+			
+			aw->arc_array[item]->level = 0;
+
+			/* Count the slashes to find directory level */
+			aw->arc_array[item]->level = count_dir_level(name);
 			
 			if(item == (total - 1)) {
-				if(config->debug) qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
-				for(int i=0; i<total; i++) {
-					addlbnode(aw->arc_array[i]->name, aw->arc_array[i]->size, aw->arc_array[i]->dir, aw->arc_array[i]->userdata, aw->h_mode, aw);
-					FreeVec(aw->arc_array[i]);
-				}
-				FreeVec(aw->arc_array);
-				aw->arc_array = NULL;
+				/* Sort the array */
+				#ifdef __amigaos4__ /* doesn't like OS3, may not be needed anyway */
+				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
+				#endif
+				window_flat_browser_tree_construct(aw);
+				window_flat_browser_construct(aw);
 			}
 		}
 	} else {
-		addlbnode(name, size, dir, userdata, aw->h_mode, aw);
+		addlbnode(name, size, dir, userdata, TRUE, aw);
 	}
+}
+
+void *array_get_userdata(void *awin, void *arc_entry)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->flat_mode) {
+		struct arc_entries *arc_e = (struct arc_entries *)arc_entry;
+		if(arc_e->selected) return arc_e->userdata;
+	}
+
+	return NULL;
 }
 
 static const char *get_item_filename(void *awin, struct Node *node)
 {
 	void *userdata = NULL;
 	const char *fn = NULL;
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
 
-	return module_get_item_filename(awin, userdata);
+	if(aw->flat_mode) {
+		struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+		return module_get_item_filename(awin, arc_entry->userdata);
+	} else {
+		return module_get_item_filename(awin, userdata);
+	}
 }
 
 
@@ -538,28 +869,45 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	ULONG getfile_drawer = GETFILE_Drawer;
 	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
 	
+#ifdef __amigaos4__
+	struct Hook *lbsort_hook = (struct Hook *)&(aw->lbsorthook);
+#else
+	struct Hook *lbsort_hook = NULL;
+#endif
+
 	if(config->disable_asl_hook) {
 		asl_hook = NULL;
 	}
 
 	ULONG tag_default_position = WINDOW_Position;
 
-	aw->lbci = AllocLBColumnInfo(3, 
+	/* Listbrowser */
+	aw->lbsorthook.h_Entry = lbsortfunc;
+	aw->lbsorthook.h_SubEntry = NULL;
+	aw->lbsorthook.h_Data = NULL;
+
+	aw->lbci = AllocLBColumnInfo(4, 
 		LBCIA_Column, 0,
+			LBCIA_Title, "",
+			LBCIA_Weight, 10,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, FALSE,
+		LBCIA_Column, 1,
 			LBCIA_Title,  locale_get_string(MSG_NAME),
 			LBCIA_Weight, 65,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
-		LBCIA_Column, 1,
+			LBCIA_CompareHook, lbsort_hook,
+		LBCIA_Column, 2,
 			LBCIA_Title,  locale_get_string(MSG_SIZE),
 			LBCIA_Weight, 15,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
-		LBCIA_Column, 2,
+		LBCIA_Column, 3,
 			LBCIA_Title,  locale_get_string(MSG_DATE),
 			LBCIA_Weight, 20,
 			LBCIA_DraggableSeparator, TRUE,
@@ -570,13 +918,23 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	NewList(&aw->lblist);
 
+	aw->dtci = AllocLBColumnInfo(1, 
+		LBCIA_Column, 0,
+			LBCIA_Title, "",
+			LBCIA_Weight, 100,
+			LBCIA_DraggableSeparator, FALSE,
+			LBCIA_Sortable, FALSE,
+		TAG_DONE);
+
+	NewList(&aw->dir_tree);
+
 	if(aw->menu = AllocVec(sizeof(menu), MEMF_PRIVATE))
 		CopyMem(&menu, aw->menu, sizeof(menu));
 
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
 	/* Copy global to local config */
-	aw->h_mode = config->h_browser;
+	if(config->viewmode == 0) aw->flat_mode = TRUE;
 
 	/* ASL hook */
 	aw->aslfilterhook.h_Entry = aslfilterfunc;
@@ -650,19 +1008,42 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				CHILD_WeightedWidth, config->progress_size,
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
+			LAYOUT_AddChild, LayoutHObj,
+				LAYOUT_AddChild,  aw->gadgets[GID_DIR] = StringObj,
+					GA_ID, GID_DIR,
+					GA_ReadOnly, TRUE,
+					GA_Disabled, !aw->flat_mode,
+				StringEnd,
+				CHILD_WeightedHeight, 0,
+			LayoutEnd,
+			CHILD_WeightedHeight, 0,
 			LAYOUT_AddChild, LayoutVObj,
-				LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
-					GA_ID, GID_LIST,
-					GA_RelVerify, TRUE,
-					LISTBROWSER_ColumnInfo, aw->lbci,
-					LISTBROWSER_Labels, &(aw->lblist),
-					LISTBROWSER_ColumnTitles, TRUE,
-					LISTBROWSER_TitleClickable, TRUE,
-					LISTBROWSER_SortColumn, 0,
-					LISTBROWSER_Striping, LBS_ROWS,
-					LISTBROWSER_FastRender, TRUE,
-					LISTBROWSER_Hierarchical, aw->h_mode,
-				ListBrowserEnd,
+				LAYOUT_AddChild, LayoutHObj,
+					LAYOUT_AddChild,  aw->gadgets[GID_TREE] = ListBrowserObj,
+						GA_ID, GID_TREE,
+						GA_RelVerify, TRUE,
+						LISTBROWSER_ColumnInfo, aw->dtci,
+						LISTBROWSER_Labels, &(aw->dir_tree),
+						LISTBROWSER_ColumnTitles, FALSE,
+						LISTBROWSER_FastRender, TRUE,
+						LISTBROWSER_Hierarchical, TRUE,
+						LISTBROWSER_ShowSelected, TRUE,
+					ListBrowserEnd,
+					CHILD_WeightedWidth, 20,
+					LAYOUT_WeightBar, TRUE,
+					LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
+						GA_ID, GID_LIST,
+						GA_RelVerify, TRUE,
+						LISTBROWSER_ColumnInfo, aw->lbci,
+						LISTBROWSER_Labels, &(aw->lblist),
+						LISTBROWSER_ColumnTitles, TRUE,
+						LISTBROWSER_TitleClickable, TRUE,
+						LISTBROWSER_SortColumn, 1,
+						LISTBROWSER_Striping, LBS_ROWS,
+						LISTBROWSER_FastRender, TRUE,
+					ListBrowserEnd,
+					CHILD_WeightedWidth, 80,
+				LayoutEnd,
 				LAYOUT_AddChild,  aw->gadgets[GID_EXTRACT] = ButtonObj,
 					GA_ID, GID_EXTRACT,
 					GA_RelVerify, TRUE,
@@ -738,8 +1119,12 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	if(aw->windows[WID_MAIN]) {
 		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
-		if(aw->h_mode) aw->menu[MENU_SETTINGS_HBROWSER].nm_Flags |= CHECKED;
-	
+		if(aw->flat_mode) {
+			aw->menu[MENU_FLATMODE].nm_Flags |= CHECKED;
+		} else {
+			aw->menu[MENU_LISTMODE].nm_Flags |= CHECKED;
+		}
+
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
 		if(aw->windows[WID_MAIN]) {
@@ -794,15 +1179,104 @@ void window_dispose(void *awin)
 	/* Free archive browser list and column info */
 	FreeListBrowserList(&aw->lblist);
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
+	FreeListBrowserList(&aw->dir_tree);
+	if(aw->dtci) FreeLBColumnInfo(aw->dtci);
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	if(aw->menu) FreeVec(aw->menu);
+	free_arc_array(aw);
 
 	delete_delete_list(aw);
 
 	FreeVec(aw);
 }
 
-void window_list_handle(void *awin, char *tmpdir)
+static void parent_dir(struct avalanche_window *aw)
+{
+	if(aw->current_dir) {
+		aw->current_dir[strlen(aw->current_dir) - 1] = '\0';
+
+		char *slash = strrchr(aw->current_dir, '/');
+	
+		if(slash == NULL) {
+			FreeVec(aw->current_dir);
+			aw->current_dir = NULL;
+		} else {
+			*(slash+1) = '\0';
+		}
+
+		SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+			STRINGA_TextVal, aw->current_dir,
+		TAG_DONE);
+
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+		window_flat_browser_construct(aw);
+
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, &aw->lblist,
+		TAG_DONE);
+
+		highlight_current_dir(aw);
+	}
+}
+
+static void window_tree_handle(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	ULONG tmp = 0;
+	struct Node *node = NULL;
+
+	GetAttr(LISTBROWSER_RelEvent, aw->gadgets[GID_TREE], (APTR)&tmp);
+
+	switch(tmp) {
+		case LBRE_NORMAL:
+			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_TREE], (APTR)&node);
+
+			if(aw->flat_mode) {
+				void *userdata = NULL;
+				char *cdir = NULL;
+
+				GetListBrowserNodeAttrs(node,
+					LBNA_UserData, &userdata,
+				TAG_DONE);
+
+				if(userdata) {
+					cdir = AllocVec(strlen(userdata) + 2, MEMF_CLEAR);
+					if(cdir == NULL) return;
+				}
+
+				if(aw->current_dir) {
+					FreeVec(aw->current_dir);
+					aw->current_dir = NULL;
+				}
+
+				if(userdata) {
+					strncpy(cdir, userdata, strlen(userdata));
+					strcat(cdir, "/"); // add trailing slash
+					aw->current_dir = cdir;
+				}
+
+				/* switch to dir */
+				SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+					STRINGA_TextVal, aw->current_dir,
+				TAG_DONE);
+
+				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+					LISTBROWSER_Labels, ~0, TAG_DONE);
+
+				window_flat_browser_construct(aw);
+
+				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+					LISTBROWSER_Labels, &aw->lblist,
+				TAG_DONE);
+			}
+		break;
+	}
+}
+					
+
+static void window_list_handle(void *awin, char *tmpdir)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
@@ -812,16 +1286,108 @@ void window_list_handle(void *awin, char *tmpdir)
 	
 	GetAttr(LISTBROWSER_RelEvent, aw->gadgets[GID_LIST], (APTR)&tmp);
 	switch(tmp) {
+		case LBRE_CHECKED:
+			if(aw->flat_mode) {
+				GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+
+				void *userdata = NULL;
+
+				GetListBrowserNodeAttrs(node,
+					LBNA_UserData, &userdata,
+				TAG_DONE);
+
+				if(userdata != NULL) {
+					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+					arc_entry->selected = TRUE;
+				}
+			}
+		break;
+
+		case LBRE_UNCHECKED:
+			if(aw->flat_mode) {
+				GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
+
+				void *userdata = NULL;
+
+				GetListBrowserNodeAttrs(node,
+					LBNA_UserData, &userdata,
+				TAG_DONE);
+
+				if(userdata != NULL) {
+					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+					arc_entry->selected = FALSE;
+				}
+			}
+		break;
+
 #if 0 /* This selects items when single-clicked off the checkbox -
-it's incompatible with doube-clicking as it resets the listview */
+it's incompatible with double-clicking as it resets the listview */
 		case LBRE_NORMAL:
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
-			toggle_item(aw, node, 2);
+			toggle_item(aw, node, 2, TRUE);
 		break;
 #endif
 		case LBRE_DOUBLECLICK:
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
-			toggle_item(aw, node, 1); /* ensure selected */
+
+			if(aw->flat_mode) {
+				void *userdata = NULL;
+
+				GetListBrowserNodeAttrs(node,
+					LBNA_UserData, &userdata,
+				TAG_DONE);
+
+				if(userdata == NULL) {
+					/* this is currently one of our fake dir nodes
+					 * NB: this is likely to change to point to the array! */
+
+					char *dir = NULL;
+
+					/* this will be easier with the array pointer -
+					 * we need to get the full path which isn't here! */
+					GetListBrowserNodeAttrs(node,
+						LBNA_Column, 1,
+						LBNCA_Text, &dir, 
+					TAG_DONE);
+
+					/* Special case: parent dir */
+					if(strcmp(dir, "/") == 0) return parent_dir(aw);
+
+					ULONG cdir_len = 0;
+					if(aw->current_dir) cdir_len = strlen(aw->current_dir);
+					
+					char *cdir = AllocVec(cdir_len + 1 + strlen(dir) + 2, MEMF_CLEAR);
+					
+					if(aw->current_dir) {
+						strncpy(cdir, aw->current_dir, cdir_len);
+						FreeVec(aw->current_dir);
+					}
+					
+					AddPart(cdir, dir, cdir_len + 1 + strlen(dir) + 2);
+					strcat(cdir, "/"); // add trailing slash
+					aw->current_dir = cdir;
+
+					/* switch to dir */
+					SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+						STRINGA_TextVal, aw->current_dir,
+					TAG_DONE);
+
+					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+						LISTBROWSER_Labels, ~0, TAG_DONE);
+
+					window_flat_browser_construct(aw);
+					highlight_current_dir(aw);
+
+					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+						LISTBROWSER_Labels, &aw->lblist,
+					TAG_DONE);
+
+					break;
+
+				}
+			}
+
+			toggle_item(aw, node, 1, TRUE); /* ensure selected */
 			char fn[1024];
 			strncpy(fn, tmpdir, 1023);
 			fn[1023] = 0;
@@ -857,14 +1423,6 @@ void window_update_sourcedir(void *awin, char *sourcedir)
 					GETFILE_Drawer, sourcedir, TAG_DONE);
 }
 
-void window_toggle_hbrowser(void *awin, BOOL h_browser)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Hierarchical, h_browser, TAG_DONE);
-}
-
 void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -875,29 +1433,33 @@ void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
 					TAG_DONE);
 }
 
+/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
 void window_modify_all_list(void *awin, ULONG select)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	struct Node *node;
-	BOOL selected;
+	BOOL selected = FALSE;
 
-	/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
-	if(select == 0) selected = FALSE;
 	if(select == 1) selected = TRUE;
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
-	for(node = aw->lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
-
-		if(select == 2) {
-			ULONG current;
-			GetListBrowserNodeAttrs(node, LBNA_Checked, &current, TAG_DONE);
-			selected = !current;
+	if(aw->flat_mode) {
+		for(int i = 0; i < aw->total_items; i++) {
+			if((aw->current_dir == NULL) || (strncmp(aw->arc_array[i]->name, aw->current_dir, strlen(aw->current_dir)) == 0)) {
+				if(select == 2) {
+					aw->arc_array[i]->selected = !aw->arc_array[i]->selected;
+				} else {
+					aw->arc_array[i]->selected = selected;
+				}
+			}
 		}
+	}
 
-		SetListBrowserNodeAttrs(node, LBNA_Checked, selected, TAG_DONE);
+	for(node = aw->lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
+		toggle_item(aw, node, select, FALSE);
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
@@ -928,6 +1490,19 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		if(ret == 0) return;
 	}
 
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	FreeListBrowserList(&aw->dir_tree);
+	free_arc_array(aw);
+
+	module_free(awin);
+
+	if(aw->current_dir) {
+		FreeVec(aw->current_dir);
+		aw->current_dir = NULL;
+	}
+
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	GetAttr(GETFILE_FullFile, aw->gadgets[GID_ARCHIVE], (APTR)&aw->archive);
 
@@ -935,35 +1510,44 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 										WA_BusyPointer, TRUE,
 										TAG_DONE);
 
+	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+		STRINGA_TextVal, aw->current_dir,
+	TAG_DONE);
+
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
 	FreeListBrowserList(&aw->lblist);
 
+	aw->archiver = ARC_XAD; /* Set in advance for flat browser tree use */
 	ret = xad_info(aw->archive, config, aw, addlbnode_cb);
 	if(ret != 0) { /* if xad failed try xfd */
-		retxfd = xfd_info(aw->archive, aw, addlbnodexfd_cb);
+		aw->archiver = ARC_XFD;
+		retxfd = xfd_info(aw->archive, aw, addlbnode_cb);
 		if(retxfd != 0) {
 			/* Failed to open with any lib - show generic error rather than XAD's */
+			aw->archiver = ARC_NONE;
 			open_error_req(locale_get_string(MSG_UNABLETOOPENFILE), locale_get_string(MSG_OK), aw);
 		}
 	}
 
-	if(ret == 0) {
-		aw->archiver = ARC_XAD;
-	} else if(retxfd == 0) {
-		aw->archiver = ARC_XFD;
-	} else {
-		aw->archiver = ARC_NONE;
-	}
-
 	module_register(aw, &aw->mf);
+
 	window_menu_set_enable_state(aw);
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, &aw->lblist,
-				LISTBROWSER_SortColumn, 0,
+				LISTBROWSER_SortColumn, 1,
 			TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
+
+	if((aw->flat_mode) && (aw->root_node)) {
+		SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_SelectedNode, aw->root_node,
+			TAG_DONE);
+	}
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
@@ -1001,6 +1585,12 @@ void *window_get_lbnode(void *awin, struct Node *node)
 			LBNA_Checked, &checked,
 			LBNA_UserData, &userdata,
 		TAG_DONE);
+
+	if(aw->flat_mode) {
+		struct arc_entries *arc_entry = (struct arc_entries *)userdata;
+		if(arc_entry == NULL) return NULL; /* dummy entry */
+		userdata = arc_entry->userdata;
+	}
 
 	aw->current_item++;
 	snprintf(msg, 20, "%lu/%lu", aw->current_item, aw->total_items);
@@ -1183,6 +1773,26 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 	return;
 }
 
+
+static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_config *config, BOOL on)
+{
+	aw->flat_mode = on;
+
+	BOOL disable = !aw->flat_mode;
+
+	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+		GA_Disabled, disable,
+	TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+		GA_Disabled, disable,
+	TAG_DONE);
+
+	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
+
+	window_req_open_archive(aw, config, TRUE);
+}
+
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -1212,6 +1822,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 				case GID_LIST:
 					window_list_handle(awin, config->tmpdir);
+				break;
+				
+				case GID_TREE:
+					window_tree_handle(awin);
 				break;
 			}
 			break;
@@ -1250,18 +1864,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				switch(MENUNUM(code)) {
 					case 0: //project
 						switch(ITEMNUM(code)) {
-							case 0: //open
-								window_req_open_archive(awin, config, FALSE);
-							break;
+							case 0: // new archive
 							
+							break;
+
 							case 1: // new window
 								new_awin = window_create(config, NULL, winport, AppPort);
 								if(new_awin == NULL) break;
 								window_open(new_awin, appwin_mp);
 							break;
 							
-							case 2: // new archive
-							
+							case 2: //open
+								window_req_open_archive(awin, config, FALSE);
 							break;
 
 							case 4: //info
@@ -1306,14 +1920,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					
 					case 2: //settings
 						switch(ITEMNUM(code)) {
-							case 0: //browser mode
-								aw->h_mode = !aw->h_mode;
-									
-								window_toggle_hbrowser(awin, aw->h_mode);
-								window_req_open_archive(awin, config, TRUE);
+							case 0: // view mode
+								switch(SUBNUM(code)) {
+									case 0: //flat browser mode
+										toggle_flat_mode(aw, config, TRUE);
+									break;
+									case 1: // list mode
+										toggle_flat_mode(aw, config, FALSE);
+									break;
+								}
 							break;
-								
-							case 1: //snapshot
+				
+							case 2: //snapshot
 								/* fetch current win posn */
 								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_x);
 								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_y);
@@ -1395,14 +2013,22 @@ void window_disable_gadgets(void *awin, BOOL disable)
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
+
+	if((disable == FALSE) && (aw->flat_mode == FALSE)) disable = TRUE;
+
+	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+
+	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
 }
 
 void fill_menu_labels(void)
 {
 	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
-	menu[1].nm_Label = locale_get_string( MSG_OPEN );
+	menu[1].nm_Label = locale_get_string( MSG_NEWARCHIVE );
 	menu[2].nm_Label = locale_get_string( MSG_NEWWINDOW );
-	menu[3].nm_Label = locale_get_string( MSG_NEWARCHIVE );
+	menu[3].nm_Label = locale_get_string( MSG_OPEN );
 	menu[5].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
 	menu[6].nm_Label = locale_get_string( MSG_ABOUT );
 	menu[8].nm_Label = locale_get_string( MSG_QUIT );
@@ -1413,9 +2039,11 @@ void fill_menu_labels(void)
 	menu[14].nm_Label = locale_get_string( MSG_ADDFILES );
 	menu[15].nm_Label = locale_get_string( MSG_DELFILES );
 	menu[16].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[MENU_SETTINGS_HBROWSER].nm_Label = locale_get_string( MSG_HIERARCHICALBROWSEREXPERIMENTAL );
-	menu[18].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[20].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[17].nm_Label = locale_get_string( MSG_VIEWMODE );
+	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
+	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
+	menu[21].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[22].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

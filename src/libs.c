@@ -23,10 +23,12 @@
 #include <proto/chooser.h>
 #include <proto/fuelgauge.h>
 #include <proto/getfile.h>
+#include <proto/glyph.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
 #include <proto/requester.h>
+#include <proto/string.h>
 #include <proto/window.h>
 #else
 #include <proto/utility.h>
@@ -160,10 +162,12 @@ CLASS_STRUCT(CheckBox)
 CLASS_STRUCT(Chooser)
 CLASS_STRUCT(FuelGauge)
 CLASS_STRUCT(GetFile)
+CLASS_STRUCT(Glyph)
 CLASS_STRUCT(Label)
 CLASS_STRUCT(Layout)
 CLASS_STRUCT(ListBrowser)
 CLASS_STRUCT(Requester)
+CLASS_STRUCT(String)
 CLASS_STRUCT(Window)
 
 BOOL libs_xvs_init(void)
@@ -227,10 +231,12 @@ BOOL libs_open(void)
 	CLASS_OPEN("gadgets/chooser.gadget",       45, Chooser,       CHOOSER,     TRUE)
 	CLASS_OPEN("gadgets/fuelgauge.gadget",     41, FuelGauge,     FUELGAUGE,   FALSE)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE,     FALSE)
+	CLASS_OPEN("images/glyph.image",           41, Glyph,         GLYPH,       FALSE)
 	CLASS_OPEN("images/label.image",           41, Label,         LABEL,       FALSE)
 	CLASS_OPEN("gadgets/layout.gadget",        41, Layout,        LAYOUT,      FALSE)
 	CLASS_OPEN("gadgets/listbrowser.gadget",   45, ListBrowser,   LISTBROWSER, TRUE)
 	CLASS_OPEN("requester.class",              41, Requester,     REQUESTER,   FALSE)
+	CLASS_OPEN("gadgets/string.gadget",        41, String,        STRING,      FALSE)
 	CLASS_OPEN("window.class",                 47, Window,        WINDOW,      FALSE)
 	CLASS_OPEN("arexx.class",                  41, ARexx,         AREXX,       FALSE)
 	
@@ -247,10 +253,12 @@ void libs_close(void)
 	CLASS_CLOSE(Chooser)
 	CLASS_CLOSE(FuelGauge)
 	CLASS_CLOSE(GetFile)
+	CLASS_CLOSE(Glyph)
 	CLASS_CLOSE(Label)
 	CLASS_CLOSE(Layout)
 	CLASS_CLOSE(ListBrowser)
 	CLASS_CLOSE(Requester)
+	CLASS_CLOSE(String)
 	CLASS_CLOSE(Window)
 	CLASS_CLOSE(ARexx)
 

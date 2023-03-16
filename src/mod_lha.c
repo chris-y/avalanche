@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-3 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,9 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir)
 	int err;
 	char cmd[1024];
 	snprintf(cmd, 1024, "lha -I a \"%s\" \"%s\"", archive, file);
-
+#ifdef __amigaos4__
+	//DebugPrintF("%s\n",cmd);
+#endif
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, NULL,

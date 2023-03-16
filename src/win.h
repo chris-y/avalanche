@@ -36,7 +36,6 @@ void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size);
 void window_modify_all_list(void *awin, ULONG select);
 
 /* Handle events */
-void window_list_handle(void *awin, char *tmpdir);
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
 char *window_req_dest(void *awin);
 ULONG window_handle_input(void *awin, UWORD *code);
@@ -48,6 +47,7 @@ Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
 ULONG window_get_archiver(void *awin);
+void *array_get_userdata(void *awin, void *arc_entry);
 struct module_functions *window_get_module_funcs(void *awin);
 
 /* Modify archive */
@@ -59,6 +59,7 @@ void window_disable_gadgets(void *awin, BOOL disable);
 BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
+long extract(void *awin, char *archive, char *newdest, struct Node *node);
 
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);

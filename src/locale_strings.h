@@ -113,6 +113,13 @@
 #define MSG_QUITCFG_QUIT 69
 #define MSG_QUITCFG_HIDE 70
 #define MSG_LASTWINDOWACTION 71
+#define MSG_VIEWMODEBROWSER 72
+#define MSG_VIEWMODELIST 73
+#define MSG_VIEWMODE 74
+#define MSG_ERR_TREE_ALLOC 75
+#define MSG_NEWARCHIVE 76
+#define MSG_TYPE 77
+#define MSG_CREATE 78
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -194,6 +201,13 @@
 #define MSG_QUITCFG_QUIT_STR "Quit"
 #define MSG_QUITCFG_HIDE_STR "Hide"
 #define MSG_LASTWINDOWACTION_STR "When last window closed:"
+#define MSG_VIEWMODEBROWSER_STR "Browser"
+#define MSG_VIEWMODELIST_STR "List"
+#define MSG_VIEWMODE_STR "View mode"
+#define MSG_ERR_TREE_ALLOC_STR "Tree entries exceed allocated memory"
+#define MSG_NEWARCHIVE_STR "New archive..."
+#define MSG_TYPE_STR "_Type"
+#define MSG_CREATE_STR "_Create"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -349,6 +363,20 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_QUITCFG_HIDE_STR "\x00\x00"
     "\x00\x00\x00\x47\x00\x1A"
     MSG_LASTWINDOWACTION_STR "\x00\x00"
+    "\x00\x00\x00\x48\x00\x08"
+    MSG_VIEWMODEBROWSER_STR "\x00"
+    "\x00\x00\x00\x49\x00\x06"
+    MSG_VIEWMODELIST_STR "\x00\x00"
+    "\x00\x00\x00\x4A\x00\x0A"
+    MSG_VIEWMODE_STR "\x00"
+    "\x00\x00\x00\x4B\x00\x26"
+    MSG_ERR_TREE_ALLOC_STR "\x00\x00"
+    "\x00\x00\x00\x4C\x00\x10"
+    MSG_NEWARCHIVE_STR "\x00\x00"
+    "\x00\x00\x00\x4D\x00\x06"
+    MSG_TYPE_STR "\x00"
+    "\x00\x00\x00\x4E\x00\x08"
+    MSG_CREATE_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */
