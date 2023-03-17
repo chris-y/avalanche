@@ -26,6 +26,8 @@
 #include "module.h"
 #include "req.h"
 
+#include "Avalanche_rev.h"
+
 #ifdef __amigaos4__
 static void mod_zip_show_error(void *awin, zip_t *zip)
 {
@@ -68,49 +70,79 @@ static BOOL mod_zip_del(void *awin, char *archive, char **files, ULONG count)
 	return FALSE;
 }
 
+static BOOL mod_zip_add_file(void *awin, char *file, char *dir, BOOL new)
+{
+	int err = 0;
+	char *fullfile = NULL;
+
+	if(new == FALSE) {
+		zip_source_t *src = zip_source_file(zip, file, 0, -1);
+		if(src == NULL) {
+			mod_zip_show_error(awin, zip);
+			zip_discard(zip);
+			return FALSE;
+		}
+	} else {
+		zip_source_t *src = zip_source_buffer(zip, new_arc_text, strlen(new_text), 0);
+		if(src == NULL) {
+			mod_zip_show_error(awin, zip);
+			zip_discard(zip);
+			return FALSE;
+		}
+	}
+
+	if(dir != NULL) {
+		ULONG fullfile_len = strlen(FilePart(file)) + strlen(dir) + 1;
+		fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
+
+		if(fullfile) {
+			strcpy(fullfile, dir);
+			AddPart(fullfile, FilePart(file), fullfile_len);
+		}
+	} else {
+		fullfile = FilePart(file);
+	}
+
+	err = zip_file_add(zip, fullfile, src, 0);
+
+	if(dir && fullfile) FreeVec(fullfile);
+
+	if(err == -1) {
+		mod_zip_show_error(awin, zip);
+		zip_discard(zip);
+		return FALSE;
+	}
+
+	err = zip_close(zip);
+	if(err == -1) {
+		mod_zip_show_error(awin, zip);
+		zip_discard(zip);
+		return FALSE;
+	}
+	return TRUE;
+}
+
 static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir)
 {
 	int err = 0;
 	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
-		char *fullfile = NULL;
-		zip_source_t *src = zip_source_file(zip, file, 0, -1);
-		if(zip == NULL) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
-		}
+		return mod_zip_add_file(awin, file, dir);
+	} else {
+		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
+	}
 
-		if(dir != NULL) {
-			ULONG fullfile_len = strlen(FilePart(file)) + strlen(dir) + 1;
-			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
+	return FALSE;
+}
 
-			if(fullfile) {
-				strcpy(fullfile, dir);
-				AddPart(fullfile, FilePart(file), fullfile_len);
-			}
-		} else {
-			fullfile = FilePart(file);
-		}
+BOOL mod_zip_new(void *awin, char *archive)
+{
+	int err = 0;
+	zip_t *zip = zip_open(archive, ZIP_CREATE, &err);
 
-		err = zip_file_add(zip, fullfile, src, 0);
-
-		if(dir && fullfile) FreeVec(fullfile);
-
-		if(err == -1) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
-		}
-
-		err = zip_close(zip);
-		if(err == -1) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
-		}
-		return TRUE;
+	if(zip) {
+		return mod_zip_add_file(awin, NULL, NEW_ARC_NAME, TRUE);
 	} else {
 		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
 	}

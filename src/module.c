@@ -197,6 +197,7 @@ void module_register(void *awin, struct module_functions *mf)
 	/* Remove existing registration */
 	mf->add = NULL;
 	mf->del = NULL;
+	mf->new = NULL;
 	
 	/* Register correct module */
 	if(format && (strcmp(format, "Zip") == 0)) mod_zip_register(mf);

@@ -1865,7 +1865,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					case 0: //project
 						switch(ITEMNUM(code)) {
 							case 0: // new archive
-							
+								newarc_window_open();
 							break;
 
 							case 1: // new window

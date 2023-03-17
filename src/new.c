@@ -69,7 +69,9 @@ enum {
 
 STRPTR type_opts[] = {
 		"LhA",
+#ifdef __amigaos4__
 		"Zip",
+#endif
 		NULL
 };
 
@@ -77,6 +79,7 @@ static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_N_LAST];
 static Object *objects[OID_LAST];
 static struct MsgPort *naw_port = NULL;
+static void *newarc_parent = NULL;
 
 static void newarc_window_close(void)
 {
@@ -95,6 +98,7 @@ static void newarc_req_archive(void)
 
 static void newarc_create(void)
 {
+	BOOL ret = FALSE;
 	ULONG data;
 	char *arc_type;
 	char *archive;
@@ -104,11 +108,27 @@ static void newarc_create(void)
 	
 	GetAttr(GETFILE_FullFile, gadgets[GID_N_ARCHIVE], (APTR)&archive);
 	
-	/* TODO: Choose initial files or add a default file */
+	if(archive == NULL) return;
+
+	switch(arc_type) {
+		case 0: // LhA
+			ret = mod_lha_new(newarc_parent, archive);
+		break;
+
+		case 1: // Zip
+			ret = mod_zip_new(newarc_parent, archive);
+		break;
+	}
+
+	if(ret) {
+		window_update_archive(newarc_parent, archive);
+		window_req_open_archive(newarc_parent, get_config(), TRUE);
+	}
+
 }
 
 /* Public functions */
-void newarc_window_open(void)
+void newarc_window_open(void *awin)
 {
 	if(windows[WID_MAIN]) { // already open
 		WindowToFront(windows[WID_MAIN]);

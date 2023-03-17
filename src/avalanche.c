@@ -267,12 +267,12 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 	struct AppMenuItem *appmenu = NULL;
 	ULONG appwin_sig = 0;
 
-	ULONG wait, signal, app, cw_sig;
+	ULONG wait, signal, app, cw_sig, na_sig;
 	ULONG done = WIN_DONE_OK;
 	ULONG result;
 	UWORD code;
 	ULONG tmp = 0;
-	
+
 	void *awin = NULL;
 
 	NewMinList(&win_list);
@@ -332,8 +332,9 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 		while (done != WIN_DONE_QUIT) {
 			done = WIN_DONE_OK;
 			cw_sig = config_window_get_signal();
-			
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig);
+			na_sig = newarc_window_get_signal();
+
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig | na_sig);
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
@@ -499,6 +500,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				BOOL cw_done = FALSE;
 				while((cw_done == FALSE) && ((result = config_window_handle_input(&code)) != WMHI_LASTMSG)) {
 					cw_done = config_window_handle_input_events(&config, result, code);
+				}
+			} else if(na_sig && (wait & na_sig)) {
+				BOOL na_done = FALSE;
+				while((na_done == FALSE) && ((result = newarc_window_handle_input(&code)) != WMHI_LASTMSG)) {
+					na_done = newarc_window_handle_input_events(&config, result, code);
 				}
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {

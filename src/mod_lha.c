@@ -103,6 +103,30 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir)
 	return TRUE;
 }
 
+BOOL mod_lha_new(void *awin, char *archive)
+{
+	BOOL ret = FALSE;
+
+	char *tmpfile = AllocVec(strlen(config->tmpdir) + strlen(NEW_ARC_NAME) + 2);
+	struct avalanche_config *config = get_config();
+	if(tmpfile) {
+		BPTR fh = 0;
+		strcpy(tmpfile, config->tmpdir);
+		AddPart(tmpfile, NEW_ARC_NAME);
+
+		if(fh = Open(tmpfile, MODE_OLDFILE)) {
+			FPuts(fh, new_arc_text);
+			Close(fh);
+
+			ret = mod_lha_add(awin, archive, file);
+
+			DeleteFile(tmpfile);
+		}
+	}
+	
+	return ret;
+}
+
 void mod_lha_register(struct module_functions *funcs)
 {
 	funcs->add = mod_lha_add;

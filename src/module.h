@@ -17,6 +17,11 @@
 
 #include <exec/types.h>
 
+/* For new archive creation */
+#include "Avalanche_rev.h"
+char *new_arc_text = "Created with " VERS "\0";
+#define NEW_ARC_NAME ".readme"
+
 struct module_functions {
 	/* Extraction */
 	char module[4];
@@ -48,6 +53,10 @@ BOOL module_recog(void* fullfilename);
 
 /* Editing */
 BOOL module_has_add(void *awin);
+
+/* Create new */
+BOOL mod_lha_new(void *awin, char *archive);
+BOOL mod_zip_new(void *awin, char *archive);
 
 /*** Register modules ***/
 void module_register(void *awin, struct module_functions *mf);
