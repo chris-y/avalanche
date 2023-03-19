@@ -540,9 +540,9 @@ static void window_update_title(struct avalanche_window *aw)
 		} else {
 			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, FilePart(aw->archive));
 		}
-		SetWindowTitle(window_get_window(aw), (UBYTE *) ~0, aw->title);
+		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, aw->title);
 	} else {
-		SetWindowTitle(window_get_window(aw), (UBYTE *) ~0, VERS);
+		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, VERS);
 	}
 }
 
@@ -719,7 +719,9 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], aw->arc_array[it]->selected, aw);
 		}
 	}
-	
+
+	window_update_title(aw);
+
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
