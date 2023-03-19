@@ -125,7 +125,7 @@ long module_extract_array(void *awin, void **array, ULONG total_items, void *des
 	
 	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
-			ret = xad_extract_array(awin, total_items, dest, array, array_get_userdata, module_vscan);
+			ret = xad_extract_array(awin, total_items, dest, array, array_get_userdata);
 		break;
 	}
 	
