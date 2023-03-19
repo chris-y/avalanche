@@ -1503,7 +1503,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	module_free(awin);
 
-	if(aw->current_dir) {
+	if((refresh_only == FALSE) && aw->flat_mode && aw->current_dir) {
 		FreeVec(aw->current_dir);
 		aw->current_dir = NULL;
 	}
@@ -1544,10 +1544,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
 
-	if((aw->flat_mode) && (aw->root_node)) {
-		SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_SelectedNode, aw->root_node,
-			TAG_DONE);
+	if(aw->flat_mode) {
+		highlight_current_dir(aw);
 	}
 
 	window_update_title(aw);
