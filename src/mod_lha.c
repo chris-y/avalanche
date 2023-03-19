@@ -19,9 +19,15 @@
 #include <dos/dostags.h>
 #include <exec/types.h>
 
+#include "avalanche.h"
+#include "config.h"
 #include "locale.h"
 #include "module.h"
 #include "req.h"
+
+#ifdef __amigaos4__
+#define DeleteFile Delete
+#endif
 
 static int mod_lha_error(void *awin, int err, char *file)
 {
@@ -106,19 +112,19 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir)
 BOOL mod_lha_new(void *awin, char *archive)
 {
 	BOOL ret = FALSE;
-
-	char *tmpfile = AllocVec(strlen(config->tmpdir) + strlen(NEW_ARC_NAME) + 2);
 	struct avalanche_config *config = get_config();
+	ULONG new_arc_size = strlen(config->tmpdir) + strlen(NEW_ARC_NAME) + 2;
+	char *tmpfile = AllocVec(new_arc_size, MEMF_CLEAR);
 	if(tmpfile) {
 		BPTR fh = 0;
 		strcpy(tmpfile, config->tmpdir);
-		AddPart(tmpfile, NEW_ARC_NAME);
+		AddPart(tmpfile, NEW_ARC_NAME, new_arc_size);
 
 		if(fh = Open(tmpfile, MODE_OLDFILE)) {
 			FPuts(fh, new_arc_text);
 			Close(fh);
 
-			ret = mod_lha_add(awin, archive, file);
+			ret = mod_lha_add(awin, archive, tmpfile, NULL);
 
 			DeleteFile(tmpfile);
 		}

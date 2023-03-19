@@ -13,6 +13,7 @@
 */
 
 #include <proto/dos.h>
+#include <proto/exec.h>
 
 #include <exec/types.h>
 
@@ -70,20 +71,21 @@ static BOOL mod_zip_del(void *awin, char *archive, char **files, ULONG count)
 	return FALSE;
 }
 
-static BOOL mod_zip_add_file(void *awin, char *file, char *dir, BOOL new)
+static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL new)
 {
 	int err = 0;
 	char *fullfile = NULL;
+	zip_source_t *src = NULL;
 
 	if(new == FALSE) {
-		zip_source_t *src = zip_source_file(zip, file, 0, -1);
+		src = zip_source_file(zip, file, 0, -1);
 		if(src == NULL) {
 			mod_zip_show_error(awin, zip);
 			zip_discard(zip);
 			return FALSE;
 		}
 	} else {
-		zip_source_t *src = zip_source_buffer(zip, new_arc_text, strlen(new_text), 0);
+		src = zip_source_buffer(zip, new_arc_text, strlen(new_arc_text), 0);
 		if(src == NULL) {
 			mod_zip_show_error(awin, zip);
 			zip_discard(zip);
@@ -128,21 +130,7 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir)
 	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
-		return mod_zip_add_file(awin, file, dir);
-	} else {
-		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
-	}
-
-	return FALSE;
-}
-
-BOOL mod_zip_new(void *awin, char *archive)
-{
-	int err = 0;
-	zip_t *zip = zip_open(archive, ZIP_CREATE, &err);
-
-	if(zip) {
-		return mod_zip_add_file(awin, NULL, NEW_ARC_NAME, TRUE);
+		return mod_zip_add_file(awin, zip, file, dir, FALSE);
 	} else {
 		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
 	}
@@ -150,6 +138,21 @@ BOOL mod_zip_new(void *awin, char *archive)
 	return FALSE;
 }
 #endif
+
+BOOL mod_zip_new(void *awin, char *archive)
+{
+#ifdef __amigaos4__
+	int err = 0;
+	zip_t *zip = zip_open(archive, ZIP_CREATE, &err);
+
+	if(zip) {
+		return mod_zip_add_file(awin, zip, NEW_ARC_NAME, NULL, TRUE);
+	} else {
+		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
+	}
+#endif
+	return FALSE;
+}
 
 void mod_zip_register(struct module_functions *funcs)
 {

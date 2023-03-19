@@ -45,6 +45,8 @@
 #include "new.h"
 #include "libs.h"
 #include "locale.h"
+#include "module.h"
+#include "win.h"
 
 #include "Avalanche_rev.h"
 
@@ -110,7 +112,7 @@ static void newarc_create(void)
 	
 	if(archive == NULL) return;
 
-	switch(arc_type) {
+	switch(data) {
 		case 0: // LhA
 			ret = mod_lha_new(newarc_parent, archive);
 		break;

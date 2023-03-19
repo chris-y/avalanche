@@ -15,7 +15,7 @@
 #ifndef AVALANCHE_NEW_H
 #define AVALANCHE_NEW_H 1
 
-void newarc_window_open(void);
+void newarc_window_open(void *awin);
 ULONG newarc_window_get_signal(void);
 ULONG newarc_window_handle_input(UWORD *code);
 BOOL newarc_window_handle_input_events(ULONG result, UWORD code);

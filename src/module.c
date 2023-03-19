@@ -24,6 +24,8 @@
 #include "xfd.h"
 #include "xvs.h"
 
+char *new_arc_text = "Created with " VERS "\0";
+
 /*** Virus Scanning ***/
 ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 {

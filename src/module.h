@@ -19,7 +19,7 @@
 
 /* For new archive creation */
 #include "Avalanche_rev.h"
-char *new_arc_text = "Created with " VERS "\0";
+extern char *new_arc_text;
 #define NEW_ARC_NAME ".readme"
 
 struct module_functions {

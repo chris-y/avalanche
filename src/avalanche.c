@@ -40,6 +40,7 @@
 #include "locale.h"
 #include "misc.h"
 #include "module.h"
+#include "new.h"
 #include "win.h"
 
 #include "Avalanche_rev.h"
@@ -504,7 +505,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			} else if(na_sig && (wait & na_sig)) {
 				BOOL na_done = FALSE;
 				while((na_done == FALSE) && ((result = newarc_window_handle_input(&code)) != WMHI_LASTMSG)) {
-					na_done = newarc_window_handle_input_events(&config, result, code);
+					na_done = newarc_window_handle_input_events(result, code);
 				}
 			} else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
