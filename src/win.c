@@ -66,7 +66,6 @@ enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
-	GID_DIR,
 	GID_TREE,
 	GID_LIST,
 	GID_EXTRACT,
@@ -94,6 +93,7 @@ struct arc_entries {
 };
 
 #define AVALANCHE_DROPZONES 2
+#define TITLE_MAX_SIZE 100
 
 struct avalanche_window {
 	struct MinNode node;
@@ -126,6 +126,7 @@ struct avalanche_window {
 	struct module_functions mf;
 	char *current_dir;
 	struct Node *root_node;
+	char title[TITLE_MAX_SIZE];
 };
 
 static struct List winlist;
@@ -596,6 +597,26 @@ static void highlight_current_dir(struct avalanche_window *aw)
 	}
 }
 
+static void window_update_title(struct avalanche_window *aw)
+{
+	if(aw->archive != NULL) {
+		if(aw->current_dir) {
+			int title_len = strlen(VERS) + strlen(FilePart(aw->archive)) + strlen(aw->current_dir);
+
+			if((title_len < TITLE_MAX_SIZE) || ((title_len - TITLE_MAX_SIZE + 3) > strlen(aw->current_dir))) {
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, FilePart(aw->archive), aw->current_dir);
+			} else {
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, FilePart(aw->archive), aw->current_dir + (strlen(aw->current_dir) - (title_len - TITLE_MAX_SIZE + 3)));		
+			}
+		} else {
+			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, FilePart(aw->archive));
+		}
+		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, aw->title);
+	} else {
+		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, VERS);
+	}
+}
+
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
 	FreeListBrowserList(&aw->dir_tree);
@@ -704,6 +725,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 
 		AddTail(&aw->dir_tree, node);
 	}
+
+	window_update_title(aw);
 }
 
 static void window_flat_browser_construct(struct avalanche_window *aw)
@@ -767,7 +790,9 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], aw->arc_array[it]->selected, aw);
 		}
 	}
-	
+
+	window_update_title(aw);
+
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
@@ -1008,15 +1033,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				CHILD_WeightedWidth, config->progress_size,
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
-			LAYOUT_AddChild, LayoutHObj,
-				LAYOUT_AddChild,  aw->gadgets[GID_DIR] = StringObj,
-					GA_ID, GID_DIR,
-					GA_ReadOnly, TRUE,
-					GA_Disabled, !aw->flat_mode,
-				StringEnd,
-				CHILD_WeightedHeight, 0,
-			LayoutEnd,
-			CHILD_WeightedHeight, 0,
 			LAYOUT_AddChild, LayoutVObj,
 				LAYOUT_AddChild, LayoutHObj,
 					LAYOUT_AddChild,  aw->gadgets[GID_TREE] = ListBrowserObj,
@@ -1204,10 +1220,6 @@ static void parent_dir(struct avalanche_window *aw)
 			*(slash+1) = '\0';
 		}
 
-		SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-			STRINGA_TextVal, aw->current_dir,
-		TAG_DONE);
-
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -1258,10 +1270,6 @@ static void window_tree_handle(void *awin)
 				}
 
 				/* switch to dir */
-				SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-					STRINGA_TextVal, aw->current_dir,
-				TAG_DONE);
-
 				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 					LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -1368,10 +1376,6 @@ it's incompatible with double-clicking as it resets the listview */
 					aw->current_dir = cdir;
 
 					/* switch to dir */
-					SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-						STRINGA_TextVal, aw->current_dir,
-					TAG_DONE);
-
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -1510,10 +1514,6 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 										WA_BusyPointer, TRUE,
 										TAG_DONE);
 
-	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-		STRINGA_TextVal, aw->current_dir,
-	TAG_DONE);
-
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -1548,6 +1548,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 			LISTBROWSER_SelectedNode, aw->root_node,
 			TAG_DONE);
 	}
+
+	window_update_title(aw);
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
@@ -1780,10 +1782,6 @@ static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_confi
 
 	BOOL disable = !aw->flat_mode;
 
-	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
-		GA_Disabled, disable,
-	TAG_DONE);
-
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 		GA_Disabled, disable,
 	TAG_DONE);
@@ -2014,13 +2012,11 @@ void window_disable_gadgets(void *awin, BOOL disable)
 			GA_Disabled, disable,
 		TAG_DONE);
 
-	if((disable == FALSE) && (aw->flat_mode == FALSE)) disable = TRUE;
+	if(aw->flat_mode == FALSE) disable = TRUE;
 
-	SetGadgetAttrs(aw->gadgets[GID_DIR], aw->windows[WID_MAIN], NULL,
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
-
-	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
 }
 
 void fill_menu_labels(void)
