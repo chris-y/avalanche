@@ -91,11 +91,19 @@ static void newarc_window_close(void)
 
 	DeleteMsgPort(naw_port);
 	naw_port = NULL;
+
+	newarc_parent = NULL;
 }
 
 static void newarc_req_archive(void)
 {
-	DoMethod((Object *)gadgets[GID_N_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN]);
+	ULONG res;
+
+	if(res = DoMethod((Object *)gadgets[GID_N_ARCHIVE], GFILE_REQUEST, windows[WID_MAIN])) {
+		SetGadgetAttrs(gadgets[GID_N_CREATE], windows[WID_MAIN], NULL,
+			GA_Disabled, FALSE,
+		TAG_DONE);
+	}
 }
 
 static void newarc_create(void)
@@ -153,7 +161,7 @@ void newarc_window_open(void *awin)
 				//LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
 				LAYOUT_AddChild, LayoutVObj,
-					LAYOUT_AddChild,  LayoutHObj,
+					LAYOUT_AddChild,  LayoutVObj,
 						LAYOUT_AddChild,  gadgets[GID_N_ARCHIVE] = GetFileObj,
 							GA_ID, GID_N_ARCHIVE,
 							GA_RelVerify, TRUE,
@@ -183,7 +191,7 @@ void newarc_window_open(void *awin)
 							GA_ID, GID_N_CREATE,
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_CREATE ),
-							GA_Disabled, FALSE, /* TODO: Disable if no archive selected */
+							GA_Disabled, TRUE,
 						ButtonEnd,
 						LAYOUT_AddChild,  gadgets[GID_N_CANCEL] = ButtonObj,
 							GA_ID, GID_N_CANCEL,
@@ -198,9 +206,11 @@ void newarc_window_open(void *awin)
 
 		if(objects[OID_MAIN]) {
 			windows[WID_MAIN] = (struct Window *)RA_OpenWindow(objects[OID_MAIN]);
+
+			newarc_parent = awin;
 		}
 	}
-	
+
 	return;
 }
 
@@ -248,4 +258,9 @@ BOOL newarc_window_handle_input_events(ULONG result, UWORD code)
 	}
 
 	return done;
+}
+
+void newarc_window_close_if_associated(void *awin)
+{
+	if(awin == newarc_parent) newarc_window_close();
 }

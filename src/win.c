@@ -1160,6 +1160,9 @@ void window_close(void *awin, BOOL iconify)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
+	/* Close new archive window if it's attached to this one */
+	newarc_window_close_if_associated(awin);
+
 	if(aw->windows[WID_MAIN]) {
 		window_remove_dropzones(aw);
 		RemoveAppWindow(aw->appwin);
@@ -1476,9 +1479,9 @@ char *window_req_dest(void *awin)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
-	DoMethod((Object *)aw->gadgets[GID_DEST], GFILE_REQUEST, aw->windows[WID_MAIN]);
-	GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest);
-	
+	if(DoMethod((Object *)aw->gadgets[GID_DEST], GFILE_REQUEST, aw->windows[WID_MAIN])) {
+		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest);
+	}
 	return aw->dest;
 }
 
