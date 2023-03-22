@@ -256,7 +256,7 @@ static void window_menu_activation(void *awin, BOOL enable)
 	if(aw->windows[WID_MAIN] == NULL) return;
 
 	if(enable) {
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,3,0));
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
@@ -271,7 +271,7 @@ static void window_menu_activation(void *awin, BOOL enable)
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
 		}
 	} else {
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,3,0));
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
