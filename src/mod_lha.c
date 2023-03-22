@@ -13,6 +13,8 @@
 */
 
 #include <stdio.h>
+#include <string.h>
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -79,9 +81,7 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir)
 	int err;
 	char cmd[1024];
 	snprintf(cmd, 1024, "lha -I a \"%s\" \"%s\"", archive, file);
-#ifdef __amigaos4__
-	//DebugPrintF("%s\n",cmd);
-#endif
+
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, NULL,
@@ -101,7 +101,7 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir)
 			break;
 			
 			case 2: // retry
-				return mod_lha_add(awin, archive, file);
+				return mod_lha_add(awin, archive, file, dir);
 			break;
 		}
 	}
@@ -115,12 +115,13 @@ BOOL mod_lha_new(void *awin, char *archive)
 	struct avalanche_config *config = get_config();
 	ULONG new_arc_size = strlen(config->tmpdir) + strlen(NEW_ARC_NAME) + 2;
 	char *tmpfile = AllocVec(new_arc_size, MEMF_CLEAR);
+
 	if(tmpfile) {
 		BPTR fh = 0;
 		strcpy(tmpfile, config->tmpdir);
 		AddPart(tmpfile, NEW_ARC_NAME, new_arc_size);
 
-		if(fh = Open(tmpfile, MODE_OLDFILE)) {
+		if(fh = Open(tmpfile, MODE_NEWFILE)) {
 			FPuts(fh, new_arc_text);
 			Close(fh);
 

@@ -35,7 +35,7 @@
 
 #define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022-3 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
 
-void open_info_req(char *message, char *buttons, void *awin)
+void open_info_req(const char *message, const char *buttons, void *awin)
 {
 	Object *obj = RequesterObj,
 					REQ_TitleText, VERS,
@@ -63,7 +63,7 @@ void show_about(void *awin)
 	}
 }
 
-int open_error_req(char *message, char *button, void *awin)
+int open_error_req(const char *message, const char *button, void *awin)
 {
 	int ret = 0;
 
@@ -99,7 +99,7 @@ void show_error(long code, void *awin)
 	open_error_req(message, locale_get_string(MSG_OK), awin);
 }
 
-ULONG ask_yesno_req(void *awin, char *message)
+ULONG ask_yesno_req(void *awin, const char *message)
 {
 	int ret = 1;
 
@@ -137,7 +137,7 @@ ULONG ask_quithide_req(void)
 	return ret;
 }
 
-ULONG ask_question(void *awin, char *q, char *f)
+ULONG ask_question(void *awin, const char *q, const char *f)
 {
 	char message[200];
 	int ret = 0;
@@ -162,7 +162,7 @@ ULONG ask_question(void *awin, char *q, char *f)
 	return ret;
 }
 
-ULONG ask_password(void *awin, char *pw, ULONG pwlen)
+ULONG ask_password(void *awin, const char *pw, ULONG pwlen)
 {
 	int ret = 0;
 

@@ -12,6 +12,8 @@
  * GNU General Public License for more details.
 */
 
+#include <string.h>
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -85,6 +87,7 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 			return FALSE;
 		}
 	} else {
+DebugPrintF("%lx %s %d\n", zip, new_arc_text, strlen(new_arc_text));
 		src = zip_source_buffer(zip, new_arc_text, strlen(new_arc_text), 0);
 		if(src == NULL) {
 			mod_zip_show_error(awin, zip);
@@ -142,10 +145,17 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir)
 BOOL mod_zip_new(void *awin, char *archive)
 {
 #ifdef __amigaos4__
+DebugPrintF("%lx %s\n", awin, archive);
+
 	int err = 0;
+
+	if(!libs_zip_init()) return FALSE;
+
 	zip_t *zip = zip_open(archive, ZIP_CREATE, &err);
 
 	if(zip) {
+DebugPrintF("%lx %s\n", zip, zip_error_strerror(&err));
+
 		return mod_zip_add_file(awin, zip, NEW_ARC_NAME, NULL, TRUE);
 	} else {
 		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
