@@ -97,22 +97,22 @@
 #define MSG_CXDESCRIPTION 53
 #define MSG_APPMENU_EXTRACTHERE 54
 #define MSG_SNAPSHOT 55
-#define MSG_ADDFILES 56
-#define MSG_DELFILES 57
-#define MSG_UNABLETOOPENZIP 58
-#define MSG_LHAERROR 59
-#define MSG_SKIPRETRYABORT 60
-#define MSG_ARCHIVEMUSTHAVEENTRIES 61
-#define MSG_UNABLETOOPENFILE 62
-#define MSG_OUTOFMEMORY 63
-#define MSG_CONFIRMDELETE 64
-#define MSG_LASTWINDOWCLOSED 65
-#define MSG_QUITHIDECANCEL 66
-#define MSG_NEWWINDOW 67
-#define MSG_QUITCFG_ASK 68
-#define MSG_QUITCFG_QUIT 69
-#define MSG_QUITCFG_HIDE 70
-#define MSG_LASTWINDOWACTION 71
+#define MSG_UNABLETOOPENFILE 56
+#define MSG_OUTOFMEMORY 57
+#define MSG_LASTWINDOWCLOSED 58
+#define MSG_QUITHIDECANCEL 59
+#define MSG_NEWWINDOW 60
+#define MSG_QUITCFG_ASK 61
+#define MSG_QUITCFG_QUIT 62
+#define MSG_QUITCFG_HIDE 63
+#define MSG_LASTWINDOWACTION 64
+#define MSG_ADDFILES 65
+#define MSG_DELFILES 66
+#define MSG_UNABLETOOPENZIP 67
+#define MSG_LHAERROR 68
+#define MSG_SKIPRETRYABORT 69
+#define MSG_ARCHIVEMUSTHAVEENTRIES 70
+#define MSG_CONFIRMDELETE 71
 #define MSG_VIEWMODEBROWSER 72
 #define MSG_VIEWMODELIST 73
 #define MSG_VIEWMODE 74
@@ -185,15 +185,8 @@
 #define MSG_CXDESCRIPTION_STR "Unarchive GUI for XAD/XFD"
 #define MSG_APPMENU_EXTRACTHERE_STR "Extract here"
 #define MSG_SNAPSHOT_STR "Snapshot window"
-#define MSG_ADDFILES_STR "Add files..."
-#define MSG_DELFILES_STR "Delete selected items..."
-#define MSG_UNABLETOOPENZIP_STR "Unable to open Zip for writing"
-#define MSG_LHAERROR_STR "Error processing file: %s"
-#define MSG_SKIPRETRYABORT_STR "Skip|Retry|Abort"
-#define MSG_ARCHIVEMUSTHAVEENTRIES_STR "Archive must contain at least one file."
 #define MSG_UNABLETOOPENFILE_STR "Unable to open file"
 #define MSG_OUTOFMEMORY_STR "Not enough memory"
-#define MSG_CONFIRMDELETE_STR "Are you sure you want to delete the selected entries?"
 #define MSG_LASTWINDOWCLOSED_STR "Last window closed."
 #define MSG_QUITHIDECANCEL_STR "Quit|Hide|Cancel"
 #define MSG_NEWWINDOW_STR "New window..."
@@ -201,6 +194,13 @@
 #define MSG_QUITCFG_QUIT_STR "Quit"
 #define MSG_QUITCFG_HIDE_STR "Hide"
 #define MSG_LASTWINDOWACTION_STR "When last window closed:"
+#define MSG_ADDFILES_STR "Add files..."
+#define MSG_DELFILES_STR "Delete selected items..."
+#define MSG_UNABLETOOPENZIP_STR "Unable to open Zip for writing"
+#define MSG_LHAERROR_STR "Error processing file: %s"
+#define MSG_SKIPRETRYABORT_STR "Skip|Retry|Abort"
+#define MSG_ARCHIVEMUSTHAVEENTRIES_STR "Archive must contain at least one file."
+#define MSG_CONFIRMDELETE_STR "Are you sure you want to delete the selected entries?"
 #define MSG_VIEWMODEBROWSER_STR "Browser"
 #define MSG_VIEWMODELIST_STR "List"
 #define MSG_VIEWMODE_STR "View mode"
@@ -331,38 +331,38 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_APPMENU_EXTRACTHERE_STR "\x00\x00"
     "\x00\x00\x00\x37\x00\x10"
     MSG_SNAPSHOT_STR "\x00"
-    "\x00\x00\x00\x38\x00\x0E"
-    MSG_ADDFILES_STR "\x00\x00"
-    "\x00\x00\x00\x39\x00\x1A"
-    MSG_DELFILES_STR "\x00\x00"
-    "\x00\x00\x00\x3A\x00\x20"
-    MSG_UNABLETOOPENZIP_STR "\x00\x00"
-    "\x00\x00\x00\x3B\x00\x1A"
-    MSG_LHAERROR_STR "\x00"
-    "\x00\x00\x00\x3C\x00\x12"
-    MSG_SKIPRETRYABORT_STR "\x00\x00"
-    "\x00\x00\x00\x3D\x00\x28"
-    MSG_ARCHIVEMUSTHAVEENTRIES_STR "\x00"
-    "\x00\x00\x00\x3E\x00\x14"
+    "\x00\x00\x00\x38\x00\x14"
     MSG_UNABLETOOPENFILE_STR "\x00"
-    "\x00\x00\x00\x3F\x00\x12"
+    "\x00\x00\x00\x39\x00\x12"
     MSG_OUTOFMEMORY_STR "\x00"
-    "\x00\x00\x00\x40\x00\x36"
-    MSG_CONFIRMDELETE_STR "\x00"
-    "\x00\x00\x00\x41\x00\x14"
+    "\x00\x00\x00\x3A\x00\x14"
     MSG_LASTWINDOWCLOSED_STR "\x00"
-    "\x00\x00\x00\x42\x00\x12"
+    "\x00\x00\x00\x3B\x00\x12"
     MSG_QUITHIDECANCEL_STR "\x00\x00"
-    "\x00\x00\x00\x43\x00\x0E"
+    "\x00\x00\x00\x3C\x00\x0E"
     MSG_NEWWINDOW_STR "\x00"
-    "\x00\x00\x00\x44\x00\x04"
+    "\x00\x00\x00\x3D\x00\x04"
     MSG_QUITCFG_ASK_STR "\x00"
-    "\x00\x00\x00\x45\x00\x06"
+    "\x00\x00\x00\x3E\x00\x06"
     MSG_QUITCFG_QUIT_STR "\x00\x00"
-    "\x00\x00\x00\x46\x00\x06"
+    "\x00\x00\x00\x3F\x00\x06"
     MSG_QUITCFG_HIDE_STR "\x00\x00"
-    "\x00\x00\x00\x47\x00\x1A"
+    "\x00\x00\x00\x40\x00\x1A"
     MSG_LASTWINDOWACTION_STR "\x00\x00"
+    "\x00\x00\x00\x41\x00\x0E"
+    MSG_ADDFILES_STR "\x00\x00"
+    "\x00\x00\x00\x42\x00\x1A"
+    MSG_DELFILES_STR "\x00\x00"
+    "\x00\x00\x00\x43\x00\x20"
+    MSG_UNABLETOOPENZIP_STR "\x00\x00"
+    "\x00\x00\x00\x44\x00\x1A"
+    MSG_LHAERROR_STR "\x00"
+    "\x00\x00\x00\x45\x00\x12"
+    MSG_SKIPRETRYABORT_STR "\x00\x00"
+    "\x00\x00\x00\x46\x00\x28"
+    MSG_ARCHIVEMUSTHAVEENTRIES_STR "\x00"
+    "\x00\x00\x00\x47\x00\x36"
+    MSG_CONFIRMDELETE_STR "\x00"
     "\x00\x00\x00\x48\x00\x08"
     MSG_VIEWMODEBROWSER_STR "\x00"
     "\x00\x00\x00\x49\x00\x06"

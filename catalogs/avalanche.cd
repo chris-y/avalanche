@@ -171,32 +171,11 @@ Extract here
 MSG_SNAPSHOT (//)
 Snapshot window
 ;
-MSG_ADDFILES (//)
-Add files...
-;
-MSG_DELFILES (//)
-Delete selected items...
-;
-MSG_UNABLETOOPENZIP (//)
-Unable to open Zip for writing
-;
-MSG_LHAERROR (//)
-Error processing file: %s
-;
-MSG_SKIPRETRYABORT (//)
-Skip|Retry|Abort
-;
-MSG_ARCHIVEMUSTHAVEENTRIES (//)
-Archive must contain at least one file.
-;
 MSG_UNABLETOOPENFILE (//)
 Unable to open file
 ;
 MSG_OUTOFMEMORY (//)
 Not enough memory
-;
-MSG_CONFIRMDELETE (//)
-Are you sure you want to delete the selected entries?
 ;
 MSG_LASTWINDOWCLOSED (//)
 Last window closed.
@@ -218,6 +197,27 @@ Hide
 ;
 MSG_LASTWINDOWACTION (//)
 When last window closed:
+;
+MSG_ADDFILES (//)
+Add files...
+;
+MSG_DELFILES (//)
+Delete selected items...
+;
+MSG_UNABLETOOPENZIP (//)
+Unable to open Zip for writing
+;
+MSG_LHAERROR (//)
+Error processing file: %s
+;
+MSG_SKIPRETRYABORT (//)
+Skip|Retry|Abort
+;
+MSG_ARCHIVEMUSTHAVEENTRIES (//)
+Archive must contain at least one file.
+;
+MSG_CONFIRMDELETE (//)
+Are you sure you want to delete the selected entries?
 ;
 MSG_VIEWMODEBROWSER (//)
 Browser
