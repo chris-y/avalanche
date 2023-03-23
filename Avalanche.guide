@@ -19,7 +19,7 @@ This is a simple ReAction based GUI for xadmaster.library.
 
 It was written as everything similar on Aminet appears to require MUI, and the ones included with the OS over the years are not freely distributable.  AmigaOS 3.2 does not include such a tool, so Avalanche was born out of boredom of opening a shell and typing "lha x archive.lha".
 
-It has since been extended to also support decrunching with xfdmaster.library, and scanning extracted files with xvs.library.
+It has since been extended to also support decrunching with xfdmaster.library, scanning extracted files with xvs.library, and basic editing/creation of LhA and Zip archives.
 
 @endnode
 
@@ -50,7 +50,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @endnode
 
 @node usage "Usage"
-Avalanche can be started as a default tool for an archive, or manually.  If started manually an archive can be selected using the button next to Archive, or by dragging it into the window.
+Avalanche can be started as a default tool for an archive, or manually.  If started manually an archive can be selected using the button next to Archive, or by dragging it into the window.  Do not drop the file into a highlighted file list area, as this will add the archive to the one currently being viewed (see @{"editing" link editing}), rather than opening it.
 
 It is possible to "quick extract" archives into their current directory by highlighting
 and selecting "Extract here" from the Tools menu.
@@ -63,6 +63,8 @@ Clicking Extract will extract the archive to the chosen destination.  If @{"scan
 
 The option to "Ignore filesystems" is only useful for DMS and similar disk archives.  Normally Avalanche will check for a valid filesystem, and list the individual files.  With this option set, the raw disk image will be listed instead.
 
+If an Lha or Zip archive is loaded, basic editing is enabled, see @{"editing" link editing} for details.  These can also be created by selecting "New archive" from the Project menu.
+
 @{b}Limitations@{ub}:
 * Mixed file/disk archives are not supported.
 * Disk images containing multiple filesystems are not currently supported.
@@ -71,14 +73,30 @@ The option to "Ignore filesystems" is only useful for DMS and similar disk archi
 
 @endnode
 
+@node editing "Editing"
+If an LhA or Zip archive is loaded, it is possible to do basic editing.  Note that currently Zip editing needs zip.library and therefore is only available on OS4.  LhA requires the LhA command line tool.
+
+In the Edit menu the following new items are available:
+
+@{u}Add files@{uu}
+This opens an ASL requester to select files to add to the archive.  They will be added to the root directory (or the currently displayed directory for Zip archives if in browser mode).  Directories are currently ignored - any tree structure will be flattened.
+
+It is also possible to add files by dragging into the file list - the area will be highlighted to indicate that files will be added.
+
+@{u}Delete selected items@{uu}
+This deletes the currently selected items from the archive.  Note that this does not cascade into subdirectories, it only deletes the displayed files.
+
+In the Project menu it is possible to create a new archive.  This displays another window to select a filename and type.  When the archive is created it is displayed.  A default file is added as empty archives are not supported.
+@endnode
+
 @node vscan "Virus scanning"
-Avalanche can use xvs.library to scan files for viruses on extraction.
+Avalanche can use xvs.library to scan files for viruses on extraction and addition.
 xvs.library can be downloaded from https://www.vht-dk.dk/
 
 Limitations:
 Due to the way xvs.library works, files which do not completely fit into memory cannot be scanned.
 Only Amiga viruses will be detected.
-On OS4 the file xvs.l.main (included with Avalanche) needs to be copied to libs: alongside the main library.
+On OS4 the file xvs.l.main (included with Avalanche) needs to be copied to libs: alongside the main library (the install script will do this if xvs.library is installed already).
 Infected files will be deleted without warning.
 Files will not be further extracted in order to be scanned, so infected files that are individually compressed inside the archive will not be picked up.  It is recommended to run a scan with a full featured virus checker over any archives of concern.  
 @endnode
@@ -102,6 +120,8 @@ This is mostly for internal use, but has the following commands:
 * New browser mode, removed old hierarchical browser.
 * Select/Clear/Invert selection now act on the current directory and
   all subdirectories when in the new browser mode.
+* Basic editing of (LhA, Zip) archives (Zip needs zip.library - OS4 only)
+* Create new (LhA, Zip) archives
 
 @{u}1.11 (11.02.2023)@{uu}
 * Improve window handling
