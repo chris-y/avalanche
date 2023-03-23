@@ -21,6 +21,7 @@
 
 #include "win.h"
 #include "misc.h"
+#include "req.h"
 
 /** Useful functions **/
 #ifndef __amigaos4__
@@ -60,62 +61,62 @@ char *strdup(const char *s)
 #ifdef __amigaos4__
 int32 recursive_scan(void *awin, CONST_STRPTR name)
 {
-    int32 success = FALSE;
-    APTR  context = ObtainDirContextTags( EX_StringNameInput,name,
-                     EX_DoCurrentDir,TRUE, /* for recursion cd etc */
-                     EX_DataFields,(EXF_NAME|EXF_LINK|EXF_TYPE),
-                     TAG_END);
-    if(context)
-    {
-        struct ExamineData *dat;
+	int32 success = FALSE;
+	APTR  context = ObtainDirContextTags( EX_StringNameInput,name,
+					 EX_DoCurrentDir,TRUE, /* for recursion cd etc */
+					 EX_DataFields,(EXF_NAME|EXF_LINK|EXF_TYPE),
+					 TAG_END);
+	if(context)
+	{
+		struct ExamineData *dat;
 
-        while((dat = ExamineDir(context)))
-        {
-            if( EXD_IS_LINK(dat) ) /* all link types - check first ! */
-            {
-                if( EXD_IS_SOFTLINK(dat) ) 
-                {
-                }
-                else   /* a hardlink */
-                {
-                }
-            }
-            else if( EXD_IS_FILE(dat) )
-            {
+		while((dat = ExamineDir(context)))
+		{
+			if( EXD_IS_LINK(dat) ) /* all link types - check first ! */
+			{
+				if( EXD_IS_SOFTLINK(dat) ) 
+				{
+				}
+				else   /* a hardlink */
+				{
+				}
+			}
+			else if( EXD_IS_FILE(dat) )
+			{
 				char *file;
 				if(file = AllocVec(1024, MEMF_CLEAR)) {
 					NameFromLock(GetCurrentDir(), file, 1024);
 					AddPart(file, dat->Name, 1024);
-					DebugPrintF("%s\n", file);
 					window_edit_add(awin, file);
+					FreeVec(file);
 				}
-            }
-            else if( EXD_IS_DIRECTORY(dat) )
-            {
-                if( ! recursive_scan(awin, dat->Name ) )  /* recurse */
-                {
-                    break;
-                }
-            }
-        }
+			}
+			else if( EXD_IS_DIRECTORY(dat) )
+			{
+				if( ! recursive_scan(awin, dat->Name ) )  /* recurse */
+				{
+					break;
+				}
+			}
+		}
 
-        if( ERROR_NO_MORE_ENTRIES == IoErr() )
-        {
-            success = TRUE;           /* normal success exit */
-        }
-        else
-        {
-            PrintFault(IoErr(),NULL); /* failure - why ? */
-        }
+		if( ERROR_NO_MORE_ENTRIES == IoErr() )
+		{
+			success = TRUE;           /* normal success exit */
+		}
+		else
+		{
+			show_dos_error(IoErr(), awin); /* failure */
+		}
 	        
-    }
-    else
-    {
-        PrintFault(IoErr(),NULL);  /* no context - why ? */
-    }
+	}
+	else
+	{
+		show_dos_error(IoErr(), awin);  /* no context */
+	}
 
-    ReleaseDirContext(context);          /* NULL safe */
-    return(success);
+	ReleaseDirContext(context);          /* NULL safe */
+	return(success);
 }
 
 BOOL object_is_dir(char *filename)
@@ -125,10 +126,74 @@ BOOL object_is_dir(char *filename)
 
 	if(exd) {
 		if(EXD_IS_DIRECTORY(exd)) ret = TRUE;
+
+		FreeDosObject(DOS_EXAMINEDATA, exd);
 	}
-
-	FreeDosObject(DOS_EXAMINEDATA, exd);
-
+	
 	return ret;
+}
+#else
+BOOL object_is_dir(BPTR lock)
+{
+	BOOL ret = FALSE;
+	struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+	
+	if(fib) {
+		if(Examine(lock, fib)) {
+			if(fib->fib_DirEntryType > 0) ret = TRUE;
+		}
+		
+		FreeDosObject(DOS_FIB, fib);
+	}
+	
+	return ret;
+}
+
+void recursive_scan(void *awin, BPTR lock)
+{
+	struct ExAllControl *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
+	if (!eac) return;
+	BOOL more;
+	ULONG exalldata_size = sizeof(struct ExAllData) * 10;
+	struct ExAllData *ead = AllocVec(exalldata_size, MEMF_CLEAR);
+
+	eac->eac_LastKey = 0;
+	do {
+		more = ExAll(lock, ead, exalldata_size, ED_TYPE, eac);
+		if ((!more) && (IoErr() != ERROR_NO_MORE_ENTRIES)) {
+			/* ExAll failed abnormally */
+			show_dos_error(IoErr(), awin);
+			break;
+		}
+		if (eac->eac_Entries == 0) {
+			/* ExAll failed normally with no entries */
+			continue; /* ("more" is *usually* zero) */
+		}
+
+		do {
+			char *file;
+			if(file = AllocVec(1024, MEMF_CLEAR)) {
+				NameFromLock(lock, file, 1024);
+				AddPart(file, ead->ed_Name, 1024);
+				
+				if(ead->ed_Type > 0) { /* dir? */
+					BPTR lock = Lock(file, ACCESS_READ);
+					if(lock) {
+						recursive_scan(awin, lock);
+						UnLock(lock);
+					}
+				} else {
+					window_edit_add(awin, file);
+				}
+				FreeVec(file);
+			}
+
+			/* get next ead */
+			ead = ead->ed_Next;
+		} while (ead);
+	} while (more);
+
+	FreeDosObject(DOS_EXALLCONTROL, eac);
+	FreeVec(ead);
 }
 #endif

@@ -423,6 +423,9 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 													} else {
 #ifdef __amigaos4__
 														recursive_scan((void *)appmsg->am_UserData, file);
+#else
+														recursive_scan((void *)appmsg->am_UserData, wbarg->wa_Lock);
+
 #endif
 													}
 													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);

@@ -1661,9 +1661,17 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 				if(object_is_dir(file)) {
 					recursive_scan(awin, file);
 				} else {
-#endif
 					ret = window_edit_add(awin, file);
-#ifdef __amigaos4__
+				}
+#else			
+				BPTR lock = Lock(file, ACCESS_READ);
+				if(lock) {
+					if(object_is_dir(lock)) {
+						recursive_scan(awin, lock);
+					} else {
+						ret = window_edit_add(awin, file);
+					}
+					UnLock(lock);
 				}
 #endif
 			}

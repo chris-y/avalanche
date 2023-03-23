@@ -31,6 +31,9 @@ struct Node *GetSucc(struct Node *node);
 
 int32 recursive_scan(void *awin, CONST_STRPTR name);
 BOOL object_is_dir(char *filename);
+#else
+void recursive_scan(void *awin, BPTR lock);
+BOOL object_is_dir(BPTR lock);
 #endif
 
 char *strdup(const char *s);

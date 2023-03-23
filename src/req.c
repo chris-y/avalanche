@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <clib/alib_protos.h>
@@ -83,6 +84,15 @@ int open_error_req(const char *message, const char *button, void *awin)
 	}
 	
 	return ret;
+}
+
+void show_dos_error(long code, void *awin)
+{
+	char message[100];
+
+	Fault(code, NULL, message, 100);
+
+	open_error_req(message, locale_get_string(MSG_OK), awin);
 }
 
 void show_error(long code, void *awin)
