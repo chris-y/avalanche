@@ -379,6 +379,11 @@ static void free_arc_array(struct avalanche_window *aw)
 	aw->dir_array = NULL;
 }
 
+static int simple_sort(const char *a, const char *b)
+{
+	return strcmp(a, b);
+}
+
 static int sort(const char *a, const char *b)
 {
 	ULONG i = 0;
@@ -404,7 +409,7 @@ static int sort_array(const void *a, const void *b)
 	struct arc_entries *c = *(struct arc_entries **)a;
 	struct arc_entries *d = *(struct arc_entries **)b;
 
-	return sort(c->name, d->name);
+	return simple_sort(c->name, d->name);
 }
 
 #ifdef __amigaos4__
@@ -424,7 +429,11 @@ static LONG __saveds lbsortfunc(__reg("a0") struct Hook *h, __reg("a2") APTR obj
 	if((msg->lbsm_UserDataB == NULL) && (msg->lbsm_UserDataA != NULL)) return 1;
 
 	/* Otherwise sort alphabetically */
+#ifdef __amigaos4__
 	return sort(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
+#else
+	return simple_sort(msg->lbsm_DataA.Text, msg->lbsm_DataB.Text);
+#endif
 }
 
 
@@ -650,6 +659,10 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 
 		dupe = check_duplicates(aw, dir_entry, dir_name);
 
+#ifdef __amigaos4__
+DebugPrintF("* dirname: %s\n", dir_name);
+#endif
+
 		if((slash > 0) && (dupe == FALSE)) {
 			for(int l = 1; l < slash; l++) {
 				char *part_dir = extract_path_part(dir_name, l);
@@ -663,6 +676,10 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 				aw->dir_array[dir_entry]->name = part_dir;
 				aw->dir_array[dir_entry]->level = l;
 
+#ifdef __amigaos4__
+DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_array[dir_entry]->level);
+#endif
+
 				dir_entry++;
 			}
 
@@ -672,6 +689,10 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 			aw->dir_array[dir_entry]->name = dir_name;
 			aw->dir_array[dir_entry]->level = slash;
 			aw->dir_array[dir_entry]->dir = FALSE;
+
+#ifdef __amigaos4__
+DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_array[dir_entry]->level);
+#endif
 
 			dir_entry++;
 
@@ -895,11 +916,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	ULONG getfile_drawer = GETFILE_Drawer;
 	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
 	
-#ifdef __amigaos4__
 	struct Hook *lbsort_hook = (struct Hook *)&(aw->lbsorthook);
-#else
-	struct Hook *lbsort_hook = NULL;
-#endif
 
 	if(config->disable_asl_hook) {
 		asl_hook = NULL;
