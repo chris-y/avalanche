@@ -1438,6 +1438,12 @@ void window_update_archive(void *awin, char *archive)
 
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
 					GETFILE_FullFile, aw->archive, TAG_DONE);
+
+	if(aw->flat_mode && aw->current_dir) {
+		FreeVec(aw->current_dir);
+		aw->current_dir = NULL;
+	}
+
 }
 
 void window_update_sourcedir(void *awin, char *sourcedir)
