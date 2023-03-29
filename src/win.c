@@ -877,9 +877,26 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 	}
 }
 
+static void update_fuelgauge_text(struct avalanche_window *aw)
+{
+	char msg[20];
+
+	aw->current_item++;
+	snprintf(msg, 20, "%lu/%lu", aw->current_item, aw->total_items);
+
+	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
+			GA_Text, msg,
+			FUELGAUGE_Percent, FALSE,
+			FUELGAUGE_Justification, FGJ_CENTER,
+			FUELGAUGE_Level, 0,
+			TAG_DONE);
+}
+
 void *array_get_userdata(void *awin, void *arc_entry)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	update_fuelgauge_text(aw);
 
 	if(aw->flat_mode) {
 		struct arc_entries *arc_e = (struct arc_entries *)arc_entry;
@@ -1606,7 +1623,6 @@ void *window_get_lbnode(void *awin, struct Node *node)
 
 	void *userdata = NULL;
 	ULONG checked = FALSE;
-	char msg[20];
 
 	GetListBrowserNodeAttrs(node,
 			LBNA_Checked, &checked,
@@ -1619,15 +1635,7 @@ void *window_get_lbnode(void *awin, struct Node *node)
 		userdata = arc_entry->userdata;
 	}
 
-	aw->current_item++;
-	snprintf(msg, 20, "%lu/%lu", aw->current_item, aw->total_items);
-
-	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-			GA_Text, msg,
-			FUELGAUGE_Percent, FALSE,
-			FUELGAUGE_Justification, FGJ_CENTER,
-			FUELGAUGE_Level, 0,
-			TAG_DONE);
+	update_fuelgauge_text(aw);
 
 	if(checked == FALSE) return NULL;
 	return userdata;
