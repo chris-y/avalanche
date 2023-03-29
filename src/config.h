@@ -29,6 +29,7 @@ struct avalanche_config {
 	BOOL debug;
 	BOOL ignorefs;
 	BOOL disable_vscan_menu;
+	BOOL drag_lock;
 	ULONG closeaction; /* [1 = quit, 2 = hide, 0 = cancel] -- same as quit req */
 
 	ULONG win_x;
