@@ -33,4 +33,4 @@ clean:
 	delete locale_strings.h
 
 version:
-	bumprev 1 Avalanche
+	bumprev 2 Avalanche

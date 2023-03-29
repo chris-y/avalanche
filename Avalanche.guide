@@ -116,7 +116,7 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}x.xx (xx.xx.xxxx)@{uu}
+@{u}2.1 (29.03.2023)@{uu}
 * New browser mode, removed old hierarchical browser.
 * Select/Clear/Invert selection now act on the current directory and
   all subdirectories when in the new browser mode.
