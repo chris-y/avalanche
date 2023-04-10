@@ -469,7 +469,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 					SetProtection(destfile, xad_get_fileprotection(fi));
 					SetFileDate(destfile, &ds);
-					SetComment(destfile, fi->xfi_Comment);
+					if(fi && fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
 				}
 			}
 		}
