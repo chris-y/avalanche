@@ -734,7 +734,7 @@ int main(int argc, char **argv)
 	} else {
 		BOOL arc_opened = FALSE;
 		if(WBenchMsg) {
-			if(WBenchMsg->sm_NumArgs > 0) {
+			if(WBenchMsg->sm_NumArgs > 1) {
 				/* Started as default tool, get the path+filename of the (first) project */
 				struct WBArg *wbarg = WBenchMsg->sm_ArgList + 1;
 
