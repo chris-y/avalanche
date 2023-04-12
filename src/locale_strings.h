@@ -120,6 +120,8 @@
 #define MSG_NEWARCHIVE 76
 #define MSG_TYPE 77
 #define MSG_CREATE 78
+#define MSG_DIR 79
+#define MSG_PARENT 80
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -208,6 +210,8 @@
 #define MSG_NEWARCHIVE_STR "New archive..."
 #define MSG_TYPE_STR "_Type"
 #define MSG_CREATE_STR "_Create"
+#define MSG_DIR_STR "(dir)"
+#define MSG_PARENT_STR "(parent)"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -377,6 +381,10 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_TYPE_STR "\x00"
     "\x00\x00\x00\x4E\x00\x08"
     MSG_CREATE_STR "\x00"
+    "\x00\x00\x00\x4F\x00\x06"
+    MSG_DIR_STR "\x00"
+    "\x00\x00\x00\x50\x00\x0A"
+    MSG_PARENT_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

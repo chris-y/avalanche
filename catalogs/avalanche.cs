@@ -244,3 +244,9 @@ _Type
 MSG_CREATE
 _Create
 ;
+MSG_DIR
+(dir)
+;
+MSG_PARENT
+(parent)
+;

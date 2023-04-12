@@ -473,6 +473,10 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	int i = 0;
 	char *name_copy = NULL;
 	ULONG glyph = GLYPH_POPFILE;
+	ULONG tag1 = LBNCA_Integer;
+	ULONG val1 = 0;
+	ULONG tag2 = TAG_IGNORE;
+	ULONG val2 = 0;
 	BOOL debug = get_config()->debug;
 
 	char datestr[20];
@@ -490,9 +494,18 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
 
-	snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+	if(dir) {
+		glyph = GLYPH_POPDRAWER;
+		tag1 = LBNCA_CopyText;
+		val1 = TRUE;
+		tag2 = LBNCA_Text;
+		val2 = (ULONG)locale_get_string(MSG_DIR);
 
-	if(dir) glyph = GLYPH_POPDRAWER;
+		snprintf(datestr, 20, "\0");
+	} else {
+		val1 = (ULONG)size;
+		snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+	}
 
 	struct Node *node = AllocListBrowserNode(4,
 		LBNA_UserData, userdata,
@@ -508,7 +521,8 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 			LBNCA_CopyText, TRUE,
 			LBNCA_Text, name,
 		LBNA_Column, 2,
-			LBNCA_Integer, size,
+			tag1, val1,
+			tag2, val2,
 		LBNA_Column, 3,
 			LBNCA_CopyText, TRUE,
 			LBNCA_Text, datestr,
@@ -784,7 +798,8 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 										LBNCA_CopyText, TRUE,
 										LBNCA_Text, "/",
 									LBNA_Column, 2,
-										LBNCA_Integer, &zero,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, locale_get_string(MSG_PARENT),
 									LBNA_Column, 3,
 										LBNCA_CopyText, TRUE,
 										LBNCA_Text, "",
