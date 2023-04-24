@@ -2070,7 +2070,7 @@ void window_disable_gadgets(void *awin, BOOL disable)
 
 	if(aw->flat_mode == FALSE) disable = TRUE;
 
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
 }
