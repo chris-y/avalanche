@@ -31,6 +31,7 @@
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 
+#include <proto/bitmap.h>
 #include <proto/button.h>
 #include <proto/getfile.h>
 #include <proto/glyph.h>
@@ -43,6 +44,7 @@
 #include <gadgets/fuelgauge.h>
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
+#include <images/bitmap.h>
 #include <images/glyph.h>
 #include <images/label.h>
 
@@ -137,6 +139,8 @@ static ULONG zero = 0;
 #define fr_NumArgs rf_NumArgs
 #define fr_ArgList rf_ArgList
 #endif
+
+#define AVALANCHE_GLYPH_ROOT 800
 
 /** Menu **/
 
@@ -238,6 +242,54 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 	}
 
 	return 0;
+}
+
+static Object *get_glyph(ULONG glyph)
+{
+	Object *glyphobj = NULL;
+	char *img = NULL;
+	struct Screen *screen = LockPubScreen(NULL);
+
+	if(get_config()->aiss) {
+		switch(glyph) {
+			case GLYPH_POPDRAWER:
+				img = "TBimages:list_drawer";
+			break;
+
+			case GLYPH_POPFILE:
+				img = "TBimages:list_file";
+			break;
+
+			case AVALANCHE_GLYPH_ROOT:
+				img = "TBimages:list_archive";
+			break;
+
+			case GLYPH_UPARROW:
+				img = "TBimages:list_nav_north";
+			break;
+
+			default:
+				img = "TBimages:list_blank";
+			break;
+		}
+
+		glyphobj = BitMapObj,
+					BITMAP_SourceFile, img,
+					BITMAP_Masking, TRUE,
+					BITMAP_Screen, screen,
+					/* BITMAP_Height, 16,
+					BITMAP_Width, 16, */
+				BitMapEnd;
+	} else {
+		if(glyph == AVALANCHE_GLYPH_ROOT) glyph = GLYPH_POPDRAWER;
+		glyphobj = GlyphObj,
+					GLYPH_Glyph, glyph,
+				GlyphEnd;
+	}
+
+	UnlockPubScreen(NULL, screen);
+
+	return glyphobj;
 }
 
 static void window_free_archive_path(struct avalanche_window *aw)
@@ -472,7 +524,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	ULONG gen = 0;
 	int i = 0;
 	char *name_copy = NULL;
-	ULONG glyph = GLYPH_POPFILE;
+	Object *glyph = NULL;
 	ULONG tag1 = LBNCA_Integer;
 	ULONG val1 = 0;
 	ULONG tag2 = TAG_IGNORE;
@@ -495,7 +547,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		Amiga2Date(0, &cd);
 
 	if(dir) {
-		glyph = GLYPH_POPDRAWER;
+		glyph = get_glyph(GLYPH_POPDRAWER);
 		tag1 = LBNCA_CopyText;
 		val1 = TRUE;
 		tag2 = LBNCA_Text;
@@ -503,6 +555,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 
 		snprintf(datestr, 20, "\0");
 	} else {
+		glyph = get_glyph(GLYPH_POPFILE);
 		val1 = (ULONG)size;
 		snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
 	}
@@ -514,9 +567,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		LBNA_Flags, flags,
 		LBNA_Generation, gen,
 		LBNA_Column, 0,
-			LBNCA_Image, GlyphObj,
-						GLYPH_Glyph, glyph,
-						GlyphEnd,
+			LBNCA_Image, glyph,
 		LBNA_Column, 1,
 			LBNCA_CopyText, TRUE,
 			LBNCA_Text, name,
@@ -738,9 +789,7 @@ DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_arra
 									LBNA_Flags, flags,
 									LBNA_Generation, 1,
 									LBNA_Column, 0,
-										LBNCA_Image, GlyphObj,
-											GLYPH_Glyph, GLYPH_POPDRAWER,
-										GlyphEnd,
+										LBNCA_Image, get_glyph(AVALANCHE_GLYPH_ROOT),
 									TAG_DONE);
 
 	AddTail(&aw->dir_tree, aw->root_node);
@@ -791,9 +840,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 									LBNA_Generation, 1,
 									LBNA_CheckBox, FALSE,
 									LBNA_Column, 0,
-										LBNCA_Image, GlyphObj,
-											GLYPH_Glyph, GLYPH_UPARROW,
-										GlyphEnd,
+										LBNCA_Image, get_glyph(GLYPH_UPARROW),
 									LBNA_Column, 1,
 										LBNCA_CopyText, TRUE,
 										LBNCA_Text, "/",

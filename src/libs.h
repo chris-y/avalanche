@@ -22,6 +22,7 @@
 #endif
 
 extern Class *ARexxClass;
+extern Class *BitMapClass;
 extern Class *ButtonClass;
 extern Class *CheckBoxClass;
 extern Class *ChooserClass;
@@ -36,6 +37,7 @@ extern Class *StringClass;
 extern Class *WindowClass;
 
 #define ARexxObj		NewObject(ARexxClass, NULL
+#define BitMapObj		NewObject(BitMapClass, NULL
 #define ButtonObj		NewObject(ButtonClass, NULL
 #define CheckBoxObj		NewObject(CheckBoxClass, NULL
 #define ChooserObj		NewObject(ChooserClass, NULL

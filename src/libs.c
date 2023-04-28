@@ -18,6 +18,7 @@
 
 #ifndef __amigaos4__
 #include <proto/arexx.h>
+#include <proto/bitmap.h>
 #include <proto/button.h>
 #include <proto/checkbox.h>
 #include <proto/chooser.h>
@@ -157,6 +158,7 @@ ALIB_STRUCT(Zip)
 #endif
 
 CLASS_STRUCT(ARexx)
+CLASS_STRUCT(BitMap)
 CLASS_STRUCT(Button)
 CLASS_STRUCT(CheckBox)
 CLASS_STRUCT(Chooser)
@@ -226,6 +228,7 @@ BOOL libs_open(void)
 	ALIB_OPEN("utility.library",      36, Utility)
 	ALIB_OPEN("workbench.library",    40, Workbench)
 
+	CLASS_OPEN("images/bitmap.image",          41, BitMap,        BITMAP,      FALSE)
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON,      FALSE)
 	CLASS_OPEN("gadgets/checkbox.gadget",      41, CheckBox,      CHECKBOX,    FALSE)
 	CLASS_OPEN("gadgets/chooser.gadget",       45, Chooser,       CHOOSER,     TRUE)
@@ -248,6 +251,7 @@ void libs_close(void)
 	libs_xvs_exit();
 	libs_zip_exit();
 
+	CLASS_CLOSE(BitMap)
 	CLASS_CLOSE(Button)
 	CLASS_CLOSE(CheckBox)
 	CLASS_CLOSE(Chooser)

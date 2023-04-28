@@ -613,6 +613,7 @@ static void gettooltypes(struct WBArg *wbarg)
 		if(FindToolType(toolarray, "IGNOREFS")) config.ignorefs = TRUE;
 		if(FindToolType(toolarray, "DEBUG")) config.debug = TRUE;
 		if(FindToolType(toolarray, "DRAGLOCK")) config.drag_lock = TRUE;
+		if(FindToolType(toolarray, "AISS")) config.aiss = TRUE;
 
 		if(s = (char *)FindToolType(toolarray, "CLOSE")) {
 			if(MatchToolValue(s, "HIDE")) {
@@ -667,6 +668,7 @@ int main(int argc, char **argv)
 	config.disable_vscan_menu = FALSE;
 	config.closeaction = 0; // Ask
 	config.drag_lock = FALSE;
+	config.aiss = FALSE;
 
 	config.win_x = 0;
 	config.win_y = 0;

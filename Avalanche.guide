@@ -45,6 +45,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}CLOSE@{ub} Action to take when last window closed ASK|HIDE|QUIT (default = ASK)
 @{b}NOASLHOOK@{ub} Disables the ASL filter so it shows all files
 @{b}DRAGLOCK@{ub} Prevent adding files with drag'n'drop
+@{b}AISS@{ub} Use AISS images
 @{b}CX_POPUP@{ub} Whether to open the window on startup
 @{b}CX_PRIORITY@{ub} Commodities priority
 @{b}CX_POPKEY@{ub} Hotkey to show the window if hidden (default = ctrl alt a)

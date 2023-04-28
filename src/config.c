@@ -98,7 +98,7 @@ static void config_save(struct avalanche_config *config)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[19];
+	UBYTE *newtooltypes[20];
 	char tt_dest[100];
 	char tt_srcdir[100];
 	char tt_tmp[100];
@@ -235,7 +235,13 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[17] = "(DRAGLOCK)";
 		}
 
-		newtooltypes[18] = NULL;
+		if(config->aiss) {
+			newtooltypes[18] = "AISS";
+		} else {
+			newtooltypes[18] = "(AISS)";
+		}
+
+		newtooltypes[19] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(config->progname, dobj, NULL);
