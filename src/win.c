@@ -1907,7 +1907,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		
 		case WMHI_NEWSIZE:
 			window_remove_dropzones(aw);
-			window_add_dropzones(aw);
+			if(get_config()->drag_lock == FALSE) window_add_dropzones(aw);
 		break;
 				
 		case WMHI_MENUPICK:
