@@ -268,6 +268,14 @@ static Object *get_glyph(ULONG glyph)
 				img = "TBimages:list_nav_north";
 			break;
 
+			case GLYPH_RIGHTARROW:
+				img = "TBimages:list_node_expand";
+			break;
+
+			case GLYPH_DOWNARROW:
+				img = "TBimages:list_node_collaps";
+			break;
+
 			default:
 				img = "TBimages:list_blank";
 			break;
@@ -1141,6 +1149,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						LISTBROWSER_FastRender, TRUE,
 						LISTBROWSER_Hierarchical, TRUE,
 						LISTBROWSER_ShowSelected, TRUE,
+						LISTBROWSER_ShowImage, get_glyph(GLYPH_RIGHTARROW),
+						LISTBROWSER_HideImage, get_glyph(GLYPH_DOWNARROW),
+						LISTBROWSER_LeafImage, get_glyph(GLYPH_POPDRAWER),
 					ListBrowserEnd,
 					CHILD_WeightedWidth, 20,
 					LAYOUT_WeightBar, TRUE,
