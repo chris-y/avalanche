@@ -269,11 +269,11 @@ static Object *get_glyph(ULONG glyph)
 			break;
 
 			case GLYPH_RIGHTARROW:
-				img = "TBimages:list_node_expand";
+				img = "TBimages:autobutton_rtarrow";
 			break;
 
 			case GLYPH_DOWNARROW:
-				img = "TBimages:list_node_collaps";
+				img = "TBimages:autobutton_dnarrow";
 			break;
 
 			default:
