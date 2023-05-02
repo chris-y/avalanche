@@ -797,7 +797,11 @@ DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_arra
 									LBNA_Flags, flags,
 									LBNA_Generation, 1,
 									LBNA_Column, 0,
-										LBNCA_Image, get_glyph(AVALANCHE_GLYPH_ROOT),
+										LBNCA_Image, LabelObj,
+											LABEL_DisposeImage, TRUE,
+											LABEL_Image, get_glyph(AVALANCHE_GLYPH_ROOT),
+											LABEL_Text, FilePart(aw->archive),
+										LabelEnd,
 									TAG_DONE);
 
 	AddTail(&aw->dir_tree, aw->root_node);
@@ -812,8 +816,11 @@ DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_arra
 									LBNA_Flags, flags,
 									LBNA_Generation, aw->dir_array[i]->level + 1,
 									LBNA_Column, 0,
-										LBNCA_CopyText, TRUE,
-										LBNCA_Text, FilePart(aw->dir_array[i]->name),
+										LBNCA_Image, LabelObj,
+											LABEL_DisposeImage, TRUE,
+											LABEL_Image, get_glyph(GLYPH_POPDRAWER),
+											LABEL_Text, FilePart(aw->dir_array[i]->name),
+										LabelEnd,
 									TAG_DONE);
 
 		AddTail(&aw->dir_tree, node);
@@ -1151,7 +1158,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						LISTBROWSER_ShowSelected, TRUE,
 						LISTBROWSER_ShowImage, get_glyph(GLYPH_RIGHTARROW),
 						LISTBROWSER_HideImage, get_glyph(GLYPH_DOWNARROW),
-						LISTBROWSER_LeafImage, get_glyph(GLYPH_POPDRAWER),
+						LISTBROWSER_LeafImage, NULL,
 					ListBrowserEnd,
 					CHILD_WeightedWidth, 20,
 					LAYOUT_WeightBar, TRUE,
