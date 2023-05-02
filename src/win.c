@@ -800,6 +800,7 @@ DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_arra
 										LBNCA_Image, LabelObj,
 											LABEL_DisposeImage, TRUE,
 											LABEL_Image, get_glyph(AVALANCHE_GLYPH_ROOT),
+											LABEL_Underscore, NULL,
 											LABEL_Text, FilePart(aw->archive),
 										LabelEnd,
 									TAG_DONE);
@@ -819,6 +820,7 @@ DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_arra
 										LBNCA_Image, LabelObj,
 											LABEL_DisposeImage, TRUE,
 											LABEL_Image, get_glyph(GLYPH_POPDRAWER),
+											LABEL_Underscore, NULL,
 											LABEL_Text, FilePart(aw->dir_array[i]->name),
 										LabelEnd,
 									TAG_DONE);
