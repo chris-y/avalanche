@@ -530,6 +530,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	BOOL dir_seen = FALSE;
 	ULONG flags = 0;
 	ULONG gen = 0;
+	LONG *csize = NULL;
 	int i = 0;
 	char *name_copy = NULL;
 	Object *glyph = NULL;
@@ -732,10 +733,6 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 
 		dupe = check_duplicates(aw, dir_entry, dir_name);
 
-#ifdef __amigaos4__
-DebugPrintF("* dirname: %s\n", dir_name);
-#endif
-
 		if((slash > 0) && (dupe == FALSE)) {
 			for(int l = 1; l < slash; l++) {
 				char *part_dir = extract_path_part(dir_name, l);
@@ -749,10 +746,6 @@ DebugPrintF("* dirname: %s\n", dir_name);
 				aw->dir_array[dir_entry]->name = part_dir;
 				aw->dir_array[dir_entry]->level = l;
 
-#ifdef __amigaos4__
-DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_array[dir_entry]->level);
-#endif
-
 				dir_entry++;
 			}
 
@@ -762,10 +755,6 @@ DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_arra
 			aw->dir_array[dir_entry]->name = dir_name;
 			aw->dir_array[dir_entry]->level = slash;
 			aw->dir_array[dir_entry]->dir = FALSE;
-
-#ifdef __amigaos4__
-DebugPrintF("* dirname: %s [%d]\n", aw->dir_array[dir_entry]->name, aw->dir_array[dir_entry]->level);
-#endif
 
 			dir_entry++;
 
@@ -1033,7 +1022,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LBCIA_Sortable, FALSE,
 		LBCIA_Column, 1,
 			LBCIA_Title,  locale_get_string(MSG_NAME),
-			LBCIA_Weight, 65,
+			LBCIA_Weight, 55,
 			LBCIA_DraggableSeparator, TRUE,
 			LBCIA_Sortable, TRUE,
 			LBCIA_SortArrow, TRUE,

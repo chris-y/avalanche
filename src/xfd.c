@@ -59,6 +59,14 @@ static const char *xfd_get_filename(void *userdata, void *awin)
 	return userdata;
 }
 
+static LONG *xfd_get_crunchsize(void *userdata, void *awin)
+{
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	if(!xu->bi) return NULL;
+	
+	return (LONG *)&xu->bi->xfdbi_SourceBufLen;
+}
+
 static const char *xfd_get_arc_format(void *awin)
 {
 	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
@@ -239,6 +247,7 @@ void xfd_register(struct module_functions *funcs)
 	funcs->module[3] = 0;
 
 	funcs->get_filename = xfd_get_filename;
+	funcs->get_crunchsize = xfd_get_crunchsize;
 	funcs->free = xfd_free;
 	funcs->get_format = xfd_get_arc_format;
 	funcs->get_subformat = NULL;

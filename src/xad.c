@@ -125,6 +125,18 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 				TAG_DONE);
 }
 
+static LONG *xad_get_crunchsize(void *userdata, void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu && xu->arctype == XDISK) return NULL;
+	if(userdata == NULL) return NULL;
+
+	struct xadFileInfo *fi = (struct xadFileInfo *)userdata;
+
+	return (LONG *)&fi->xfi_CrunchSize;
+}
+
 static const char *xad_get_filename(void *userdata, void *awin)
 {
 	if(userdata == NULL) return NULL;
@@ -561,4 +573,5 @@ void xad_register(struct module_functions *funcs)
 	funcs->get_format = xad_get_arc_format;
 	funcs->get_subformat = xad_get_arc_subformat;
 	funcs->get_error = xad_error;
+	funcs->get_crunchsize = xad_get_crunchsize;
 }

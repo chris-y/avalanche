@@ -26,6 +26,7 @@ struct module_functions {
 	/* Extraction */
 	char module[4];
 	const char *(*get_filename)(void *userdata, void *awin);
+	const LONG *(*get_crunchsize)(void *userdata, void *awin);
 	const char *(*get_format)(void *awin);
 	const char *(*get_subformat)(void *awin);
 	const char *(*get_error)(long code);
@@ -41,6 +42,7 @@ ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete);
 
 /* Extraction */
 const char *module_get_item_filename(void *awin, void *userdata);
+LONG *module_get_crunched_size(void *awin, void *userdata);
 void module_free(void *awin);
 const char *module_get_format(void *awin);
 const char *module_get_subformat(void *awin);

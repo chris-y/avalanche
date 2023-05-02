@@ -59,6 +59,15 @@ const char *module_get_item_filename(void *awin, void *userdata)
 	return NULL;
 }
 
+LONG *module_get_crunched_size(void *awin, void *userdata)
+{
+	struct module_functions *mf = window_get_module_funcs(awin);
+
+	if(mf->get_crunchsize) return mf->get_crunchsize(userdata, awin);
+
+	return NULL;
+}
+
 void module_free(void *awin)
 {
 	struct module_functions *mf = window_get_module_funcs(awin);
@@ -162,6 +171,7 @@ static void module_extract_register(void *awin, struct module_functions *mf)
 	mf->module[3] = 0;
 
 	mf->get_filename = NULL;
+	mf->get_crunchsize = NULL;
 	mf->get_format = NULL;
 	mf->get_subformat = NULL;
 	mf->get_error = NULL;

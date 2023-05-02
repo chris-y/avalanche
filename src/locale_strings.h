@@ -122,6 +122,7 @@
 #define MSG_CREATE 78
 #define MSG_DIR 79
 #define MSG_PARENT 80
+#define MSG_PACKEDSIZE 81
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -212,6 +213,7 @@
 #define MSG_CREATE_STR "_Create"
 #define MSG_DIR_STR "(dir)"
 #define MSG_PARENT_STR "(parent)"
+#define MSG_PACKEDSIZE_STR "Packed Size"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -385,6 +387,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_DIR_STR "\x00"
     "\x00\x00\x00\x50\x00\x0A"
     MSG_PARENT_STR "\x00\x00"
+    "\x00\x00\x00\x51\x00\x0C"
+    MSG_PACKEDSIZE_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

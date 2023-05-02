@@ -327,3 +327,7 @@ MSG_PARENT
 (parent)
 ; (parent)
 ;
+MSG_PACKEDSIZE
+Packed Size
+; Packed Size
+;

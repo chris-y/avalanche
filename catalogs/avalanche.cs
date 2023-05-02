@@ -250,3 +250,6 @@ MSG_DIR
 MSG_PARENT
 (parent)
 ;
+MSG_PACKEDSIZE
+Packed Size
+;
