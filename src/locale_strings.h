@@ -124,6 +124,12 @@
 #define MSG_PARENT 80
 #define MSG_PACKEDSIZE 81
 #define MSG_SNAPSHOT_WARNING 82
+#define MSG_ERR_NOTCPIP 83
+#define MSG_ERR_AMISSL 84
+#define MSG_ERR_UNKNOWN 85
+#define MSG_NEWVERSION 86
+#define MSG_NONEWVERSION 87
+#define MSG_CHECKVERSION 88
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -216,6 +222,12 @@
 #define MSG_PARENT_STR "(parent)"
 #define MSG_PACKEDSIZE_STR "Packed Size"
 #define MSG_SNAPSHOT_WARNING_STR "This will not be persistent until prefs are saved!"
+#define MSG_ERR_NOTCPIP_STR "Please start your TCP/IP stack"
+#define MSG_ERR_AMISSL_STR "Unable to open AmiSSL v5"
+#define MSG_ERR_UNKNOWN_STR "Unknown error"
+#define MSG_NEWVERSION_STR "New version (%s) available"
+#define MSG_NONEWVERSION_STR "Current version is up-to-date"
+#define MSG_CHECKVERSION_STR "Check for update..."
 
 #endif /* CATCOMP_STRINGS */
 
@@ -393,6 +405,18 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_PACKEDSIZE_STR "\x00"
     "\x00\x00\x00\x52\x00\x34"
     MSG_SNAPSHOT_WARNING_STR "\x00\x00"
+    "\x00\x00\x00\x53\x00\x20"
+    MSG_ERR_NOTCPIP_STR "\x00\x00"
+    "\x00\x00\x00\x54\x00\x1A"
+    MSG_ERR_AMISSL_STR "\x00\x00"
+    "\x00\x00\x00\x55\x00\x0E"
+    MSG_ERR_UNKNOWN_STR "\x00"
+    "\x00\x00\x00\x56\x00\x1C"
+    MSG_NEWVERSION_STR "\x00\x00"
+    "\x00\x00\x00\x57\x00\x1E"
+    MSG_NONEWVERSION_STR "\x00"
+    "\x00\x00\x00\x58\x00\x14"
+    MSG_CHECKVERSION_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

@@ -53,6 +53,7 @@
 
 #include "avalanche.h"
 #include "config.h"
+#include "http.h"
 #include "libs.h"
 #include "locale.h"
 #include "misc.h"
@@ -152,8 +153,10 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
 	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 5 About
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 6
-	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 7 Quit
+	{NM_ITEM,   NULL ,        0, 0, 0, 0,}, // 6 Check version
+
+	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 7
+	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 8 Quit
 
 	{NM_TITLE,  NULL,               0,  0, 0, 0,}, // 1 Edit
 	{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
@@ -174,8 +177,8 @@ struct NewMenu menu[] = {
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
-#define MENU_FLATMODE 18
-#define MENU_LISTMODE 19
+#define MENU_FLATMODE 19
+#define MENU_LISTMODE 20
 
 #define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
@@ -1995,8 +1998,12 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							case 5: //about
 								show_about(awin);
 							break;
+
+							case 6: //check version
+								http_check_version(awin);
+							break;
 							
-							case 7: //quit
+							case 8: //quit
 								if(ask_quit(awin)) {
 									done = WIN_DONE_QUIT;
 								}
@@ -2141,19 +2148,20 @@ void fill_menu_labels(void)
 	menu[3].nm_Label = locale_get_string( MSG_OPEN );
 	menu[5].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
 	menu[6].nm_Label = locale_get_string( MSG_ABOUT );
-	menu[8].nm_Label = locale_get_string( MSG_QUIT );
-	menu[9].nm_Label = locale_get_string( MSG_EDIT );
-	menu[10].nm_Label = locale_get_string( MSG_SELECTALL );
-	menu[11].nm_Label = locale_get_string( MSG_CLEARSELECTION );
-	menu[12].nm_Label = locale_get_string( MSG_INVERTSELECTION );
-	menu[14].nm_Label = locale_get_string( MSG_ADDFILES );
-	menu[15].nm_Label = locale_get_string( MSG_DELFILES );
-	menu[16].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[17].nm_Label = locale_get_string( MSG_VIEWMODE );
+	menu[7].nm_Label = locale_get_string( MSG_CHECKVERSION );
+	menu[9].nm_Label = locale_get_string( MSG_QUIT );
+	menu[10].nm_Label = locale_get_string( MSG_EDIT );
+	menu[11].nm_Label = locale_get_string( MSG_SELECTALL );
+	menu[12].nm_Label = locale_get_string( MSG_CLEARSELECTION );
+	menu[13].nm_Label = locale_get_string( MSG_INVERTSELECTION );
+	menu[15].nm_Label = locale_get_string( MSG_ADDFILES );
+	menu[16].nm_Label = locale_get_string( MSG_DELFILES );
+	menu[17].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[18].nm_Label = locale_get_string( MSG_VIEWMODE );
 	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
 	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
-	menu[21].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[22].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[22].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[23].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)

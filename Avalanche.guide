@@ -121,6 +121,7 @@ This is mostly for internal use, but has the following commands:
 @{u}2.2 (xx.xx.xxxx)@{uu}
 * Visual improvements
 * Added ability to use AISS images (on OS4)
+* Added option to check for updates
 * Fix the display of current settings in the prefs window
 * Fix snapshot position and add a warning
 * Fixed some Enforcer hits

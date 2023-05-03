@@ -1,10 +1,10 @@
 CC := vc +newlib
-CFLAGS := -static -O3 -D__USE_INLINE__ -ISDK:local/common/include
+CFLAGS := -static -O3 -D__USE_INLINE__ -ISDK:local/common/include -ISDK:include/netinclude
 LIBS := 
 VPATH := ..
 
-OBJS := avalanche.o arexx.o config.o libs.o locale.o misc.o module.o mod_lha.o mod_zip.o new.o req.o win.o xad.o xfd.o xvs.o
-DEPS := avalanche_rev.h avalanche.h arexx.h config.h libs.h locale.h locale_strings.h misc.h module.h new.h req.h win.h xad.h xfd.h xvs.h
+OBJS := avalanche.o arexx.o config.o http.o libs.o locale.o misc.o module.o mod_lha.o mod_zip.o new.o req.o win.o xad.o xfd.o xvs.o
+DEPS := avalanche_rev.h avalanche.h arexx.h config.h http.h libs.h locale.h locale_strings.h misc.h module.h new.h req.h win.h xad.h xfd.h xvs.h
 
 all: AvalanchePPC
 

@@ -256,3 +256,21 @@ Packed Size
 MSG_SNAPSHOT_WARNING
 This will not be persistent until prefs are saved!
 ;
+MSG_ERR_NOTCPIP
+Please start your TCP/IP stack
+;
+MSG_ERR_AMISSL
+Unable to open AmiSSL v5
+;
+MSG_ERR_UNKNOWN
+Unknown error
+;
+MSG_NEWVERSION
+New version (%s) available
+;
+MSG_NONEWVERSION
+Current version is up-to-date
+;
+MSG_CHECKVERSION
+Check for update...
+;
