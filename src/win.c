@@ -2000,7 +2000,17 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 
 							case 6: //check version
+								if(window_get_window(awin))
+									SetWindowPointer(window_get_window(awin),
+											WA_BusyPointer, TRUE,
+											TAG_DONE);
+
 								http_check_version(awin);
+
+								if(window_get_window(awin))
+									SetWindowPointer(window_get_window(awin),
+											WA_BusyPointer, FALSE,
+											TAG_DONE);
 							break;
 							
 							case 8: //quit
