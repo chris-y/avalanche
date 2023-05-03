@@ -123,6 +123,7 @@
 #define MSG_DIR 79
 #define MSG_PARENT 80
 #define MSG_PACKEDSIZE 81
+#define MSG_SNAPSHOT_WARNING 82
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -214,6 +215,7 @@
 #define MSG_DIR_STR "(dir)"
 #define MSG_PARENT_STR "(parent)"
 #define MSG_PACKEDSIZE_STR "Packed Size"
+#define MSG_SNAPSHOT_WARNING_STR "This will not be persistent until prefs are saved!"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -389,6 +391,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_PARENT_STR "\x00\x00"
     "\x00\x00\x00\x51\x00\x0C"
     MSG_PACKEDSIZE_STR "\x00"
+    "\x00\x00\x00\x52\x00\x34"
+    MSG_SNAPSHOT_WARNING_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

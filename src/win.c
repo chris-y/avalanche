@@ -2047,6 +2047,8 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_y);
 								GetAttr(WA_Width, aw->objects[OID_MAIN], (APTR)&config->win_w);
 								GetAttr(WA_Height, aw->objects[OID_MAIN], (APTR)&config->win_h);
+
+								warning_req(aw, locale_get_string(MSG_SNAPSHOT_WARNING));
 							break;
 								
 							case 3: //prefs

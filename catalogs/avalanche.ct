@@ -331,3 +331,7 @@ MSG_PACKEDSIZE
 Packed Size
 ; Packed Size
 ;
+MSG_SNAPSHOT_WARNING
+This will not be persistent until prefs are saved!
+; This will not be persistent until prefs are saved!
+;

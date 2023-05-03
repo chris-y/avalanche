@@ -147,6 +147,25 @@ ULONG ask_quithide_req(void)
 	return ret;
 }
 
+ULONG warning_req(void *awin, const char *message)
+{
+	int ret = 1;
+
+	Object *obj = RequesterObj,
+			REQ_TitleText, VERS,
+			REQ_Type, REQTYPE_INFO,
+			REQ_Image, REQIMAGE_WARNING,
+			REQ_BodyText,  message ,
+			REQ_GadgetText,  locale_get_string( MSG_OK ) ,
+		End;
+
+	if(obj) {
+		ret = OpenRequester(obj, window_get_window(awin));
+		DisposeObject(obj);
+	}
+	return ret;
+}
+
 ULONG ask_question(void *awin, const char *q, const char *f)
 {
 	char message[200];

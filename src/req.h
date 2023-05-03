@@ -27,4 +27,5 @@ void show_about(void *awin);
 int open_error_req(const char *message, const char *button, void *awin);
 void open_info_req(const char *message, const char *buttons, void *awin);
 void req_show_arc_info(void *awin);
+ULONG warning_req(void *awin, const char *message);
 #endif
