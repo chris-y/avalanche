@@ -2043,8 +2043,8 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				
 							case 2: //snapshot
 								/* fetch current win posn */
-								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_x);
-								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_y);
+								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_y);
+								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_x);
 								GetAttr(WA_Width, aw->objects[OID_MAIN], (APTR)&config->win_w);
 								GetAttr(WA_Height, aw->objects[OID_MAIN], (APTR)&config->win_h);
 
