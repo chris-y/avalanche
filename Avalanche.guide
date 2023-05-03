@@ -122,6 +122,7 @@ This is mostly for internal use, but has the following commands:
 * Visual improvements
 * Added ability to use AISS images (on OS4)
 * Fix the display of current settings in the prefs window
+* Fix snapshot position and add a warning
 * Fixed some Enforcer hits
 
 @{u}2.1 (29.03.2023)@{uu}
