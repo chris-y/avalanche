@@ -45,7 +45,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}CLOSE@{ub} Action to take when last window closed ASK|HIDE|QUIT (default = ASK)
 @{b}NOASLHOOK@{ub} Disables the ASL filter so it shows all files
 @{b}DRAGLOCK@{ub} Prevent adding files with drag'n'drop
-@{b}AISS@{ub} Use AISS images
+@{b}AISS@{ub} Use AISS images (intended for OS4, probably won't work correctly on OS3.2)
 @{b}CX_POPUP@{ub} Whether to open the window on startup
 @{b}CX_PRIORITY@{ub} Commodities priority
 @{b}CX_POPKEY@{ub} Hotkey to show the window if hidden (default = ctrl alt a)
@@ -118,6 +118,11 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}2.2 (xx.xx.xxxx)@{uu}
+* Visual improvements
+* Added ability to use AISS images (on OS4)
+* Fixed some Enforcer hits
+
 @{u}2.1 (29.03.2023)@{uu}
 * New browser mode, removed old hierarchical browser.
 * Select/Clear/Invert selection now act on the current directory and
