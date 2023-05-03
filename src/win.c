@@ -26,6 +26,7 @@
 #include <proto/wb.h>
 #include <clib/alib_protos.h>
 
+#include <intuition/icclass.h>
 #include <intuition/pointerclass.h>
 
 #include <libraries/asl.h>
@@ -113,6 +114,7 @@ struct avalanche_window {
 	struct Hook aslfilterhook;
 	struct Hook appwindzhook;
 	struct Hook lbsorthook;
+	struct Hook idcmphook;
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
 	char *archive;
@@ -201,6 +203,30 @@ static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") stru
 	found = module_recog(fullfilename);
 
 	return found;
+}
+
+#ifdef __amigaos4__
+static void idcmpupdatefunc(struct Hook *h, Object *object, struct IntuiMessage *msg)
+#else
+static void __saveds idcmpupdatefunc(__reg("a0") struct Hook *h, __reg("a2") Object *object, __reg("a1") struct IntuiMessage *msg)
+#endif
+{
+	ULONG gid;
+	void *awin = h->h_Data;
+
+	switch(msg->Class)
+	{
+		case IDCMP_IDCMPUPDATE:
+			gid = GetTagData( GA_ID, 0, msg->IAddress );
+
+			switch(gid) 
+			{
+				case GID_ARCHIVE:
+					window_req_open_archive(awin, get_config(), TRUE);
+				break;
+			}
+		break;
+	}
 }
 
 #ifdef __amigaos4__
@@ -1072,6 +1098,12 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	aw->aslfilterhook.h_SubEntry = NULL;
 	aw->aslfilterhook.h_Data = NULL;
 	
+	/* IDCMPUPDATE Hook */
+	aw->idcmphook.h_Entry = idcmpupdatefunc;
+	aw->idcmphook.h_SubEntry = NULL;
+	aw->idcmphook.h_Data = aw;
+
+
 	if(archive) {
 		aw->archive = strdup(archive);
 		aw->archive_needs_free = TRUE;
@@ -1093,7 +1125,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WA_Left, config->win_x,
 		WA_Width, config->win_w,
 		WA_Height, config->win_h,
-		WA_IDCMP, IDCMP_MENUPICK | IDCMP_RAWKEY | IDCMP_GADGETUP | IDCMP_NEWSIZE,
+		WA_IDCMP, IDCMP_MENUPICK | IDCMP_RAWKEY | IDCMP_GADGETUP | IDCMP_NEWSIZE | IDCMP_IDCMPUPDATE,
+		WINDOW_IDCMPHook, &aw->idcmphook,
+		WINDOW_IDCMPHookBits, IDCMP_IDCMPUPDATE,
 		WINDOW_NewMenu, aw->menu,
 		WINDOW_IconifyGadget, TRUE,
 		WINDOW_IconTitle, "Avalanche",
@@ -1108,9 +1142,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					LAYOUT_AddChild,  aw->gadgets[GID_ARCHIVE] = GetFileObj,
 						GA_ID, GID_ARCHIVE,
 						GA_RelVerify, TRUE,
+						ICA_TARGET, IDCMP_IDCMPUPDATE,
 						GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 						GETFILE_FullFile, aw->archive,
-						GETFILE_ReadOnly, TRUE,
+						GETFILE_ReadOnly, FALSE,
 						getfile_drawer, config->sourcedir,
 						GETFILE_FilterFunc, asl_hook,
 					End,
