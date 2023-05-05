@@ -129,6 +129,7 @@ struct avalanche_window {
 	void *archive_userdata;
 	BOOL flat_mode;
 	BOOL iconified;
+	BOOL refresh_archive;
 	struct module_functions mf;
 	char *current_dir;
 	struct Node *root_node;
@@ -212,7 +213,7 @@ static void __saveds idcmpupdatefunc(__reg("a0") struct Hook *h, __reg("a2") Obj
 #endif
 {
 	ULONG gid;
-	void *awin = h->h_Data;
+	struct avalanche_window *aw = (struct avalanche_window *)h->h_Data;
 
 	switch(msg->Class)
 	{
@@ -222,7 +223,7 @@ static void __saveds idcmpupdatefunc(__reg("a0") struct Hook *h, __reg("a2") Obj
 			switch(gid) 
 			{
 				case GID_ARCHIVE:
-					window_req_open_archive(awin, get_config(), TRUE);
+					aw->refresh_archive = TRUE;
 				break;
 			}
 		break;
@@ -1947,6 +1948,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 	long ret = 0;
 	ULONG done = WIN_DONE_OK;
+
+	if(aw->refresh_archive) {
+		window_req_open_archive(awin, get_config(), TRUE);
+		aw->refresh_archive = FALSE;
+	}
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
