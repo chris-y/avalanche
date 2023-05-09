@@ -71,7 +71,8 @@ If an Lha or Zip archive is loaded, basic editing is enabled, see @{"editing" li
 * Mixed file/disk archives are not supported.
 * Disk images containing multiple filesystems are not currently supported.
 * Encrypted archives are not fully supported.
-* xadmaster.library v12 has some bugs relating to certain LhA archives.  The fix is to use v13 - however nobody has compiled it for 68k to my knowledge.
+* xadmaster.library v12 has some bugs relating to certain LhA archives.
+  The fix is to use v13 - there is an experimental build for 68k at https://github.com/Hagbard-Celin/xadmaster_Amiga_68k
 
 @endnode
 
