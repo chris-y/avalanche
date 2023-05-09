@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 2.1
+Version: 2.2
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -19,11 +19,12 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* New browser mode, removed old hierarchical browser.
-* Select/Clear/Invert selection now act on the current directory and
-  all subdirectories when in the new browser mode.
-* Basic editing of (LhA, Zip) archives (Zip needs zip.library - OS4 only)
-* Create new (LhA, Zip) archives
+* Visual improvements
+* Added ability to use AISS images (on OS4)
+* Added option to check for updates
+* Fix the display of current settings in the prefs window
+* Fix snapshot position and add a warning
+* Fixed some Enforcer hits
 
 
 For full history see documentation inside the archive.

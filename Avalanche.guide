@@ -118,7 +118,7 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}2.2 (xx.xx.xxxx)@{uu}
+@{u}2.2 (09.05.2023)@{uu}
 * Visual improvements
 * Added ability to use AISS images (on OS4)
 * Added option to check for updates
