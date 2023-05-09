@@ -207,9 +207,9 @@ static ULONG __saveds aslfilterfunc(__reg("a0") struct Hook *h, __reg("a2") stru
 }
 
 #ifdef __amigaos4__
-static void idcmpupdatefunc(struct Hook *h, Object *object, struct IntuiMessage *msg)
+static uint32 idcmpupdatefunc(struct Hook *h, APTR window, struct IntuiMessage *msg)
 #else
-static void __saveds idcmpupdatefunc(__reg("a0") struct Hook *h, __reg("a2") Object *object, __reg("a1") struct IntuiMessage *msg)
+static ULONG __saveds idcmpupdatefunc(__reg("a0") struct Hook *h, __reg("a2") APTR window, __reg("a1") struct IntuiMessage *msg)
 #endif
 {
 	ULONG gid;
@@ -228,6 +228,8 @@ static void __saveds idcmpupdatefunc(__reg("a0") struct Hook *h, __reg("a2") Obj
 			}
 		break;
 	}
+
+	return 0;
 }
 
 #ifdef __amigaos4__
