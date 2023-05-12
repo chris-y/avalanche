@@ -603,7 +603,7 @@ static void gettooltypes(struct WBArg *wbarg)
 			config.tmpdirlen = strlen(config.tmpdir);
 		}
 
-		if(FindToolType(toolarray, "VIEWMODE")) {
+		if(s = (char *)FindToolType(toolarray, "VIEWMODE")) {
 			if(MatchToolValue(s, "LIST")) {
 				config.viewmode = 1;
 			}

@@ -1144,6 +1144,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					LAYOUT_AddChild,  aw->gadgets[GID_TREE] = ListBrowserObj,
 						GA_ID, GID_TREE,
 						GA_RelVerify, TRUE,
+						GA_Disabled, !aw->flat_mode,
 						LISTBROWSER_ColumnInfo, aw->dtci,
 						LISTBROWSER_Labels, &(aw->dir_tree),
 						LISTBROWSER_ColumnTitles, FALSE,
