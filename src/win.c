@@ -1902,9 +1902,7 @@ static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_confi
 		GA_Disabled, disable,
 	TAG_DONE);
 
-	if((disable == FALSE) && (aw->current_dir == NULL)) disable = TRUE;
-
-	window_req_open_archive(aw, config, TRUE);
+	if(aw->archiver != ARC_NONE) window_req_open_archive(aw, config, TRUE);
 }
 
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort)
