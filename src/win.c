@@ -793,6 +793,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 											LABEL_DisposeImage, TRUE,
 											LABEL_Image, get_glyph(AVALANCHE_GLYPH_ROOT),
 											LABEL_Underscore, NULL,
+											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->archive),
 										LabelEnd,
 									TAG_DONE);
@@ -813,6 +814,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 											LABEL_DisposeImage, TRUE,
 											LABEL_Image, get_glyph(GLYPH_POPDRAWER),
 											LABEL_Underscore, NULL,
+											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->dir_array[i]->name),
 										LabelEnd,
 									TAG_DONE);
