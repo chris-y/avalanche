@@ -70,7 +70,6 @@ enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
-	GID_TREELAYOUT,
 	GID_TREE,
 	GID_LIST,
 	GID_EXTRACT,
@@ -996,68 +995,6 @@ static const char *get_item_filename(void *awin, struct Node *node)
 	}
 }
 
-static void window_tree_add(struct avalanche_window *aw)
-{
-	struct TagItem attrs[2];
-
-	if(aw->gadgets[GID_TREE] != NULL) return;
-
-	attrs[0].ti_Tag = CHILD_WeightedWidth;
-	attrs[0].ti_Data = 20;
-	attrs[1].ti_Tag = TAG_DONE;
-	attrs[1].ti_Data = 0;
-
-	aw->gadgets[GID_TREE] = ListBrowserObj,
-					GA_ID, GID_TREE,
-					GA_RelVerify, TRUE,
-					GA_Disabled, !aw->flat_mode,
-					LISTBROWSER_ColumnInfo, aw->dtci,
-					LISTBROWSER_Labels, &(aw->dir_tree),
-					LISTBROWSER_ColumnTitles, FALSE,
-					LISTBROWSER_FastRender, TRUE,
-					LISTBROWSER_Hierarchical, TRUE,
-					LISTBROWSER_ShowSelected, TRUE,
-					LISTBROWSER_ShowImage, get_glyph(GLYPH_RIGHTARROW),
-					LISTBROWSER_HideImage, get_glyph(GLYPH_DOWNARROW),
-					LISTBROWSER_LeafImage, NULL,
-				ListBrowserEnd;
-
-#ifdef __amigaos4__
-	IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_ADDCHILD,
-			aw->windows[WID_MAIN], aw->gadgets[GID_TREE], NULL);
-#else
-	SetAttrs(aw->gadgets[GID_TREELAYOUT],
-		LAYOUT_AddChild, aw->gadgets[GID_TREE], TAG_MORE, &attrs);
-#endif
-
-	FlushLayoutDomainCache((struct Gadget *)aw->gadgets[GID_MAIN]);
-
-	RethinkLayout((struct Gadget *)aw->gadgets[GID_MAIN],
-			aw->windows[WID_MAIN], NULL, TRUE);
-}
-
-static void window_tree_remove(struct avalanche_window *aw)
-{
-	if(aw->gadgets[GID_TREE] == NULL) return;
-
-#ifdef __amigaos4__
-	IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_REMOVECHILD,
-			aw->windows[WID_MAIN], aw->gadgets[GID_TREE]);
-#else
-	SetAttrs(aw->gadgets[GID_TREELAYOUT],
-		LAYOUT_RemoveChild, aw->gadgets[GID_TREE], TAG_DONE);
-#endif
-
-	DisposeObject(aw->gadgets[GID_TREE]);
-
-	aw->gadgets[GID_TREE] = NULL;
-
-	FlushLayoutDomainCache((struct Gadget *)aw->gadgets[GID_MAIN]);
-
-	RethinkLayout((struct Gadget *)aw->gadgets[GID_MAIN],
-			aw->windows[WID_MAIN], NULL, TRUE);
-}
-
 
 /* Window functions */
 
@@ -1206,9 +1143,21 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			CHILD_WeightedHeight, 0,
 			LAYOUT_AddChild, LayoutVObj,
 				LAYOUT_AddChild, LayoutHObj,
-					LAYOUT_AddChild, g->shared->objects[GID_TREELAYOUT] = LayoutHObj,
-					EndGroup,
-					CHILD_WeightedWidth, 0,
+					LAYOUT_AddChild,  aw->gadgets[GID_TREE] = ListBrowserObj,
+						GA_ID, GID_TREE,
+						GA_RelVerify, TRUE,
+						GA_Disabled, !aw->flat_mode,
+						LISTBROWSER_ColumnInfo, aw->dtci,
+						LISTBROWSER_Labels, &(aw->dir_tree),
+						LISTBROWSER_ColumnTitles, FALSE,
+						LISTBROWSER_FastRender, TRUE,
+						LISTBROWSER_Hierarchical, TRUE,
+						LISTBROWSER_ShowSelected, TRUE,
+						LISTBROWSER_ShowImage, get_glyph(GLYPH_RIGHTARROW),
+						LISTBROWSER_HideImage, get_glyph(GLYPH_DOWNARROW),
+						LISTBROWSER_LeafImage, NULL,
+					ListBrowserEnd,
+					CHILD_WeightedWidth, 20,
 					LAYOUT_WeightBar, TRUE,
 					LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
@@ -1300,12 +1249,8 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 	} else {
 		if(aw->flat_mode) {
 			aw->menu[MENU_FLATMODE].nm_Flags |= CHECKED;
-			/* Add the tree if needed */
-			window_tree_add();
 		} else {
 			aw->menu[MENU_LISTMODE].nm_Flags |= CHECKED;
-			/* Remove the tree if needed */
-			window_tree_remove();
 		}
 
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
@@ -1958,13 +1903,6 @@ static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_confi
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 		GA_Disabled, disable,
 	TAG_DONE);
-
-	/* Add the tree if needed */
-	if(aw->flat_mode) {
-		window_tree_add();
-	} else {
-		window_tree_remove();
-	}
 
 	if(aw->archiver != ARC_NONE) window_req_open_archive(aw, config, TRUE);
 }
