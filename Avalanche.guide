@@ -119,7 +119,7 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}2.3 (xx.xx.xxxx)@{uu}
+@{u}2.3 (16.06.2023)@{uu}
 * Fix setting of list mode
 * Remove tree in list mode view
 

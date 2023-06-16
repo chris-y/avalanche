@@ -1,21 +1,21 @@
 VERSION = 2
-REVISION = 2
+REVISION = 3
 
 .macro DATE
-.ascii "9.5.2023"
+.ascii "16.6.2023"
 .endm
 
 .macro VERS
-.ascii "Avalanche 2.2"
+.ascii "Avalanche 2.3"
 .endm
 
 .macro VSTRING
-.ascii "Avalanche 2.2 (9.5.2023)"
+.ascii "Avalanche 2.3 (16.6.2023)"
 .byte 13,10,0
 .endm
 
 .macro VERSTAG
 .byte 0
-.ascii "$VER: Avalanche 2.2 (9.5.2023)"
+.ascii "$VER: Avalanche 2.3 (16.6.2023)"
 .byte 0
 .endm
