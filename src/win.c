@@ -70,6 +70,7 @@ enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
+	GID_BROWSERLAYOUT,
 	GID_TREELAYOUT,
 	GID_TREE,
 	GID_LIST,
@@ -1022,43 +1023,46 @@ static void window_tree_add(struct avalanche_window *aw)
 					LISTBROWSER_LeafImage, NULL,
 				ListBrowserEnd;
 
-#ifdef __amigaos4__
+	/* Add tree */
 	int ret = IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_ADDCHILD,
 			aw->windows[WID_MAIN], aw->gadgets[GID_TREE], NULL);
 
-	DebugPrintF("%d\n", ret);
-
-#else
-	SetAttrs(aw->gadgets[GID_TREELAYOUT],
-		LAYOUT_AddChild, aw->gadgets[GID_TREE], TAG_MORE, &attrs);
-#endif
+	/* Resize tree to 20, as 0 disables resize */
+	IDoMethod(aw->gadgets[GID_BROWSERLAYOUT], LM_MODIFYCHILD,
+			aw->windows[WID_MAIN], aw->gadgets[GID_TREELAYOUT], (struct TagItem *)&attrs);
 
 	if(aw->windows[WID_MAIN]) {
 		FlushLayoutDomainCache((struct Gadget *)aw->gadgets[GID_MAIN]);
-		RethinkLayout((struct Gadget *)aw->gadgets[GID_MAIN],
+		RethinkLayout((struct Gadget *)aw->gadgets[GID_BROWSERLAYOUT],
 			aw->windows[WID_MAIN], NULL, TRUE);
 	}
 }
 
 static void window_tree_remove(struct avalanche_window *aw)
 {
+	struct TagItem attrs[2];
+
 	if(aw->gadgets[GID_TREE] == NULL) return;
 
-#ifdef __amigaos4__
+	attrs[0].ti_Tag = CHILD_WeightedWidth;
+	attrs[0].ti_Data = 0;
+	attrs[1].ti_Tag = TAG_DONE;
+	attrs[1].ti_Data = 0;
+
+	/* Remove tree */
 	IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_REMOVECHILD,
 			aw->windows[WID_MAIN], aw->gadgets[GID_TREE]);
-#else
-	SetAttrs(aw->gadgets[GID_TREELAYOUT],
-		LAYOUT_RemoveChild, aw->gadgets[GID_TREE], TAG_DONE);
-#endif
+
+	/* Shrink tree to minimum size (remove empty area where it was) */
+	IDoMethod(aw->gadgets[GID_BROWSERLAYOUT], LM_MODIFYCHILD,
+			aw->windows[WID_MAIN], aw->gadgets[GID_TREELAYOUT], (struct TagItem *)&attrs);
 
 	if(aw->windows[WID_MAIN]) {
 		FlushLayoutDomainCache((struct Gadget *)aw->gadgets[GID_MAIN]);
-		RethinkLayout((struct Gadget *)aw->gadgets[GID_MAIN],
+		RethinkLayout((struct Gadget *)aw->gadgets[GID_BROWSERLAYOUT],
 			aw->windows[WID_MAIN], NULL, TRUE);
 	}
 
-	DisposeObject(aw->gadgets[GID_TREE]);
 	aw->gadgets[GID_TREE] = NULL;
 
 }
@@ -1210,10 +1214,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
 			LAYOUT_AddChild, LayoutVObj,
-				LAYOUT_AddChild, LayoutHObj,
+				LAYOUT_AddChild, aw->gadgets[GID_BROWSERLAYOUT] = LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
 					EndGroup,
-					CHILD_WeightedWidth, 20,
+					CHILD_WeightedWidth, 0,
 					LAYOUT_WeightBar, TRUE,
 					LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
@@ -1960,9 +1964,11 @@ static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_confi
 
 	BOOL disable = !aw->flat_mode;
 
+/*
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 		GA_Disabled, disable,
 	TAG_DONE);
+*/
 
 	/* Add the tree if needed */
 	if(aw->flat_mode) {
