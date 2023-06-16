@@ -1023,8 +1023,11 @@ static void window_tree_add(struct avalanche_window *aw)
 				ListBrowserEnd;
 
 #ifdef __amigaos4__
-	IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_ADDCHILD,
+	int ret = IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_ADDCHILD,
 			aw->windows[WID_MAIN], aw->gadgets[GID_TREE], NULL);
+
+	DebugPrintF("%d\n", ret);
+
 #else
 	SetAttrs(aw->gadgets[GID_TREELAYOUT],
 		LAYOUT_AddChild, aw->gadgets[GID_TREE], TAG_MORE, &attrs);
@@ -1049,15 +1052,15 @@ static void window_tree_remove(struct avalanche_window *aw)
 		LAYOUT_RemoveChild, aw->gadgets[GID_TREE], TAG_DONE);
 #endif
 
-	DisposeObject(aw->gadgets[GID_TREE]);
-
-	aw->gadgets[GID_TREE] = NULL;
-
 	if(aw->windows[WID_MAIN]) {
 		FlushLayoutDomainCache((struct Gadget *)aw->gadgets[GID_MAIN]);
 		RethinkLayout((struct Gadget *)aw->gadgets[GID_MAIN],
 			aw->windows[WID_MAIN], NULL, TRUE);
 	}
+
+	DisposeObject(aw->gadgets[GID_TREE]);
+	aw->gadgets[GID_TREE] = NULL;
+
 }
 
 
@@ -1210,7 +1213,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				LAYOUT_AddChild, LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
 					EndGroup,
-					CHILD_WeightedWidth, 0,
+					CHILD_WeightedWidth, 20,
 					LAYOUT_WeightBar, TRUE,
 					LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
