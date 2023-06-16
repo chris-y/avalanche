@@ -1023,13 +1023,24 @@ static void window_tree_add(struct avalanche_window *aw)
 					LISTBROWSER_LeafImage, NULL,
 				ListBrowserEnd;
 
+#ifdef __amigaos4__
 	/* Add tree */
 	int ret = IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_ADDCHILD,
 			aw->windows[WID_MAIN], aw->gadgets[GID_TREE], NULL);
-
+			
 	/* Resize tree to 20, as 0 disables resize */
 	IDoMethod(aw->gadgets[GID_BROWSERLAYOUT], LM_MODIFYCHILD,
 			aw->windows[WID_MAIN], aw->gadgets[GID_TREELAYOUT], (struct TagItem *)&attrs);
+#else
+	SetGadgetAttrs(aw->gadgets[GID_TREELAYOUT], aw->windows[WID_MAIN], NULL,
+		LAYOUT_AddChild, aw->gadgets[GID_TREE],
+		TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_BROWSERLAYOUT], aw->windows[WID_MAIN], NULL,
+		LAYOUT_ModifyChild, aw->gadgets[GID_TREELAYOUT],
+		TAG_MORE, (struct TagItem *)&attrs,
+		TAG_DONE);
+#endif
 
 	if(aw->windows[WID_MAIN]) {
 		FlushLayoutDomainCache((struct Gadget *)aw->gadgets[GID_MAIN]);
@@ -1049,6 +1060,7 @@ static void window_tree_remove(struct avalanche_window *aw)
 	attrs[1].ti_Tag = TAG_DONE;
 	attrs[1].ti_Data = 0;
 
+#ifdef __amigaos4__
 	/* Remove tree */
 	IDoMethod(aw->gadgets[GID_TREELAYOUT], LM_REMOVECHILD,
 			aw->windows[WID_MAIN], aw->gadgets[GID_TREE]);
@@ -1056,6 +1068,16 @@ static void window_tree_remove(struct avalanche_window *aw)
 	/* Shrink tree to minimum size (remove empty area where it was) */
 	IDoMethod(aw->gadgets[GID_BROWSERLAYOUT], LM_MODIFYCHILD,
 			aw->windows[WID_MAIN], aw->gadgets[GID_TREELAYOUT], (struct TagItem *)&attrs);
+#else
+	SetGadgetAttrs(aw->gadgets[GID_TREELAYOUT], aw->windows[WID_MAIN], NULL,
+		LAYOUT_RemoveChild, aw->gadgets[GID_TREE],
+		TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_BROWSERLAYOUT], aw->windows[WID_MAIN], NULL,
+		LAYOUT_ModifyChild, aw->gadgets[GID_TREELAYOUT],
+		TAG_MORE, (struct TagItem *)&attrs,
+		TAG_DONE);
+#endif
 
 	if(aw->windows[WID_MAIN]) {
 		FlushLayoutDomainCache((struct Gadget *)aw->gadgets[GID_MAIN]);
