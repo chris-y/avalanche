@@ -103,7 +103,9 @@ void show_error(long code, void *awin)
 		/* TODO: check this, code is the same for xfd */
 		snprintf(message, 100, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xadmaster.library", 12 );
 	} else {
-		snprintf(message, 100, "%s", module_get_error(awin, code));
+		char *err_msg =  module_get_error(awin, code);
+		if (err_msg == NULL) return;
+		snprintf(message, 100, "%s", err_msg);
 	}
 
 	open_error_req(message, locale_get_string(MSG_OK), awin);

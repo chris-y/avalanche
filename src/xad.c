@@ -98,7 +98,11 @@ void xad_exit(void)
 
 static const char *xad_error(long code)
 {
-	return xadGetErrorText((ULONG)code);
+	/* suppress user break messages */
+	if(code != XADERR_BREAK)
+		return xadGetErrorText((ULONG)code);
+
+	return NULL;
 }
 
 ULONG get_xad_ver(void)
