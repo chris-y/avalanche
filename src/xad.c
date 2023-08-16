@@ -64,6 +64,20 @@ static void xad_free_ai(struct xadArchiveInfo *a)
 	xadFreeObjectA(a, NULL);
 }
 
+static void xad_free_pw(void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu->pw) {
+
+
+printf("free pw\n");
+		FreeVec(xu->pw);
+		xu->pw = NULL;
+	}
+
+}
+
 static void xad_free(void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
@@ -72,10 +86,9 @@ static void xad_free(void *awin)
 			xad_free_ai(xu->ai);
 			xu->ai = NULL;
 		}
-		if(xu->pw) {
-			FreeVec(xu->pw);
-			xu->pw = NULL;
-		}
+
+		xad_free_pw(awin);
+
 	}
 
 	window_free_archive_userdata(awin);
@@ -462,6 +475,11 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 						break;
 				}
 
+				if(err != XADERR_OK) {
+					if(err == XADERR_PASSWORD) xad_free_pw(awin);
+					return err;
+				}
+
 				if(*pud == PUD_ABORT) {
 					if(xu->pw) FreeVec(xu->pw);
 					xu->pw = NULL;
@@ -479,11 +497,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 										XAD_MAKELOCALDATE, TRUE,
 										TAG_DONE);
 
-					if(err != XADERR_OK) {
-						if(xu->pw) FreeVec(xu->pw);
-						xu->pw = NULL;
-						return err;
-					}
+					if(err != XADERR_OK) return err;
 
 					SetProtection(destfile, xad_get_fileprotection(fi));
 					SetFileDate(destfile, &ds);
@@ -499,6 +513,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
 {
+	long err;
 	struct xadFileInfo *fi = NULL;
 	struct xadDiskInfo *di = NULL;
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
@@ -509,7 +524,6 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 	}
 	
 	return xad_extract_file_private(awin, dest, xu, di, fi, pud);
-
 }
 
 /* returns 0 on success */
