@@ -69,9 +69,6 @@ static void xad_free_pw(void *awin)
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
 	if(xu->pw) {
-
-
-printf("free pw\n");
 		FreeVec(xu->pw);
 		xu->pw = NULL;
 	}
@@ -208,7 +205,8 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 
 		case XADPMODE_ERROR:
 			if(xpi->xpi_Error != XADERR_SKIP)
-				show_error(xpi->xpi_Error, xhd->awin);
+				/* We did show error here, but we also show afterwards
+				 * show_error(xpi->xpi_Error, xhd->awin); */
 		break;
 
 		case XADPMODE_PROGRESS:
@@ -539,8 +537,7 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
 			err = xad_extract_file(awin, file, dest, fnode, getnode, &pud);
 			if(err != XADERR_OK) {
-				if(err == XADERR_BREAK) err = XADERR_OK; // user abort
-				 return err;
+				return err;
 			}
 		}
 	}
@@ -569,7 +566,6 @@ long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, 
 
 			err = xad_extract_file_private(awin, dest, xu, di, fi, &pud);
 			if(err != XADERR_OK) {
-				if(err == XADERR_BREAK) err = XADERR_OK; // user abort
 				return err;
 			}
 		}
