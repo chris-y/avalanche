@@ -67,11 +67,17 @@ static void xad_free_ai(struct xadArchiveInfo *a)
 static void xad_free(void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
-	if(xu && xu->ai) {
-		xad_free_ai(xu->ai);
-		xu->ai = NULL;
+	if(xu) {
+		if (xu->ai) {
+			xad_free_ai(xu->ai);
+			xu->ai = NULL;
+		}
+		if(xu->pw) {
+			FreeVec(xu->pw);
+			xu->pw = NULL;
+		}
 	}
-	
+
 	window_free_archive_userdata(awin);
 }
 
@@ -487,8 +493,6 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 		}
 	}
 
-	if(xu->pw) FreeVec(xu->pw);
-	xu->pw = NULL;
 	return err;
 }
 
