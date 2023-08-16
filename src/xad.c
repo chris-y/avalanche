@@ -69,6 +69,9 @@ static void xad_free_pw(void *awin)
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
 	if(xu->pw) {
+		for(int i = 0; i < strlen(xu->pw); i++)
+			xu->pw[i] = '\0';
+
 		FreeVec(xu->pw);
 		xu->pw = NULL;
 	}
