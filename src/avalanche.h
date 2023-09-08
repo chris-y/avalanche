@@ -29,6 +29,7 @@ enum {
 	ARC_NONE = 0,
 	ARC_XAD,
 	ARC_XFD,
+	ARC_DEARK
 };
 
 enum {

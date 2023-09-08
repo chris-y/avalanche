@@ -20,6 +20,7 @@
 #include "module.h"
 #include "win.h"
 
+#include "deark.h"
 #include "xad.h"
 #include "xfd.h"
 #include "xvs.h"
@@ -158,7 +159,7 @@ BOOL module_recog(void* fullfilename)
 	BOOL found = FALSE;
 	found = xad_recog(fullfilename);
 	if(found == FALSE) found = xfd_recog(fullfilename);
-	
+
 	return found;
 }
 

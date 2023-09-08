@@ -61,6 +61,8 @@
 #include "new.h"
 #include "req.h"
 #include "win.h"
+
+#include "deark.h"
 #include "xad.h"
 #include "xfd.h"
 
@@ -1695,6 +1697,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 //	dir_seen = FALSE;
 	long ret = 0;
 	long retxfd = 0;
+	long retark = 0;
 
 	if(refresh_only == FALSE) {
 		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
@@ -1732,9 +1735,13 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		aw->archiver = ARC_XFD;
 		retxfd = xfd_info(aw->archive, aw, addlbnode_cb);
 		if(retxfd != 0) {
-			/* Failed to open with any lib - show generic error rather than XAD's */
-			aw->archiver = ARC_NONE;
-			open_error_req(locale_get_string(MSG_UNABLETOOPENFILE), locale_get_string(MSG_OK), aw);
+			aw->archiver = ARC_DEARK;
+			retark = deark_info(aw->archive, config, aw, addlbnode_cb);
+			if(retark != 0) {
+				/* Failed to open with any lib - show generic error rather than XAD's */
+				aw->archiver = ARC_NONE;
+				open_error_req(locale_get_string(MSG_UNABLETOOPENFILE), locale_get_string(MSG_OK), aw);
+			}
 		}
 	}
 
