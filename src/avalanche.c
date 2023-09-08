@@ -705,6 +705,11 @@ int main(int argc, char **argv)
 			if(olddir !=-1) CurrentDir(olddir);
 		}
 	} else {
+		if(config.tmpdir) {
+			strcpy(config.tmpdir, "T:");
+			config.tmpdirlen = strlen(config.tmpdir);
+		}
+
 		args = ReadArgs(template, rarray, NULL);
 
 		if(args) {
