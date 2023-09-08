@@ -186,6 +186,9 @@ static void module_extract_register(void *awin, struct module_functions *mf)
 		case ARC_XFD:
 			xfd_register(mf);
 		break;
+		case ARC_DEARK:
+			deark_register(mf);
+		break;
 	}
 }
 

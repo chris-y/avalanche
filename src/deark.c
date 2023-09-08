@@ -31,17 +31,27 @@
 #define Seek ChangeFilePosition
 #endif
 
+enum {
+	DEARK_RECOG,
+	DEARK_LIST
+};
+
 struct deark_userdata {
 	char *tmpfile;
-	char arctype[20];
+	char **list;
+	ULONG total;
+	char *arctype;
 };
 
 static void deark_free(void *awin)
 {
+	printf("free\n");
 	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 
 	if(du) {
 		if(du->tmpfile) FreeVec(du->tmpfile);
+
+		/* TODO: free list */
 	}
 
 	window_free_archive_userdata(awin);
@@ -56,73 +66,37 @@ static const char *deark_error(long code)
 	return NULL;
 }
 
-static const char *deark_get_arc_format(void *awin)
+static ULONG deark_send_command(void *awin, char *file, int command, char ***list)
 {
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
-	if(!du) return NULL;
-
-	return du->arctype;
-}
-
-#if 0
-BOOL deark_recog(char *file)
-{
-	int err;
+	BPTR fh = 0;
+	int err = 1;
 	char cmd[1024];
+
 	struct avalanche_config *config = get_config();
-	char *tmpfile = AllocVec(config->tmpdirlen + 10, MEMF_CLEAR);
+	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
+	if(du == NULL) return 0;
 
-	if(tmpfile == NULL) return FALSE;
+	if(du->tmpfile == NULL) {
+		du->tmpfile = AllocVec(config->tmpdirlen + 25, MEMF_CLEAR);
+		if(du->tmpfile == NULL) return 0;
 
-	strncpy(tmpfile, config->tmpdir, config->tmpdirlen);
-	AddPart(tmpfile, "deark_tmp", config->tmpdirlen + 10);
-
-	snprintf(cmd, 1024, "deark -id \"%s\"", file);
-
-	err = SystemTags(cmd,
-				SYS_Input, NULL,
-				SYS_Output, tmpfile,
-				SYS_Error, NULL,
-				NP_Name, "Avalanche Deark process",
-				TAG_DONE);
-
-	if(err == 0) {
-		ULONG len;
-		char buf[7];
-		BPTR fh = 0;
-		if(fh = Open(tmpfile, MODE_OLDFILE)) {
-			len = Read(fh, buf, 7);
-			Close(fh);
-		}
-
-		// deletefile()
-
-		if(strncmp(buf, "Module", 7) == 0) return TRUE;
-
+		strcpy(du->tmpfile, config->tmpdir);
+		AddPart(du->tmpfile, "deark_tmp", config->tmpdirlen + 25);
 	}
 
-	return FALSE;
-}
-#endif
+	switch(command) {
+		case DEARK_LIST:
+			snprintf(cmd, 1024, "deark -l -q \"%s\"", file);
+		break;
 
-long deark_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
-{
-	ULONG total = 0;
-	int err = 1;
-	BPTR fh = 0;
-	char cmd[1024];
+		case DEARK_RECOG:
+			snprintf(cmd, 1024, "deark -id \"%s\"", file);
+		break;
 
-	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
-	if(du == NULL) return -2;
-
-	du->tmpfile = AllocVec(config->tmpdirlen + 10, MEMF_CLEAR);
-
-	if(du->tmpfile == NULL) return FALSE;
-
-	strncpy(du->tmpfile, config->tmpdir, config->tmpdirlen);
-	AddPart(du->tmpfile, "deark_tmp", config->tmpdirlen + 10);
-
-	snprintf(cmd, 1024, "deark -l -q \"%s\"", file);
+		default:
+			return 0;
+		break;
+	}
 
 	if(fh = Open(du->tmpfile, MODE_NEWFILE)) {
 		err = SystemTags(cmd,
@@ -140,35 +114,85 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 		char buf[200];
 		ULONG i = 0;
 		ULONG zero = 0;
+		ULONG total = 0;
 
 		if(fh = Open(du->tmpfile, MODE_OLDFILE)) {
 			res = &buf;
 			while(res != NULL) {
 				res = FGets(fh, buf, 200);
 				if(strncmp(buf, "Error: ", 7) == 0) {
-					return -1;
+					Close(fh);
+					return 0;
 				}
-				total++;
+				if(res) total++;
 			}
+
+			*list = AllocVec(total, MEMF_CLEAR);
 
 			Seek(fh, 0, OFFSET_BEGINNING);
 
 			res = &buf;
-			while(res != NULL) {
+			for(i = 0; i < total; i++) {
 				res = FGets(fh, buf, 200);
 
-				/* Add to list */
-				addnode(buf, &zero,
-						FALSE, i, total, NULL, config, awin);
-				i++;
+				buf[strlen(buf) - 1] = '\0';
+
+				*list[i] = AllocVec(strlen(buf), MEMF_CLEAR);
+				strcpy(*list[i], buf);
 
 			}
 
 			Close(fh);
+
+			return(total);
 		}
 
-		// deletefile()
+	}
 
+	return 0;
+}
+
+static const char *deark_get_arc_format(void *awin)
+{
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	if(!du) return NULL;
+
+	return(du->arctype);
+}
+
+long deark_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
+{
+	int err = 1;
+	BPTR fh = 0;
+	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
+	if(du == NULL) return -1;
+
+	char **list;
+	ULONG entries = deark_send_command(awin, file, DEARK_RECOG, &list);
+	if(entries > 0) {
+		if(strncmp(list[0], "Module:", 7) == 0) {
+			du->arctype = strdup(list[0]);
+		} else {
+			return -1;
+		}
+	}
+
+	du->total = deark_send_command(awin, file, DEARK_LIST, &du->list);
+
+	if(du->total) {
+		char *res;
+		char buf[200];
+		ULONG i = 0;
+		ULONG zero = 0;
+
+		/* Add to list */
+		for(i = 0; i < du->total; i++) {
+			addnode(du->list[i], &zero,
+				FALSE, i, du->total, NULL, config, awin);
+			i++;
+		}
+
+		return 0;
 	}
 
 	return err;
