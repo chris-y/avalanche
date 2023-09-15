@@ -98,7 +98,7 @@ const char *module_get_error(void *awin, long code)
 {
 	struct module_functions *mf = window_get_module_funcs(awin);
 
-	if(mf->get_error) return mf->get_error(code);
+	if(mf->get_error) return mf->get_error(awin, code);
 
 	return NULL;
 }
@@ -126,6 +126,13 @@ long module_extract(void *awin, void *node, void *archive, void *newdest)
 		case ARC_XFD:
 			ret = xfd_extract(awin, archive, newdest);
 		break;
+		case ARC_DEARK:
+			if(node == NULL) {
+				ret = deark_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode);
+			} else {
+				ret = deark_extract_file(awin, archive, newdest, node, window_get_lbnode);
+			}
+		break;
 	}
 
 	return ret;
@@ -138,6 +145,9 @@ long module_extract_array(void *awin, void **array, ULONG total_items, void *des
 	switch(window_get_archiver(awin)) {
 		case ARC_XAD:
 			ret = xad_extract_array(awin, total_items, dest, array, array_get_userdata);
+		break;
+		case ARC_DEARK:
+			ret = deark_extract_array(awin, total_items, dest, array, array_get_userdata);
 		break;
 	}
 	

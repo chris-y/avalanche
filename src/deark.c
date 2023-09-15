@@ -15,15 +15,17 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include <dos/dostags.h>
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "avalanche.h"
 #include "config.h"
 #include "libs.h"
-#include "locale.h"
+#include "misc.h"
 #include "module.h"
-#include "req.h"
 #include "win.h"
 #include "deark.h"
 
@@ -33,48 +35,63 @@
 
 enum {
 	DEARK_RECOG,
-	DEARK_LIST
+	DEARK_LIST,
+	DEARK_EXTRACT
 };
 
 struct deark_userdata {
+	char *file;
 	char *tmpfile;
 	char **list;
-	ULONG total;
+	long total;
 	char *arctype;
+	char *last_error;
 };
+
+static void free_list(char **list, long items)
+{
+	for(int i = 0; i < items; i++) {
+		if(list[i]) FreeVec(list[i]);
+	}	
+
+	if(list) FreeVec(list);
+}
 
 static void deark_free(void *awin)
 {
-	printf("free\n");
 	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 
 	if(du) {
 		if(du->tmpfile) FreeVec(du->tmpfile);
+		if(du->file) free(du->file);
+		if(du->arctype) free(du->arctype);
+		if(du->last_error) free(du->last_error);
 
-		/* TODO: free list */
+		if(du->list) free_list(du->list, du->total);
 	}
 
 	window_free_archive_userdata(awin);
 }
 
-void deark_exit(void)
+static const char *deark_error(void *awin, long code)
 {
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+
+	if(du == NULL) return NULL;
+
+	return(du->last_error);
 }
 
-static const char *deark_error(long code)
-{
-	return NULL;
-}
-
-static ULONG deark_send_command(void *awin, char *file, int command, char ***list)
+static long deark_send_command(void *awin, char *file, int command, char ***list, char *dest, long index)
 {
 	BPTR fh = 0;
 	int err = 1;
 	char cmd[1024];
 
 	struct avalanche_config *config = get_config();
-	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
-	if(du == NULL) return 0;
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+
+	if(du == NULL) return -1;
 
 	if(du->tmpfile == NULL) {
 		du->tmpfile = AllocVec(config->tmpdirlen + 25, MEMF_CLEAR);
@@ -93,8 +110,12 @@ static ULONG deark_send_command(void *awin, char *file, int command, char ***lis
 			snprintf(cmd, 1024, "deark -id \"%s\"", file);
 		break;
 
+		case DEARK_EXTRACT:
+			snprintf(cmd, 1024, "deark -get %d -od \"%s\" -q \"%s\"", index, dest, file);
+		break;
+
 		default:
-			return 0;
+			return -1;
 		break;
 	}
 
@@ -109,20 +130,21 @@ static ULONG deark_send_command(void *awin, char *file, int command, char ***lis
 		Close(fh);
 	}
 
-	if(err == 0) {
+//	if(err == 0) {
 		char *res;
 		char buf[200];
 		ULONG i = 0;
-		ULONG zero = 0;
 		ULONG total = 0;
 
 		if(fh = Open(du->tmpfile, MODE_OLDFILE)) {
-			res = &buf;
+			res = (char *)&buf;
 			while(res != NULL) {
 				res = FGets(fh, buf, 200);
 				if(strncmp(buf, "Error: ", 7) == 0) {
+					if(du->last_error) free(du->last_error);
+					du->last_error = strdup(buf);
 					Close(fh);
-					return 0;
+					return -1;
 				}
 				if(res) total++;
 			}
@@ -131,7 +153,7 @@ static ULONG deark_send_command(void *awin, char *file, int command, char ***lis
 
 			Seek(fh, 0, OFFSET_BEGINNING);
 
-			res = &buf;
+			res = (char *)&buf;
 			for(i = 0; i < total; i++) {
 				res = FGets(fh, buf, 200);
 
@@ -147,7 +169,7 @@ static ULONG deark_send_command(void *awin, char *file, int command, char ***lis
 			return(total);
 		}
 
-	}
+//	} else return err;
 
 	return 0;
 }
@@ -157,7 +179,20 @@ static const char *deark_get_arc_format(void *awin)
 	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 	if(!du) return NULL;
 
-	return(du->arctype);
+	return(du->arctype + 7);
+}
+
+static const char *deark_get_filename(void *userdata, void *awin)
+{
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	
+	if(du) {
+		long i = (long)userdata;
+		return du->list[i];
+	}
+	
+	return NULL;
+
 }
 
 long deark_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
@@ -167,28 +202,30 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
 	if(du == NULL) return -1;
 
-	char **list;
-	ULONG entries = deark_send_command(awin, file, DEARK_RECOG, &list);
+	du->file = strdup(file);
+
+	char **list = NULL;
+	long entries = deark_send_command(awin, file, DEARK_RECOG, &list, NULL, 0);
 	if(entries > 0) {
 		if(strncmp(list[0], "Module:", 7) == 0) {
 			du->arctype = strdup(list[0]);
+			free_list(list, entries);
 		} else {
 			return -1;
 		}
 	}
 
-	du->total = deark_send_command(awin, file, DEARK_LIST, &du->list);
+	du->total = deark_send_command(awin, file, DEARK_LIST, &du->list, NULL, 0);
 
-	if(du->total) {
+	if(du->total > 0) {
 		char *res;
 		char buf[200];
 		ULONG i = 0;
-		ULONG zero = 0;
 
 		/* Add to list */
 		for(i = 0; i < du->total; i++) {
 			addnode(du->list[i], &zero,
-				FALSE, i, du->total, NULL, config, awin);
+				FALSE, i, du->total, (void *)i, config, awin);
 			i++;
 		}
 
@@ -198,142 +235,42 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 	return err;
 }
 
-#if 0
-static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata *xu, struct xadDiskInfo *di, struct xadFileInfo *fi, ULONG *pud)
+static long deark_extract_file_private(void *awin, char *dest, struct deark_userdata *du, long idx)
 {
-	long err = 0;
-		
-	struct DateStamp ds;
-	char *fn = NULL;
-
-	struct xadArchiveInfo *ai = xu->ai;
-
-	struct xad_hookdata xhd;
-	xhd.pud = pud;
-	xhd.awin = awin;
-
-	struct Hook progress_hook;
-	progress_hook.h_Entry = xad_progress;
-	progress_hook.h_SubEntry = NULL;
-	progress_hook.h_Data = &xhd;
-
-
-	if(fi || di) {
-		char destfile[1024];
-		strncpy(destfile, dest, 1023);
-		destfile[1023] = 0;
-
-		if(fi) {
-			fn = fi->xfi_FileName;
-		} else {
-			fn = "disk.img";
-		}
-
-		if(AddPart(destfile, fn, 1024)) {
-			if((di) || (!xad_is_dir(fi))) {
-				if(((fi && (fi->xfi_Flags & XADFIF_CRYPTED)) || (di && (di->xdi_Flags & XADDIF_CRYPTED))) && (xu->pw == NULL)) {
-					xu->pw = AllocVec(100, MEMF_CLEAR);
-					err = ask_password(awin, xu->pw, 100);
-					if(err == 0) {
-						FreeVec(xu->pw);
-						xu->pw = NULL;
-					}
-				}
-
-				switch(xu->arctype) {
-					case XFILE:
-						err = xadFileUnArc(ai,
-									XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
-									XAD_MAKEDIRECTORY, TRUE,
-									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, xu->pw,
-									XAD_PROGRESSHOOK, &progress_hook,
-									TAG_DONE);
-						break;
-
-					case XDISK:
-						err = xadDiskUnArc(ai, XAD_ENTRYNUMBER, di->xdi_EntryNumber,
-									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, xu->pw,
-									XAD_PROGRESSHOOK, &progress_hook,
-									TAG_DONE);
-						break;
-
-					case XDISKFILE:
-						err = xadDiskFileUnArc(ai,
-									XAD_ENTRYNUMBER, fi->xfi_EntryNumber,
-									XAD_MAKEDIRECTORY, TRUE,
-									XAD_OUTFILENAME, destfile,
-									XAD_PASSWORD, xu->pw,
-									XAD_PROGRESSHOOK, &progress_hook,
-									TAG_DONE);
-						break;
-				}
-
-				if(err != XADERR_OK) {
-					if(err == XADERR_PASSWORD) xad_free_pw(awin);
-					return err;
-				}
-
-				if(*pud == PUD_ABORT) {
-					if(xu->pw) FreeVec(xu->pw);
-					xu->pw = NULL;
-					return XADERR_BREAK;
-				}
-
-				if(err == XADERR_OK) {
-					if(fi) module_vscan(awin, destfile, NULL, fi->xfi_Size, TRUE);
-					if(di) module_vscan(awin, destfile, NULL, di->xdi_SectorSize * di->xdi_TotalSectors, TRUE);
-				}
-
-				if(fi) {
-					err = xadConvertDates(XAD_DATEXADDATE, &fi->xfi_Date,
-										XAD_GETDATEDATESTAMP, &ds,
-										XAD_MAKELOCALDATE, TRUE,
-										TAG_DONE);
-
-					if(err != XADERR_OK) return err;
-
-					SetProtection(destfile, xad_get_fileprotection(fi));
-					SetFileDate(destfile, &ds);
-					if(fi && fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
-				}
-			}
-		}
+	char **list = NULL;
+	long err = 1;
+	long entries = 0;
+	if(idx < 0) return err;
+	entries = deark_send_command(awin, du->file, DEARK_EXTRACT, &list, dest, idx);
+	if(entries >= 0) {
+		if(list) free_list(list, entries);
+		return 0;
 	}
-
 	return err;
 }
 
 
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
+long deark_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node))
 {
 	long err;
-	struct xadFileInfo *fi = NULL;
-	struct xadDiskInfo *di = NULL;
-	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
-	if(xu->arctype == XDISK) {
-		di = (struct xadDiskInfo *)getnode(awin, node);
-	} else {
-		fi = (struct xadFileInfo *)getnode(awin, node);
-	}
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	long idx = (long)getnode(awin, node);
 	
-	return xad_extract_file_private(awin, dest, xu, di, fi, pud);
+	return deark_extract_file_private(awin, dest, du, idx);
 }
 
 /* returns 0 on success */
-long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
+long deark_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
 {
-	long err = XADERR_OK;
+	long err = 0;
 	struct Node *fnode;
-	ULONG pud = 0;
 
-	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	struct desrk_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 
-	if(xu->ai) {
+	if(du) {
 		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
-			err = xad_extract_file(awin, file, dest, fnode, getnode, &pud);
-			if(err != XADERR_OK) {
+			err = deark_extract_file(awin, file, dest, fnode, getnode);
+			if(err != 0) {
 				return err;
 			}
 		}
@@ -342,27 +279,17 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 	return err;
 }
 
-long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
+long deark_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
 {
-	long err = XADERR_OK;
-	ULONG pud = 0;
-	struct xadFileInfo *fi = NULL;
-	struct xadDiskInfo *di = NULL;
+	long err = 0;
 
-	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 
-	if(xu->ai) {
+	if(du) {
 		for(int i = 0; i < total_items; i++) {
-			if(xu->arctype == XDISK) {
-				di = (struct xadDiskInfo *)getuserdata(awin, array[i]);
-			} else {
-				fi = (struct xadFileInfo *)getuserdata(awin, array[i]);
-			}
-	
-			if((di == NULL) && (fi == NULL)) continue;
-
-			err = xad_extract_file_private(awin, dest, xu, di, fi, &pud);
-			if(err != XADERR_OK) {
+			long idx = (long)getuserdata(awin, array[i]);
+			err = deark_extract_file_private(awin, dest, du, idx);
+			if(err != 0) {
 				return err;
 			}
 		}
@@ -370,8 +297,6 @@ long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, 
 
 	return err;
 }
-
-#endif
 
 void deark_register(struct module_functions *funcs)
 {
@@ -380,7 +305,7 @@ void deark_register(struct module_functions *funcs)
 	funcs->module[2] = 'K';
 	funcs->module[3] = 0;
 
-	funcs->get_filename = NULL; //deark_get_filename;
+	funcs->get_filename = deark_get_filename;
 	funcs->free = deark_free;
 	funcs->get_format = deark_get_arc_format;
 	funcs->get_subformat = NULL;

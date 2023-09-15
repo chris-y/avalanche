@@ -25,6 +25,8 @@ struct avalanche_config;
 #define MEMF_PRIVATE 0L
 #endif
 
+extern const ULONG zero;
+
 enum {
 	ARC_NONE = 0,
 	ARC_XAD,

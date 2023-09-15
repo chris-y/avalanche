@@ -75,7 +75,7 @@ static const char *xfd_get_arc_format(void *awin)
 	return xu->bi->xfdbi_PackerName;
 }
 
-static const char *xfd_error(long code)
+static const char *xfd_error(void *awin, long code)
 {
 	if(code < 0) {
 		switch(code) {

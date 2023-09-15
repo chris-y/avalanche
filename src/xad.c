@@ -99,7 +99,7 @@ void xad_exit(void)
 	libs_xad_exit();
 }
 
-static const char *xad_error(long code)
+static const char *xad_error(void *awin, long code)
 {
 	/* suppress user break messages */
 	if(code != XADERR_BREAK)

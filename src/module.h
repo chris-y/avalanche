@@ -29,7 +29,7 @@ struct module_functions {
 	const LONG *(*get_crunchsize)(void *userdata, void *awin);
 	const char *(*get_format)(void *awin);
 	const char *(*get_subformat)(void *awin);
-	const char *(*get_error)(long code);
+	const char *(*get_error)(void *awin, long code);
 	void (*free)(void *awin);
 
 	/* Editing */

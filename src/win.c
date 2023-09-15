@@ -138,7 +138,6 @@ struct avalanche_window {
 };
 
 static struct List winlist;
-static ULONG zero = 0;
 
 #ifndef __amigaos4__
 #define fr_NumArgs rf_NumArgs
@@ -516,7 +515,7 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 		window_reset_count(awin);
 		window_disable_gadgets(awin, TRUE);
 
-		if((node == NULL) && (aw->flat_mode) && (aw->archiver == ARC_XAD)) {
+		if((node == NULL) && (aw->flat_mode) && (aw->archiver != ARC_XFD)) {
 			ret = module_extract_array(awin, aw->arc_array, aw->total_items, newdest);
 		} else {
 			ret = module_extract(awin, node, archive, newdest);
@@ -550,12 +549,12 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	char datestr[20];
 	struct ClockData cd;
 
-	if(aw->archiver == ARC_XAD) {
+	if(aw->archiver != ARC_XFD) {
 		if(userdata && aw->flat_mode) {
 			struct arc_entries *ud = (struct arc_entries *)userdata;
-			xad_get_filedate(ud->userdata, &cd, aw);
+			if(aw->archiver == ARC_XAD) xad_get_filedate(ud->userdata, &cd, aw);
 		} else {
-			xad_get_filedate(userdata, &cd, aw);
+			if(aw->archiver == ARC_XAD) xad_get_filedate(userdata, &cd, aw);
 		}
 	}
 
@@ -845,7 +844,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		skip_dir_len = strlen(aw->current_dir);
 	}
 
-	if(aw->archiver == ARC_XAD) {
+	if(aw->archiver != ARC_XFD) {
 		/* Add fake dir entries (first, so by default they're at the top) */
 		
 		if(level > 0) {

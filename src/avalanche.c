@@ -46,6 +46,7 @@
 #include "Avalanche_rev.h"
 
 const char *version = VERSTAG;
+const ULONG zero = 0;
 
 #define IEVENT_POPUP 1L
 
