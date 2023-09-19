@@ -626,6 +626,22 @@ static void gettooltypes(struct WBArg *wbarg)
 			}
 		}
 
+		if(s = (char *)FindToolType(toolarray, "MODULES")) {
+			config.activemodules = 0;
+
+			if(MatchToolValue(s, "XAD")) {
+				config.activemodules |= ARC_XAD;
+			}
+
+			if(MatchToolValue(s, "XFD")) {
+				config.activemodules |= ARC_XFD;
+			}
+
+			if(MatchToolValue(s, "DEARK")) {
+				config.activemodules |= ARC_DEARK;
+			}
+		}
+
 		if(s = (char *)FindToolType(toolarray,"PROGRESSSIZE")) config.progress_size = atoi(s);
 
 		if(s = (char *)FindToolType(toolarray,"WINX")) config.win_x = atoi(s);
@@ -670,6 +686,8 @@ int main(int argc, char **argv)
 	config.closeaction = 0; // Ask
 	config.drag_lock = FALSE;
 	config.aiss = FALSE;
+
+	config.activemodules = ARC_XAD | ARC_XFD; /* ARC_DEARK disabled by default */
 
 	config.win_x = 0;
 	config.win_y = 0;

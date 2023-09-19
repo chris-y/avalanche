@@ -46,6 +46,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}NOASLHOOK@{ub} Disables the ASL filter so it shows all files
 @{b}DRAGLOCK@{ub} Prevent adding files with drag'n'drop
 @{b}AISS@{ub} Use AISS images (intended for OS4, probably won't work correctly on OS3.2)
+@{b}MODULES@{ub} Select which modules to enable (XAD|XFD|DEARK) (default = XAD|XFD)
 @{b}CX_POPUP@{ub} Whether to open the window on startup
 @{b}CX_PRIORITY@{ub} Commodities priority
 @{b}CX_POPKEY@{ub} Hotkey to show the window if hidden (default = ctrl alt a)
@@ -119,6 +120,10 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}2.4 (xx.xx.xxxx)@{uu}
+* Support Deark (needs enabling by tooltype - see below)
+* Add option to select modules (MODULES @{"tooltypes" link config})
+
 @{u}2.3 (16.06.2023)@{uu}
 * Fix setting of list mode
 * Remove tree in list mode view

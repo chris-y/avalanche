@@ -27,12 +27,10 @@ struct avalanche_config;
 
 extern const ULONG zero;
 
-enum {
-	ARC_NONE = 0,
-	ARC_XAD,
-	ARC_XFD,
-	ARC_DEARK
-};
+#define ARC_NONE  0
+#define ARC_XAD   1
+#define ARC_XFD   2
+#define ARC_DEARK 4
 
 enum {
 	WIN_DONE_OK = 0,

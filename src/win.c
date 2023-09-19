@@ -1729,13 +1729,28 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	FreeListBrowserList(&aw->lblist);
 
 	aw->archiver = ARC_XAD; /* Set in advance for flat browser tree use */
-	ret = xad_info(aw->archive, config, aw, addlbnode_cb);
+	if(config->activemodules & ARC_XAD) {
+		ret = xad_info(aw->archive, config, aw, addlbnode_cb);
+	} else {
+		ret = 1;
+	}
 	if(ret != 0) { /* if xad failed try xfd */
 		aw->archiver = ARC_XFD;
-		retxfd = xfd_info(aw->archive, aw, addlbnode_cb);
+
+		if(config->activemodules & ARC_XFD) {
+			retxfd = xfd_info(aw->archive, aw, addlbnode_cb);
+		} else {
+			retxfd = 1;
+		}
+
 		if(retxfd != 0) {
 			aw->archiver = ARC_DEARK;
-			retark = deark_info(aw->archive, config, aw, addlbnode_cb);
+			if(config->activemodules & ARC_DEARK) {
+				retark = deark_info(aw->archive, config, aw, addlbnode_cb);
+			} else {
+				retark = 1;
+			}
+
 			if(retark != 0) {
 				/* Failed to open with any lib - show generic error rather than XAD's */
 				aw->archiver = ARC_NONE;

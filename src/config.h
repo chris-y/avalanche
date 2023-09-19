@@ -32,6 +32,7 @@ struct avalanche_config {
 	BOOL drag_lock;
 	BOOL aiss;
 	ULONG closeaction; /* [1 = quit, 2 = hide, 0 = cancel] -- same as quit req */
+	ULONG activemodules;
 
 	ULONG win_x;
 	ULONG win_y;
