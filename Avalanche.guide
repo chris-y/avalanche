@@ -123,6 +123,8 @@ This is mostly for internal use, but has the following commands:
 @{u}2.4 (xx.xx.xxxx)@{uu}
 * Support Deark (needs enabling by tooltype - see below)
 * Add option to select modules (MODULES @{"tooltypes" link config})
+* Fix password caching
+* Also use T: as temp by default from CLI
 
 @{u}2.3 (16.06.2023)@{uu}
 * Fix setting of list mode
