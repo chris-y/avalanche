@@ -122,6 +122,8 @@ This is mostly for internal use, but has the following commands:
 @rem keep this to <80 chars for readme
 @{u}2.4 (xx.xx.xxxx)@{uu}
 * Support Deark (needs enabling by tooltype - see below)
+  This is a "beta" feature, it may be unstable and due to a bug in
+  Deark, it is not possible to extract to the root of any device.
 * Add option to select modules (MODULES @{"tooltypes" link config})
 * Fix password caching
 * Also use T: as temp by default from CLI
