@@ -98,7 +98,7 @@ static void config_save(struct avalanche_config *config)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[20];
+	UBYTE *newtooltypes[21];
 	char tt_dest[100];
 	char tt_srcdir[100];
 	char tt_tmp[100];
@@ -109,6 +109,7 @@ static void config_save(struct avalanche_config *config)
 	char tt_progresssize[20];
 	char tt_cxpri[20];
 	char tt_cxpopkey[50];
+	char tt_modules[40];
 
 	if(dobj = GetIconTagList(config->progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
@@ -241,7 +242,29 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[18] = "(AISS)";
 		}
 
-		newtooltypes[19] = NULL;
+		if(config->activemodules == (ARC_XAD | ARC_XFD)) {
+			snprintf(tt_modules, 40, "(MODULES=XAD|XFD|DEARK)");
+		} else {
+			snprintf(tt_modules, 40, "MODULES=");
+			if(config->activemodules & ARC_XAD) {
+				strncat(tt_modules, "XAD", 40);
+				if((config->activemodules & ARC_XFD) || (config->activemodules & ARC_DEARK)) {
+					strncat(tt_modules, "|", 40);
+				}
+			}
+			if(config->activemodules & ARC_XFD) {
+				strncat(tt_modules, "XFD", 40);
+				if((config->activemodules & ARC_DEARK)) {
+					strncat(tt_modules, "|", 40);
+				}
+			}
+			if(config->activemodules & ARC_DEARK) {
+				strncat(tt_modules, "DEARK", 40);
+			}
+		}
+		newtooltypes[19] = tt_modules;
+
+		newtooltypes[20] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(config->progname, dobj, NULL);
