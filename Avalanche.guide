@@ -105,6 +105,19 @@ Infected files will be deleted without warning.
 Files will not be further extracted in order to be scanned, so infected files that are individually compressed inside the archive will not be picked up.  It is recommended to run a scan with a full featured virus checker over any archives of concern.  
 @endnode
 
+@node deark "Deark"
+Deark is a program which can extract all sorts of data from files, and convert obscure file formats to more modern ones.
+
+Download from Aminet, source is at https://github.com/jsummers/deark
+
+To use in Avalanche it needs to be present in the path, and enabled in the MODULES @{"tooltype" link config}.
+
+There is a bug which prevents extraction to root directories on the Amiga, so currently extraction needs to be to a subdirectory.
+
+The 68k version appears to be very unstable.
+
+@endnode
+
 @node arexx "ARexx port"
 Avalanche has an ARexx port called "AVALANCHE".
 This is mostly for internal use, but has the following commands:
@@ -120,11 +133,11 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}2.4 (xx.xx.xxxx)@{uu}
-* Support Deark (needs enabling by tooltype - see below)
+@{u}2.4 (22.09.2023)@{uu}
+* Support @{"Deark" link deark} (needs enabling by tooltype - see below)
   This is a "beta" feature, it may be unstable and due to a bug in
   Deark, it is not possible to extract to the root of any device.
-* Add option to select modules (MODULES @{"tooltypes" link config})
+* Add option to select modules (MODULES @{"tooltype" link config})
 * Fix password caching
 * Also use T: as temp by default from CLI
 

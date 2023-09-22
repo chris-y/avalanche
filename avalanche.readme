@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 2.3
+Version: 2.4
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -19,8 +19,14 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Fix setting of list mode
-* Remove tree in list mode view
+* Support Deark (needs enabling by tooltype)
+  This is a "beta" feature, it may be unstable and due to a bug in
+  Deark, it is not possible to extract to the root of any device.
+* Add option to select modules (MODULES tooltype)
+* Fix password caching
+* Also use T: as temp by default from CLI
+
+-- To enable Deark, add MODULES=XAD|XFD|DEARK to tooltypes.
 
 
 For full history see documentation inside the archive.
