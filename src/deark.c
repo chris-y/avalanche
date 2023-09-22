@@ -144,6 +144,7 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 					if(du->last_error) free(du->last_error);
 					du->last_error = strdup(buf);
 					Close(fh);
+					if(!config->debug) DeleteFile(du->tmpfile);
 					return -1;
 				}
 				if(res) total++;
@@ -165,7 +166,7 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 			}
 
 			Close(fh);
-
+			if(!config->debug) DeleteFile(du->tmpfile);
 			return(total);
 		}
 
