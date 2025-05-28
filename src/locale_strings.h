@@ -146,7 +146,7 @@
 #define MSG_PREFERENCES_STR "Preferences..."
 #define MSG_PROJECT_STR "Project"
 #define MSG_OPEN_STR "Open..."
-#define MSG_ARCHIVEINFO_STR "Archive Info..."
+#define MSG_ARCHIVEINFO_STR "Archive info..."
 #define MSG_ABOUT_STR "About..."
 #define MSG_QUIT_STR "Quit..."
 #define MSG_EDIT_STR "Edit"
