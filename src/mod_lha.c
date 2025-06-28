@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,32 +76,51 @@ static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 	return TRUE;
 }
 
-static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir)
+/* Add files to LhA archive
+ * dir - directory user is currently in within the archive
+ * root - root of directory where the files are being added from
+ */
+static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir, const char *root)
 {
 	int err;
 	char cmd[1024];
-	snprintf(cmd, 1024, "lha -I a \"%s\" \"%s\"", archive, file);
+
+	if(root == NULL) {
+		// single file
+		snprintf(cmd, 1024, "lha -I a \"%s\" \"%s\"", archive, file);
+
+	} else {
+		/* Ensure HOMEDIR ends with a colon or a slash */
+		if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
+			snprintf(cmd, 1024, "lha -I -x a \"%s\" \"%s/\" \"%s\"", archive, root, file+strlen(root)+1);
+		} else {
+			snprintf(cmd, 1024, "lha -I -x a \"%s\" \"%s\" \"%s\"", archive, root, file+strlen(root));
+		}
+	}
+
+	//printf("%s\n", cmd);
 
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, NULL,
 				SYS_Error, NULL,
+				//NP_CurrentDir, /* if homedir doesn't work */
 				NP_Name, "Avalanche LhA Add process",
 				TAG_DONE);
-	
+
 	if(err != 0) {
 		int user_choice = mod_lha_error(awin, err, file);
-		
+
 		switch(user_choice) {
 			case 0: // abort
 				return FALSE;
 			break;
-			
+
 			case 1: // skip
 			break;
 			
 			case 2: // retry
-				return mod_lha_add(awin, archive, file, dir);
+				return mod_lha_add(awin, archive, file, dir, root);
 			break;
 		}
 	}
@@ -125,7 +144,7 @@ BOOL mod_lha_new(void *awin, char *archive)
 			FPuts(fh, new_arc_text);
 			Close(fh);
 
-			ret = mod_lha_add(awin, archive, tmpfile, NULL);
+			ret = mod_lha_add(awin, archive, tmpfile, NULL, NULL);
 
 			DeleteFile(tmpfile);
 		}

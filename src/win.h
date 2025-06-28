@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ struct module_functions *window_get_module_funcs(void *awin);
 
 /* Modify archive */
 //BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
-BOOL window_edit_add(void *awin, char *file);
+BOOL window_edit_add(void *awin, char *file, char *root);
 
 /* Misc */
 void window_disable_gadgets(void *awin, BOOL disable);

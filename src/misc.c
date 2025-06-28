@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ char *strdup(const char *s)
 }
 
 #ifdef __amigaos4__
-int32 recursive_scan(void *awin, CONST_STRPTR name)
+int32 recursive_scan(void *awin, CONST_STRPTR name, const char *root)
 {
 	int32 success = FALSE;
 	APTR  context = ObtainDirContextTags( EX_StringNameInput,name,
@@ -87,13 +87,13 @@ int32 recursive_scan(void *awin, CONST_STRPTR name)
 				if(file = AllocVec(1024, MEMF_CLEAR)) {
 					NameFromLock(GetCurrentDir(), file, 1024);
 					AddPart(file, dat->Name, 1024);
-					window_edit_add(awin, file);
+					window_edit_add(awin, file, root);
 					FreeVec(file);
 				}
 			}
 			else if( EXD_IS_DIRECTORY(dat) )
 			{
-				if( ! recursive_scan(awin, dat->Name ) )  /* recurse */
+				if( ! recursive_scan(awin, dat->Name, root ) )  /* recurse */
 				{
 					break;
 				}
@@ -149,7 +149,7 @@ BOOL object_is_dir(BPTR lock)
 	return ret;
 }
 
-void recursive_scan(void *awin, BPTR lock)
+void recursive_scan(void *awin, BPTR lock, const char *root)
 {
 	struct ExAllControl *eac = AllocDosObject(DOS_EXALLCONTROL, NULL);
 	if (!eac) return;
@@ -179,11 +179,11 @@ void recursive_scan(void *awin, BPTR lock)
 				if(ead->ed_Type > 0) { /* dir? */
 					BPTR lock = Lock(file, ACCESS_READ);
 					if(lock) {
-						recursive_scan(awin, lock);
+						recursive_scan(awin, lock, root);
 						UnLock(lock);
 					}
 				} else {
-					window_edit_add(awin, file);
+					window_edit_add(awin, file, root);
 				}
 				FreeVec(file);
 			}

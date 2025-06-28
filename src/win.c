@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1851,13 +1851,13 @@ ULONG window_handle_input(void *awin, UWORD *code)
 	return RA_HandleInput(window_get_object(awin), code);
 }
 
-BOOL window_edit_add(void *awin, char *file)
+BOOL window_edit_add(void *awin, char *file, char *root)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	if(module_vscan(awin, file, NULL, 0, FALSE) == 0) {
 		module_free(aw);
-		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file, aw->current_dir);
+		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file, aw->current_dir, root);
 	}
 	return FALSE;
 }
@@ -1874,17 +1874,17 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 				AddPart(file, wbarg->wa_Name, 1024);
 #ifdef __amigaos4__
 				if(object_is_dir(file)) {
-					recursive_scan(awin, file);
+					recursive_scan(awin, file, file);
 				} else {
-					ret = window_edit_add(awin, file);
+					ret = window_edit_add(awin, file, NULL);
 				}
-#else			
+#else
 				BPTR lock = Lock(file, ACCESS_READ);
 				if(lock) {
 					if(object_is_dir(lock)) {
-						recursive_scan(awin, lock);
+						recursive_scan(awin, lock, file);
 					} else {
-						ret = window_edit_add(awin, file);
+						ret = window_edit_add(awin, file, NULL);
 					}
 					UnLock(lock);
 				}
@@ -1920,7 +1920,26 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 				file = AllocVec(len, MEMF_PRIVATE);
 				strcpy(file, aslreq->fr_Drawer);
 				AddPart(file, aslreq->fr_File, len);
-				ok = window_edit_add(aw, file); /* TRUE = cont, FALSE = abort */
+
+#ifdef __amigaos4__
+				if(object_is_dir(file)) {
+					recursive_scan(awin, file, aslreq->fr_Drawer);
+				} else {
+					ok = window_edit_add(awin, file, NULL);
+				}
+#else
+				BPTR lock = Lock(file, ACCESS_READ);
+				if(lock) {
+					if(object_is_dir(lock)) {
+						recursive_scan(awin, lock, aslreq->fr_Drawer);
+					} else {
+						ok = window_edit_add(awin, file, NULL);
+					}
+					UnLock(lock);
+				}
+#endif
+
+				ok = window_edit_add(aw, file, NULL); /* TRUE = cont, FALSE = abort */
 			}
 		}
 		FreeAslRequest(aslreq);

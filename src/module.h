@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ struct module_functions {
 	void (*free)(void *awin);
 
 	/* Editing */
-	BOOL (*add)(void *awin, char *archive, char *file, char *dir); /* Returns TRUE on success */
+	BOOL (*add)(void *awin, char *archive, char *file, char *dir, const char *root); /* Returns TRUE on success */
 	BOOL (*del)(void *awin, char *archive, char **files, ULONG count); /* Returns TRUE on success */
 };
 

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,10 +31,10 @@ struct Node *GetSucc(struct Node *node);
 #ifdef __amigaos4__
 #define CurrentDir SetCurrentDir
 
-int32 recursive_scan(void *awin, CONST_STRPTR name);
+int32 recursive_scan(void *awin, CONST_STRPTR name, const char *root);
 BOOL object_is_dir(char *filename);
 #else
-void recursive_scan(void *awin, BPTR lock);
+void recursive_scan(void *awin, BPTR lock, const char *root);
 BOOL object_is_dir(BPTR lock);
 #endif
 

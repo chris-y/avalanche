@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ static BOOL mod_zip_del(void *awin, char *archive, char **files, ULONG count)
 	return FALSE;
 }
 
-static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL new)
+static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL new, const char *root)
 {
 	int err = 0;
 	char *fullfile = NULL;
@@ -126,13 +126,13 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 	return TRUE;
 }
 
-static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir)
+static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir, const char *root)
 {
 	int err = 0;
 	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
-		return mod_zip_add_file(awin, zip, file, dir, FALSE);
+		return mod_zip_add_file(awin, zip, file, dir, FALSE, root);
 	} else {
 		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
 	}
