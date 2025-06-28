@@ -1859,6 +1859,7 @@ BOOL window_edit_add(void *awin, char *file, char *root)
 		module_free(aw);
 		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file, aw->current_dir, root);
 	}
+
 	return FALSE;
 }
 
@@ -1871,6 +1872,9 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 		if(file = AllocVec(1024, MEMF_CLEAR)) {
 			NameFromLock(wbarg->wa_Lock, file, 1024);
 			if(*wbarg->wa_Name) {
+
+				window_disable_gadgets(awin, TRUE);
+
 				AddPart(file, wbarg->wa_Name, 1024);
 #ifdef __amigaos4__
 				if(object_is_dir(file)) {
@@ -1889,6 +1893,8 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 					UnLock(lock);
 				}
 #endif
+window_disable_gadgets(awin, FALSE);
+
 			}
 			window_req_open_archive(awin, get_config(), TRUE);
 			FreeVec(file);
@@ -1921,6 +1927,8 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 				strcpy(file, aslreq->fr_Drawer);
 				AddPart(file, aslreq->fr_File, len);
 
+				window_disable_gadgets(awin, TRUE);
+
 #ifdef __amigaos4__
 				if(object_is_dir(file)) {
 					recursive_scan(awin, file, aslreq->fr_Drawer);
@@ -1940,6 +1948,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 #endif
 
 				ok = window_edit_add(aw, file, NULL); /* TRUE = cont, FALSE = abort */
+				window_disable_gadgets(awin, FALSE);
 			}
 		}
 		FreeAslRequest(aslreq);
