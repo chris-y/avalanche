@@ -133,6 +133,9 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}2.5 (xx.xx.xxxx)@{uu}
+* Improve editing of files - file structure is now maintained
+
 @{u}2.4 (22.09.2023)@{uu}
 * Support @{"Deark" link deark} (needs enabling by tooltype - see below)
   This is a "beta" feature, it may be unstable and due to a bug in

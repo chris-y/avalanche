@@ -12,21 +12,14 @@ require MUI.  It also supports decrunching with xfdmaster.library,
 scanning for viruses with xvs.library, and simple editing of LhA/Zip
 archives (Zip needs zip.library - OS4 only).
 
-This is designed for AmigaOS 3.2.1 (and tested on that and OS4). It
+This is designed for AmigaOS 3.2.1+ (and tested on that and OS4). It
 probably won't work on older versions as it needs a new window.class :)
 All use is at your own risk.
 
 GPL, source code available on website.
 
 Changes in this version:
-* Support Deark (needs enabling by tooltype)
-  This is a "beta" feature, it may be unstable and due to a bug in
-  Deark, it is not possible to extract to the root of any device.
-* Add option to select modules (MODULES tooltype)
-* Fix password caching
-* Also use T: as temp by default from CLI
-
--- To enable Deark, add MODULES=XAD|XFD|DEARK to tooltypes.
+* Improve editing of files - file structure is now maintained
 
 
 For full history see documentation inside the archive.
