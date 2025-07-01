@@ -96,15 +96,39 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 	}
 
 	if(dir != NULL) {
-		ULONG fullfile_len = strlen(FilePart(file)) + strlen(dir) + 1;
-		fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
+		if(root != NULL) {
+			ULONG fullfile_len = strlen(file) - strlen(root) + strlen(dir) + 2;
+			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
 
-		if(fullfile) {
-			strcpy(fullfile, dir);
-			AddPart(fullfile, FilePart(file), fullfile_len);
+			if(fullfile) {
+				strcpy(fullfile, dir);
+				if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
+					/* Skip past the slash or colon so AddPart doesn't think we want a different dir */
+					AddPart(fullfile, file + strlen(root) + 1, fullfile_len);
+				} else {
+					AddPart(fullfile, file + strlen(root), fullfile_len);
+				}
+			}
+		} else {
+			ULONG fullfile_len = strlen(FilePart(file)) + strlen(dir) + 2;
+			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
+
+			if(fullfile) {
+				strcpy(fullfile, dir);
+				AddPart(fullfile, FilePart(file), fullfile_len);
+			}
 		}
 	} else {
-		fullfile = FilePart(file);
+		if(root != NULL) {
+			if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
+				/* Skip past the slash or colon so AddPart doesn't think we want a different dir */
+					fullfile = file + strlen(root) + 1;
+				} else {
+					fullfile = file + strlen(root);
+				}
+		} else {
+			fullfile = FilePart(file);
+		}
 	}
 
 	err = zip_file_add(zip, fullfile, src, 0);
@@ -151,7 +175,7 @@ BOOL mod_zip_new(void *awin, char *archive)
 	zip_t *zip = zip_open(archive, ZIP_CREATE, &err);
 
 	if(zip) {
-		return mod_zip_add_file(awin, zip, NEW_ARC_NAME, NULL, TRUE);
+		return mod_zip_add_file(awin, zip, NEW_ARC_NAME, NULL, TRUE, NULL);
 	} else {
 		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
 	}

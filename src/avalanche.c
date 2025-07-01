@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -420,13 +420,20 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 													NameFromLock(wbarg->wa_Lock, file, 1024);
 													if(*wbarg->wa_Name) {
 														AddPart(file, wbarg->wa_Name, 1024);
-														ret = window_edit_add((void *)appmsg->am_UserData, file);
+														ret = window_edit_add((void *)appmsg->am_UserData, file, NULL);
 													} else {
 #ifdef __amigaos4__
-														recursive_scan((void *)appmsg->am_UserData, file);
+														if(object_is_dir(file)) {
+															recursive_scan((void *)appmsg->am_UserData, file, file);
+														} else {
+															ret = window_edit_add(awin, file, NULL);
+														}
 #else
-														recursive_scan((void *)appmsg->am_UserData, wbarg->wa_Lock);
-
+														if(object_is_dir(wbarg->wa_Lock)) {
+															recursive_scan((void *)appmsg->am_UserData, wbarg->wa_Lock, file);
+														} else {
+															ret = window_edit_add(awin, file, NULL);
+														}
 #endif
 													}
 													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
