@@ -106,12 +106,31 @@ static void newarc_req_archive(void)
 	}
 }
 
+static char *newarc_add_ext(const char *archive, const char *ext)
+{
+	ULONG max_arc_size = strlen(archive) + strlen(ext) + 2;
+	char *arc_corrected = AllocVec(max_arc_size, MEMF_CLEAR);
+	char *dot = strrchr(archive, '.');
+
+	if(arc_corrected) {
+		if(((dot != NULL) && (strcmp(dot + 1, ext) != 0)) || (dot == NULL)) {
+			snprintf(arc_corrected, max_arc_size, "%s.%s", archive, ext);
+		} else {
+			strcpy(arc_corrected, archive);
+		}
+	} else {
+		return NULL;
+	}
+	
+	return arc_corrected;
+}
+
 static void newarc_create(void)
 {
 	BOOL ret = FALSE;
 	ULONG data;
 	char *arc_type;
-	char *archive;
+	char *archive, *arc_r;
 
 	GetAttr(CHOOSER_Selected, gadgets[GID_N_TYPE], (ULONG *)&data);
 	arc_type = type_opts[data];
@@ -122,16 +141,31 @@ static void newarc_create(void)
 
 	switch(data) {
 		case 0: // LhA
-			ret = mod_lha_new(newarc_parent, archive);
+			if(arc_r = newarc_add_ext(archive, "lha")) {
+				ret = mod_lha_new(newarc_parent, arc_r);
+			} else {
+				/* Use the original name */
+				ret = mod_lha_new(newarc_parent, archive);
+			}
 		break;
 
 		case 1: // Zip
-			ret = mod_zip_new(newarc_parent, archive);
+			if(arc_r = newarc_add_ext(archive, "zip")) {
+				ret = mod_zip_new(newarc_parent, arc_r);
+			} else {
+				/* Use the original name */
+				ret = mod_zip_new(newarc_parent, archive);
+			}
 		break;
 	}
 
 	if(ret) {
-		window_update_archive(newarc_parent, archive);
+		if(arc_r) {
+			window_update_archive(newarc_parent, arc_r);
+			FreeVec(arc_r);
+		} else {
+			window_update_archive(newarc_parent, archive);
+		}
 		window_req_open_archive(newarc_parent, get_config(), TRUE);
 	}
 
