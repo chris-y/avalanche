@@ -274,3 +274,9 @@ Current version is up-to-date
 MSG_CHECKVERSION
 Check for update...
 ;
+MSG_DRAGLOCK
+Prevent drag'n'drop amendments
+;
+MSG_NEWVERSIONDL
+New version (%d.%d) available\nDownload now?
+;
