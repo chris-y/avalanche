@@ -20,6 +20,7 @@ GPL, source code available on website.
 
 Changes in this version:
 * Improve editing of files - file structure is now maintained
-
+* Add ability to easily (un)lock the GUI for archive modifications
+  via drag'n'drop
 
 For full history see documentation inside the archive.

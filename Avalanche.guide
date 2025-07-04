@@ -83,9 +83,11 @@ If an LhA or Zip archive is loaded, it is possible to do basic editing.  Note th
 In the Edit menu the following new items are available:
 
 @{u}Add files@{uu}
-This opens an ASL requester to select files to add to the archive.  They will be added to the root directory (or the currently displayed directory for Zip archives if in browser mode).  Directories are currently ignored - any tree structure will be flattened.
+This opens an ASL requester to select files to add to the archive.  They will be added to the root directory (or the currently displayed directory for Zip archives if in browser mode).
 
-It is also possible to add files by dragging into the file list - the area will be highlighted to indicate that files will be added.
+It is also possible to add files by dragging into the file list (if not locked) - the area will be highlighted to indicate that files will be added.
+
+Note: the dragged/selected drawer will not normally be added, only the contents, but the structure inside will be maintained.
 
 @{u}Delete selected items@{uu}
 This deletes the currently selected items from the archive.  Note that this does not cascade into subdirectories, it only deletes the displayed files.
@@ -102,7 +104,7 @@ Due to the way xvs.library works, files which do not completely fit into memory 
 Only Amiga viruses will be detected.
 On OS4 the file xvs.l.main (included with Avalanche) needs to be copied to libs: alongside the main library (the install script will do this if xvs.library is installed already).
 Infected files will be deleted without warning.
-Files will not be further extracted in order to be scanned, so infected files that are individually compressed inside the archive will not be picked up.  It is recommended to run a scan with a full featured virus checker over any archives of concern.  
+Files will not be further extracted in order to be scanned, so infected files that are individually compressed inside the archive will not be picked up (unless they are further extracted with Avalanche).  It is recommended to run a scan with a full featured virus checker over any archives of concern.  
 @endnode
 
 @node deark "Deark"
@@ -135,6 +137,8 @@ This is mostly for internal use, but has the following commands:
 @rem keep this to <80 chars for readme
 @{u}2.5 (xx.xx.xxxx)@{uu}
 * Improve editing of files - file structure is now maintained
+* Add ability to easily (un)lock the GUI for archive modifications
+  via drag'n'drop
 
 @{u}2.4 (22.09.2023)@{uu}
 * Support @{"Deark" link deark} (needs enabling by tooltype - see below)

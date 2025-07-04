@@ -130,6 +130,7 @@
 #define MSG_NEWVERSION 86
 #define MSG_NONEWVERSION 87
 #define MSG_CHECKVERSION 88
+#define MSG_DRAGLOCK 89
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -228,6 +229,7 @@
 #define MSG_NEWVERSION_STR "New version (%s) available"
 #define MSG_NONEWVERSION_STR "Current version is up-to-date"
 #define MSG_CHECKVERSION_STR "Check for update..."
+#define MSG_DRAGLOCK_STR "Prevent drag'n'drop amendments"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -417,6 +419,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_NONEWVERSION_STR "\x00"
     "\x00\x00\x00\x58\x00\x14"
     MSG_CHECKVERSION_STR "\x00"
+    "\x00\x00\x00\x59\x00\x20"
+    MSG_DRAGLOCK_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

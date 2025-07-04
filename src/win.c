@@ -130,6 +130,7 @@ struct avalanche_window {
 	BOOL archive_needs_free;
 	void *archive_userdata;
 	BOOL flat_mode;
+	BOOL drag_lock;
 	BOOL iconified;
 	struct module_functions mf;
 	char *current_dir;
@@ -168,6 +169,8 @@ struct NewMenu menu[] = {
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL,       "+", NM_ITEMDISABLED, 0, 0,}, // 4 Add files
 	{NM_ITEM,   NULL,       0, NM_ITEMDISABLED, 0, 0,}, // 5 Delete files
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 6
+	{NM_ITEM,   NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 7 Toggle drag lock
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
 	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 0 View mode
@@ -180,8 +183,9 @@ struct NewMenu menu[] = {
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
-#define MENU_FLATMODE 19
-#define MENU_LISTMODE 20
+#define MENU_DRAGLOCK 18
+#define MENU_FLATMODE 21
+#define MENU_LISTMODE 22
 
 #define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
@@ -1163,6 +1167,8 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	/* Copy global to local config */
 	if(config->viewmode == 0) aw->flat_mode = TRUE;
+	if(config->drag_lock) aw->drag_lock = TRUE;
+		else aw->drag_lock = FALSE;
 
 	/* ASL hook */
 	aw->aslfilterhook.h_Entry = aslfilterfunc;
@@ -1340,11 +1346,15 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 			window_tree_remove(aw);
 		}
 
+		if(aw->drag_lock) {
+			aw->menu[MENU_DRAGLOCK].nm_Flags |= CHECKED;
+		}
+
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
-			if(get_config()->drag_lock == FALSE) window_add_dropzones(aw);
+			if(aw->drag_lock == FALSE) window_add_dropzones(aw);
 		
 			/* Refresh archive on window open */
 			if(aw->archiver != ARC_NONE) window_req_open_archive(awin, get_config(), TRUE);
@@ -2028,6 +2038,17 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 	return;
 }
 
+static void toggle_drag_lock(struct avalanche_window *aw, struct MenuItem *item)
+{
+	window_remove_dropzones(aw);
+
+	if(item->Flags & CHECKED) {
+		aw->drag_lock = TRUE;
+	} else {
+		aw->drag_lock = FALSE;
+		window_add_dropzones(aw);
+	}
+}
 
 static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_config *config, BOOL on)
 {
@@ -2111,7 +2132,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		
 		case WMHI_NEWSIZE:
 			window_remove_dropzones(aw);
-			if(get_config()->drag_lock == FALSE) window_add_dropzones(aw);
+			if(aw->drag_lock == FALSE) window_add_dropzones(aw);
 		break;
 				
 		case WMHI_MENUPICK:
@@ -2150,7 +2171,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 											WA_BusyPointer, TRUE,
 											TAG_DONE);
 
-								http_check_version(awin);
+								http_check_version(awin, winport, AppPort, appwin_mp);
 
 								if(window_get_window(awin))
 									SetWindowPointer(window_get_window(awin),
@@ -2186,6 +2207,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							
 							case 5: //del files
 								window_edit_del(awin, config);
+							break;
+
+							case 7: //drag lock
+								toggle_drag_lock(aw, item);
 							break;
 						}
 					break;
@@ -2311,12 +2336,13 @@ void fill_menu_labels(void)
 	menu[13].nm_Label = locale_get_string( MSG_INVERTSELECTION );
 	menu[15].nm_Label = locale_get_string( MSG_ADDFILES );
 	menu[16].nm_Label = locale_get_string( MSG_DELFILES );
-	menu[17].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[18].nm_Label = locale_get_string( MSG_VIEWMODE );
+	menu[18].nm_Label = locale_get_string( MSG_DRAGLOCK );
+	menu[19].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[20].nm_Label = locale_get_string( MSG_VIEWMODE );
 	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
 	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
-	menu[22].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[23].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[24].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[25].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)
