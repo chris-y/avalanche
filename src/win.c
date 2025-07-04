@@ -1903,7 +1903,7 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 					UnLock(lock);
 				}
 #endif
-window_disable_gadgets(awin, FALSE);
+			window_disable_gadgets(awin, FALSE);
 
 			}
 			window_req_open_archive(awin, get_config(), TRUE);

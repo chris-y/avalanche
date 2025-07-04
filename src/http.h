@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,5 +17,5 @@
 
 #include <exec/types.h>
 
-BOOL http_check_version(void *awin);
+BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp);
 #endif

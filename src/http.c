@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,10 +49,12 @@ struct Library *AmiSSLBase = NULL;
 struct Library *AmiSSLExtBase = NULL;
 #endif
 
+#include "avalanche.h"
 #include "http.h"
 #include "locale.h"
 #include "misc.h"
 #include "req.h"
+#include "win.h"
 
 #include "Avalanche_rev.h"
 
@@ -125,7 +127,7 @@ static int err_cb(const char *str, size_t len, void *u)
 	return 1;
 }
 
-static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize)
+static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize, BPTR fh)
 {
 	STACK_OF(CONF_VALUE) *headers = NULL;
 	BIO *bio, *bio_err;
@@ -150,7 +152,13 @@ static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize
 		/* HTTP request succeeded */
 		while ((length = BIO_read(bio, buffer, bufsize)) > 0)
 		{
-			/* do nothing */
+			/* Only checking version so not interested beyond to first 1K */
+			if(fh == 0) break;
+
+			/* Write data to file */
+			if(Write(fh, buffer, length) != length) {
+				break;
+			}
 		}
 
 		BIO_free(bio);
@@ -174,13 +182,12 @@ static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize
 }
 
 
-long http_get_version(char *buffer, ULONG bufsize)
+SSL_CTX *http_open_socket_libs(void)
 {
 	SSL_CTX *SSL_ctx = NULL;
-	int res = 0;
-	BOOL result=FALSE;
+	BOOL result = FALSE;
 
-	SocketBase = OpenLibrary("bsdsocket.library",4);
+	SocketBase = OpenLibrary("bsdsocket.library", 4);
 	if (!SocketBase)
 	{
 		return(AHTTP_ERR_NOTCPIP);
@@ -218,13 +225,25 @@ long http_get_version(char *buffer, ULONG bufsize)
 	}
 
 	if(result == FALSE) {
-		return AHTTP_ERR_AMISSL;
+		return NULL;
 	}
 
-	res = http_get_url("https://www.unsatisfactorysoftware.co.uk/ver.php?f=avalanche", SSL_ctx, buffer, bufsize);
+	return SSL_ctx;
 
+}
+
+void http_ssl_free_ctx(SSL_CTX *SSL_ctx)
+{
 	SSL_CTX_free(SSL_ctx);
 	http_closesocketlibs();
+}
+
+long http_get_version(char *buffer, ULONG bufsize, SSL_CTX *SSL_ctx)
+{
+	int res = 0;
+
+	/* TODO: Also check https://aminet.net/util/virus/xvslibrary.readme against current ver */
+	res = http_get_url("https://aminet.net/util/arc/avalanche.readme", SSL_ctx, buffer, bufsize, 0);
 
 	if(res) {
 		return AHTTP_ERR_NONE;
@@ -233,27 +252,44 @@ long http_get_version(char *buffer, ULONG bufsize)
 	}
 }
 
-BOOL http_check_version(void *awin)
+BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp)
 {
-	ULONG bufsize = 10;
+	ULONG bufsize = 1024;
 	char *buffer = AllocVec(bufsize + 1, MEMF_CLEAR);
 	BOOL update_available = FALSE;
 
 	if(buffer) {
-		long res = http_get_version(buffer, bufsize);
+		SSL_CTX *SSL_ctx = http_open_socket_libs();
+
+		if(SSL_ctx == NULL) {
+			FreeVec(buffer);
+			return AHTTP_ERR_AMISSL;
+		}
+
+		long res = http_get_version(buffer, bufsize, SSL_ctx);
 
 		if(res == AHTTP_ERR_NONE) {
 			char *dot = NULL;
+			char *p = buffer;
+			char *lf = NULL;
 
-			long val = strtol(buffer, &dot, 10);
+			while(lf = strchr(p, '\n')) {
+				if(strncmp(p, "Version: ", 9) == 0) {
+					p += 9;
+					break;
+				}
+				p = lf + 1;
+			}
+
+			long val = strtol(p, &dot, 10);
 
 			if(val > VERSION) {
 				update_available = TRUE;
 			}
+			
+			long rev = strtol(dot + 1, NULL, 10);
 
 			if(val == VERSION) {
-				long rev = strtol(dot + 1, NULL, 10);
-
 				if(rev > REVISION) {
 					update_available = TRUE;
 				}
@@ -262,12 +298,28 @@ BOOL http_check_version(void *awin)
 			char message[101];
 
 			if(update_available) {
-				snprintf(message, 100, locale_get_string(MSG_NEWVERSION), buffer);
-			} else {
-				snprintf(message, 100, locale_get_string(MSG_NONEWVERSION));
-			}
+				snprintf(message, 100, locale_get_string(MSG_NEWVERSIONDL), val, rev);
+				if(ask_yesno_req(awin, message)) {
+					// download
+					BPTR fh = Open("T:avalanche.lha", MODE_NEWFILE);
+					if(fh) {
+						res = http_get_url("https://aminet.net/util/arc/avalanche.lha", SSL_ctx, buffer, bufsize, fh);
+						Close(fh);
 
-			open_info_req(message, locale_get_string(MSG_OK), awin);
+						void *new_awin = window_create(get_config(), "T:avalanche.lha", winport, appport);
+						if(new_awin != NULL) {
+							window_open(new_awin, appwin_mp);
+							window_req_open_archive(new_awin, get_config(), TRUE);
+						} else {
+							open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
+						}
+					} else {
+						open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
+					}
+				}
+			} else {
+				open_info_req(locale_get_string(MSG_NONEWVERSION), locale_get_string(MSG_OK), awin);
+			}
 
 		} else if(res == AHTTP_ERR_NOTCPIP) {
 			open_error_req(locale_get_string(MSG_ERR_NOTCPIP), locale_get_string(MSG_OK), awin);
@@ -283,9 +335,9 @@ BOOL http_check_version(void *awin)
 		}
 
 		FreeVec(buffer);
-
+		http_ssl_free_ctx(SSL_ctx);
 		return TRUE;
-	} 
+	}
 
 	return FALSE;
 }

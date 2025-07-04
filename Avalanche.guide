@@ -139,6 +139,7 @@ This is mostly for internal use, but has the following commands:
 * Improve editing of files - file structure is now maintained
 * Add ability to easily (un)lock the GUI for archive modifications
   via drag'n'drop
+* Improve version checks and allow immediate download
 
 @{u}2.4 (22.09.2023)@{uu}
 * Support @{"Deark" link deark} (needs enabling by tooltype - see below)
