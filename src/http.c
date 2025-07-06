@@ -190,7 +190,7 @@ SSL_CTX *http_open_socket_libs(void)
 	SocketBase = OpenLibrary("bsdsocket.library", 4);
 	if (!SocketBase)
 	{
-		return(AHTTP_ERR_NOTCPIP);
+		return NULL;
 	}
 #ifdef __amigaos4__
 	else
