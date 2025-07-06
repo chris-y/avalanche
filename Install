@@ -72,6 +72,15 @@
 	)
 )
 
+(if (= #xad-ver 12)
+	(
+		(message "Although Avalanche works with xadmaster.library v12, "
+			"usage of v13 is recommended due to inconsistencies in the previous version.\n\n"
+			"There is a beta build for OS3 at https://github.com/Hagbard-Celin/xadmaster_Amiga_68k "
+			"- please install this if you are comfortable to do so" (all))
+	)
+)
+
 (welcome)
 
 (set @default-dest
