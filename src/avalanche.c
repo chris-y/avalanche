@@ -35,6 +35,7 @@
 #include "arexx.h"
 #include "avalanche.h"
 #include "config.h"
+#include "http.h"
 #include "req.h"
 #include "libs.h"
 #include "locale.h"
@@ -336,7 +337,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			cw_sig = config_window_get_signal();
 			na_sig = newarc_window_get_signal();
 
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig | na_sig);
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig | na_sig | SIGBREAKF_CTRL_E);
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
@@ -535,6 +536,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			if(done == WIN_DONE_CLOSED) {
 				if(window_count == 1) {
 					ULONG ret = ask_quithide(NULL);
+
 					/* Last window closed */
 					if(ret) {
 						window_close(awin, FALSE);
@@ -791,7 +793,16 @@ int main(int argc, char **argv)
 		if(arc_opened == FALSE) ami_arexx_send("SHOW");
 	}
 
+	struct Process *check_ver_proc = http_get_process_check_version();
+	if(check_ver_proc != NULL) {
+		/* Send break */
+		Signal(check_ver_proc, SIGBREAKF_CTRL_C);
+		/* Wait for check version sub-process to exit */
+		Wait(SIGBREAKF_CTRL_E);
+	}
+
 	ami_arexx_cleanup();
+
 	Locale_Close();
 
 	DeleteFile(config.tmpdir);

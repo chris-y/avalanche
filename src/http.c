@@ -36,6 +36,7 @@
 #include <libraries/amisslmaster.h>
 #include <libraries/amissl.h>
 #include <amissl/amissl.h>
+#include <dos/dostags.h>
 
 struct Library *SocketBase;
 struct Library *AmiSSLMasterBase;
@@ -50,6 +51,8 @@ struct Library *AmiSSLExtBase = NULL;
 #endif
 
 #include "avalanche.h"
+#include "arexx.h"
+#include "config.h"
 #include "http.h"
 #include "locale.h"
 #include "misc.h"
@@ -65,7 +68,9 @@ enum {
 	AHTTP_ERR_UNKNOWN
 };
 
-char *err_txt = NULL;
+static char *err_txt = NULL;
+static struct Task* avalanche_process = NULL;
+static struct Process *check_ver_process = NULL;
 
 void http_cleanup(void)
 {
@@ -252,7 +257,7 @@ long http_get_version(char *buffer, ULONG bufsize, SSL_CTX *SSL_ctx)
 	}
 }
 
-BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp)
+static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp)
 {
 	ULONG bufsize = 1024;
 	char *buffer = AllocVec(bufsize + 1, MEMF_CLEAR);
@@ -263,7 +268,7 @@ BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *app
 
 		if(SSL_ctx == NULL) {
 			FreeVec(buffer);
-			return AHTTP_ERR_AMISSL;
+			return FALSE;
 		}
 
 		long res = http_get_version(buffer, bufsize, SSL_ctx);
@@ -301,17 +306,28 @@ BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *app
 				snprintf(message, 100, locale_get_string(MSG_NEWVERSIONDL), val, rev);
 				if(ask_yesno_req(awin, message)) {
 					// download
-					BPTR fh = Open("T:avalanche.lha", MODE_NEWFILE);
+					char dl_filename[131];
+					struct avalanche_config *config = get_config();
+					strncpy(dl_filename, config->tmpdir, 130);
+					AddPart(dl_filename, "avalanche.lha", 130);
+					BPTR fh = Open(dl_filename, MODE_NEWFILE);
 					if(fh) {
 						res = http_get_url("https://aminet.net/util/arc/avalanche.lha", SSL_ctx, buffer, bufsize, fh);
 						Close(fh);
 
-						void *new_awin = window_create(get_config(), "T:avalanche.lha", winport, appport);
-						if(new_awin != NULL) {
-							window_open(new_awin, appwin_mp);
-							window_req_open_archive(new_awin, get_config(), TRUE);
+						if(awin == NULL) {
+							/* We are running as a separate process, pass a message to the parent using ARexx */
+							char cmd[1024];
+        	                			snprintf(cmd, 1024, "OPEN \"%s\"", dl_filename);
+                	        			ami_arexx_send(cmd);
 						} else {
-							open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
+							void *new_awin = window_create(config, dl_filename, winport, appport);
+							if(new_awin != NULL) {
+								window_open(new_awin, appwin_mp);
+								window_req_open_archive(new_awin, get_config(), TRUE);
+							} else {
+								open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
+							}
 						}
 					} else {
 						open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
@@ -340,4 +356,35 @@ BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *app
 	}
 
 	return FALSE;
+}
+
+#ifdef __amigaos4__
+static void http_check_version_p(void)
+#else
+static void __saveds http_check_version_p(void)
+#endif
+{
+	http_check_version_internal(NULL, NULL, NULL, NULL);
+
+	check_ver_process = NULL;
+
+	/* Tell the main process we are exiting */
+	Signal(avalanche_process, SIGBREAKF_CTRL_E);
+}
+
+BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp, BOOL np)
+{
+	if(np) {
+		if(check_ver_process == NULL) {
+			avalanche_process = FindTask(NULL);
+			check_ver_process = CreateNewProcTags(NP_Entry, http_check_version_p, NP_Name, "Avalanche version check process", TAG_DONE);
+		}
+	} else {
+		return http_check_version_internal(awin, winport, appport, appwin_mp);
+	}
+}
+
+struct Process *http_get_process_check_version(void)
+{
+	return check_ver_process;
 }

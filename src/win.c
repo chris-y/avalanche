@@ -2171,7 +2171,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 											WA_BusyPointer, TRUE,
 											TAG_DONE);
 
-								http_check_version(awin, winport, AppPort, appwin_mp);
+								http_check_version(awin, winport, AppPort, appwin_mp, TRUE);
 
 								if(window_get_window(awin))
 									SetWindowPointer(window_get_window(awin),
@@ -2376,3 +2376,4 @@ void window_free_archive_userdata(void *awin)
 		aw->archive_userdata = NULL;
 	}
 }
+
