@@ -677,7 +677,7 @@ int main(int argc, char **argv)
 	};
 
 	if(libs_open() == FALSE) {
-		return 10;
+		return RETURN_ERROR;
 	}
 
 
@@ -745,7 +745,7 @@ int main(int argc, char **argv)
 
 			FreeArgs(args);
 		} else {
-			return(10); /* TODO: Will never get here, but if we add required args
+			return RETURN_ERROR; /* TODO: Will never get here, but if we add required args
 						 * then will need to do proper cleanup */
 		}
 	}
@@ -806,5 +806,5 @@ int main(int argc, char **argv)
 	libs_zip_exit();
 	libs_close();
 
-	return 0;
+	return RETURN_OK;
 }
