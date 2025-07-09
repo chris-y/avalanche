@@ -746,7 +746,7 @@ int main(int argc, char **argv)
 			FreeArgs(args);
 		} else {
 			return RETURN_ERROR; /* TODO: Will never get here, but if we add required args
-						 * then will need to do proper cleanup */
+					      * then will need to do proper cleanup */
 		}
 	}
 
