@@ -384,7 +384,9 @@ BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *app
 		if(check_ver_process == NULL) {
 			avalanche_process = FindTask(NULL);
 			check_ver_process = CreateNewProcTags(NP_Entry, http_check_version_p, NP_Name, "Avalanche version check process", TAG_DONE);
-		}
+		} else {
+			/* Already running - signal running process with Ctrl-F (bring to front) */
+			Signal(check_ver_process, SIGBREAKF_CTRL_F);
 	} else {
 		return http_check_version_internal(awin, winport, appport, appwin_mp);
 	}
