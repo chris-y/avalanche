@@ -155,15 +155,18 @@ static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize
 				 0 /* max_resp_len */, 60 /* timeout */)) != NULL)
 	{
 		/* HTTP request succeeded */
-		while ((length = BIO_read(bio, buffer, bufsize)) > 0)
-		{
-			/* Only checking version so not interested beyond to first 1K */
-			if(fh == 0) break;
+		while(1) {
+			while((length = BIO_read(bio, buffer, bufsize)) > 0) {
+				/* Only checking version so not interested beyond the first 1K */
+				if(fh == 0) break;
 
-			/* Write data to file */
-			if(Write(fh, buffer, length) != length) {
-				break;
+				/* Write data to file */
+				if(Write(fh, buffer, length) != length) {
+					break;
+				}
 			}
+			if(BIO_should_read(bio) == 0)
+				break;
 		}
 
 		BIO_free(bio);
@@ -222,7 +225,10 @@ SSL_CTX *http_open_socket_libs(void)
                   AmiSSL_ErrNoPtr, &errno,
                   TAG_DONE) == 0) {
 #endif
-				if((SSL_ctx = SSL_CTX_new(TLS_client_method()))!=NULL) result = TRUE;
+				if((SSL_ctx = SSL_CTX_new(TLS_client_method()))!=NULL) {
+					SSL_CTX_set_mode(SSL_ctx, SSL_MODE_AUTO_RETRY);
+					result = TRUE;
+				}
 			}
 #ifdef __amigaos4__
 		}
