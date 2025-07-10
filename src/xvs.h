@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #ifndef XVS_H
 #define XVS_H 1
 
+ULONG xvs_get_ver(ULONG *ver, ULONG *rev);
 long xvs_scan(char *file, BOOL delete, void *awin);
 long xvs_scan_buffer(UBYTE *buf, ULONG len, void *awin);
 #endif
