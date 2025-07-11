@@ -275,3 +275,6 @@ Prevent drag'n'drop amendments
 ;
 MSG_NEWVERSIONDL (//)
 New version (%d.%d) available\nDownload now?
+;
+MSG_OPENINWB (//)
+Open in Workbench

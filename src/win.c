@@ -72,6 +72,7 @@ enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
 	GID_DEST,
+	GID_OPENWB,
 	GID_BROWSERLAYOUT,
 	GID_TREELAYOUT,
 	GID_TREE,
@@ -146,6 +147,7 @@ static struct List winlist;
 #endif
 
 #define AVALANCHE_GLYPH_ROOT 800
+#define AVALANCHE_GLYPH_OPENDRAWER 801
 
 /** Menu **/
 
@@ -266,6 +268,10 @@ static Object *get_glyph(ULONG glyph)
 				img = "TBimages:list_drawer";
 			break;
 
+			case AVALANCHE_GLYPH_OPENDRAWER:
+				img = "TBimages:draweropen";
+			break;
+
 			case GLYPH_POPFILE:
 				img = "TBimages:list_file";
 			break;
@@ -299,7 +305,8 @@ static Object *get_glyph(ULONG glyph)
 					BITMAP_Width, 16, */
 				BitMapEnd;
 	} else {
-		if(glyph == AVALANCHE_GLYPH_ROOT) glyph = GLYPH_POPDRAWER;
+		if((glyph == AVALANCHE_GLYPH_ROOT) || (glyph == AVALANCHE_GLYPH_OPENDRAWER)) glyph = GLYPH_POPDRAWER;
+	
 		glyphobj = GlyphObj,
 					GLYPH_Glyph, glyph,
 				GlyphEnd;
@@ -1202,6 +1209,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WINDOW_IconTitle, "Avalanche",
 		WINDOW_SharedPort, winport,
 		WINDOW_AppPort, appport,
+#ifdef __amigaos4__ /* Enable HintInfo */
+//		WINDOW_GadgetHelp, TRUE,
+#endif
 		tag_default_position, WPOS_CENTERSCREEN,
 		WINDOW_ParentGroup, aw->gadgets[GID_MAIN] = LayoutVObj,
 			//LAYOUT_DeferLayout, TRUE,
@@ -1221,19 +1231,31 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					CHILD_Label, LabelObj,
 						LABEL_Text,  locale_get_string( MSG_ARCHIVE ) ,
 					LabelEnd,
-					LAYOUT_AddChild,  aw->gadgets[GID_DEST] = GetFileObj,
-						GA_ID, GID_DEST,
-						GA_RelVerify, TRUE,
-						GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-						GETFILE_Drawer, config->dest,
-						GETFILE_DoSaveMode, TRUE,
-						GETFILE_DrawersOnly, TRUE,
-						GETFILE_ReadOnly, TRUE,
-					End,
-					CHILD_WeightedHeight, 0,
-					CHILD_Label, LabelObj,
-						LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
-					LabelEnd,
+					LAYOUT_AddChild, LayoutHObj,
+						LAYOUT_AddChild,  aw->gadgets[GID_DEST] = GetFileObj,
+							GA_ID, GID_DEST,
+							GA_RelVerify, TRUE,
+							GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
+							GETFILE_Drawer, config->dest,
+							GETFILE_DoSaveMode, TRUE,
+							GETFILE_DrawersOnly, TRUE,
+							GETFILE_ReadOnly, TRUE,
+						End,
+						CHILD_WeightedHeight, 0,
+						CHILD_Label, LabelObj,
+							LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
+						LabelEnd,
+						LAYOUT_AddChild,  aw->gadgets[GID_OPENWB] = ButtonObj,
+							GA_ID, GID_OPENWB,
+							GA_RelVerify, TRUE,
+							GA_Image, get_glyph(AVALANCHE_GLYPH_OPENDRAWER),
+#ifdef __amigaos4__ /* HintInfo hasn't made it to OS3.2 yet */
+//							GA_HintInfo, locale_get_string(MSG_OPENINWB),
+#endif
+						ButtonEnd,
+						CHILD_NominalSize, TRUE,
+						CHILD_WeightedWidth, 0,
+					LayoutEnd,
 				LayoutEnd,
 				LAYOUT_WeightBar, TRUE,
 				LAYOUT_AddChild,  aw->gadgets[GID_PROGRESS] = FuelGaugeObj,
@@ -1699,6 +1721,13 @@ char *window_req_dest(void *awin)
 	return aw->dest;
 }
 
+static BOOL window_open_dest(void *awin)
+{	
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	return OpenWorkbenchObjectA(aw->dest, NULL);
+}
+
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -2093,6 +2122,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				case GID_DEST:
 					window_req_dest(awin);
 				break;
+				
+				case GID_OPENWB:
+					window_open_dest(awin);
+				break;
 
 				case GID_EXTRACT:
 					ret = extract(awin, aw->archive, aw->dest, NULL);
@@ -2307,6 +2340,9 @@ void window_disable_gadgets(void *awin, BOOL disable)
 			GA_Disabled, disable,
 		TAG_DONE);
 	SetGadgetAttrs(aw->gadgets[GID_DEST], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_OPENWB], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
