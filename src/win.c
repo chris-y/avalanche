@@ -33,6 +33,7 @@
 
 #include <proto/bitmap.h>
 #include <proto/button.h>
+#include <proto/drawlist.h>
 #include <proto/getfile.h>
 #include <proto/glyph.h>
 #include <proto/label.h>
@@ -45,6 +46,7 @@
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
 #include <images/bitmap.h>
+#include <images/drawlist.h>
 #include <images/glyph.h>
 #include <images/label.h>
 
@@ -305,11 +307,40 @@ static Object *get_glyph(ULONG glyph)
 					BITMAP_Width, 16, */
 				BitMapEnd;
 	} else {
-		if((glyph == AVALANCHE_GLYPH_ROOT) || (glyph == AVALANCHE_GLYPH_OPENDRAWER)) glyph = GLYPH_POPDRAWER;
+		if(glyph == AVALANCHE_GLYPH_OPENDRAWER) {
+			struct DrawList opendrawer[] = {
+				{DLST_LINESIZE, 0, 0, 0, 0, 1},	
+				{DLST_LINEPAT, 0, 0, 0, 0, 1},
+								
+				{DLST_LINE, 9, 6, 9, 9, 1},
+				{DLST_LINE, 9, 9, 1, 9, 1},
+				{DLST_LINE, 1, 9, 1, 6, 1},
+				{DLST_LINE, 1, 6, 9, 6, 1},
+				{DLST_LINE, 9, 6, 7, 3, 1},
+				{DLST_LINE, 7, 3, 3, 3, 1},
+				{DLST_LINE, 3, 3, 1, 6, 1},
+				
+				{DLST_LINE, 3, 3, 2, 3, 1},
+				{DLST_LINE, 2, 3, 2, 5, 1},
+
+				{DLST_LINE, 7, 3, 8, 3, 1},
+				{DLST_LINE, 8, 3, 8, 5, 1},
+			
+				{DLST_END, 0, 0, 0, 0, 0},
+			};
 	
-		glyphobj = GlyphObj,
-					GLYPH_Glyph, glyph,
-				GlyphEnd;
+			glyphobj = DrawListObj,
+					DRAWLIST_Directives, &opendrawer,
+					DRAWLIST_RefHeight, 10,
+					DRAWLIST_RefWidth, 10,
+				End;
+		} else {
+			if(glyph == AVALANCHE_GLYPH_ROOT) glyph = GLYPH_POPDRAWER;
+
+			glyphobj = GlyphObj,
+						GLYPH_Glyph, glyph,
+					GlyphEnd;
+		}
 	}
 
 	UnlockPubScreen(NULL, screen);
