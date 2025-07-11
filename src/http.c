@@ -89,6 +89,9 @@ enum {
 	ACHECKVER_XFD,
 	ACHECKVER_XVS,
 	ACHECKVER_DEARK,
+#ifdef __amigaos4__
+	ACHECKVER_ZIP,
+#endif
 	ACHECKVER_MAX
 };
 
@@ -357,6 +360,10 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 	avn[ACHECKVER_DEARK].download_url = "https://aminet.net/util/arc/deark.lha";
 #endif
 
+#ifdef __amigaos4__
+	avn[ACHECKVER_DEARK].check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme";
+	avn[ACHECKVER_DEARK].download_url = "https://os4depot.net/share/library/misc/zip_lib.lha";
+#endif
 	
 	if(buffer) {
 		SSL_CTX *SSL_ctx = http_open_socket_libs();
@@ -395,6 +402,13 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 					avn[ACHECKVER_DEARK].current_revision = 0;
 					deark_get_ver(&avn[ACHECKVER_DEARK].current_version, &avn[ACHECKVER_DEARK].current_revision);
 				break;
+#ifdef __amigaos4__
+				case ACHECKVER_ZIP:
+					avn[ACHECKVER_ZIP].current_version = 0;
+					avn[ACHECKVER_ZIP].current_revision = 0;
+					mod_zip_get_ver(&avn[ACHECKVER_ZIP].current_version, &avn[ACHECKVER_ZIP].current_revision);
+				break;
+#endif
 			}
 					
 			avn[i].update_available = http_get_version(buffer, bufsize, SSL_ctx, avn[i].check_url, avn[i].current_version, avn[i].current_revision, &avn[i].latest_version, &avn[i].latest_revision);

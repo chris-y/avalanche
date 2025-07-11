@@ -165,6 +165,17 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir, const 
 }
 #endif
 
+ULONG mod_zip_get_ver(ULONG *ver, ULONG *rev)
+{
+	if(!libs_zip_init()) return 0;
+	
+	struct Library *lib = (struct Library *)ZipBase;
+	if(ver) *ver = lib->lib_Version;
+	if(rev) *rev = lib->lib_Revision;
+	
+	return *ver;
+}
+
 BOOL mod_zip_new(void *awin, char *archive)
 {
 #ifdef __amigaos4__
