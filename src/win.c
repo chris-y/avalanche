@@ -1220,7 +1220,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WINDOW_SharedPort, winport,
 		WINDOW_AppPort, appport,
 #ifdef __amigaos4__ /* Enable HintInfo */
-//		WINDOW_GadgetHelp, TRUE,
+		WINDOW_GadgetHelp, TRUE,
 #endif
 		tag_default_position, WPOS_CENTERSCREEN,
 		WINDOW_ParentGroup, aw->gadgets[GID_MAIN] = LayoutVObj,
@@ -1260,7 +1260,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 							GA_RelVerify, TRUE,
 							GA_Image, get_glyph(AVALANCHE_GLYPH_OPENDRAWER),
 #ifdef __amigaos4__ /* HintInfo hasn't made it to OS3.2 yet */
-//							GA_HintInfo, locale_get_string(MSG_OPENINWB),
+							GA_HintInfo, locale_get_string(MSG_OPENINWB),
 #endif
 						ButtonEnd,
 						CHILD_NominalSize, TRUE,

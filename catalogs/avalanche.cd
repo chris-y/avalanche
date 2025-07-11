@@ -277,7 +277,7 @@ MSG_NEWVERSIONDL (//)
 New version (%d.%d) available\nDownload now?
 ;
 MSG_OPENINWB (//)
-Open in Workbench
+Open destination drawer on Workbench
 ;
 MSG_OPENWBONEXTRACT (//)
 Open drawer on WB after extraction
