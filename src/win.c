@@ -309,8 +309,8 @@ static Object *get_glyph(ULONG glyph)
 	} else {
 		if(glyph == AVALANCHE_GLYPH_OPENDRAWER) {
 			struct DrawList opendrawer[] = {
-				{DLST_LINESIZE, 0, 0, 0, 0, 1},	
-				{DLST_LINEPAT, 0, 0, 0, 0, 1},
+				{DLST_LINESIZE, 0, 0, 0, 0, 0xff},	
+				{DLST_LINEPAT, 0, 0, 0, 0, 0xff},
 								
 				{DLST_LINE, 9, 6, 9, 9, 1},
 				{DLST_LINE, 9, 9, 1, 9, 1},
