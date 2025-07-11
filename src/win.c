@@ -135,6 +135,7 @@ struct avalanche_window {
 	BOOL flat_mode;
 	BOOL drag_lock;
 	BOOL iconified;
+	BOOL disabled;
 	struct module_functions mf;
 	char *current_dir;
 	struct Node *root_node;
@@ -2394,6 +2395,8 @@ void window_reset_count(void *awin)
 void window_disable_gadgets(void *awin, BOOL disable)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	aw->disabled = disable;
 
 	if(disable) {
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
