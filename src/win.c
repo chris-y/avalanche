@@ -136,6 +136,7 @@ struct avalanche_window {
 	BOOL drag_lock;
 	BOOL iconified;
 	BOOL disabled;
+	BOOL abort_requested;
 	struct module_functions mf;
 	char *current_dir;
 	struct Node *root_node;
@@ -2360,29 +2361,9 @@ BOOL check_abort(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-	ULONG result;
-	UWORD code;
-
-	while((result = RA_HandleInput(aw->objects[OID_MAIN], &code)) != WMHI_LASTMSG ) {
-		switch (result & WMHI_CLASSMASK) {
-			case WMHI_GADGETUP:
-				switch (result & WMHI_GADGETMASK) {
-					case GID_EXTRACT:
-						return TRUE;
-					break;
-				}
-			break;
-
-			case WMHI_RAWKEY:
-				switch(result & WMHI_GADGETMASK) {
-					case RAWKEY_ESC:
-						return TRUE;
-					break;
-				}
-			break;
-		}
-	}
-	return FALSE;
+	/* This flag is set in the main loop
+	 * if ESC is pressed or Abort is clicked */
+	return aw->abort_requested;
 }
 
 void window_reset_count(void *awin)
@@ -2406,6 +2387,9 @@ void window_disable_gadgets(void *awin, BOOL disable)
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text, GID_EXTRACT_TEXT,
 			TAG_DONE);
+
+		/* Clear the state of the Abort flag */
+		aw->abort_requested = FALSE;
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
