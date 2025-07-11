@@ -275,3 +275,10 @@ Prevent drag'n'drop amendments
 ;
 MSG_NEWVERSIONDL (//)
 New version (%d.%d) available\nDownload now?
+;
+MSG_OPENINWB (//)
+Open destination drawer on Workbench
+;
+MSG_OPENWBONEXTRACT (//)
+Open drawer on WB after extraction
+;
