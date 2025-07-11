@@ -2181,7 +2181,8 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
-			done = WIN_DONE_CLOSED;
+			if(aw->disabled == FALSE)
+				done = WIN_DONE_CLOSED;
 		break;
 
 		case WMHI_GADGETUP:
@@ -2199,8 +2200,12 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_EXTRACT:
-					ret = extract(awin, aw->archive, aw->dest, NULL);
-					if(ret != 0) show_error(ret, awin);
+					if(aw->disabled) {
+						aw->abort_requested = TRUE;
+					} else {
+						ret = extract(awin, aw->archive, aw->dest, NULL);
+						if(ret != 0) show_error(ret, awin);
+					}
 				break;
 
 				case GID_LIST:
@@ -2216,7 +2221,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		case WMHI_RAWKEY:
 			switch(result & WMHI_GADGETMASK) {
 				case RAWKEY_ESC:
-					done = WIN_DONE_CLOSED;
+					if(aw->disabled) {
+						aw->abort_requested = TRUE;
+					} else {
+						done = WIN_DONE_CLOSED;
+					}
 				break;
 
 				case RAWKEY_RETURN:
