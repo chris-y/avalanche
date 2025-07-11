@@ -26,6 +26,8 @@
 #include <proto/wb.h>
 #include <clib/alib_protos.h>
 
+#include <dos/dostags.h>
+
 #include <intuition/pointerclass.h>
 
 #include <libraries/asl.h>
@@ -148,6 +150,17 @@ static struct List winlist;
 
 #define AVALANCHE_GLYPH_ROOT 800
 #define AVALANCHE_GLYPH_OPENDRAWER 801
+
+/** Extract process **/
+
+static struct Task* avalanche_process = NULL;
+
+struct avalanche_extract_userdata {
+	void *awin;
+	char *archive;
+	char *newdest;
+	struct Node *node;
+}
 
 /** Menu **/
 
@@ -521,7 +534,7 @@ static LONG __saveds lbsortfunc(__reg("a0") struct Hook *h, __reg("a2") APTR obj
 }
 
 
-long extract(void *awin, char *archive, char *newdest, struct Node *node)
+static long extract_internal(void *awin, char *archive, char *newdest, struct Node *node)
 {
 	long ret = 0;
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -550,6 +563,59 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	}
 
 	return ret;
+}
+
+#ifdef __amigaos4__
+static void extract_p(void)
+#else
+static void __saveds extract_p(void)
+#endif
+{
+	/* Tell the main process we are started */
+	Signal(avalanche_process, SIGBREAKF_CTRL_F);
+	
+	/* Wait for UserData */
+	Wait(SIGBREAKF_CTRL_E);
+	
+	/* Find our task */
+	struct Task *extract_task = FindTask(NULL);
+	struct avalanche_extract_userdata *aeu = (struct avalanche_extract_userdata *)extract_task->tc_UserData;
+	
+	/* Call Extract on our new process */
+	extract_internal(aeu->awin, aeu->archive, aeu->newdest, aeu->node);
+	
+	/* Free UserData */
+	FreeVec(aeu);
+	
+	/* Signal that we've finished - this will need a custom signal
+	 * May not need to do this as the process disables the GUI
+	 * However we do need to know not to process, eg. quit
+	 */
+}
+
+
+long extract(void *awin, char *archive, char *newdest, struct Node *node)
+{
+	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
+	
+	if(aeu == NULL) return -1;
+	
+	aeu->awin = awin;
+	aeu->archive = archive;
+	aeu->newdest = newdest;
+	aeu->node = node;
+	
+	avalanche_process = FindTask(NULL);
+	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p, NP_Name, "Avalanche extract process", TAG_DONE);
+	
+	/* Wait for the process to start up */
+	Wait(SIGBREAKF_CTRL_F);
+	
+	/* Poke UserData */
+	extract_process->pr_Task.tc_UserData = aeu;
+	
+	/* Signal the process to continue */
+	Signal(extract_process, SIGBREAKF_CTRL_E);
 }
 
 static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw)
