@@ -622,7 +622,8 @@ static void gettooltypes(struct WBArg *wbarg)
 		if(FindToolType(toolarray, "DEBUG")) config.debug = TRUE;
 		if(FindToolType(toolarray, "DRAGLOCK")) config.drag_lock = TRUE;
 		if(FindToolType(toolarray, "AISS")) config.aiss = TRUE;
-
+		if(FindToolType(toolarray, "OPENWBONEXTRACT")) config.openwb = TRUE;
+		
 		if(s = (char *)FindToolType(toolarray, "CLOSE")) {
 			if(MatchToolValue(s, "HIDE")) {
 				config.closeaction = 2;

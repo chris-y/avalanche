@@ -368,6 +368,13 @@ static void window_menu_set_enable_state(void *awin)
 	}
 }
 
+static BOOL window_open_dest(void *awin)
+{	
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	return OpenWorkbenchObjectA(aw->dest, NULL);
+}
+
 static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select, BOOL detach_list)
 {
 	/* detach_list detached the list and also doesn't update the underlying array */
@@ -518,6 +525,7 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 {
 	long ret = 0;
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	struct avalanche_config *config = get_config();
 
 	if(archive && newdest) {
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
@@ -531,6 +539,8 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 		} else {
 			ret = module_extract(awin, node, archive, newdest);
 		}
+
+		if((ret == 0) && (config->openwb == TRUE)) window_open_dest(awin);
 
 		window_disable_gadgets(awin, FALSE);
 
@@ -1719,13 +1729,6 @@ char *window_req_dest(void *awin)
 		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest);
 	}
 	return aw->dest;
-}
-
-static BOOL window_open_dest(void *awin)
-{	
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	return OpenWorkbenchObjectA(aw->dest, NULL);
 }
 
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)

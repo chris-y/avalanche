@@ -278,3 +278,7 @@ New version (%d.%d) available\nDownload now?
 ;
 MSG_OPENINWB (//)
 Open in Workbench
+;
+MSG_OPENWBONEXTRACT (//)
+Open drawer on WB after extraction
+;

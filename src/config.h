@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ struct avalanche_config {
 	BOOL disable_vscan_menu;
 	BOOL drag_lock;
 	BOOL aiss;
+	BOOL openwb; /* open on WB after extract */
 	ULONG closeaction; /* [1 = quit, 2 = hide, 0 = cancel] -- same as quit req */
 	ULONG activemodules;
 

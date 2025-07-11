@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ enum {
 	GID_C_MAIN = 0,
 	GID_C_SCAN,
 	GID_C_IGNOREFS,
+	GID_C_OPENWB,
 	GID_C_DEST,
 	GID_C_VIEWMODE,
 	GID_C_QUIT,
@@ -98,7 +99,7 @@ static void config_save(struct avalanche_config *config)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[21];
+	UBYTE *newtooltypes[22];
 	char tt_dest[100];
 	char tt_srcdir[100];
 	char tt_tmp[100];
@@ -264,7 +265,13 @@ static void config_save(struct avalanche_config *config)
 		}
 		newtooltypes[19] = tt_modules;
 
-		newtooltypes[20] = NULL;
+		if(config->openwb) {
+			newtooltypes[20] = "OPENWBONEXTRACT";
+		} else {
+			newtooltypes[20] = "(OPENWBONEXTRACT)";
+		}
+
+		newtooltypes[21] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(config->progname, dobj, NULL);
@@ -285,6 +292,9 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 
 	GetAttr(GA_Selected, gadgets[GID_C_IGNOREFS],(ULONG *)&data);
 	config->ignorefs = (data ? TRUE : FALSE);
+	
+	GetAttr(GA_Selected, gadgets[GID_C_OPENWB],(ULONG *)&data);
+	config->openwb = (data ? TRUE : FALSE);
 	
 	GetAttr(CHOOSER_Selected, gadgets[GID_C_QUIT], (ULONG *)&data);
 	config->closeaction = data;
@@ -362,6 +372,12 @@ void config_window_open(struct avalanche_config *config)
 						GA_RelVerify, TRUE,
 						GA_Text, locale_get_string( MSG_IGNOREFILESYSTEMS ) ,
 						GA_Selected, config->ignorefs,
+					End,	
+					LAYOUT_AddChild,  gadgets[GID_C_OPENWB] = CheckBoxObj,
+						GA_ID, GID_C_OPENWB,
+						GA_RelVerify, TRUE,
+						GA_Text, locale_get_string( MSG_OPENWBONEXTRACT ) ,
+						GA_Selected, config->openwb,
 					End,
 					LAYOUT_AddChild, gadgets[GID_C_VIEWMODE] = ChooserObj,
 						GA_ID, GID_C_VIEWMODE,
