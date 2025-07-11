@@ -55,3 +55,6 @@ dkms.conf
 Avalanche
 AvalanchePPC
 avalanche.lha
+
+# Created by CatComp
+locale_strings.h
