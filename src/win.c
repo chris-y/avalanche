@@ -312,27 +312,27 @@ static Object *get_glyph(ULONG glyph)
 				{DLST_LINESIZE, 0, 0, 0, 0, 0xff},	
 				{DLST_LINEPAT, 0, 0, 0, 0, 0xff},
 								
-				{DLST_LINE, 9, 6, 9, 9, 1},
-				{DLST_LINE, 9, 9, 1, 9, 1},
-				{DLST_LINE, 1, 9, 1, 6, 1},
-				{DLST_LINE, 1, 6, 9, 6, 1},
-				{DLST_LINE, 9, 6, 7, 3, 1},
-				{DLST_LINE, 7, 3, 3, 3, 1},
-				{DLST_LINE, 3, 3, 1, 6, 1},
+				{DLST_LINE, 90, 60, 90, 90, 1},
+				{DLST_LINE, 90, 90, 10, 90, 1},
+				{DLST_LINE, 10, 90, 10, 60, 1},
+				{DLST_LINE, 10, 60, 90, 60, 1},
+				{DLST_LINE, 90, 60, 70, 30, 1},
+				{DLST_LINE, 70, 30, 30, 30, 1},
+				{DLST_LINE, 30, 30, 10, 60, 1},
 				
-				{DLST_LINE, 3, 3, 2, 3, 1},
-				{DLST_LINE, 2, 3, 2, 5, 1},
+				{DLST_LINE, 30, 30, 20, 30, 1},
+				{DLST_LINE, 20, 30, 20, 50, 1},
 
-				{DLST_LINE, 7, 3, 8, 3, 1},
-				{DLST_LINE, 8, 3, 8, 5, 1},
+				{DLST_LINE, 70, 30, 80, 30, 1},
+				{DLST_LINE, 80, 30, 80, 50, 1},
 			
 				{DLST_END, 0, 0, 0, 0, 0},
 			};
 	
 			glyphobj = DrawListObj,
 					DRAWLIST_Directives, &opendrawer,
-					DRAWLIST_RefHeight, 10,
-					DRAWLIST_RefWidth, 10,
+					DRAWLIST_RefHeight, 100,
+					DRAWLIST_RefWidth, 100,
 				End;
 		} else {
 			if(glyph == AVALANCHE_GLYPH_ROOT) glyph = GLYPH_POPDRAWER;
