@@ -166,6 +166,8 @@ static struct DrawList dl_opendrawer[] = {
 	{DLST_LINE, 70, 30, 80, 30, 1},
 	{DLST_LINE, 80, 30, 80, 50, 1},
 
+	{DLST_LINE, 40, 75, 60, 75, 1},
+
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
@@ -181,6 +183,8 @@ static struct DrawList dl_archiveroot[] = {
 
 	{DLST_LINE, 90, 70, 90, 20, 1},
 	{DLST_LINE, 90, 20, 40, 20, 1},
+
+	{DLST_LINE, 35, 40, 65, 20, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
