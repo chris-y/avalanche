@@ -330,6 +330,8 @@ static Object *get_glyph(ULONG glyph)
 					DRAWLIST_Directives, &opendrawer,
 					DRAWLIST_RefHeight, 100,
 					DRAWLIST_RefWidth, 100,
+					IA_Width, 16,
+					IA_Height, 16,
 				End;
 		} else {
 			if(glyph == AVALANCHE_GLYPH_ROOT) glyph = GLYPH_POPDRAWER;
