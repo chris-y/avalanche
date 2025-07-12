@@ -148,12 +148,30 @@ static struct List winlist;
 #define fr_ArgList rf_ArgList
 #endif
 
+/** Glyphs **/
 #define AVALANCHE_GLYPH_ROOT 800
 #define AVALANCHE_GLYPH_OPENDRAWER 801
 
+static struct DrawList opendrawer[] = {
+	{DLST_LINE, 90, 60, 90, 90, 1},
+	{DLST_LINE, 90, 90, 10, 90, 1},
+	{DLST_LINE, 10, 90, 10, 60, 1},
+	{DLST_LINE, 10, 60, 90, 60, 1},
+	{DLST_LINE, 90, 60, 70, 30, 1},
+	{DLST_LINE, 70, 30, 30, 30, 1},
+	{DLST_LINE, 30, 30, 10, 60, 1},
+	{DLST_LINE, 30, 30, 20, 30, 1},
+	{DLST_LINE, 20, 30, 20, 50, 1},
+
+	{DLST_LINE, 70, 30, 80, 30, 1},
+	{DLST_LINE, 80, 30, 80, 50, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
 /** Menu **/
 
-struct NewMenu menu[] = {
+static struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
 	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
 	{NM_ITEM,   NULL,         "+", 0, 0, 0,}, // 1 New window
@@ -308,27 +326,6 @@ static Object *get_glyph(ULONG glyph)
 				BitMapEnd;
 	} else {
 		if(glyph == AVALANCHE_GLYPH_OPENDRAWER) {
-			struct DrawList opendrawer[] = {
-				{DLST_LINESIZE, 0, 0, 0, 0, 0xff},	
-				{DLST_LINEPAT, 0, 0, 0, 0, 0xff},
-								
-				{DLST_LINE, 90, 60, 90, 90, 1},
-				{DLST_LINE, 90, 90, 10, 90, 1},
-				{DLST_LINE, 10, 90, 10, 60, 1},
-				{DLST_LINE, 10, 60, 90, 60, 1},
-				{DLST_LINE, 90, 60, 70, 30, 1},
-				{DLST_LINE, 70, 30, 30, 30, 1},
-				{DLST_LINE, 30, 30, 10, 60, 1},
-				
-				{DLST_LINE, 30, 30, 20, 30, 1},
-				{DLST_LINE, 20, 30, 20, 50, 1},
-
-				{DLST_LINE, 70, 30, 80, 30, 1},
-				{DLST_LINE, 80, 30, 80, 50, 1},
-			
-				{DLST_END, 0, 0, 0, 0, 0},
-			};
-	
 			glyphobj = DrawListObj,
 					DRAWLIST_Directives, &opendrawer,
 					DRAWLIST_RefHeight, 100,
