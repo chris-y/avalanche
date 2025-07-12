@@ -152,7 +152,7 @@ static struct List winlist;
 #define AVALANCHE_GLYPH_ROOT 800
 #define AVALANCHE_GLYPH_OPENDRAWER 801
 
-static struct DrawList opendrawer[] = {
+static struct DrawList dl_opendrawer[] = {
 	{DLST_LINE, 90, 60, 90, 90, 1},
 	{DLST_LINE, 90, 90, 10, 90, 1},
 	{DLST_LINE, 10, 90, 10, 60, 1},
@@ -168,6 +168,23 @@ static struct DrawList opendrawer[] = {
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
+
+static struct DrawList dl_archiveroot[] = {
+	{DLST_LINE, 10, 90, 60, 90, 1},
+	{DLST_LINE, 60, 90, 60, 40, 1},
+	{DLST_LINE, 60, 40, 10, 40, 1},
+	{DLST_LINE, 10, 40, 10, 90, 1},
+
+	{DLST_LINE, 60, 90, 90, 70, 1},
+	{DLST_LINE, 60, 40, 90, 20, 1},
+	{DLST_LINE, 10, 40, 40, 20, 1},
+
+	{DLST_LINE, 90, 70, 90, 20, 1},
+	{DLST_LINE, 90, 20, 40, 20, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
 
 /** Menu **/
 
@@ -325,16 +342,26 @@ static Object *get_glyph(ULONG glyph)
 					BITMAP_Width, 16, */
 				BitMapEnd;
 	} else {
-		if(glyph == AVALANCHE_GLYPH_OPENDRAWER) {
+		if((glyph == AVALANCHE_GLYPH_OPENDRAWER) ||
+			(glyph == AVALANCHE_GLYPH_ROOT)) {
+				
+			struct DrawList *dl = NULL;
+				
+			if(glyph == AVALANCHE_GLYPH_OPENDRAWER) {
+				dl = &dl_opendrawer;
+			} else {
+				dl = &dl_archiveroot;
+			}
+				
 			glyphobj = DrawListObj,
-					DRAWLIST_Directives, &opendrawer,
+					DRAWLIST_Directives, dl,
 					DRAWLIST_RefHeight, 100,
 					DRAWLIST_RefWidth, 100,
 					IA_Width, 16,
 					IA_Height, 16,
 				End;
 		} else {
-			if(glyph == AVALANCHE_GLYPH_ROOT) glyph = GLYPH_POPDRAWER;
+			if glyph = GLYPH_POPDRAWER;
 
 			glyphobj = GlyphObj,
 						GLYPH_Glyph, glyph,
