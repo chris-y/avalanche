@@ -139,6 +139,7 @@ struct avalanche_window {
 	BOOL iconified;
 	BOOL disabled;
 	BOOL abort_requested;
+	BYTE process_exit_sig;
 	struct module_functions mf;
 	char *current_dir;
 	struct Node *root_node;
@@ -643,6 +644,7 @@ static void __saveds extract_p(void)
 	/* Find our task */
 	struct Task *extract_task = FindTask(NULL);
 	struct avalanche_extract_userdata *aeu = (struct avalanche_extract_userdata *)extract_task->tc_UserData;
+	struct avalanche_window *aw = (struct avalanche_window *)aeu->awin;
 	
 	/* Call Extract on our new process */
 	extract_internal(aeu->awin, aeu->archive, aeu->newdest, aeu->node);
@@ -650,23 +652,28 @@ static void __saveds extract_p(void)
 	/* Free UserData */
 	FreeVec(aeu);
 	
-	/* Signal that we've finished - this will need a custom signal
-	 * May not need to do this as the process disables the GUI
-	 * However we do need to know not to process, eg. quit
-	 */
+	/* Signal that we've finished */
+	Signal(avalanche_process, aw->process_exit_sig);
+	
+	FreeSignal(aw->process_exit_sig);
+	aw->process_exit_sig = 0;
 }
 
 
 long extract(void *awin, char *archive, char *newdest, struct Node *node)
 {
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
 	
-	if(aeu == NULL) return -1;
+	if(aeu == NULL) return -1; /* TODO: Fix return code */
 	
 	aeu->awin = awin;
 	aeu->archive = archive;
 	aeu->newdest = newdest;
 	aeu->node = node;
+	
+	if((aw->process_exit_sig = AllocSignal(-1)) == -1)
+		return -1; /* TODO: Fix return code */
 	
 	avalanche_process = FindTask(NULL);
 	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p, NP_Name, "Avalanche extract process", TAG_DONE);
@@ -679,6 +686,8 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	
 	/* Signal the process to continue */
 	Signal(extract_process, SIGBREAKF_CTRL_E);
+	
+	return 0;
 }
 
 static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw)
@@ -1532,6 +1541,11 @@ void window_close(void *awin, BOOL iconify)
 	/* Close new archive window if it's attached to this one */
 	newarc_window_close_if_associated(awin);
 
+	if(aw->disabled == TRUE) {
+		aw->abort_requested = TRUE;
+		Wait(aw->process_exit_sig);
+	}
+
 	if(aw->windows[WID_MAIN]) {
 		window_remove_dropzones(aw);
 		RemoveAppWindow(aw->appwin);
@@ -2242,8 +2256,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
-			if(aw->disabled == FALSE)
-				done = WIN_DONE_CLOSED;
+			done = WIN_DONE_CLOSED;
 		break;
 
 		case WMHI_GADGETUP:
