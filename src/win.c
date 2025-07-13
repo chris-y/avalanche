@@ -35,6 +35,7 @@
 
 #include <proto/bitmap.h>
 #include <proto/button.h>
+#include <proto/drawlist.h>
 #include <proto/getfile.h>
 #include <proto/glyph.h>
 #include <proto/label.h>
@@ -47,6 +48,7 @@
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
 #include <images/bitmap.h>
+#include <images/drawlist.h>
 #include <images/glyph.h>
 #include <images/label.h>
 
@@ -150,9 +152,6 @@ static struct List winlist;
 #define fr_ArgList rf_ArgList
 #endif
 
-#define AVALANCHE_GLYPH_ROOT 800
-#define AVALANCHE_GLYPH_OPENDRAWER 801
-
 /** Extract process **/
 
 static struct Task* avalanche_process = NULL;
@@ -164,9 +163,51 @@ struct avalanche_extract_userdata {
 	struct Node *node;
 }
 
+/** Glyphs **/
+#define AVALANCHE_GLYPH_ROOT 800
+#define AVALANCHE_GLYPH_OPENDRAWER 801
+
+static struct DrawList dl_opendrawer[] = {
+	{DLST_LINE, 90, 60, 90, 90, 1},
+	{DLST_LINE, 90, 90, 10, 90, 1},
+	{DLST_LINE, 10, 90, 10, 60, 1},
+	{DLST_LINE, 10, 60, 90, 60, 1},
+	{DLST_LINE, 90, 60, 70, 30, 1},
+	{DLST_LINE, 70, 30, 30, 30, 1},
+	{DLST_LINE, 30, 30, 10, 60, 1},
+	{DLST_LINE, 30, 30, 20, 30, 1},
+	{DLST_LINE, 20, 30, 20, 50, 1},
+
+	{DLST_LINE, 70, 30, 80, 30, 1},
+	{DLST_LINE, 80, 30, 80, 50, 1},
+
+	{DLST_LINE, 40, 75, 60, 75, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
+static struct DrawList dl_archiveroot[] = {
+	{DLST_LINE, 10, 90, 60, 90, 1},
+	{DLST_LINE, 60, 90, 60, 40, 1},
+	{DLST_LINE, 60, 40, 10, 40, 1},
+	{DLST_LINE, 10, 40, 10, 90, 1},
+
+	{DLST_LINE, 60, 90, 90, 70, 1},
+	{DLST_LINE, 60, 40, 90, 20, 1},
+	{DLST_LINE, 10, 40, 40, 20, 1},
+
+	{DLST_LINE, 90, 70, 90, 20, 1},
+	{DLST_LINE, 90, 20, 40, 20, 1},
+
+	{DLST_LINE, 35, 40, 65, 20, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
+
 /** Menu **/
 
-struct NewMenu menu[] = {
+static struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
 	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
 	{NM_ITEM,   NULL,         "+", 0, 0, 0,}, // 1 New window
@@ -320,11 +361,31 @@ static Object *get_glyph(ULONG glyph)
 					BITMAP_Width, 16, */
 				BitMapEnd;
 	} else {
-		if((glyph == AVALANCHE_GLYPH_ROOT) || (glyph == AVALANCHE_GLYPH_OPENDRAWER)) glyph = GLYPH_POPDRAWER;
-	
-		glyphobj = GlyphObj,
-					GLYPH_Glyph, glyph,
-				GlyphEnd;
+		if((glyph == AVALANCHE_GLYPH_OPENDRAWER) ||
+			(glyph == AVALANCHE_GLYPH_ROOT)) {
+				
+			struct DrawList *dl = NULL;
+				
+			if(glyph == AVALANCHE_GLYPH_OPENDRAWER) {
+				dl = &dl_opendrawer;
+			} else {
+				dl = &dl_archiveroot;
+			}
+				
+			glyphobj = DrawListObj,
+					DRAWLIST_Directives, dl,
+					DRAWLIST_RefHeight, 100,
+					DRAWLIST_RefWidth, 100,
+					IA_Width, 16,
+					IA_Height, 16,
+				End;
+		} else {
+			if glyph = GLYPH_POPDRAWER;
+
+			glyphobj = GlyphObj,
+						GLYPH_Glyph, glyph,
+					GlyphEnd;
+		}
 	}
 
 	UnlockPubScreen(NULL, screen);
