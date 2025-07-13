@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #include <proto/button.h>
 #include <proto/checkbox.h>
 #include <proto/chooser.h>
+#include <proto/drawlist.h>
 #include <proto/fuelgauge.h>
 #include <proto/getfile.h>
 #include <proto/glyph.h>
@@ -162,6 +163,7 @@ CLASS_STRUCT(BitMap)
 CLASS_STRUCT(Button)
 CLASS_STRUCT(CheckBox)
 CLASS_STRUCT(Chooser)
+CLASS_STRUCT(DrawList)
 CLASS_STRUCT(FuelGauge)
 CLASS_STRUCT(GetFile)
 CLASS_STRUCT(Glyph)
@@ -232,6 +234,7 @@ BOOL libs_open(void)
 	CLASS_OPEN("gadgets/button.gadget",        41, Button,        BUTTON,      FALSE)
 	CLASS_OPEN("gadgets/checkbox.gadget",      41, CheckBox,      CHECKBOX,    FALSE)
 	CLASS_OPEN("gadgets/chooser.gadget",       45, Chooser,       CHOOSER,     TRUE)
+	CLASS_OPEN("images/drawlist.image",        41, DrawList,     DRAWLIST,   FALSE)
 	CLASS_OPEN("gadgets/fuelgauge.gadget",     41, FuelGauge,     FUELGAUGE,   FALSE)
 	CLASS_OPEN("gadgets/getfile.gadget",       41, GetFile,       GETFILE,     FALSE)
 	CLASS_OPEN("images/glyph.image",           41, Glyph,         GLYPH,       FALSE)
@@ -255,6 +258,7 @@ void libs_close(void)
 	CLASS_CLOSE(Button)
 	CLASS_CLOSE(CheckBox)
 	CLASS_CLOSE(Chooser)
+	CLASS_CLOSE(DrawList)
 	CLASS_CLOSE(FuelGauge)
 	CLASS_CLOSE(GetFile)
 	CLASS_CLOSE(Glyph)
