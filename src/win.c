@@ -2463,10 +2463,14 @@ void window_disable_gadgets(void *awin, BOOL disable)
 	aw->disabled = disable;
 
 	if(disable) {
+		window_remove_dropzones(aw);
+
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text,  locale_get_string( MSG_STOP ) ,
 			TAG_DONE);
 	} else {
+		if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text, GID_EXTRACT_TEXT,
 			TAG_DONE);
