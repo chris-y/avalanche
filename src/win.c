@@ -403,35 +403,51 @@ static void window_free_archive_path(struct avalanche_window *aw)
 	aw->archive_needs_free = FALSE;
 }
 
-/* Activate/disable menus related to an open archive */
-static void window_menu_activation(void *awin, BOOL enable)
+/* Activate/disable menus related to an open archive
+ * busy - indicates if window is busy
+ */
+static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
 	if(enable) {
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0));
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
+
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
 		if(aw->mf.add) {
-			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 		} else {
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 		}
 		if(aw->mf.del) {
-			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		} else {
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		}
 	} else {
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+		if(busy == FALSE) {
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
+		} else {
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
+		}
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 	}
 }
 
@@ -440,9 +456,9 @@ static void window_menu_set_enable_state(void *awin)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(aw->archiver == ARC_NONE) {
-		window_menu_activation(aw, FALSE);
+		window_menu_activation(aw, FALSE, FALSE);
 	} else {
-		window_menu_activation(aw, TRUE);
+		window_menu_activation(aw, TRUE, FALSE);
 	}
 }
 
@@ -2496,6 +2512,9 @@ void window_disable_gadgets(void *awin, BOOL disable)
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
+
+	window_menu_activation(aw, !disable, TRUE);
+
 
 	if(aw->flat_mode == FALSE) disable = TRUE;
 
