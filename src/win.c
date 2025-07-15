@@ -682,7 +682,7 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
 	
-	if(aeu == NULL) return -1; /* TODO: Fix return code */
+	if(aeu == NULL) return -2;
 	
 	aeu->awin = awin;
 	aeu->archive = archive;
@@ -690,7 +690,7 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	aeu->node = node;
 	
 	if((aw->process_exit_sig = AllocSignal(-1)) == -1)
-		return -1; /* TODO: Fix return code */
+		return -2;
 	
 	avalanche_process = FindTask(NULL);
 	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p, NP_Name, "Avalanche extract process", TAG_DONE);
