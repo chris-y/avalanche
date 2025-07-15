@@ -122,6 +122,7 @@ struct avalanche_window {
 	struct Hook aslfilterhook;
 	struct Hook appwindzhook;
 	struct Hook lbsorthook;
+	struct MsgPort *appwin_mp;
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
 	char *archive;
@@ -1503,6 +1504,8 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
+	aw->appwin_mp = appwin_mp; /* store for later use */
+
 	if(aw->windows[WID_MAIN]) {
 		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
@@ -2464,11 +2467,13 @@ void window_disable_gadgets(void *awin, BOOL disable)
 
 	if(disable) {
 		window_remove_dropzones(aw);
+		RemoveAppWindow(aw->appwin);
 
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text,  locale_get_string( MSG_STOP ) ,
 			TAG_DONE);
 	} else {
+		aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], aw->appwin_mp, NULL);
 		if(aw->drag_lock == FALSE) window_add_dropzones(aw);
 
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
