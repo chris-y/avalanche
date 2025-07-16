@@ -1570,7 +1570,8 @@ void window_close(void *awin, BOOL iconify)
 
 	if(aw->windows[WID_MAIN]) {
 		window_remove_dropzones(aw);
-		RemoveAppWindow(aw->appwin);
+		if(aw->appwin) RemoveAppWindow(aw->appwin);
+		aw->appwin = NULL;
 		if(iconify) {
 			RA_Iconify(aw->objects[OID_MAIN]);
 		} else {
@@ -2411,8 +2412,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		break;
 		
 		case WMHI_NEWSIZE:
-			window_remove_dropzones(aw);
-			if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+			if(aw->disabled == FALSE) {
+				window_remove_dropzones(aw);
+				if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+			}
 		break;
 				
 		case WMHI_MENUPICK:
@@ -2557,7 +2560,8 @@ void window_disable_gadgets(void *awin, BOOL disable)
 
 	if(disable) {
 		window_remove_dropzones(aw);
-		RemoveAppWindow(aw->appwin);
+		if(aw->appwin) RemoveAppWindow(aw->appwin);
+		aw->appwin = NULL;
 
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text,  locale_get_string( MSG_STOP ) ,
