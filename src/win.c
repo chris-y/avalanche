@@ -365,8 +365,6 @@ static Object *get_glyph(ULONG glyph)
 					IA_Height, 16,
 				End;
 		} else {
-			if glyph = GLYPH_POPDRAWER;
-
 			glyphobj = GlyphObj,
 						GLYPH_Glyph, glyph,
 					GlyphEnd;
