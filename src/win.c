@@ -2350,7 +2350,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
-			done = WIN_DONE_CLOSED;
+			if(aw->disabled == TRUE) {
+				aw->abort_requested = TRUE;
+			} else {
+				done = WIN_DONE_CLOSED;
+			}
 		break;
 
 		case WMHI_GADGETUP:
