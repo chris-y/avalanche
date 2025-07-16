@@ -404,7 +404,7 @@ static void window_free_archive_path(struct avalanche_window *aw)
 }
 
 /* Activate/disable menus related to an open archive
- * busy - indicates if window is busy
+ * busy - indicates if window is busy (eg. extract process running)
  */
 static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 {
@@ -689,8 +689,10 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	aeu->newdest = newdest;
 	aeu->node = node;
 	
-	if((aw->process_exit_sig = AllocSignal(-1)) == -1)
+	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
+		FreeVec(aeu);
 		return -2;
+	}
 	
 	avalanche_process = FindTask(NULL);
 	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p, NP_Name, "Avalanche extract process", TAG_DONE);
@@ -1893,19 +1895,15 @@ char *window_req_dest(void *awin)
 	return aw->dest;
 }
 
-void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
+static void window_req_open_archive_internal(void *awin, struct avalanche_config *config)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-//	dir_seen = FALSE;
 	long ret = 0;
 	long retxfd = 0;
 	long retark = 0;
 
-	if(refresh_only == FALSE) {
-		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
-		if(ret == 0) return;
-	}
+	window_disable_gadgets(awin, TRUE);
 
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -1914,11 +1912,6 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	free_arc_array(aw);
 
 	module_free(awin);
-
-	if((refresh_only == FALSE) && aw->flat_mode && aw->current_dir) {
-		FreeVec(aw->current_dir);
-		aw->current_dir = NULL;
-	}
 
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	GetAttr(GETFILE_FullFile, aw->gadgets[GID_ARCHIVE], (APTR)&aw->archive);
@@ -1981,9 +1974,86 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	window_update_title(aw);
 
+	window_disable_gadgets(awin, FALSE);
+
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
+}
+
+#ifdef __amigaos4__
+static void window_req_open_archive_p(void)
+#else
+static void __saveds window_req_open_archive_p(void)
+#endif
+{
+	/* Tell the main process we are started */
+	Signal(avalanche_process, SIGBREAKF_CTRL_F);
+	
+	/* Wait for UserData */
+	Wait(SIGBREAKF_CTRL_E);
+	
+	/* Find our task */
+	struct Task *list_task = FindTask(NULL);
+	struct avalanche_extract_userdata *aeu = (struct avalanche_extract_userdata *)list_task->tc_UserData;
+	struct avalanche_window *aw = (struct avalanche_window *)aeu->awin;
+	
+	/* Call Extract on our new process */
+	window_req_open_archive_internal(aeu->awin, get_config());
+	
+	/* Free UserData */
+	FreeVec(aeu);
+	
+	/* Signal that we've finished */
+	Signal(avalanche_process, aw->process_exit_sig);
+	
+	FreeSignal(aw->process_exit_sig);
+	aw->process_exit_sig = 0;
+}
+
+void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	long ret = 0;
+
+	if(refresh_only == FALSE) {
+		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
+		if(ret == 0) return;
+	
+		if(aw->flat_mode && aw->current_dir) {
+			FreeVec(aw->current_dir);
+			aw->current_dir = NULL;
+		}
+	}
+
+	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
+
+	if(aeu == NULL) return;
+	
+	aeu->awin = awin;
+	aeu->archive = NULL;
+	aeu->newdest = NULL;
+	aeu->node = NULL;
+
+	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
+		FreeVec(aeu);
+		return;
+	}
+	
+	avalanche_process = FindTask(NULL);
+	struct Process *list_process = CreateNewProcTags(NP_Entry, window_req_open_archive_p, NP_Name, "Avalanche list process", TAG_DONE);
+	
+	/* Wait for the process to start up */
+	Wait(SIGBREAKF_CTRL_F);
+	
+	/* Poke UserData */
+	list_process->pr_Task.tc_UserData = aeu;
+	
+	/* Signal the process to continue */
+	Signal(list_process, SIGBREAKF_CTRL_E);
+	
+	return;
 }
 
 
