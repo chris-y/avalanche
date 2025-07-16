@@ -102,6 +102,8 @@ void show_error(long code, void *awin)
 	if(code == -1) {
 		/* TODO: check this, code is the same for xfd */
 		snprintf(message, 100, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xadmaster.library", 12 );
+	} else if(code == -2) {
+		snprintf(message, 100, locale_get_string( MSG_ERR_UNKNOWN ));
 	} else {
 		char *err_msg =  module_get_error(awin, code);
 		if (err_msg == NULL) return;

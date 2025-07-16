@@ -26,6 +26,8 @@
 #include <proto/wb.h>
 #include <clib/alib_protos.h>
 
+#include <dos/dostags.h>
+
 #include <intuition/pointerclass.h>
 
 #include <libraries/asl.h>
@@ -120,6 +122,7 @@ struct avalanche_window {
 	struct Hook aslfilterhook;
 	struct Hook appwindzhook;
 	struct Hook lbsorthook;
+	struct MsgPort *appwin_mp;
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
 	char *archive;
@@ -135,6 +138,9 @@ struct avalanche_window {
 	BOOL flat_mode;
 	BOOL drag_lock;
 	BOOL iconified;
+	BOOL disabled;
+	BOOL abort_requested;
+	BYTE process_exit_sig;
 	struct module_functions mf;
 	char *current_dir;
 	struct Node *root_node;
@@ -147,6 +153,17 @@ static struct List winlist;
 #define fr_NumArgs rf_NumArgs
 #define fr_ArgList rf_ArgList
 #endif
+
+/** Extract process **/
+
+static struct Task* avalanche_process = NULL;
+
+struct avalanche_extract_userdata {
+	void *awin;
+	char *archive;
+	char *newdest;
+	struct Node *node;
+};
 
 /** Glyphs **/
 #define AVALANCHE_GLYPH_ROOT 800
@@ -384,35 +401,53 @@ static void window_free_archive_path(struct avalanche_window *aw)
 	aw->archive_needs_free = FALSE;
 }
 
-/* Activate/disable menus related to an open archive */
-static void window_menu_activation(void *awin, BOOL enable)
+/* Activate/disable menus related to an open archive
+ * busy - indicates if window is busy (eg. extract process running)
+ */
+static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
 	if(enable) {
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0));
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
+
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
 		if(aw->mf.add) {
-			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 		} else {
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 		}
 		if(aw->mf.del) {
-			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		} else {
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		}
 	} else {
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0));
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0));
+		if(busy == FALSE) {
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
+		} else {
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
+		}
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 	}
 }
 
@@ -421,9 +456,9 @@ static void window_menu_set_enable_state(void *awin)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(aw->archiver == ARC_NONE) {
-		window_menu_activation(aw, FALSE);
+		window_menu_activation(aw, FALSE, FALSE);
 	} else {
-		window_menu_activation(aw, TRUE);
+		window_menu_activation(aw, TRUE, FALSE);
 	}
 }
 
@@ -580,7 +615,7 @@ static LONG __saveds lbsortfunc(__reg("a0") struct Hook *h, __reg("a2") APTR obj
 }
 
 
-long extract(void *awin, char *archive, char *newdest, struct Node *node)
+static long extract_internal(void *awin, char *archive, char *newdest, struct Node *node)
 {
 	long ret = 0;
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -609,6 +644,72 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	}
 
 	return ret;
+}
+
+#ifdef __amigaos4__
+static void extract_p(void)
+#else
+static void __saveds extract_p(void)
+#endif
+{
+	/* Tell the main process we are started */
+	Signal(avalanche_process, SIGBREAKF_CTRL_F);
+	
+	/* Wait for UserData */
+	Wait(SIGBREAKF_CTRL_E);
+	
+	/* Find our task */
+	struct Task *extract_task = FindTask(NULL);
+	struct avalanche_extract_userdata *aeu = (struct avalanche_extract_userdata *)extract_task->tc_UserData;
+	struct avalanche_window *aw = (struct avalanche_window *)aeu->awin;
+	
+	/* Call Extract on our new process */
+	extract_internal(aeu->awin, aeu->archive, aeu->newdest, aeu->node);
+	
+	/* Free UserData */
+	FreeVec(aeu);
+	
+	/* Signal that we've finished */
+	Signal(avalanche_process, aw->process_exit_sig);
+	
+	FreeSignal(aw->process_exit_sig);
+	aw->process_exit_sig = 0;
+}
+
+
+long extract(void *awin, char *archive, char *newdest, struct Node *node)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
+	
+	if(aeu == NULL) return -2;
+	
+	aeu->awin = awin;
+	aeu->archive = archive;
+	aeu->newdest = newdest;
+	aeu->node = node;
+	
+	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
+		FreeVec(aeu);
+		return -2;
+	}
+	
+	/* Ensure there are no pending signals for this already */
+	SetSignal(0L, aw->process_exit_sig);
+	
+	avalanche_process = FindTask(NULL);
+	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p, NP_Name, "Avalanche extract process", TAG_DONE);
+	
+	/* Wait for the process to start up */
+	Wait(SIGBREAKF_CTRL_F);
+	
+	/* Poke UserData */
+	extract_process->pr_Task.tc_UserData = aeu;
+	
+	/* Signal the process to continue */
+	Signal(extract_process, SIGBREAKF_CTRL_E);
+	
+	return 0;
 }
 
 static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw)
@@ -1424,6 +1525,8 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
+	aw->appwin_mp = appwin_mp; /* store for later use */
+
 	if(aw->windows[WID_MAIN]) {
 		WindowToFront(aw->windows[WID_MAIN]);
 	} else {
@@ -1462,9 +1565,15 @@ void window_close(void *awin, BOOL iconify)
 	/* Close new archive window if it's attached to this one */
 	newarc_window_close_if_associated(awin);
 
+	if(aw->disabled == TRUE) {
+		aw->abort_requested = TRUE;
+		Wait(aw->process_exit_sig);
+	}
+
 	if(aw->windows[WID_MAIN]) {
 		window_remove_dropzones(aw);
-		RemoveAppWindow(aw->appwin);
+		if(aw->appwin) RemoveAppWindow(aw->appwin);
+		aw->appwin = NULL;
 		if(iconify) {
 			RA_Iconify(aw->objects[OID_MAIN]);
 		} else {
@@ -1790,19 +1899,15 @@ char *window_req_dest(void *awin)
 	return aw->dest;
 }
 
-void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
+static void window_req_open_archive_internal(void *awin, struct avalanche_config *config)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-//	dir_seen = FALSE;
 	long ret = 0;
 	long retxfd = 0;
 	long retark = 0;
 
-	if(refresh_only == FALSE) {
-		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
-		if(ret == 0) return;
-	}
+	window_disable_gadgets(awin, TRUE);
 
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -1811,11 +1916,6 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	free_arc_array(aw);
 
 	module_free(awin);
-
-	if((refresh_only == FALSE) && aw->flat_mode && aw->current_dir) {
-		FreeVec(aw->current_dir);
-		aw->current_dir = NULL;
-	}
 
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	GetAttr(GETFILE_FullFile, aw->gadgets[GID_ARCHIVE], (APTR)&aw->archive);
@@ -1878,9 +1978,89 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 
 	window_update_title(aw);
 
+	window_disable_gadgets(awin, FALSE);
+
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
+}
+
+#ifdef __amigaos4__
+static void window_req_open_archive_p(void)
+#else
+static void __saveds window_req_open_archive_p(void)
+#endif
+{
+	/* Tell the main process we are started */
+	Signal(avalanche_process, SIGBREAKF_CTRL_F);
+	
+	/* Wait for UserData */
+	Wait(SIGBREAKF_CTRL_E);
+	
+	/* Find our task */
+	struct Task *list_task = FindTask(NULL);
+	struct avalanche_extract_userdata *aeu = (struct avalanche_extract_userdata *)list_task->tc_UserData;
+	struct avalanche_window *aw = (struct avalanche_window *)aeu->awin;
+	
+	/* Call Extract on our new process */
+	window_req_open_archive_internal(aeu->awin, get_config());
+	
+	/* Free UserData */
+	FreeVec(aeu);
+	
+	/* Signal that we've finished */
+	Signal(avalanche_process, aw->process_exit_sig);
+	
+	FreeSignal(aw->process_exit_sig);
+	aw->process_exit_sig = 0;
+}
+
+void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	long ret = 0;
+
+	if(refresh_only == FALSE) {
+		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
+		if(ret == 0) return;
+	
+		if(aw->flat_mode && aw->current_dir) {
+			FreeVec(aw->current_dir);
+			aw->current_dir = NULL;
+		}
+	}
+
+	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
+
+	if(aeu == NULL) return;
+	
+	aeu->awin = awin;
+	aeu->archive = NULL;
+	aeu->newdest = NULL;
+	aeu->node = NULL;
+
+	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
+		FreeVec(aeu);
+		return;
+	}
+	
+	/* Ensure there are no pending signals for this already */
+	SetSignal(0L, aw->process_exit_sig);
+	
+	avalanche_process = FindTask(NULL);
+	struct Process *list_process = CreateNewProcTags(NP_Entry, window_req_open_archive_p, NP_Name, "Avalanche list process", TAG_DONE);
+	
+	/* Wait for the process to start up */
+	Wait(SIGBREAKF_CTRL_F);
+	
+	/* Poke UserData */
+	list_process->pr_Task.tc_UserData = aeu;
+	
+	/* Signal the process to continue */
+	Signal(list_process, SIGBREAKF_CTRL_E);
+	
+	return;
 }
 
 
@@ -2172,7 +2352,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
-			done = WIN_DONE_CLOSED;
+			if(aw->disabled == TRUE) {
+				aw->abort_requested = TRUE;
+			} else {
+				done = WIN_DONE_CLOSED;
+			}
 		break;
 
 		case WMHI_GADGETUP:
@@ -2190,8 +2374,12 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_EXTRACT:
-					ret = extract(awin, aw->archive, aw->dest, NULL);
-					if(ret != 0) show_error(ret, awin);
+					if(aw->disabled) {
+						aw->abort_requested = TRUE;
+					} else {
+						ret = extract(awin, aw->archive, aw->dest, NULL);
+						if(ret != 0) show_error(ret, awin);
+					}
 				break;
 
 				case GID_LIST:
@@ -2207,7 +2395,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		case WMHI_RAWKEY:
 			switch(result & WMHI_GADGETMASK) {
 				case RAWKEY_ESC:
-					done = WIN_DONE_CLOSED;
+					if(aw->disabled) {
+						aw->abort_requested = TRUE;
+					} else {
+						done = WIN_DONE_CLOSED;
+					}
 				break;
 
 				case RAWKEY_RETURN:
@@ -2226,8 +2418,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		break;
 		
 		case WMHI_NEWSIZE:
-			window_remove_dropzones(aw);
-			if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+			if(aw->disabled == FALSE) {
+				window_remove_dropzones(aw);
+				if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+			}
 		break;
 				
 		case WMHI_MENUPICK:
@@ -2352,29 +2546,9 @@ BOOL check_abort(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-	ULONG result;
-	UWORD code;
-
-	while((result = RA_HandleInput(aw->objects[OID_MAIN], &code)) != WMHI_LASTMSG ) {
-		switch (result & WMHI_CLASSMASK) {
-			case WMHI_GADGETUP:
-				switch (result & WMHI_GADGETMASK) {
-					case GID_EXTRACT:
-						return TRUE;
-					break;
-				}
-			break;
-
-			case WMHI_RAWKEY:
-				switch(result & WMHI_GADGETMASK) {
-					case RAWKEY_ESC:
-						return TRUE;
-					break;
-				}
-			break;
-		}
-	}
-	return FALSE;
+	/* This flag is set in the main loop
+	 * if ESC is pressed or Abort is clicked */
+	return aw->abort_requested;
 }
 
 void window_reset_count(void *awin)
@@ -2388,14 +2562,26 @@ void window_disable_gadgets(void *awin, BOOL disable)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
+	aw->disabled = disable;
+
 	if(disable) {
+		window_remove_dropzones(aw);
+		if(aw->appwin) RemoveAppWindow(aw->appwin);
+		aw->appwin = NULL;
+
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text,  locale_get_string( MSG_STOP ) ,
 			TAG_DONE);
 	} else {
+		aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], aw->appwin_mp, NULL);
+		if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text, GID_EXTRACT_TEXT,
 			TAG_DONE);
+
+		/* Clear the state of the Abort flag */
+		aw->abort_requested = FALSE;
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
@@ -2410,6 +2596,9 @@ void window_disable_gadgets(void *awin, BOOL disable)
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
+
+	window_menu_activation(aw, !disable, TRUE);
+
 
 	if(aw->flat_mode == FALSE) disable = TRUE;
 

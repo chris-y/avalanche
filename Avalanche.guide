@@ -137,6 +137,8 @@ This is mostly for internal use, but has the following commands:
 @node history "Changelog"
 @rem keep this to <80 chars for readme
 @{u}2.6 (xx.xx.xxxx)@{uu}
+* Extraction and listing now runs in a separate process
+  - This keeps other Avalanche windows responsive
 * Add ability to open destination drawer after extraction
   - Also added button to open destination manually
 
