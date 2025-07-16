@@ -414,6 +414,7 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
 
@@ -438,6 +439,7 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
 		}
