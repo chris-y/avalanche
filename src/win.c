@@ -692,6 +692,9 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 		return -2;
 	}
 	
+	/* Ensure there are no pending signals for this already */
+	SetSignal(0L, aw->process_exit_sig);
+	
 	avalanche_process = FindTask(NULL);
 	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p, NP_Name, "Avalanche extract process", TAG_DONE);
 	
@@ -2038,6 +2041,9 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		FreeVec(aeu);
 		return;
 	}
+	
+	/* Ensure there are no pending signals for this already */
+	SetSignal(0L, aw->process_exit_sig);
 	
 	avalanche_process = FindTask(NULL);
 	struct Process *list_process = CreateNewProcTags(NP_Entry, window_req_open_archive_p, NP_Name, "Avalanche list process", TAG_DONE);
