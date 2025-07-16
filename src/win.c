@@ -163,7 +163,7 @@ struct avalanche_extract_userdata {
 	char *archive;
 	char *newdest;
 	struct Node *node;
-}
+};
 
 /** Glyphs **/
 #define AVALANCHE_GLYPH_ROOT 800
