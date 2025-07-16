@@ -170,20 +170,20 @@ struct avalanche_extract_userdata {
 #define AVALANCHE_GLYPH_OPENDRAWER 801
 
 static struct DrawList dl_opendrawer[] = {
-	{DLST_LINE, 90, 60, 90, 90, 1},
-	{DLST_LINE, 90, 90, 10, 90, 1},
-	{DLST_LINE, 10, 90, 10, 60, 1},
-	{DLST_LINE, 10, 60, 90, 60, 1},
-	{DLST_LINE, 90, 60, 70, 30, 1},
-	{DLST_LINE, 70, 30, 30, 30, 1},
-	{DLST_LINE, 30, 30, 10, 60, 1},
-	{DLST_LINE, 30, 30, 20, 30, 1},
-	{DLST_LINE, 20, 30, 20, 50, 1},
+	{DLST_LINE, 90, 50, 90, 80, 1},
+	{DLST_LINE, 90, 80, 10, 80, 1},
+	{DLST_LINE, 10, 80, 10, 50, 1},
+	{DLST_LINE, 10, 50, 90, 50, 1},
+	{DLST_LINE, 90, 50, 70, 20, 1},
+	{DLST_LINE, 70, 20, 30, 20, 1},
+	{DLST_LINE, 30, 20, 10, 50, 1},
+	{DLST_LINE, 30, 20, 20, 20, 1},
+	{DLST_LINE, 20, 20, 20, 40, 1},
 
-	{DLST_LINE, 70, 30, 80, 30, 1},
-	{DLST_LINE, 80, 30, 80, 50, 1},
+	{DLST_LINE, 70, 20, 80, 20, 1},
+	{DLST_LINE, 80, 20, 80, 40, 1},
 
-	{DLST_LINE, 40, 75, 60, 75, 1},
+	{DLST_LINE, 40, 65, 60, 65, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
@@ -382,8 +382,6 @@ static Object *get_glyph(ULONG glyph)
 					IA_Height, 16,
 				End;
 		} else {
-			if glyph = GLYPH_POPDRAWER;
-
 			glyphobj = GlyphObj,
 						GLYPH_Glyph, glyph,
 					GlyphEnd;
