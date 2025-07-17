@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023-5 Chris Young
+ * (c) 2025 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,12 +12,13 @@
  * GNU General Public License for more details.
 */
 
-#ifndef AVALANCHE_HTTP_H
-#define AVALANCHE_HTTP_H 1
+#include "update.h"
 
-#include <exec/types.h>
-
-BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize, BPTR fh);
-BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp, BOOL np);
-struct Process *http_get_process_check_version(void);
+void update_gui(struct avalanche_version_numbers *avn, void *ssl_ctx)
+{
+                for(int i = 0; i < ACHECKVER_MAX; i++) {
+#ifdef __amigaos4__
+                        DebugPrintF("%d: Current: %d.%d, New: %d.%d\n", i, avn[i].current_version, avn[i].current_revision, avn[i].latest_version, avn[i].latest_revision);
 #endif
+                }
+}

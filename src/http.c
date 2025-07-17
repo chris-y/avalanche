@@ -57,6 +57,7 @@ struct Library *AmiSSLExtBase = NULL;
 #include "locale.h"
 #include "misc.h"
 #include "req.h"
+#include "update.h"
 #include "win.h"
 
 #include "deark.h"
@@ -71,28 +72,6 @@ enum {
 	AHTTP_ERR_NOTCPIP,
 	AHTTP_ERR_AMISSL,
 	AHTTP_ERR_UNKNOWN
-};
-
-struct avalanche_version_numbers {
-	const char *check_url;
-	const char *download_url;
-	ULONG current_version;
-	ULONG current_revision;
-	ULONG latest_version;
-	ULONG latest_revision;
-	BOOL update_available;
-};
-
-enum {
-	ACHECKVER_AVALANCHE = 0,
-	ACHECKVER_XAD,
-	ACHECKVER_XFD,
-	ACHECKVER_XVS,
-	ACHECKVER_DEARK,
-#ifdef __amigaos4__
-	ACHECKVER_ZIP,
-#endif
-	ACHECKVER_MAX
 };
 
 static char *err_txt = NULL;
@@ -159,7 +138,7 @@ static int err_cb(const char *str, size_t len, void *u)
 	return 1;
 }
 
-static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize, BPTR fh)
+BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize, BPTR fh)
 {
 	STACK_OF(CONF_VALUE) *headers = NULL;
 	BIO *bio, *bio_err;
@@ -333,36 +312,42 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 	BOOL update_available = FALSE;
 	ULONG ver, rev;
 	ULONG upd_ver, upd_rev;
-	struct avalanche_version_numbers avn[ACHECKVER_MAX];
-	
-	avn[ACHECKVER_AVALANCHE].check_url = "https://aminet.net/util/arc/avalanche.readme";
-	avn[ACHECKVER_AVALANCHE].download_url = "https://aminet.net/util/arc/avalanche.lha";
-
-	avn[ACHECKVER_XAD].check_url = "https://aminet.net/util/arc/xadmaster000.readme";
-	avn[ACHECKVER_XAD].download_url = "https://aminet.net/util/arc/xadmaster000.lha";
-
-#ifdef __amigaos4__
-	avn[ACHECKVER_XFD].check_url = "https://aminet.net/util/pack/xfdmaster.readme"; /* Version number is in the wrong format on this */
-	avn[ACHECKVER_XFD].download_url = "https://aminet.net/util/pack/xfdmaster.lha";
+	struct avalanche_version_numbers avn[] = {
+		{	.name = "Avalanche",
+			.check_url = "https://aminet.net/util/arc/avalanche.readme",
+			.download_url = "https://aminet.net/util/arc/avalanche.lha"
+		},
+		{	.name = "xadmaster.library",
+			.check_url = "https://aminet.net/util/arc/xadmaster000.readme",
+			.download_url = "https://aminet.net/util/arc/xadmaster000.lha",
+		},
+		{	.name = "xfdmaster.library",
+#ifndef __amigaos4__
+			.check_url = "https://aminet.net/util/pack/xfdmaster.readme", /* Version number is in the wrong format on this */
+			.download_url = "https://aminet.net/util/pack/xfdmaster.lha",
 #else
-	avn[ACHECKVER_XFD].check_url = "https://aminet.net/util/pack/xfdmaster_os4.readme";
-	avn[ACHECKVER_XFD].download_url = "https://aminet.net/util/pack/xfdmaster_os4.lha";
+			.check_url = "https://aminet.net/util/pack/xfdmaster_os4.readme",
+			.download_url = "https://aminet.net/util/pack/xfdmaster_os4.lha",
 #endif
-
-	avn[ACHECKVER_XVS].check_url = "https://aminet.net/util/virus/xvslibrary.readme";
-	avn[ACHECKVER_XVS].download_url = "https://aminet.net/util/virus/xvslibrary.lha";
-	
+		},
+		{	.name = "xvs.library",
+			.check_url = "https://aminet.net/util/virus/xvslibrary.readme",
+			.download_url = "https://aminet.net/util/virus/xvslibrary.lha",
+		},
+		{	.name = "Deark",
 #ifdef __amigaos4__
-	avn[ACHECKVER_DEARK].check_url = "https://os4depot.net/share/utility/archive/deark_lha.readme";
-	avn[ACHECKVER_DEARK].download_url = "https://os4depot.net/share/utility/archive/deark.lha";
+			.check_url = "https://os4depot.net/share/utility/archive/deark_lha.readme",
+			.download_url = "https://os4depot.net/share/utility/archive/deark.lha",
 #else
-	avn[ACHECKVER_DEARK].check_url = "https://aminet.net/util/arc/deark.readme";
-	avn[ACHECKVER_DEARK].download_url = "https://aminet.net/util/arc/deark.lha";
+			.check_url = "https://aminet.net/util/arc/deark.readme",
+			.download_url = "https://aminet.net/util/arc/deark.lha",
 #endif
-
+		},
 #ifdef __amigaos4__
-	avn[ACHECKVER_DEARK].check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme";
-	avn[ACHECKVER_DEARK].download_url = "https://os4depot.net/share/library/misc/zip_lib.lha";
+		{	.name = "zip.library",
+			.check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme",
+			.download_url = "https://os4depot.net/share/library/misc/zip_lib.lha",
+		}
 #endif
 	
 	if(buffer) {
@@ -417,6 +402,9 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 			DebugPrintF("%d: Current: %d.%d, New: %d.%d\n", i, avn[i].current_version, avn[i].current_revision, avn[i].latest_version, avn[i].latest_revision);
 #endif
 		}
+
+		update_gui(avn, SSL_ctx);
+		
 
 		char message[101];
 
