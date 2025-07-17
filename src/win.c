@@ -698,7 +698,10 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	SetSignal(0L, aw->process_exit_sig);
 	
 	avalanche_process = FindTask(NULL);
-	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p, NP_Name, "Avalanche extract process", TAG_DONE);
+	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p,
+						NP_Name, "Avalanche extract process",
+						NP_Priority, -1,
+						TAG_DONE);
 	
 	/* Wait for the process to start up */
 	Wait(SIGBREAKF_CTRL_F);
@@ -2049,7 +2052,10 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	SetSignal(0L, aw->process_exit_sig);
 	
 	avalanche_process = FindTask(NULL);
-	struct Process *list_process = CreateNewProcTags(NP_Entry, window_req_open_archive_p, NP_Name, "Avalanche list process", TAG_DONE);
+	struct Process *list_process = CreateNewProcTags(NP_Entry, window_req_open_archive_p,
+						NP_Name, "Avalanche list process",
+						NP_Priority, -1,
+						TAG_DONE);
 	
 	/* Wait for the process to start up */
 	Wait(SIGBREAKF_CTRL_F);
