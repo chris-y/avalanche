@@ -1571,7 +1571,7 @@ void window_close(void *awin, BOOL iconify)
 	/* Close new archive window if it's attached to this one */
 	newarc_window_close_if_associated(awin);
 
-	if(aw->disabled == TRUE) {
+	if((aw->disabled == TRUE) && (iconify == FALSE)) {
 		aw->abort_requested = TRUE;
 		Wait(aw->process_exit_sig);
 	}
@@ -2574,6 +2574,8 @@ void window_disable_gadgets(void *awin, BOOL disable)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	aw->disabled = disable;
+
+	if(aw->windows[WID_MAIN] == NULL) return;
 
 	if(disable) {
 		window_remove_dropzones(aw);
