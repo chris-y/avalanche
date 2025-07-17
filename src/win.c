@@ -626,7 +626,7 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 										WA_PointerType, POINTERTYPE_PROGRESS,
 										TAG_DONE);
 		window_reset_count(awin);
-		window_disable_gadgets(awin, TRUE);
+		window_disable_gadgets(awin, TRUE, TRUE);
 
 		if((node == NULL) && (aw->flat_mode) && (aw->archiver != ARC_XFD)) {
 			ret = module_extract_array(awin, aw->arc_array, aw->total_items, newdest);
@@ -636,7 +636,7 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 
 		if((ret == 0) && (config->openwb == TRUE)) window_open_dest(awin);
 
-		window_disable_gadgets(awin, FALSE);
+		window_disable_gadgets(awin, FALSE, TRUE);
 
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, FALSE,
@@ -1915,7 +1915,7 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	long retxfd = 0;
 	long retark = 0;
 
-	window_disable_gadgets(awin, TRUE);
+	window_disable_gadgets(awin, TRUE, FALSE);
 
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
@@ -1986,7 +1986,7 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 
 	window_update_title(aw);
 
-	window_disable_gadgets(awin, FALSE);
+	window_disable_gadgets(awin, FALSE, FALSE);
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
@@ -2165,7 +2165,7 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 			NameFromLock(wbarg->wa_Lock, file, 1024);
 			if(*wbarg->wa_Name) {
 
-				window_disable_gadgets(awin, TRUE);
+				window_disable_gadgets(awin, TRUE, FALSE);
 
 				AddPart(file, wbarg->wa_Name, 1024);
 #ifdef __amigaos4__
@@ -2185,7 +2185,7 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 					UnLock(lock);
 				}
 #endif
-			window_disable_gadgets(awin, FALSE);
+			window_disable_gadgets(awin, FALSE, FALSE);
 
 			}
 			window_req_open_archive(awin, get_config(), TRUE);
@@ -2219,7 +2219,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 				strcpy(file, aslreq->fr_Drawer);
 				AddPart(file, aslreq->fr_File, len);
 
-				window_disable_gadgets(awin, TRUE);
+				window_disable_gadgets(awin, TRUE, FALSE);
 
 #ifdef __amigaos4__
 				if(object_is_dir(file)) {
@@ -2240,7 +2240,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 #endif
 
 				ok = window_edit_add(aw, file, NULL); /* TRUE = cont, FALSE = abort */
-				window_disable_gadgets(awin, FALSE);
+				window_disable_gadgets(awin, FALSE, FALSE);
 			}
 		}
 		FreeAslRequest(aslreq);
@@ -2265,7 +2265,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 										TAG_DONE);
 
 	window_reset_count(awin);
-	window_disable_gadgets(awin, TRUE);
+	window_disable_gadgets(awin, TRUE, FALSE);
 
 	/* module_free(aw);
 	 * TODO: copy the files to delete into a list so we can release the archive */
@@ -2309,7 +2309,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 		open_error_req(locale_get_string(MSG_ARCHIVEMUSTHAVEENTRIES), locale_get_string(MSG_OK), awin);
 	}
 
-	window_disable_gadgets(awin, FALSE);
+	window_disable_gadgets(awin, FALSE, FALSE);
 	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
@@ -2569,7 +2569,7 @@ void window_reset_count(void *awin)
 	aw->current_item = 0;
 }
 
-void window_disable_gadgets(void *awin, BOOL disable)
+void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -2582,9 +2582,15 @@ void window_disable_gadgets(void *awin, BOOL disable)
 		if(aw->appwin) RemoveAppWindow(aw->appwin);
 		aw->appwin = NULL;
 
-		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+		if(stoppable) {
+			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text,  locale_get_string( MSG_STOP ) ,
-			TAG_DONE);
+				TAG_DONE);
+		} else {
+			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, TRUE,
+				TAG_DONE);
+		}
 	} else {
 		aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], aw->appwin_mp, NULL);
 		if(aw->drag_lock == FALSE) window_add_dropzones(aw);
@@ -2592,6 +2598,10 @@ void window_disable_gadgets(void *awin, BOOL disable)
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text, GID_EXTRACT_TEXT,
 			TAG_DONE);
+
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, FALSE,
+				TAG_DONE);
 
 		/* Clear the state of the Abort flag */
 		aw->abort_requested = FALSE;
