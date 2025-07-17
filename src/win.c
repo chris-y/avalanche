@@ -1087,7 +1087,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 
 	if(item == 0) {
 		aw->current_item = 0;
-		if(aw->gadgets[GID_PROGRESS]) {
+		if(aw->windows[WID_MAIN] && aw->gadgets[GID_PROGRESS]) {
 			char msg[20];
 			sprintf(msg, "%d/%lu", 0, total);
 			aw->total_items = total;
@@ -1142,6 +1142,9 @@ static void update_fuelgauge_text(struct avalanche_window *aw)
 	char msg[20];
 
 	aw->current_item++;
+
+	if(aw->windows[WID_MAIN] == NULL) return;
+
 	snprintf(msg, 20, "%lu/%lu", aw->current_item, aw->total_items);
 
 	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
@@ -1851,6 +1854,8 @@ void window_update_sourcedir(void *awin, char *sourcedir)
 void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->windows[WID_MAIN] == NULL) return;
 
 	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
 					FUELGAUGE_Max, total_size,
