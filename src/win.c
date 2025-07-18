@@ -1874,17 +1874,27 @@ it's incompatible with double-clicking as it resets the listview */
 			}
 
 			toggle_item(aw, node, 1, TRUE); /* ensure selected */
-			char fn[1024];
-			strncpy(fn, tmpdir, 1023);
-			fn[1023] = 0;
-			ret = extract(aw, aw->archive, fn, node);
+			
+			ULONG dest_path_len = strlen(tmpdir) + strlen(get_item_filename(aw, node)) + 4;
+			char *dest_path = AllocVec(dest_path_len, MEMF_CLEAR | MEMF_PRIVATE);
+
+			if(dest_path == NULL) {
+				return;
+			}
+			
+			strncpy(dest_path, tmpdir, dest_path_len - 1);
+
+			ret = extract(aw, aw->archive, dest_path, node);
 			if(ret == 0) {
-				AddPart(fn, get_item_filename(aw, node), 1024);
-				add_to_delete_list(aw, fn);
-				OpenWorkbenchObjectA(fn, NULL);
+				Wait(aw->process_exit_sig);
+				AddPart(dest_path, get_item_filename(aw, node), dest_path_len);
+				add_to_delete_list(aw, dest_path);
+				OpenWorkbenchObjectA(dest_path, NULL);
 			} else {
 				show_error(ret, aw);
 			}
+			
+			FreeVec(dest_path);
 		break;
 	}
 }
