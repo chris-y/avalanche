@@ -55,7 +55,6 @@ struct module_functions *window_get_module_funcs(void *awin);
 BOOL window_edit_add(void *awin, char *file, char *root);
 
 /* Misc */
-void window_disable_gadgets(void *awin, BOOL disable);
 BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);

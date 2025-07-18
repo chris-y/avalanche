@@ -401,6 +401,49 @@ static void window_free_archive_path(struct avalanche_window *aw)
 	aw->archive_needs_free = FALSE;
 }
 
+static void window_remove_dropzones(struct avalanche_window *aw)
+{
+	if(aw->appwindz) {
+		for(int i=0; i<AVALANCHE_DROPZONES; i++) {
+			RemoveAppWindowDropZone(aw->appwin, aw->appwindz[i]);
+			aw->appwindz[i] = NULL;
+		}
+	}
+}
+
+static void window_add_dropzones(struct avalanche_window *aw)
+{
+	if(aw->appwin) {
+		aw->appwindzhook.h_Entry = appwindzhookfunc;
+		aw->appwindzhook.h_SubEntry = NULL;
+		aw->appwindzhook.h_Data = NULL;
+		
+		/* listbrowser */
+		ULONG left, top, width, height;
+		
+		GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
+		GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
+		GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
+		GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
+
+		aw->appwindz[1] = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
+										WBDZA_Left, left,
+										WBDZA_Top, top, 
+										WBDZA_Width, width,
+										WBDZA_Height, height,						
+										WBDZA_Hook, &aw->appwindzhook,
+									TAG_END);
+
+		/* whole window */
+		aw->appwindz[0] = AddAppWindowDropZone(aw->appwin, 0, (ULONG)aw,
+										WBDZA_Left, 0,
+										WBDZA_Top, 0, 
+										WBDZA_Width, aw->windows[WID_MAIN]->Width,
+										WBDZA_Height, aw->windows[WID_MAIN]->Height,						
+									TAG_END);
+	}
+}
+
 /* Activate/disable menus related to an open archive
  * busy - indicates if window is busy (eg. extract process running)
  */
@@ -461,6 +504,68 @@ static void window_menu_set_enable_state(void *awin)
 		window_menu_activation(aw, TRUE, FALSE);
 	}
 }
+
+static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	aw->disabled = disable;
+
+	if(aw->windows[WID_MAIN] == NULL) return;
+
+	if(disable) {
+		window_remove_dropzones(aw);
+		if(aw->appwin) RemoveAppWindow(aw->appwin);
+		aw->appwin = NULL;
+
+		if(stoppable) {
+			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Text,  locale_get_string( MSG_STOP ) ,
+				TAG_DONE);
+		} else {
+			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, TRUE,
+				TAG_DONE);
+		}
+	} else {
+		aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], aw->appwin_mp, NULL);
+		if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Text, GID_EXTRACT_TEXT,
+			TAG_DONE);
+
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, FALSE,
+				TAG_DONE);
+
+		/* Clear the state of the Abort flag */
+		aw->abort_requested = FALSE;
+	}
+
+	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_DEST], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_OPENWB], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+
+	window_menu_activation(aw, !disable, TRUE);
+
+
+	if(aw->flat_mode == FALSE) disable = TRUE;
+
+	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
+}
+
 
 static BOOL window_open_dest(void *awin)
 {	
@@ -1481,49 +1586,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	} else {
 		FreeVec(aw);
 		return NULL;
-	}
-}
-
-static void window_remove_dropzones(struct avalanche_window *aw)
-{
-	if(aw->appwindz) {
-		for(int i=0; i<AVALANCHE_DROPZONES; i++) {
-			RemoveAppWindowDropZone(aw->appwin, aw->appwindz[i]);
-			aw->appwindz[i] = NULL;
-		}
-	}
-}
-
-static void window_add_dropzones(struct avalanche_window *aw)
-{
-	if(aw->appwin) {
-		aw->appwindzhook.h_Entry = appwindzhookfunc;
-		aw->appwindzhook.h_SubEntry = NULL;
-		aw->appwindzhook.h_Data = NULL;
-		
-		/* listbrowser */
-		ULONG left, top, width, height;
-		
-		GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
-		GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
-		GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
-		GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
-
-		aw->appwindz[1] = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
-										WBDZA_Left, left,
-										WBDZA_Top, top, 
-										WBDZA_Width, width,
-										WBDZA_Height, height,						
-										WBDZA_Hook, &aw->appwindzhook,
-									TAG_END);
-
-		/* whole window */
-		aw->appwindz[0] = AddAppWindowDropZone(aw->appwin, 0, (ULONG)aw,
-										WBDZA_Left, 0,
-										WBDZA_Top, 0, 
-										WBDZA_Width, aw->windows[WID_MAIN]->Width,
-										WBDZA_Height, aw->windows[WID_MAIN]->Height,						
-									TAG_END);
 	}
 }
 
@@ -2567,67 +2629,6 @@ void window_reset_count(void *awin)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	aw->current_item = 0;
-}
-
-void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	aw->disabled = disable;
-
-	if(aw->windows[WID_MAIN] == NULL) return;
-
-	if(disable) {
-		window_remove_dropzones(aw);
-		if(aw->appwin) RemoveAppWindow(aw->appwin);
-		aw->appwin = NULL;
-
-		if(stoppable) {
-			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Text,  locale_get_string( MSG_STOP ) ,
-				TAG_DONE);
-		} else {
-			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Disabled, TRUE,
-				TAG_DONE);
-		}
-	} else {
-		aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], aw->appwin_mp, NULL);
-		if(aw->drag_lock == FALSE) window_add_dropzones(aw);
-
-		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Text, GID_EXTRACT_TEXT,
-			TAG_DONE);
-
-		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Disabled, FALSE,
-				TAG_DONE);
-
-		/* Clear the state of the Abort flag */
-		aw->abort_requested = FALSE;
-	}
-
-	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
-	SetGadgetAttrs(aw->gadgets[GID_DEST], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
-	SetGadgetAttrs(aw->gadgets[GID_OPENWB], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
-
-	window_menu_activation(aw, !disable, TRUE);
-
-
-	if(aw->flat_mode == FALSE) disable = TRUE;
-
-	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
 }
 
 void fill_menu_labels(void)
