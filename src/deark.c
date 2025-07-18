@@ -63,9 +63,9 @@ static void deark_free(void *awin)
 
 	if(du) {
 		if(du->tmpfile) FreeVec(du->tmpfile);
-		if(du->file) free(du->file);
-		if(du->arctype) free(du->arctype);
-		if(du->last_error) free(du->last_error);
+		if(du->file) FreeVec(du->file);
+		if(du->arctype) FreeVec(du->arctype);
+		if(du->last_error) FreeVec(du->last_error);
 
 		if(du->list) free_list(du->list, du->total);
 	}
@@ -141,8 +141,8 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 			while(res != NULL) {
 				res = FGets(fh, buf, 200);
 				if(strncmp(buf, "Error: ", 7) == 0) {
-					if(du->last_error) free(du->last_error);
-					du->last_error = strdup(buf);
+					if(du->last_error) FreeVec(du->last_error);
+					du->last_error = strdup_vec(buf);
 					Close(fh);
 					if(!config->debug) DeleteFile(du->tmpfile);
 					return -1;
@@ -203,13 +203,13 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
 	if(du == NULL) return -1;
 
-	du->file = strdup(file);
+	du->file = strdup_vec(file);
 
 	char **list = NULL;
 	long entries = deark_send_command(awin, file, DEARK_RECOG, &list, NULL, 0);
 	if(entries > 0) {
 		if(strncmp(list[0], "Module:", 7) == 0) {
-			du->arctype = strdup(list[0]);
+			du->arctype = strdup_vec(list[0]);
 			free_list(list, entries);
 		} else {
 			return -1;

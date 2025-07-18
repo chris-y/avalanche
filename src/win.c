@@ -395,8 +395,7 @@ static Object *get_glyph(ULONG glyph)
 
 static void window_free_archive_path(struct avalanche_window *aw)
 {
-	/* NB: uses free() not FreeVec() */
-	if(aw->archive) free(aw->archive);
+	if(aw->archive) FreeVec(aw->archive);
 	aw->archive = NULL;
 	aw->archive_needs_free = FALSE;
 }
@@ -624,7 +623,7 @@ static void delete_delete_list(struct avalanche_window *aw)
 			Remove((struct Node *)node);
 			if(node->ln_Name) {
 				DeleteFile(node->ln_Name);
-				free(node->ln_Name);
+				FreeVec(node->ln_Name);
 			}
 			FreeVec(node);
 		} while((node = nnode));
@@ -635,7 +634,7 @@ static void add_to_delete_list(struct avalanche_window *aw, char *fn)
 {
 	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
 	if(node) {
-		node->ln_Name = strdup(fn);
+		node->ln_Name = strdup_vec(fn);
 		AddTail((struct List *)&aw->deletelist, (struct Node *)node);
 	}
 }
@@ -954,7 +953,7 @@ static void highlight_current_dir(struct avalanche_window *aw)
 		struct List *list = &aw->dir_tree;
 		struct Node *node;
 		char *userdata = NULL;
-		char *cur_dir = strdup(aw->current_dir);
+		char *cur_dir = strdup_vec(aw->current_dir);
 
 		if(cur_dir) cur_dir[strlen(cur_dir) - 1] = '\0';
 
@@ -966,7 +965,7 @@ static void highlight_current_dir(struct avalanche_window *aw)
 				break;
 			}
 		}
-		if(cur_dir) free(cur_dir);
+		if(cur_dir) FreeVec(cur_dir);
 	}
 
 	if(cur_node) {
@@ -1464,9 +1463,12 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	aw->aslfilterhook.h_Data = NULL;
 	
 	if(archive) {
-		aw->archive = strdup(archive);
+		aw->archive = strdup_vec(archive);
 		aw->archive_needs_free = TRUE;
 		getfile_drawer = TAG_IGNORE;
+	} else {
+		aw->archive = NULL;
+		aw->archive_needs_free = FALSE;
 	}
 	
 	NewMinList(&aw->deletelist);
@@ -1633,7 +1635,7 @@ void window_close(void *awin, BOOL iconify)
 	/* Close new archive window if it's attached to this one */
 	newarc_window_close_if_associated(awin);
 
-	if((aw->disabled == TRUE) && (iconify == FALSE)) {
+	if((aw->disabled == TRUE)) {
 		aw->abort_requested = TRUE;
 		Wait(aw->process_exit_sig);
 	}
@@ -1892,7 +1894,7 @@ void window_update_archive(void *awin, char *archive)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(aw->archive_needs_free) window_free_archive_path(aw);
-	aw->archive = strdup(archive);
+	aw->archive = strdup_vec(archive);
 	aw->archive_needs_free = TRUE;
 
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
@@ -2072,7 +2074,7 @@ static void __saveds window_req_open_archive_p(void)
 	struct avalanche_extract_userdata *aeu = (struct avalanche_extract_userdata *)list_task->tc_UserData;
 	struct avalanche_window *aw = (struct avalanche_window *)aeu->awin;
 	
-	/* Call Extract on our new process */
+	/* Call Open on our new process */
 	window_req_open_archive_internal(aeu->awin, get_config());
 	
 	/* Free UserData */
@@ -2353,7 +2355,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 				for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
 					void *userdata = window_get_lbnode(awin, node);
 					if(userdata) {
-						name_array[i] = strdup(module_get_item_filename(awin, userdata));
+						name_array[i] = strdup_vec(module_get_item_filename(awin, userdata));
 						i++;
 					}
 				}
@@ -2362,7 +2364,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 				aw->mf.del(aw, aw->archive, name_array, entries);
 
 				for(i = 0; i<entries; i++) {
-					free(name_array[i]);
+					FreeVec(name_array[i]);
 				}
 				FreeVec(name_array);
 			}

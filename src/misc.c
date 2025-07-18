@@ -49,13 +49,14 @@ struct Node *GetSucc(struct Node *node)
 }
 #endif
 
-char *strdup(const char *s)
+char *strdup_vec(const char *s)
 {
-  size_t len = strlen (s) + 1;
-  char *result = (char*) malloc (len);
-  if (result == (char*) 0)
-  return (char*) 0;
-  return (char*) memcpy (result, s, len);
+	size_t len = strlen (s) + 1;
+	char *result = (char*) AllocVec(len, MEMF_PRIVATE);
+	if (result == (char*) 0)
+		return (char*) 0;
+	CopyMem (s, result, len);
+	return s;
 }
 
 #ifdef __amigaos4__

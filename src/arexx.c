@@ -128,7 +128,7 @@ void ami_arexx_cleanup(void)
 
 void arexx_free_event(void)
 {
-	if(event_param) free(event_param);
+	if(event_param) FreeVec(event_param);
 	event_param = NULL;
 	event = RXEVT_NONE;
 }
@@ -139,7 +139,7 @@ static void arexx_set_event(ULONG evt, char *param)
 		arexx_free_event();
 		event_param = NULL;
 	}
-	if(param) event_param = strdup(param);
+	if(param) event_param = strdup_vec(param);
 	event = evt;
 }
 

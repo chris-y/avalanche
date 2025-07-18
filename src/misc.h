@@ -38,6 +38,6 @@ void recursive_scan(void *awin, BPTR lock, const char *root);
 BOOL object_is_dir(BPTR lock);
 #endif
 
-char *strdup(const char *s);
+char *strdup_vec(const char *s);
 
 #endif

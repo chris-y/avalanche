@@ -63,7 +63,7 @@ ULONG window_count = 0;
 void free_dest_path(void)
 {
 	if(dest_needs_free) {
-		if(config.dest) free(config.dest);
+		if(config.dest) FreeVec(config.dest);
 		config.dest = NULL;
 		dest_needs_free = FALSE;
 	}
@@ -309,7 +309,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			}
 		} else if(initial_archive) {
 			awin = window_create(&config, initial_archive, winport, AppPort);
-			free(initial_archive);
+			FreeVec(initial_archive);
 			if(awin == NULL) return;
 			window_open(awin, appwin_mp);
 			window_req_open_archive(awin, &config, TRUE);
@@ -462,7 +462,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 									char *am_archive = NULL;
 									if(am_archive = AllocVec(512, MEMF_CLEAR)) {
 										NameFromLock(wbarg->wa_Lock, am_archive, 512);
-										char *tempdest = strdup(am_archive);
+										char *tempdest = strdup_vec(am_archive);
 										AddPart(am_archive, wbarg->wa_Name, 512);
 										
 										/* Create a new window for our AppMenu to use */
@@ -472,7 +472,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 											window_req_open_archive(appmenu_awin, &config, TRUE);
 											if(window_get_archiver(appmenu_awin) != ARC_NONE) {
 												long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
-												free(tempdest);
+												FreeVec(tempdest);
 												if(ret != 0) show_error(ret, awin);
 											}
 											window_dispose(appmenu_awin);
@@ -590,15 +590,15 @@ static void gettooltypes(struct WBArg *wbarg)
 		}
 
 		if(s = (char *)FindToolType(toolarray, "SOURCEDIR")) {
-			config.sourcedir = strdup(s);
+			config.sourcedir = strdup_vec(s);
 		} else {
-			config.sourcedir = strdup("RAM:");
+			config.sourcedir = strdup_vec("RAM:");
 		}
 
 		if(s = (char *)FindToolType(toolarray, "DEST")) {
-			config.dest = strdup(s);
+			config.dest = strdup_vec(s);
 		} else {
-			config.dest = strdup("RAM:");
+			config.dest = strdup_vec("RAM:");
 		}
 
 		dest_needs_free = TRUE;
@@ -741,7 +741,7 @@ int main(int argc, char **argv)
 
 		if(args) {
 			if(rarray[A_FILE]) {
-				archive = strdup((char *)rarray[A_FILE]);
+				archive = strdup_vec((char *)rarray[A_FILE]);
 			}
 
 			FreeArgs(args);
@@ -785,7 +785,7 @@ int main(int argc, char **argv)
 		} else if(archive) {
 			char cmd[1024];
 			snprintf(cmd, 1024, "OPEN \"%s\"", archive);
-			free(archive);
+			FreeVec(archive);
 			ami_arexx_send(cmd);
 			arc_opened = TRUE;
 		}
@@ -799,7 +799,7 @@ int main(int argc, char **argv)
 
 	if(config.cx_popkey) FreeVec(config.cx_popkey);
 	if(config.tmpdir) FreeVec(config.tmpdir);
-	if(config.sourcedir) free(config.sourcedir);
+	if(config.sourcedir) FreeVec(config.sourcedir);
 	if(config.progname != NULL) FreeVec(config.progname);
 	if(dest_needs_free) free_dest_path();
 
