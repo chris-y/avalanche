@@ -56,7 +56,7 @@ char *strdup_vec(const char *s)
 	if (result == (char*) 0)
 		return (char*) 0;
 	CopyMem (s, result, len);
-	return s;
+	return result;
 }
 
 #ifdef __amigaos4__
