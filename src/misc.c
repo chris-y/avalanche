@@ -51,11 +51,20 @@ struct Node *GetSucc(struct Node *node)
 
 char *strdup_vec(const char *s)
 {
+	BOOL cmq = FALSE;
 	size_t len = strlen (s) + 1;
+	
+	if(len & 0x3) cmq = TRUE;
+	
 	char *result = (char*) AllocVec(len, MEMF_PRIVATE);
 	if (result == (char*) 0)
 		return (char*) 0;
-	CopyMem (s, result, len);
+		
+	if(cmq) {
+		CopyMemQuick(s, result, len);
+	} else {
+		CopyMem(s, result, len);
+	}
 	return result;
 }
 
