@@ -133,7 +133,7 @@ static int err_cb(const char *str, size_t len, void *u)
 	DebugPrintF("[Avalanche] %s\n", str);
 #endif
 
-	err_txt = strdup(str);
+	err_txt = strdup_vec(str);
 
 	return 1;
 }
@@ -440,7 +440,16 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 				}
 			}
 		} else {
+<<<<<<< HEAD
 			open_info_req(locale_get_string(MSG_NONEWVERSION), locale_get_string(MSG_OK), awin);
+=======
+			if(err_txt) {
+				open_error_req(err_txt, locale_get_string(MSG_OK), awin);
+				FreeVec(err_txt);
+			} else {
+				open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
+			}
+>>>>>>> main
 		}
 
 		FreeVec(buffer);

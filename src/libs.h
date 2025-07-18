@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ extern Class *BitMapClass;
 extern Class *ButtonClass;
 extern Class *CheckBoxClass;
 extern Class *ChooserClass;
+extern Class *DrawListClass;
 extern Class *FuelGaugeClass;
 extern Class *GetFileClass;
 extern Class *GlyphClass;
@@ -41,6 +42,7 @@ extern Class *WindowClass;
 #define ButtonObj		NewObject(ButtonClass, NULL
 #define CheckBoxObj		NewObject(CheckBoxClass, NULL
 #define ChooserObj		NewObject(ChooserClass, NULL
+#define DrawListObj		NewObject(DrawListClass, NULL
 #define FuelGaugeObj	NewObject(FuelGaugeClass, NULL
 #define GetFileObj		NewObject(GetFileClass, NULL
 #define GlyphObj		NewObject(GlyphClass, NULL

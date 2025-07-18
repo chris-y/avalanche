@@ -46,7 +46,7 @@ static void xfd_free(void *awin)
 		if(xu->bi != NULL) xfdFreeObject(xu->bi);
 		if(xu->buffer != NULL) FreeVec(xu->buffer);
 		if(xu->fn != NULL) {
-			free(xu->fn);
+			FreeVec(xu->fn);
 			xu->fn = NULL;
 		}
 	}
@@ -173,7 +173,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	}
 
 	if(res == TRUE) {
-		xu->fn = strdup(FilePart(file));
+		xu->fn = strdup_vec(FilePart(file));
 		/* Add to list */
 		addnode(xu->fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, xu->fn, get_config(), awin);
 

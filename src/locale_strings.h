@@ -234,7 +234,7 @@
 #define MSG_CHECKVERSION_STR "Check for update..."
 #define MSG_DRAGLOCK_STR "Prevent drag'n'drop amendments"
 #define MSG_NEWVERSIONDL_STR "New version (%d.%d) available\nDownload now?"
-#define MSG_OPENINWB_STR "Open in Workbench"
+#define MSG_OPENINWB_STR "Open destination drawer on Workbench"
 #define MSG_OPENWBONEXTRACT_STR "Open drawer on WB after extraction"
 
 #endif /* CATCOMP_STRINGS */
@@ -429,8 +429,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_DRAGLOCK_STR "\x00\x00"
     "\x00\x00\x00\x5A\x00\x2C"
     MSG_NEWVERSIONDL_STR "\x00"
-    "\x00\x00\x00\x5B\x00\x12"
-    MSG_OPENINWB_STR "\x00"
+    "\x00\x00\x00\x5B\x00\x26"
+    MSG_OPENINWB_STR "\x00\x00"
     "\x00\x00\x00\x5C\x00\x24"
     MSG_OPENWBONEXTRACT_STR "\x00\x00"
 };
