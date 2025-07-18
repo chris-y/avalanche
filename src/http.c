@@ -349,6 +349,7 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 			.download_url = "https://os4depot.net/share/library/misc/zip_lib.lha",
 		}
 #endif
+	};
 	
 	if(buffer) {
 		SSL_CTX *SSL_ctx = http_open_socket_libs();
@@ -440,16 +441,14 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 				}
 			}
 		} else {
-<<<<<<< HEAD
 			open_info_req(locale_get_string(MSG_NONEWVERSION), locale_get_string(MSG_OK), awin);
-=======
+
 			if(err_txt) {
 				open_error_req(err_txt, locale_get_string(MSG_OK), awin);
 				FreeVec(err_txt);
 			} else {
 				open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
 			}
->>>>>>> main
 		}
 
 		FreeVec(buffer);

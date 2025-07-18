@@ -12,9 +12,11 @@
  * GNU General Public License for more details.
 */
 
+#include <proto/exec.h>
+
 #include "update.h"
 
-void update_gui(struct avalanche_version_numbers *avn, void *ssl_ctx)
+void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 {
                 for(int i = 0; i < ACHECKVER_MAX; i++) {
 #ifdef __amigaos4__

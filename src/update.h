@@ -37,6 +37,6 @@ enum {
 };
 
 
-void update_gui(struct avalanche_version_numbers *avn, void *ssl_ctx);
+void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx);
 
 #endif
