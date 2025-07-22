@@ -94,11 +94,15 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 	if(du == NULL) return -1;
 
 	if(du->tmpfile == NULL) {
+		CONFIG_LOCK;
 		du->tmpfile = AllocVec(config->tmpdirlen + 25, MEMF_CLEAR);
-		if(du->tmpfile == NULL) return 0;
-
+		if(du->tmpfile == NULL) {
+			CONFIG_UNLOCK;
+			return 0;
+		}
 		strcpy(du->tmpfile, config->tmpdir);
 		AddPart(du->tmpfile, "deark_tmp", config->tmpdirlen + 25);
+		CONFIG_UNLOCK;
 	}
 
 	switch(command) {
@@ -144,7 +148,8 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 					if(du->last_error) FreeVec(du->last_error);
 					du->last_error = strdup_vec(buf);
 					Close(fh);
-					if(!config->debug) DeleteFile(du->tmpfile);
+					if(!CONFIG_GET_LOCK(debug)) DeleteFile(du->tmpfile);
+					CONFIG_UNLOCK;
 					return -1;
 				}
 				if(res) total++;
@@ -166,7 +171,8 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 			}
 
 			Close(fh);
-			if(!config->debug) DeleteFile(du->tmpfile);
+			if(!CONFIG_GET_LOCK(debug)) DeleteFile(du->tmpfile);
+			CONFIG_UNLOCK;
 			return(total);
 		}
 

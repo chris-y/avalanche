@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,10 @@ struct avalanche_config;
 
 #define PROGRESS_SIZE_DEFAULT 20
 
-#ifndef MEMF_PRIVATE
-#define MEMF_PRIVATE 0L
+#ifndef __amigaos4__
+	#ifndef MEMF_PRIVATE
+		#define MEMF_PRIVATE 0L
+	#endif
 #endif
 
 extern const ULONG zero;
