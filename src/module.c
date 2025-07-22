@@ -31,9 +31,9 @@ char *new_arc_text = "Created with " VERS "\0";
 ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 {
 	long res = 0;
-	struct avalanche_config *config = get_config();
 
-	if(config->virus_scan) {
+	if(CONFIG_GET_LOCK(virus_scan)) {
+		CONFIG_UNLOCK;
 		if(buf == NULL) {
 			res = xvs_scan(file, delete, awin);
 		} else {
@@ -41,10 +41,14 @@ ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 		}
 
 		if((res == -1) || (res == -3)) {
+			CONFIG_LOCK_EX;
+			struct avalanche_config *config = get_config();
 			config->virus_scan = FALSE;
 			config->disable_vscan_menu = TRUE;
-			
+			CONFIG_UNLOCK;
 		}
+	} else {
+		CONFIG_UNLOCK;
 	}
 
 	return res;

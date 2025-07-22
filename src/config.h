@@ -15,9 +15,13 @@
 #ifndef AVALANCHE_CONFIG_H
 #define AVALANCHE_CONFIG_H 1
 
+#include <proto/exec.h>
+
 struct avalanche_config {
+	struct SignalSemaphore semaphore;
+
 	char *progname;
-	
+
 	char *sourcedir; /* default source dir for ASL */
 	char *dest; /* default destination */
 	char *tmpdir;
@@ -46,9 +50,18 @@ struct avalanche_config {
 	char *cx_popkey;
 };
 
-void config_window_open(struct avalanche_config *config);
-ULONG config_window_get_signal(void);
-ULONG config_window_handle_input(UWORD *code);
-BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code);
+/* Call CONFIG_UNLOCK for every CONFIG_GET_LOCK */
+#define CONFIG_LOCK ObtainSemaphoreShared((struct SignalSemaphore *)get_config())
+#define CONFIG_LOCK_EX ObtainSemaphore((struct SignalSemaphore *)get_config())
+#define CONFIG_GET(ATTRIBUTE) get_config()->ATTRIBUTE
+#define CONFIG_GET_LOCK(ATTRIBUTE) config_get()->ATTRIBUTE
+#define CONFIG_UNLOCK ReleaseSemaphore((struct SignalSemaphore *)get_config())
 
+void config_window_open(struct avalanche_config *config);
+void config_window_break(void);
+
+/* Obtains the avalanche_config structure if it is safe to do so.
+ * CONFIG_UNLOCK or ReleaseSemaphore() MUST be called when done.
+ * If obtaining a lock manually, use get_config() instead */
+struct avalanche_config *config_get(void);
 #endif

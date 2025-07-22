@@ -316,8 +316,9 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	ULONG total = 0;
 	ULONG i = 0;
 	ULONG size;
-	BOOL fs = !config->ignorefs;
-
+	BOOL fs = !CONFIG_GET_LOCK(ignorefs);
+	CONFIG_UNLOCK;
+	
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
 
