@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/icon.h>
 #include <proto/intuition.h>
@@ -25,6 +26,7 @@
 #ifndef __amigaos4__
 #include <clib/alib_protos.h>
 #endif
+#include <dos/dostags.h>
 #include <libraries/asl.h>
 
 #include <proto/button.h>
@@ -80,6 +82,11 @@ static struct Gadget *gadgets[GID_C_LAST];
 static Object *objects[OID_LAST];
 static struct MsgPort *cw_port = NULL;
 
+static struct Process *config_process = NULL;
+static struct Process *avalanche_process = NULL;
+
+static BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code);
+
 static void config_window_close(void)
 {
 	RA_CloseWindow(objects[OID_MAIN]);
@@ -111,6 +118,8 @@ static void config_save(struct avalanche_config *config)
 	char tt_cxpri[20];
 	char tt_cxpopkey[50];
 	char tt_modules[40];
+
+	CONFIG_LOCK;
 
 	if(dobj = GetIconTagList(config->progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
@@ -278,11 +287,15 @@ static void config_save(struct avalanche_config *config)
 		dobj->do_ToolTypes = (STRPTR *)oldtooltypes;
 		FreeDiskObject(dobj);
 	}
+	CONFIG_UNLOCK;
 }
 
 static void config_window_settings(struct avalanche_config *config, BOOL save)
 {
 	ULONG data = 0;
+
+	CONFIG_LOCK_EX; /* EXCLUSIVE */
+
 #if 0
 	free_dest_path();
 	GetAttr(GETFILE_Drawer, gadgets[GID_C_DEST], (APTR)&config->dest);
@@ -302,11 +315,12 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	GetAttr(CHOOSER_Selected, gadgets[GID_C_VIEWMODE], (ULONG *)&data);
 	config->viewmode = data;
 
+	CONFIG_UNLOCK;
+
 	if(save) config_save(config);
 }
 
-/* Public functions */
-void config_window_open(struct avalanche_config *config)
+static void config_window_open_internal(struct avalanche_config *config)
 {
 	BOOL save_disabled = FALSE;
 	STRPTR quit_opts[] = {
@@ -322,14 +336,11 @@ void config_window_open(struct avalanche_config *config)
 			NULL
 	};
 
-	if(windows[WID_MAIN]) { // already open
-		WindowToFront(windows[WID_MAIN]);
-		return;
-	}
-
-	if(config->progname == NULL) save_disabled = TRUE;
+	if(CONFIG_GET_LOCK(progname) == NULL) save_disabled = TRUE;
+	CONFIG_UNLOCK;
 
 	if(cw_port = CreateMsgPort()) {
+		CONFIG_LOCK;
 		/* Create the window object */
 		objects[OID_MAIN] = WindowObj,
 			WA_ScreenTitle, VERS,
@@ -422,29 +433,74 @@ void config_window_open(struct avalanche_config *config)
 			EndGroup,
 		EndWindow;
 
+		CONFIG_UNLOCK;
+
 		if(objects[OID_MAIN]) {
-			windows[WID_MAIN] = (struct Window *)RA_OpenWindow(objects[OID_MAIN]);
+			if(windows[WID_MAIN] = (struct Window *)RA_OpenWindow(objects[OID_MAIN])) {
+
+				ULONG sigbit = (1L << cw_port->mp_SigBit);
+				BOOL done = FALSE;
+
+				while(!done) {
+					ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+
+					if(wait & sigbit) {
+						UWORD code;
+						ULONG result = RA_HandleInput(objects[OID_MAIN], &code);
+						done = config_window_handle_input_events(config, result, code);
+					} else if (wait & SIGBREAKF_CTRL_C) {
+						config_window_close();
+						Signal(avalanche_process, SIGF_SINGLE);
+						done = TRUE;
+					} else if (wait & SIGBREAKF_CTRL_F) {
+						WindowToFront(windows[WID_MAIN]);
+					}
+				}
+			}
 		}
 	}
 	
 	return;
 }
 
-ULONG config_window_get_signal(void)
+#ifdef __amigaos4__
+static void config_window_open_p(void)
+#else
+static void __saveds config_window_open_p(void)
+#endif
 {
-	if(cw_port) {
-		return (1L << cw_port->mp_SigBit);
+	config_window_open_internal(get_config());
+
+	config_process = NULL;
+}
+
+
+
+/* public functions */
+
+void config_window_open(struct avalanche_config *config)
+{
+	if(config_process != NULL) {
+		/* Bring to front */
+		Signal(config_process, SIGBREAKF_CTRL_F);
 	} else {
-		return 0;
+		avalanche_process = FindTask(NULL);
+		config_process = CreateNewProcTags(NP_Entry, config_window_open_p,
+				NP_Name, "Avalanche config process",
+			TAG_DONE);
 	}
 }
 
-ULONG config_window_handle_input(UWORD *code)
+void config_window_break(void)
 {
-	return RA_HandleInput(objects[OID_MAIN], code);
+	if(config_process == NULL) return;
+
+	SetSignal(0L, SIGF_SINGLE);
+	Signal(config_process, SIGBREAKF_CTRL_C);
+	Wait(SIGF_SINGLE);
 }
 
-BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code)
+static BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code)
 {
 	long ret = 0;
 	ULONG done = FALSE;
@@ -477,4 +533,12 @@ BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG re
 	}
 
 	return done;
+}
+
+/* Get config if safe to obtain a shared lock */
+struct avalanche_config *config_get(void)
+{
+	struct avalanche_config *config = get_config();
+	ObtainSemaphoreShared((struct SignalSemaphore *)config);
+	return config;
 }

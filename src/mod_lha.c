@@ -131,13 +131,13 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir, const 
 BOOL mod_lha_new(void *awin, char *archive)
 {
 	BOOL ret = FALSE;
-	struct avalanche_config *config = get_config();
-	ULONG new_arc_size = strlen(config->tmpdir) + strlen(NEW_ARC_NAME) + 2;
+	ULONG new_arc_size = strlen(CONFIG_GET_LOCK(tmpdir)) + strlen(NEW_ARC_NAME) + 2;
 	char *tmpfile = AllocVec(new_arc_size, MEMF_CLEAR);
 
 	if(tmpfile) {
 		BPTR fh = 0;
-		strcpy(tmpfile, config->tmpdir);
+		strcpy(tmpfile, CONFIG_GET(tmpdir));
+		CONFIG_UNLOCK;
 		AddPart(tmpfile, NEW_ARC_NAME, new_arc_size);
 
 		if(fh = Open(tmpfile, MODE_NEWFILE)) {
@@ -148,8 +148,9 @@ BOOL mod_lha_new(void *awin, char *archive)
 
 			DeleteFile(tmpfile);
 		}
+	} else {
+		CONFIG_UNLOCK;
 	}
-	
 	return ret;
 }
 

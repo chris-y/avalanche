@@ -738,8 +738,10 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 			ret = module_extract(awin, node, archive, newdest);
 		}
 
+		CONFIG_LOCK;
 		if((ret == 0) && (config->openwb == TRUE)) window_open_dest(awin);
-
+		CONFIG_UNLOCK;
+		
 		window_disable_gadgets(awin, FALSE, TRUE);
 
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
@@ -1394,9 +1396,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	struct Hook *lbsort_hook = (struct Hook *)&(aw->lbsorthook);
 
-	if(config->disable_asl_hook) {
+	if(CONFIG_GET_LOCK(disable_asl_hook)) {
 		asl_hook = NULL;
 	}
+	CONFIG_UNLOCK;
 
 	ULONG tag_default_position = WINDOW_Position;
 
@@ -1450,6 +1453,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	if(aw->menu = AllocVec(sizeof(menu), MEMF_PRIVATE))
 		CopyMem(&menu, aw->menu, sizeof(menu));
 
+	CONFIG_LOCK;
 	if(config->win_x && config->win_y) tag_default_position = TAG_IGNORE;
 	
 	/* Copy global to local config */
@@ -1576,6 +1580,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		EndGroup,
 	EndWindow;
 
+	CONFIG_UNLOCK;
 
 	/*  Object creation sucessful?
 	 */
@@ -1766,7 +1771,7 @@ static void window_tree_handle(void *awin)
 }
 					
 
-static void window_list_handle(void *awin, char *tmpdir)
+static void window_list_handle(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
@@ -1874,17 +1879,30 @@ it's incompatible with double-clicking as it resets the listview */
 			}
 
 			toggle_item(aw, node, 1, TRUE); /* ensure selected */
-			char fn[1024];
-			strncpy(fn, tmpdir, 1023);
-			fn[1023] = 0;
-			ret = extract(aw, aw->archive, fn, node);
+			
+			ULONG dest_path_len = strlen(CONFIG_GET_LOCK(tmpdir)) + strlen(get_item_filename(aw, node)) + 4;
+			char *dest_path = AllocVec(dest_path_len, MEMF_CLEAR | MEMF_PRIVATE);
+
+			if(dest_path == NULL) {
+				CONFIG_UNLOCK;
+				return;
+			}
+			
+			strncpy(dest_path, CONFIG_GET(tmpdir), dest_path_len - 1);
+			CONFIG_UNLOCK;
+
+			SetSignal(0L, aw->process_exit_sig);
+			ret = extract(aw, aw->archive, dest_path, node);
 			if(ret == 0) {
-				AddPart(fn, get_item_filename(aw, node), 1024);
-				add_to_delete_list(aw, fn);
-				OpenWorkbenchObjectA(fn, NULL);
+				Wait(aw->process_exit_sig);
+				AddPart(dest_path, get_item_filename(aw, node), dest_path_len);
+				add_to_delete_list(aw, dest_path);
+				OpenWorkbenchObjectA(dest_path, NULL);
 			} else {
 				show_error(ret, aw);
 			}
+			
+			FreeVec(dest_path);
 		break;
 	}
 }
@@ -2002,7 +2020,10 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	FreeListBrowserList(&aw->lblist);
 
 	aw->archiver = ARC_XAD; /* Set in advance for flat browser tree use */
-	if(config->activemodules & ARC_XAD) {
+	ULONG active_modules = CONFIG_GET_LOCK(activemodules);
+	CONFIG_UNLOCK;
+	
+	if(active_modules & ARC_XAD) {
 		ret = xad_info(aw->archive, config, aw, addlbnode_cb);
 	} else {
 		ret = 1;
@@ -2010,7 +2031,7 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	if(ret != 0) { /* if xad failed try xfd */
 		aw->archiver = ARC_XFD;
 
-		if(config->activemodules & ARC_XFD) {
+		if(active_modules & ARC_XFD) {
 			retxfd = xfd_info(aw->archive, aw, addlbnode_cb);
 		} else {
 			retxfd = 1;
@@ -2018,7 +2039,7 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 
 		if(retxfd != 0) {
 			aw->archiver = ARC_DEARK;
-			if(config->activemodules & ARC_DEARK) {
+			if(active_modules & ARC_DEARK) {
 				retark = deark_info(aw->archive, config, aw, addlbnode_cb);
 			} else {
 				retark = 1;
@@ -2458,7 +2479,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_LIST:
-					window_list_handle(awin, config->tmpdir);
+					window_list_handle(awin);
 				break;
 				
 				case GID_TREE:
@@ -2594,11 +2615,13 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				
 							case 2: //snapshot
 								/* fetch current win posn */
+								CONFIG_LOCK;
 								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_y);
 								GetAttr(WA_Left, aw->objects[OID_MAIN], (APTR)&config->win_x);
 								GetAttr(WA_Width, aw->objects[OID_MAIN], (APTR)&config->win_w);
 								GetAttr(WA_Height, aw->objects[OID_MAIN], (APTR)&config->win_h);
-
+								CONFIG_UNLOCK;
+								
 								warning_req(aw, locale_get_string(MSG_SNAPSHOT_WARNING));
 							break;
 								

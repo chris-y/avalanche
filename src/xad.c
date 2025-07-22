@@ -322,8 +322,9 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	ULONG total = 0;
 	ULONG i = 0;
 	ULONG size;
-	BOOL fs = !config->ignorefs;
-
+	BOOL fs = !CONFIG_GET_LOCK(ignorefs);
+	CONFIG_UNLOCK;
+	
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
 
@@ -435,17 +436,18 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 
 	if(fi || di) {
-		char destfile[1024];
-		strncpy(destfile, dest, 1023);
-		destfile[1023] = 0;
-
 		if(fi) {
 			fn = fi->xfi_FileName;
 		} else {
 			fn = "disk.img";
 		}
 
-		if(AddPart(destfile, fn, 1024)) {
+		ULONG dest_len = strlen(dest) + strlen(fn) + 4;
+		char *destfile = AllocVec(dest_len, MEMF_CLEAR | MEMF_PRIVATE);
+		if(destfile == NULL) return XADERR_NOMEMORY;
+		strncpy(destfile, dest, dest_len - 1);
+
+		if(AddPart(destfile, fn, dest_len - 1)) {
 			if((di) || (!xad_is_dir(fi))) {
 				if(((fi && (fi->xfi_Flags & XADFIF_CRYPTED)) || (di && (di->xdi_Flags & XADDIF_CRYPTED))) && (xu->pw == NULL)) {
 					xu->pw = AllocVec(100, MEMF_CLEAR);
@@ -488,12 +490,14 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 				if(err != XADERR_OK) {
 					if(err == XADERR_PASSWORD) xad_free_pw(awin);
+					FreeVec(destfile);
 					return err;
 				}
 
 				if(*pud == PUD_ABORT) {
 					if(xu->pw) FreeVec(xu->pw);
 					xu->pw = NULL;
+					FreeVec(destfile);
 					return XADERR_BREAK;
 				}
 
@@ -508,14 +512,18 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 										XAD_MAKELOCALDATE, TRUE,
 										TAG_DONE);
 
-					if(err != XADERR_OK) return err;
-
+					if(err != XADERR_OK) {
+						FreeVec(destfile);
+						return err;
+					}
+					
 					SetProtection(destfile, xad_get_fileprotection(fi));
 					SetFileDate(destfile, &ds);
 					if(fi && fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
 				}
 			}
 		}
+		FreeVec(destfile);
 	}
 
 	return err;

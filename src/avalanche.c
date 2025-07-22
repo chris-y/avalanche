@@ -64,9 +64,11 @@ ULONG window_count = 0;
 void free_dest_path(void)
 {
 	if(dest_needs_free) {
+		CONFIG_LOCK_EX;
 		if(config.dest) FreeVec(config.dest);
 		config.dest = NULL;
 		dest_needs_free = FALSE;
+		CONFIG_UNLOCK;
 	}
 }
 
@@ -77,10 +79,11 @@ ULONG ask_quit(void *awin)
 
 ULONG ask_quithide(void *awin)
 {
-	if(config.closeaction == 0) {
+	if(CONFIG_GET_LOCK(closeaction) == 0) {
+		CONFIG_UNLOCK;
 		return ask_quithide_req();
 	}
-
+	CONFIG_UNLOCK;
 	return config.closeaction;
 }
 
@@ -319,7 +322,8 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 		if(window_is_open == FALSE) {
 			/* If we wanted cx_popup but there's no window yet, open one */
-			if(config.cx_popup) {
+			if(CONFIG_GET_LOCK(cx_popup)) {
+				CONFIG_UNLOCK;
 				awin = window_create(&config, NULL, winport, AppPort);
 				if(awin == NULL) return;
 				window_open(awin, appwin_mp);
@@ -334,10 +338,13 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 		while (done != WIN_DONE_QUIT) {
 			done = WIN_DONE_OK;
-			cw_sig = config_window_get_signal();
 			na_sig = newarc_window_get_signal();
 
+<<<<<<< HEAD
 			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig | na_sig | SIGBREAKF_CTRL_E);
+=======
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig);
+>>>>>>> main
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
@@ -509,11 +516,6 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					break;
 				}
 				arexx_free_event();
-			} else if(cw_sig && (wait & cw_sig)) {
-				BOOL cw_done = FALSE;
-				while((cw_done == FALSE) && ((result = config_window_handle_input(&code)) != WMHI_LASTMSG)) {
-					cw_done = config_window_handle_input_events(&config, result, code);
-				}
 			} else if(na_sig && (wait & na_sig)) {
 				BOOL na_done = FALSE;
 				while((na_done == FALSE) && ((result = newarc_window_handle_input(&code)) != WMHI_LASTMSG)) {
@@ -554,6 +556,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 	}
 
 	close_all_windows();
+	config_window_break();
 
 	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 
@@ -712,6 +715,8 @@ int main(int argc, char **argv)
 	config.tmpdir = AllocVec(100, MEMF_CLEAR);
 	config.tmpdirlen = 0;
 
+	InitSemaphore((struct SignalSemaphore *)&config);
+
 	if(argc == 0) {
 		int i;
 		/* Started from WB */
@@ -808,10 +813,15 @@ int main(int argc, char **argv)
 
 	DeleteFile(config.tmpdir);
 
+	CONFIG_LOCK;
+
 	if(config.cx_popkey) FreeVec(config.cx_popkey);
 	if(config.tmpdir) FreeVec(config.tmpdir);
 	if(config.sourcedir) FreeVec(config.sourcedir);
 	if(config.progname != NULL) FreeVec(config.progname);
+
+	CONFIG_UNLOCK;
+
 	if(dest_needs_free) free_dest_path();
 
 	module_exit();
