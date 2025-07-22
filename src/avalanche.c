@@ -340,11 +340,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			done = WIN_DONE_OK;
 			na_sig = newarc_window_get_signal();
 
-<<<<<<< HEAD
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig | na_sig | SIGBREAKF_CTRL_E);
-=======
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig);
->>>>>>> main
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig | SIGBREAKF_CTRL_E);
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
