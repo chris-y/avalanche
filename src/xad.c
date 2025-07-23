@@ -123,7 +123,7 @@ ULONG xad_get_ver(ULONG *ver, ULONG *rev)
 static BOOL xad_is_dir(struct xadFileInfo *fi)
 {
 	if(fi->xfi_Flags & XADFIF_DIRECTORY) return TRUE;
-	if((xad_get_ver() == 12) && (fi->xfi_FileName[strlen(fi->xfi_FileName)-1] == '/')) return TRUE;
+	if((xad_get_ver(NULL, NULL) == 12) && (fi->xfi_FileName[strlen(fi->xfi_FileName)-1] == '/')) return TRUE;
 	return FALSE;
 }
 

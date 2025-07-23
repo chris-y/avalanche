@@ -16,11 +16,20 @@
 #define WIN_H 1
 
 #include <exec/types.h>
+#include <intuition/intuition.h>
 
 #include "avalanche.h"
 
 struct MsgPort;
 struct module_functions;
+
+enum {
+	AVALANCHE_GLYPH_ROOT = 800,
+	AVALANCHE_GLYPH_OPENDRAWER,
+	AVALANCHE_GLYPH_NONE,
+	AVALANCHE_GLYPH_MAX
+};
+
 
 /* Basic window functions */
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
@@ -59,6 +68,7 @@ BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
+Object *get_glyph(ULONG glyph);
 
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);

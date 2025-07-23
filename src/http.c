@@ -318,16 +318,21 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 			.download_url = "https://aminet.net/util/arc/avalanche.lha"
 		},
 		{	.name = "xadmaster.library",
+#ifndef __amigaos4__ /* Included with OS4, so not upgradeable here */
 			.check_url = "https://aminet.net/util/arc/xadmaster000.readme",
 			.download_url = "https://aminet.net/util/arc/xadmaster000.lha",
+#else
+			.check_url = NULL,
+			.download_url = NULL,
+#endif
 		},
 		{	.name = "xfdmaster.library",
 #ifndef __amigaos4__
 			.check_url = "https://aminet.net/util/pack/xfdmaster.readme", /* Version number is in the wrong format on this */
 			.download_url = "https://aminet.net/util/pack/xfdmaster.lha",
 #else
-			.check_url = "https://aminet.net/util/pack/xfdmaster_os4.readme",
-			.download_url = "https://aminet.net/util/pack/xfdmaster_os4.lha",
+			.check_url = "https://aminet.net/util/libs/xfdmaster_os4.readme",
+			.download_url = "https://aminet.net/util/libs/xfdmaster_os4.lha",
 #endif
 		},
 		{	.name = "xvs.library",
@@ -396,8 +401,13 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 				break;
 #endif
 			}
-					
-			avn[i].update_available = http_get_version(buffer, bufsize, SSL_ctx, avn[i].check_url, avn[i].current_version, avn[i].current_revision, &avn[i].latest_version, &avn[i].latest_revision);
+			
+			if(avn[i].check_url) {
+				avn[i].update_available = http_get_version(buffer, bufsize, SSL_ctx, avn[i].check_url, avn[i].current_version, avn[i].current_revision, &avn[i].latest_version, &avn[i].latest_revision);
+			} else {
+				avn[i].latest_version = 0;
+				avn[i].latest_revision = 0;
+			}
 
 #ifdef __amigaos4__
 			DebugPrintF("%d: Current: %d.%d, New: %d.%d\n", i, avn[i].current_version, avn[i].current_revision, avn[i].latest_version, avn[i].latest_revision);

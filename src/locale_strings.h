@@ -134,6 +134,10 @@
 #define MSG_NEWVERSIONDL 90
 #define MSG_OPENINWB 91
 #define MSG_OPENWBONEXTRACT 92
+#define MSG_INSTALLED_VER 93
+#define MSG_LATEST_VER 94
+#define MSG_UPDATE_AVAILABLE 95
+#define MSG_NONE 96
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -236,6 +240,10 @@
 #define MSG_NEWVERSIONDL_STR "New version (%d.%d) available\nDownload now?"
 #define MSG_OPENINWB_STR "Open destination drawer on Workbench"
 #define MSG_OPENWBONEXTRACT_STR "Open drawer on WB after extraction"
+#define MSG_INSTALLED_VER_STR "Installed version"
+#define MSG_LATEST_VER_STR "Latest version"
+#define MSG_UPDATE_AVAILABLE_STR "Update available"
+#define MSG_NONE_STR "None"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -433,6 +441,14 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_OPENINWB_STR "\x00\x00"
     "\x00\x00\x00\x5C\x00\x24"
     MSG_OPENWBONEXTRACT_STR "\x00\x00"
+    "\x00\x00\x00\x5D\x00\x12"
+    MSG_INSTALLED_VER_STR "\x00"
+    "\x00\x00\x00\x5E\x00\x10"
+    MSG_LATEST_VER_STR "\x00\x00"
+    "\x00\x00\x00\x5F\x00\x12"
+    MSG_UPDATE_AVAILABLE_STR "\x00\x00"
+    "\x00\x00\x00\x60\x00\x06"
+    MSG_NONE_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

@@ -166,9 +166,6 @@ struct avalanche_extract_userdata {
 };
 
 /** Glyphs **/
-#define AVALANCHE_GLYPH_ROOT 800
-#define AVALANCHE_GLYPH_OPENDRAWER 801
-
 static struct DrawList dl_opendrawer[] = {
 	{DLST_LINE, 90, 50, 90, 80, 1},
 	{DLST_LINE, 90, 80, 10, 80, 1},
@@ -206,6 +203,9 @@ static struct DrawList dl_archiveroot[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_none[] = {
+	{DLST_END, 0, 0, 0, 0, 0},
+};
 
 /** Menu **/
 
@@ -314,7 +314,7 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 	return 0;
 }
 
-static Object *get_glyph(ULONG glyph)
+Object *get_glyph(ULONG glyph)
 {
 	Object *glyphobj = NULL;
 	char *img = NULL;
@@ -350,7 +350,11 @@ static Object *get_glyph(ULONG glyph)
 				img = "TBimages:autobutton_dnarrow";
 			break;
 
-			default:
+			case GLYPH_CHECKMARK:
+				img = "TBimages:list_checkmark";
+			break;
+
+			default: // also AVALANCHE_GLYPH_NONE
 				img = "TBimages:list_blank";
 			break;
 		}
@@ -363,15 +367,21 @@ static Object *get_glyph(ULONG glyph)
 					BITMAP_Width, 16, */
 				BitMapEnd;
 	} else {
-		if((glyph == AVALANCHE_GLYPH_OPENDRAWER) ||
-			(glyph == AVALANCHE_GLYPH_ROOT)) {
+		if((glyph >= AVALANCHE_GLYPH_ROOT) &&
+			(glyph < AVALANCHE_GLYPH_MAX)) {
 				
 			struct DrawList *dl = NULL;
 				
-			if(glyph == AVALANCHE_GLYPH_OPENDRAWER) {
-				dl = &dl_opendrawer;
-			} else {
-				dl = &dl_archiveroot;
+			switch(glyph) {
+				case AVALANCHE_GLYPH_OPENDRAWER:
+					dl = &dl_opendrawer;
+				break;
+				case AVALANCHE_GLYPH_ROOT:
+					dl = &dl_archiveroot;
+				break;
+				case AVALANCHE_GLYPH_NONE:
+					dl = &dl_none;
+				break;
 			}
 				
 			glyphobj = DrawListObj,
@@ -383,8 +393,8 @@ static Object *get_glyph(ULONG glyph)
 				End;
 		} else {
 			glyphobj = GlyphObj,
-						GLYPH_Glyph, glyph,
-					GlyphEnd;
+					GLYPH_Glyph, glyph,
+				GlyphEnd;
 		}
 	}
 

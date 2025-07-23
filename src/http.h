@@ -16,7 +16,7 @@
 #define AVALANCHE_HTTP_H 1
 
 #include <exec/types.h>
-#include <proto/amissl.h>
+#include <openssl/types.h>
 
 BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize, BPTR fh);
 BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp, BOOL np);
