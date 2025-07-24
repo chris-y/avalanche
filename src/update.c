@@ -12,6 +12,7 @@
  * GNU General Public License for more details.
 */
 
+#include <stdio.h>
 #include <string.h>
 
 #include <clib/alib_protos.h>
@@ -35,8 +36,12 @@
 
 #include "Avalanche_rev.h"
 
+#include "arexx.h"
+#include "config.h"
+#include "http.h"
 #include "libs.h"
 #include "locale.h"
+#include "req.h"
 #include "update.h"
 #include "win.h"
 
@@ -56,17 +61,55 @@ enum {
 	OID_U_LAST
 };
 
+/* returns FALSE on error */
+static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
+{
+	char message[101];
 
+	snprintf(message, 100, locale_get_string(MSG_NEWVERSIONDL), vn->latest_version, vn->latest_revision);
+	if(ask_yesno_req(NULL, message)) {
+		// download
+		APTR buffer = AllocVec(4096, MEMF_PRIVATE);
+		if(buffer == NULL) return FALSE;
+		char *tmpdir = CONFIG_GET_LOCK(tmpdir);
+		ULONG fn_len = strlen(tmpdir) + strlen(FilePart(vn->download_url)) + 3;
+		char *dl_filename = AllocVec(fn_len, MEMF_PRIVATE);
+		if(dl_filename == NULL) {
+			CONFIG_UNLOCK;
+			FreeVec(buffer);
+			return FALSE;
+		}
+		
+		strncpy(dl_filename, tmpdir, fn_len);
+		CONFIG_UNLOCK;
+		AddPart(dl_filename, FilePart(vn->download_url), fn_len);
+		BPTR fh = Open(dl_filename, MODE_NEWFILE);
+		if(fh) {
+			http_get_url(vn->download_url, ssl_ctx, buffer, 4096, fh);
+			Close(fh);
 
+			/* We are running as a separate process, pass a message to the parent using ARexx */
+			ULONG cmd_len = fn_len + 8;
+			char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
+			if(cmd) {
+				snprintf(cmd, cmd_len, "OPEN \"%s\"", dl_filename);
+				ami_arexx_send(cmd);
+				FreeVec(cmd);
+			} else {
+				open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+			}
+		} else {
+			open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+		}
+
+		if(dl_filename) FreeVec(dl_filename);
+		if(buffer) FreeVec(buffer);
+	}
+	return TRUE;
+}
 
 void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 {
-	for(int i = 0; i < ACHECKVER_MAX; i++) {
-#ifdef __amigaos4__
-		DebugPrintF("%d: Current: %d.%d, New: %d.%d\n", i, avn[i].current_version, avn[i].current_revision, avn[i].latest_version, avn[i].latest_revision);
-#endif
-	}
-
 	struct Window *windows[WID_U_LAST];
 	struct Gadget *gadgets[GID_U_LAST];
 	Object *objects[OID_U_LAST];
@@ -121,6 +164,7 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 				snprintf(latest_version, 9, "%d.%d", avn[i].latest_version, avn[i].latest_revision);
 			}
 			struct Node *node = AllocListBrowserNode(4,
+				LBNA_UserData, &avn[i],
 				LBNA_Column, 0,
 					LBNCA_Text, avn[i].name,
 				LBNA_Column, 1,
@@ -191,15 +235,26 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 					case WMHI_GADGETUP:
 						switch (result & WMHI_GADGETMASK) {
 							ULONG list_event = 0;
-							ULONG item = 0;
+							struct Node *node = NULL;
+							struct avalanche_version_numbers *vn = NULL;
 							case GID_U_LIST:
 								GetAttr(LISTBROWSER_RelEvent, gadgets[GID_U_LIST], (APTR)&list_event);
 								switch(list_event) {
 									case LBRE_DOUBLECLICK:
-										GetAttr(LISTBROWSER_Selected, gadgets[GID_U_LIST], (APTR)&item);
-#ifdef __amigaos4__
-DebugPrintF("item double-clicked: %d %s\n", item, avn[item].name);
-#endif
+										GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_U_LIST], (APTR)&node);
+										GetListBrowserNodeAttrs(node, LBNA_UserData, (APTR)&vn, TAG_DONE);
+
+										if(vn->update_available) {
+											SetWindowPointer(windows[WID_U_MAIN],
+															WA_BusyPointer, TRUE,
+															TAG_DONE);
+											if(update_update(vn, ssl_ctx) == FALSE) {
+												open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+											}
+											SetWindowPointer(windows[WID_U_MAIN],
+															WA_BusyPointer, FALSE,
+															TAG_DONE);
+										}
 									break;
 								}
 							break;

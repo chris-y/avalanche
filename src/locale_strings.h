@@ -243,7 +243,7 @@
 #define MSG_INSTALLED_VER_STR "Installed version"
 #define MSG_LATEST_VER_STR "Latest version"
 #define MSG_UPDATE_AVAILABLE_STR "Update available"
-#define MSG_NONE_STR "None"
+#define MSG_NONE_STR "N/A"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -447,8 +447,8 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_LATEST_VER_STR "\x00\x00"
     "\x00\x00\x00\x5F\x00\x12"
     MSG_UPDATE_AVAILABLE_STR "\x00\x00"
-    "\x00\x00\x00\x60\x00\x06"
-    MSG_NONE_STR "\x00\x00"
+    "\x00\x00\x00\x60\x00\x04"
+    MSG_NONE_STR "\x00"
 };
 
 #endif /* CATCOMP_BLOCK */

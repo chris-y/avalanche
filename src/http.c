@@ -61,6 +61,7 @@ struct Library *AmiSSLExtBase = NULL;
 #include "win.h"
 
 #include "deark.h"
+#include "mod_zip.h"
 #include "xad.h"
 #include "xfd.h"
 #include "xvs.h"
@@ -138,12 +139,13 @@ static int err_cb(const char *str, size_t len, void *u)
 	return 1;
 }
 
-BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize, BPTR fh)
+BOOL http_get_url(char *url, void *ssl_ctx, char *buffer, ULONG bufsize, BPTR fh)
 {
 	STACK_OF(CONF_VALUE) *headers = NULL;
 	BIO *bio, *bio_err;
 	ULONG length;
 	char app[50];
+	SSL_CTX *sslctx = (SSL_CTX *)ssl_ctx;
 
 	/* Allow unsafe legacy renegotiation */
 	//SSL_CTX_set_options(sslctx, SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION);
@@ -408,60 +410,12 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 				avn[i].latest_version = 0;
 				avn[i].latest_revision = 0;
 			}
-
-#ifdef __amigaos4__
-			DebugPrintF("%d: Current: %d.%d, New: %d.%d\n", i, avn[i].current_version, avn[i].current_revision, avn[i].latest_version, avn[i].latest_revision);
-#endif
-		}
-
-		update_gui(avn, SSL_ctx);
-		
-
-		char message[101];
-
-		if(update_available) {
-			snprintf(message, 100, locale_get_string(MSG_NEWVERSIONDL), upd_ver, upd_rev);
-			if(ask_yesno_req(awin, message)) {
-				// download
-				char dl_filename[131];
-				struct avalanche_config *config = get_config();
-				strncpy(dl_filename, config->tmpdir, 130);
-				AddPart(dl_filename, "avalanche.lha", 130);
-				BPTR fh = Open(dl_filename, MODE_NEWFILE);
-				if(fh) {
-					http_get_url("https://aminet.net/util/arc/avalanche.lha", SSL_ctx, buffer, bufsize, fh);
-					Close(fh);
-
-					if(awin == NULL) {
-						/* We are running as a separate process, pass a message to the parent using ARexx */
-						char cmd[1024];
-						snprintf(cmd, 1024, "OPEN \"%s\"", dl_filename);
-						ami_arexx_send(cmd);
-					} else {
-						void *new_awin = window_create(config, dl_filename, winport, appport);
-						if(new_awin != NULL) {
-							window_open(new_awin, appwin_mp);
-							window_req_open_archive(new_awin, get_config(), TRUE);
-						} else {
-							open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
-						}
-					}
-				} else {
-					open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
-				}
-			}
-		} else {
-			open_info_req(locale_get_string(MSG_NONEWVERSION), locale_get_string(MSG_OK), awin);
-
-			if(err_txt) {
-				open_error_req(err_txt, locale_get_string(MSG_OK), awin);
-				FreeVec(err_txt);
-			} else {
-				open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
-			}
 		}
 
 		FreeVec(buffer);
+
+		update_gui(avn, SSL_ctx);
+
 		http_ssl_free_ctx(SSL_ctx);
 		return TRUE;
 	}
