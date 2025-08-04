@@ -499,10 +499,15 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				switch(evt) {
 					case RXEVT_OPEN: /* Archive set on OPEN */
 						{
-							void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
+							BOOL del = FALSE;
+							char *arexx_fn = arexx_get_event(&del);
+							void *arexx_awin = window_create(&config, arexx_fn, winport, AppPort);
 							if(arexx_awin) {
 								window_open(arexx_awin, appwin_mp);
 								window_req_open_archive(arexx_awin, &config, TRUE);
+
+								if(del) add_to_delete_list(arexx_awin, arexx_fn);
+
 							}
 						}
 					break;

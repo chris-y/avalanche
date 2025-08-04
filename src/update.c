@@ -79,7 +79,7 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 			FreeVec(buffer);
 			return FALSE;
 		}
-		
+
 		strncpy(dl_filename, tmpdir, fn_len);
 		CONFIG_UNLOCK;
 		AddPart(dl_filename, FilePart(vn->download_url), fn_len);
@@ -92,7 +92,7 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 			ULONG cmd_len = fn_len + 8;
 			char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
 			if(cmd) {
-				snprintf(cmd, cmd_len, "OPEN \"%s\"", dl_filename);
+				snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE", dl_filename);
 				ami_arexx_send(cmd);
 				FreeVec(cmd);
 			} else {

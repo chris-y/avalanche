@@ -640,8 +640,10 @@ static void delete_delete_list(struct avalanche_window *aw)
 	}
 }
 
-static void add_to_delete_list(struct avalanche_window *aw, char *fn)
+void add_to_delete_list(void *awin, char *fn)
 {
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
 	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
 	if(node) {
 		node->ln_Name = strdup_vec(fn);

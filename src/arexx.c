@@ -45,6 +45,7 @@ static Object *arexx_obj = NULL;
 STATIC char result[100];
 static ULONG event = RXEVT_NONE;
 static char *event_param = NULL;
+static BOOL event_flag = FALSE;
 
 #ifdef __amigaos4__
 #define RXHOOKF(func) static VOID func(struct ARexxCmd *cmd, struct RexxMsg *rxm __attribute__((unused)))
@@ -69,7 +70,7 @@ RXHOOKF(rx_version);
 
 STATIC struct ARexxCmd Commands[] =
 {
-	{"OPEN", RX_OPEN, rx_open, "FILE/A", 		0, 	NULL, 	0, 	0, 	NULL },
+	{"OPEN", RX_OPEN, rx_open, "FILE/A,DELETEONCLOSE/S", 		0, 	NULL, 	0, 	0, 	NULL },
 	{"SHOW", RX_SHOW, rx_show, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{"VERSION", RX_VERSION, rx_version, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{ NULL, 		0, 				NULL, 		NULL, 		0, 	NULL, 	0, 	0, 	NULL }
@@ -130,37 +131,44 @@ void arexx_free_event(void)
 {
 	if(event_param) FreeVec(event_param);
 	event_param = NULL;
+	event_flag = FALSE;
 	event = RXEVT_NONE;
 }
 
-static void arexx_set_event(ULONG evt, char *param)
+static void arexx_set_event(ULONG evt, char *param, BOOL flag)
 {
 	if(event_param) {
 		arexx_free_event();
 		event_param = NULL;
+		event_flag = FALSE;
 	}
 	if(param) event_param = strdup_vec(param);
+	event_flag = flag;
 	event = evt;
 }
 
-char *arexx_get_event(void)
+char *arexx_get_event(BOOL *flag)
 {
+	*flag = arexx_flag;
 	return event_param;
 }
 
 
 RXHOOKF(rx_open)
 {
+	BOOL del = FALSE;
 	cmd->ac_RC = 0;
 
-	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0]);
+	if(cmd->ac_ArgList[1]) del = TRUE;
+
+	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0], del);
 }
 
 RXHOOKF(rx_show)
 {
 	cmd->ac_RC = 0;
 
-	arexx_set_event(RXEVT_SHOW, NULL);
+	arexx_set_event(RXEVT_SHOW, NULL, FALSE);
 }
 
 RXHOOKF(rx_version)
