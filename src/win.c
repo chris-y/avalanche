@@ -644,6 +644,16 @@ void add_to_delete_list(void *awin, char *fn)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
+	char *tmpdir = CONFIG_GET_LOCK(tmpdir);
+
+	/* Ensure we're only deleting things in our temp dir */
+	if(strncmp(tmpdir, fn, strlen(tmpdir) != 0) {
+		CONFIG_UNLOCK;
+		return;
+	}
+
+	CONFIG_UNLOCK;
+
 	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
 	if(node) {
 		node->ln_Name = strdup_vec(fn);
