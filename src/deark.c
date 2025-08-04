@@ -273,7 +273,7 @@ long deark_extract(void *awin, char *file, char *dest, struct List *list, void *
 	long err = 0;
 	struct Node *fnode;
 
-	struct desrk_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 
 	if(du) {
 		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {

@@ -38,16 +38,16 @@
 #include <amissl/amissl.h>
 #include <dos/dostags.h>
 
-struct Library *SocketBase;
-struct Library *AmiSSLMasterBase;
+static struct Library *SocketBase;
+static struct Library *AmiSSLMasterBase;
 
 #ifdef __amigaos4__
-struct SocketIFace *ISocket;
-struct AmiSSLMasterIFace *IAmiSSLMaster;
-struct AmiSSLIFace *IAmiSSL;
+static struct SocketIFace *ISocket;
+static struct AmiSSLMasterIFace *IAmiSSLMaster;
+static struct AmiSSLIFace *IAmiSSL;
 #else
-struct Library *AmiSSLBase = NULL;
-struct Library *AmiSSLExtBase = NULL;
+static struct Library *AmiSSLBase = NULL;
+static struct Library *AmiSSLExtBase = NULL;
 #endif
 
 #include "avalanche.h"
@@ -61,7 +61,7 @@ struct Library *AmiSSLExtBase = NULL;
 #include "win.h"
 
 #include "deark.h"
-#include "mod_zip.h"
+#include "module.h"
 #include "xad.h"
 #include "xfd.h"
 #include "xvs.h"
@@ -403,7 +403,7 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 				break;
 #endif
 			}
-			
+
 			if(avn[i].check_url) {
 				avn[i].update_available = http_get_version(buffer, bufsize, SSL_ctx, avn[i].check_url, avn[i].current_version, avn[i].current_revision, &avn[i].latest_version, &avn[i].latest_revision);
 			} else {
