@@ -212,7 +212,7 @@ static struct DrawList dl_none[] = {
 static struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
 	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
-	{NM_ITEM,   NULL,         "+", 0, 0, 0,}, // 1 New window
+	{NM_ITEM,   NULL,         "W", 0, 0, 0,}, // 1 New window
 	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 2 Open
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
@@ -227,10 +227,10 @@ static struct NewMenu menu[] = {
 	{NM_ITEM,   NULL ,  "Z", NM_ITEMDISABLED, 0, 0,}, // 1 Clear Selection
 	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
-	{NM_ITEM,   NULL,       "+", NM_ITEMDISABLED, 0, 0,}, // 4 Add files
+	{NM_ITEM,   NULL,       ".", NM_ITEMDISABLED, 0, 0,}, // 4 Add files
 	{NM_ITEM,   NULL,       0, NM_ITEMDISABLED, 0, 0,}, // 5 Delete files
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 6
-	{NM_ITEM,   NULL , 0, CHECKIT | MENUTOGGLE, 0, 0,}, // 7 Toggle drag lock
+	{NM_ITEM,   NULL , "L", CHECKIT | MENUTOGGLE, 0, 0,}, // 7 Toggle drag lock
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
 	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 0 View mode
