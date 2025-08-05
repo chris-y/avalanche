@@ -232,13 +232,15 @@ static struct NewMenu menu[] = {
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 6
 	{NM_ITEM,   NULL , "L", CHECKIT | MENUTOGGLE, 0, 0,}, // 7 Toggle drag lock
 
-	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Settings
+	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Window
 	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 0 View mode
 	{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
 	{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 2 Snapshot
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 3 Preferences
+
+	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 3 Settings
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 0 Snapshot
+	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 1 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
@@ -2631,8 +2633,12 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 									break;
 								}
 							break;
-				
-							case 2: //snapshot
+						}
+					break;
+
+					case 3: //settings
+						switch(ITEMNUM(code)) {
+							case 0: //snapshot
 								/* fetch current win posn */
 								CONFIG_LOCK;
 								GetAttr(WA_Top, aw->objects[OID_MAIN], (APTR)&config->win_y);
@@ -2644,7 +2650,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								warning_req(aw, locale_get_string(MSG_SNAPSHOT_WARNING));
 							break;
 								
-							case 3: //prefs
+							case 1: //prefs
 								config_window_open(config);
 							break;
 						}
@@ -2692,12 +2698,13 @@ void fill_menu_labels(void)
 	menu[15].nm_Label = locale_get_string( MSG_ADDFILES );
 	menu[16].nm_Label = locale_get_string( MSG_DELFILES );
 	menu[18].nm_Label = locale_get_string( MSG_DRAGLOCK );
-	menu[19].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[19].nm_Label = locale_get_string( MSG_WINDOW );
 	menu[20].nm_Label = locale_get_string( MSG_VIEWMODE );
 	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
 	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
-	menu[24].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[25].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[24].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[25].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[26].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)
