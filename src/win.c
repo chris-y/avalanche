@@ -598,6 +598,25 @@ static BOOL window_open_dest(void *awin)
 	return OpenWorkbenchObjectA(aw->dest, NULL);
 }
 
+static void collapse_tree(struct avalanche_window *aw, BOOL expand)
+{
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+		LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	if(expand) {
+		/* expand instead of collapsing */
+		ShowAllListBrowserChildren(&aw->dir_tree);
+	} else {
+		/* collapse */
+		HideAllListBrowserChildren(&aw->dir_tree);
+	}
+
+	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+		LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
+
+}
+
+
 static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select, BOOL detach_list)
 {
 	/* detach_list detached the list and also doesn't update the underlying array */
@@ -2637,7 +2656,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 						}
 					break;
 					
-					case 2: //settings
+					case 2: //window
 						switch(ITEMNUM(code)) {
 							case 0: // view mode
 								switch(SUBNUM(code)) {
@@ -2653,13 +2672,16 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							case 1: // dir tree
 								switch(SUBNUM(code)) {
 									case 0: // collapse
+										collapse_tree(aw, FALSE);
 									break;
 									case 1: // expand
+										collapse_tree(aw, TRUE);
 									break;
 								}
 							break;
 
 							case 3: // close
+								done = WIN_DONE_CLOSED;
 							break;
 						}
 					break;
