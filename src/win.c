@@ -236,7 +236,11 @@ static struct NewMenu menu[] = {
 	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 0 View mode
 	{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
 	{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 1
+	{NM_ITEM, NULL , 0, 0, 0, 0,}, // 1 Dir tree
+	{NM_SUB,  NULL , 0, 0, 0, 0,}, // 0 Collapse all
+	{NM_SUB,  NULL , 0, 0, 0, 0,}, // 1 Expand all
+	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
+	{NM_ITEM, NULL , 0, 0, 0, 0,}, // 3 Close
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 3 Settings
 	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 0 Snapshot
@@ -486,6 +490,13 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		} else {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		}
+		if(aw->flat_mode == FALSE) {
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
+		} else {
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
+		}
 	} else {
 		if(busy == FALSE) {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
@@ -502,6 +513,8 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
 	}
 }
 
@@ -2633,6 +2646,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 									break;
 								}
 							break;
+
+							case 1: // dir tree
+								switch(SUBNUM(code)) {
+									case 0: // collapse
+									break;
+									case 1: // expand
+									break;
+								}
+							break;
+
+							case 3: // close
+							break;
 						}
 					break;
 
@@ -2702,9 +2727,13 @@ void fill_menu_labels(void)
 	menu[20].nm_Label = locale_get_string( MSG_VIEWMODE );
 	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
 	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
-	menu[24].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[25].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[26].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[23].nm_Label = locale_get_string( MSG_DIR_TREE );
+	menu[24].nm_Label = locale_get_string( MSG_COLLAPSE_ALL );
+	menu[25].nm_Label = locale_get_string( MSG_EXPAND_ALL );
+	menu[27].nm_Label = locale_get_string( MSG_CLOSE );
+	menu[28].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[29].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[30].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 void *window_get_archive_userdata(void *awin)
