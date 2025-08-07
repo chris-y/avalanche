@@ -89,7 +89,7 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 			Close(fh);
 
 			/* We are running as a separate process, pass a message to the parent using ARexx */
-			ULONG cmd_len = fn_len + 8;
+			ULONG cmd_len = fn_len + 22;
 			char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
 			if(cmd) {
 				snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE", dl_filename);
