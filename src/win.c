@@ -2590,8 +2590,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 											WA_BusyPointer, TRUE,
 											TAG_DONE);
 
+#ifdef __amigaos4__
 								http_check_version(awin, winport, AppPort, appwin_mp, TRUE);
-
+#else
+								http_check_version(awin, winport, AppPort, appwin_mp, FALSE);
+#endif
 								if(window_get_window(awin))
 									SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, FALSE,
