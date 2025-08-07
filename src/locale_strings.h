@@ -138,6 +138,11 @@
 #define MSG_LATEST_VER 94
 #define MSG_UPDATE_AVAILABLE 95
 #define MSG_NONE 96
+#define MSG_WINDOW 97
+#define MSG_CLOSE 98
+#define MSG_DIR_TREE 99
+#define MSG_EXPAND_ALL 100
+#define MSG_COLLAPSE_ALL 101
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -244,6 +249,11 @@
 #define MSG_LATEST_VER_STR "Latest version"
 #define MSG_UPDATE_AVAILABLE_STR "Update available"
 #define MSG_NONE_STR "N/A"
+#define MSG_WINDOW_STR "Window"
+#define MSG_CLOSE_STR "Close"
+#define MSG_DIR_TREE_STR "Directory tree"
+#define MSG_EXPAND_ALL_STR "Expand all"
+#define MSG_COLLAPSE_ALL_STR "Collapse all"
 
 #endif /* CATCOMP_STRINGS */
 
@@ -449,6 +459,16 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_UPDATE_AVAILABLE_STR "\x00\x00"
     "\x00\x00\x00\x60\x00\x04"
     MSG_NONE_STR "\x00"
+    "\x00\x00\x00\x61\x00\x08"
+    MSG_WINDOW_STR "\x00\x00"
+    "\x00\x00\x00\x62\x00\x06"
+    MSG_CLOSE_STR "\x00"
+    "\x00\x00\x00\x63\x00\x10"
+    MSG_DIR_TREE_STR "\x00\x00"
+    "\x00\x00\x00\x64\x00\x0C"
+    MSG_EXPAND_ALL_STR "\x00\x00"
+    "\x00\x00\x00\x65\x00\x0E"
+    MSG_COLLAPSE_ALL_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */
