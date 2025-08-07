@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-2025 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,6 @@ ULONG ami_arexx_handle(void);
 void ami_arexx_send(const char *);
 void ami_arexx_cleanup(void);
 
-char *arexx_get_event(void);
+char *arexx_get_event(BOOL *flag);
 void arexx_free_event(void);
 #endif
