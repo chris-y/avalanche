@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-2025 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -149,7 +149,7 @@ static void arexx_set_event(ULONG evt, char *param, BOOL flag)
 
 char *arexx_get_event(BOOL *flag)
 {
-	*flag = arexx_flag;
+	*flag = event_flag;
 	return event_param;
 }
 

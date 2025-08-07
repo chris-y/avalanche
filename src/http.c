@@ -38,16 +38,16 @@
 #include <amissl/amissl.h>
 #include <dos/dostags.h>
 
-static struct Library *SocketBase;
-static struct Library *AmiSSLMasterBase;
+struct Library *SocketBase;
+struct Library *AmiSSLMasterBase;
 
 #ifdef __amigaos4__
-static struct SocketIFace *ISocket;
-static struct AmiSSLMasterIFace *IAmiSSLMaster;
-static struct AmiSSLIFace *IAmiSSL;
+struct SocketIFace *ISocket;
+struct AmiSSLMasterIFace *IAmiSSLMaster;
+struct AmiSSLIFace *IAmiSSL;
 #else
-static struct Library *AmiSSLBase = NULL;
-static struct Library *AmiSSLExtBase = NULL;
+struct Library *AmiSSLBase = NULL;
+struct Library *AmiSSLExtBase = NULL;
 #endif
 
 #include "avalanche.h"
