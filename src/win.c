@@ -237,10 +237,10 @@ static struct NewMenu menu[] = {
 	{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
 	{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
 	{NM_ITEM, NULL , 0, 0, 0, 0,}, // 1 Dir tree
-	{NM_SUB,  NULL , 0, 0, 0, 0,}, // 0 Collapse all
-	{NM_SUB,  NULL , 0, 0, 0, 0,}, // 1 Expand all
+	{NM_SUB,  NULL , "-", 0, 0, 0,}, // 0 Collapse all
+	{NM_SUB,  NULL , "=", 0, 0, 0,}, // 1 Expand all
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
-	{NM_ITEM, NULL , 0, 0, 0, 0,}, // 3 Close
+	{NM_ITEM, NULL , "K", 0, 0, 0,}, // 3 Close
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 3 Settings
 	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 0 Snapshot
@@ -490,7 +490,7 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		} else {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		}
-		if(aw->flat_mode == FALSE) {
+		if(aw->flat_mode == TRUE) {
 			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
 			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
 		} else {
@@ -681,7 +681,7 @@ void add_to_delete_list(void *awin, char *fn)
 	char *tmpdir = CONFIG_GET_LOCK(tmpdir);
 
 	/* Ensure we're only deleting things in our temp dir */
-	if(strncmp(tmpdir, fn, strlen(tmpdir) != 0) {
+	if(strncmp(tmpdir, fn, strlen(tmpdir)) != 0) {
 		CONFIG_UNLOCK;
 		return;
 	}
