@@ -350,6 +350,15 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 			.download_url = "https://aminet.net/util/arc/deark.lha",
 #endif
 		},
+		{	.name = "LhA",
+#ifdef __amigaos4__
+			.check_url = "https://aminet.net/util/arc/lha_os4.readme",
+			.download_url = "https://aminet.net/util/arc/lha_os4.lha",
+#else
+			.check_url = "https://aminet.net/util/arc/lha_68k.readme",
+			.download_url = "https://aminet.net/util/arc/lha_68k.lha",
+#endif
+		},
 #ifdef __amigaos4__
 		{	.name = "zip.library",
 			.check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme",
@@ -395,6 +404,13 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 					avn[ACHECKVER_DEARK].current_revision = 0;
 					deark_get_ver(&avn[ACHECKVER_DEARK].current_version, &avn[ACHECKVER_DEARK].current_revision);
 				break;
+				
+				case ACHECKVER_LHA:
+					avn[ACHECKVER_LHA].current_version = 0;
+					avn[ACHECKVER_LHA].current_revision = 0;
+					mod_lha_get_ver(&avn[ACHECKVER_LHA].current_version, &avn[ACHECKVER_LHA].current_revision);
+				break;
+				
 #ifdef __amigaos4__
 				case ACHECKVER_ZIP:
 					avn[ACHECKVER_ZIP].current_version = 0;

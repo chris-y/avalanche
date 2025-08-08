@@ -154,6 +154,60 @@ BOOL mod_lha_new(void *awin, char *archive)
 	return ret;
 }
 
+ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
+{
+	BPTR fh = 0;
+	CONFIG_LOCK;
+	ULONG tmpfile_len = CONFIG_GET(tmpdirlen) + 30;
+	char *tmpfile = AllocVec(tmpfile_len, MEMF_CLEAR);
+	if(tmpfile == NULL) {
+		CONFIG_UNLOCK;
+		return 0;
+	}
+	strcpy(tmpfile, CONFIG_GET(tmpdir));
+	AddPart(tmpfile, "lha_tmp", tmpfile_len);
+	CONFIG_UNLOCK;
+
+	if(fh = Open(tmpfile, MODE_NEWFILE)) {
+		ULONG err = SystemTags("version lha",
+				SYS_Input, NULL,
+				SYS_Output, fh,
+				SYS_Error, NULL,
+				NP_Name, "Avalanche LhA version process",
+				TAG_DONE);
+
+		Close(fh);
+		
+	}
+	
+	char *res;
+	char buf[20];
+	char *dot = NULL;
+	char *p = buf;
+			
+	if(fh = Open(tmpfile, MODE_OLDFILE)) {
+		res = (char *)&buf;
+		while(res != NULL) {
+			res = FGets(fh, buf, 20);
+
+			if(strncmp(p, "LhA ", 4) == 0) {
+				p += 4;
+				break;
+			}
+		}
+
+		*ver = strtol(p, &dot, 10);
+		*rev = strtol(dot + 1, NULL, 10);
+			
+		Close(fh);
+		//DeleteFile(tmpfile);
+	}
+
+	FreeVec(tmpfile);
+
+	return *ver;
+}
+
 void mod_lha_register(struct module_functions *funcs)
 {
 	funcs->add = mod_lha_add;

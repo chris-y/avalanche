@@ -321,7 +321,7 @@ ULONG deark_get_ver(ULONG *ver, ULONG *rev)
 
 	snprintf(cmd, 1024, "deark -version");
 	
-		if(fh = Open(tmpfile, MODE_NEWFILE)) {
+	if(fh = Open(tmpfile, MODE_NEWFILE)) {
 		err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, fh,

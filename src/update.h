@@ -30,6 +30,7 @@ enum {
         ACHECKVER_XFD,
         ACHECKVER_XVS,
         ACHECKVER_DEARK,
+        ACHECKVER_LHA,
 #ifdef __amigaos4__
         ACHECKVER_ZIP,
 #endif
