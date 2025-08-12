@@ -207,6 +207,14 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 						LISTBROWSER_Striping, LBS_ROWS,
 						LISTBROWSER_FastRender, TRUE,
 					ListBrowserEnd,
+					LAYOUT_AddImage, LabelObj,
+						LABEL_Text, locale_get_string(MSG_UPDATE_INFO),
+					LabelEnd,
+#ifndef __amigaos4__ /* extra message for OS3 - hopefully this is temporary */
+					LAYOUT_AddImage, LabelObj,
+						LABEL_Text, locale_get_string(MSG_UPDATE_INFO_OS3),
+					LabelEnd,
+#endif
 				LayoutEnd,
 			LayoutEnd,
 		EndWindow;
