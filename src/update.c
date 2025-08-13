@@ -61,6 +61,9 @@ enum {
 	OID_U_LAST
 };
 
+static Object *objects[OID_U_LAST];
+static struct MsgPort *uw_port = NULL;
+
 /* returns FALSE on error */
 static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 {
@@ -108,12 +111,20 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 	return TRUE;
 }
 
+ULONG update_get_signal(void)
+{
+	return(1L << uw_port->mp_SigBit);
+}
+
+BOOL update_handle_events(void)
+{
+	if(objects[OID_MAIN] == NULL) return FALSE;
+}
+
 void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 {
 	struct Window *windows[WID_U_LAST];
 	struct Gadget *gadgets[GID_U_LAST];
-	Object *objects[OID_U_LAST];
-	struct MsgPort *uw_port;
 	struct ColumnInfo *ci;
 	struct List list;
 
@@ -218,12 +229,12 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 				LayoutEnd,
 			LayoutEnd,
 		EndWindow;
-				
+
 		if(objects[OID_U_MAIN]) {
 			windows[WID_U_MAIN] = (struct Window *)RA_OpenWindow(objects[OID_U_MAIN]);
 		}
-	
-		ULONG sigbit = 1L << uw_port->mp_SigBit;
+
+		ULONG sigbit = update_get_signal();
 		BOOL done = FALSE;
 
 		if(windows[WID_U_MAIN] == NULL) done = TRUE;
@@ -279,6 +290,7 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 		RA_CloseWindow(objects[OID_U_MAIN]);
 		windows[WID_U_MAIN] = NULL;
 		DisposeObject(objects[OID_U_MAIN]);
+		objects[OID_U_MAIN] = NULL;
 
 		FreeLBColumnInfo(ci);
 		FreeListBrowserList(&list);
@@ -287,3 +299,4 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 		uw_port = NULL;
 	}
 }
+
