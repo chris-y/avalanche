@@ -543,10 +543,8 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				}
 #ifndef __amigaos4__
                         } else if(uw_sig && (wait & uw_sig)) {
-				BOOL uw_done = FALSE;
-				while(uw_done == FALSE) {
-					uw_done = update_handle_input();
-				}
+				BOOL uw_done = update_handle_input();
+				if(uw_done) update_close();
 			}
 #endif
 			if(done == WIN_DONE_CLOSED) {
@@ -571,6 +569,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 	close_all_windows();
 	config_window_break();
+#ifndef __amigaos4__
+	update_close();
+#else
+	update_break();
+#endif
 
 	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 
