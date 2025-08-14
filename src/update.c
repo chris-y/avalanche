@@ -131,12 +131,13 @@ void update_close(void)
 
 ULONG update_get_signal(void)
 {
-	return(1L << uw_port->mp_SigBit);
+	if(uw_port == NULL) return 0;
+		else return(1L << uw_port->mp_SigBit);
 }
 
 BOOL update_handle_events(void)
 {
-	if(objects[OID_MAIN] == NULL) return FALSE;
+	if(objects[OID_U_MAIN] == NULL) return FALSE;
 }
 
 void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
@@ -313,5 +314,5 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 
 void update_break(void)
 {
-	Signal(http_get_process_check_version(void), SIGBREAKF_CTRL_C);
+	Signal(http_get_process_check_version(), SIGBREAKF_CTRL_C);
 }
