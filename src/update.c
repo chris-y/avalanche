@@ -67,6 +67,7 @@ static struct Window *windows[WID_U_LAST];
 static struct Gadget *gadgets[GID_U_LAST];
 static struct ColumnInfo *ci;
 static struct List list;
+static void *sslctx = NULL;
 
 /* returns FALSE on error */
 static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
@@ -117,6 +118,8 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 
 void update_close(void)
 {
+	if(objects[OID_U_MAIN] == NULL) return;
+	
 	RA_CloseWindow(objects[OID_U_MAIN]);
 	windows[WID_U_MAIN] = NULL;
 	DisposeObject(objects[OID_U_MAIN]);
@@ -138,10 +141,58 @@ ULONG update_get_signal(void)
 BOOL update_handle_events(void)
 {
 	if(objects[OID_U_MAIN] == NULL) return FALSE;
+	
+	UWORD code;
+	ULONG result;
+	BOOL done = FALSE;
+
+	while(((result = RA_HandleInput(objects[OID_U_MAIN], &code)) != WMHI_LASTMSG) && (done == FALSE)) {
+
+		switch (result & WMHI_CLASSMASK) {
+			case WMHI_CLOSEWINDOW:
+				done = TRUE;
+			break;
+
+			case WMHI_GADGETUP:
+				switch (result & WMHI_GADGETMASK) {
+					ULONG list_event = 0;
+					struct Node *node = NULL;
+					struct avalanche_version_numbers *vn = NULL;
+					case GID_U_LIST:
+						GetAttr(LISTBROWSER_RelEvent, gadgets[GID_U_LIST], (APTR)&list_event);
+						switch(list_event) {
+							case LBRE_DOUBLECLICK:
+								GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_U_LIST], (APTR)&node);
+								GetListBrowserNodeAttrs(node, LBNA_UserData, (APTR)&vn, TAG_DONE);
+
+								if(vn->update_available) {
+									SetWindowPointer(windows[WID_U_MAIN],
+												WA_BusyPointer, TRUE,
+												TAG_DONE);
+									if(update_update(vn, sslctx) == FALSE) {
+										open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+									}
+									SetWindowPointer(windows[WID_U_MAIN],
+												WA_BusyPointer, FALSE,
+												TAG_DONE);
+								}
+							break;
+						}
+					break;
+				}
+			break;
+		}
+	}
+	
+	return done;
+	
 }
 
 void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 {
+	/* Make this global for OS3 */
+	sslctx = ssl_ctx;
+	
 	if(uw_port = CreateMsgPort()) {
 
 		ci = AllocLBColumnInfo(4,
@@ -261,46 +312,8 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 			ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
 
 			if(wait & sigbit) {
-				UWORD code;
-				ULONG result;
+				done = update_handle_events();
 
-				while((result = RA_HandleInput(objects[OID_U_MAIN], &code)) != WMHI_LASTMSG) {
-
-					switch (result & WMHI_CLASSMASK) {
-						case WMHI_CLOSEWINDOW:
-							done = TRUE;
-						break;
-
-						case WMHI_GADGETUP:
-							switch (result & WMHI_GADGETMASK) {
-								ULONG list_event = 0;
-								struct Node *node = NULL;
-								struct avalanche_version_numbers *vn = NULL;
-								case GID_U_LIST:
-									GetAttr(LISTBROWSER_RelEvent, gadgets[GID_U_LIST], (APTR)&list_event);
-									switch(list_event) {
-										case LBRE_DOUBLECLICK:
-											GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_U_LIST], (APTR)&node);
-											GetListBrowserNodeAttrs(node, LBNA_UserData, (APTR)&vn, TAG_DONE);
-
-											if(vn->update_available) {
-												SetWindowPointer(windows[WID_U_MAIN],
-															WA_BusyPointer, TRUE,
-															TAG_DONE);
-												if(update_update(vn, ssl_ctx) == FALSE) {
-													open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
-												}
-												SetWindowPointer(windows[WID_U_MAIN],
-															WA_BusyPointer, FALSE,
-															TAG_DONE);
-											}
-										break;
-									}
-								break;
-							}
-						break;
-					}
-				}
 			} else if(wait & SIGBREAKF_CTRL_C) {
 				done = TRUE;
 			} else if(wait & SIGBREAKF_CTRL_F) {
@@ -314,5 +327,7 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 
 void update_break(void)
 {
-	Signal(http_get_process_check_version(), SIGBREAKF_CTRL_C);
+	struct Process *check_ver_proc = http_get_process_check_version();
+	if(check_ver_proc == NULL) return;
+	Signal(check_ver_proc, SIGBREAKF_CTRL_C);
 }
