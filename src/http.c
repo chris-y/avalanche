@@ -314,7 +314,7 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 	BOOL update_available = FALSE;
 	ULONG ver, rev;
 	ULONG upd_ver, upd_rev;
-	struct avalanche_version_numbers avn[] = {
+	static struct avalanche_version_numbers avn[] = {
 		{	.name = "Avalanche",
 			.check_url = "https://aminet.net/util/arc/avalanche.readme",
 			.download_url = "https://aminet.net/util/arc/avalanche.lha"

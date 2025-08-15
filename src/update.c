@@ -93,16 +93,21 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 		AddPart(dl_filename, FilePart(vn->download_url), fn_len);
 		BPTR fh = Open(dl_filename, MODE_NEWFILE);
 		if(fh) {
-			http_get_url(vn->download_url, ssl_ctx, buffer, 4096, fh);
+			BOOL ok = http_get_url(vn->download_url, sslctx, buffer, 4096, fh);
 			Close(fh);
 
-			/* We are running as a separate process, pass a message to the parent using ARexx */
-			ULONG cmd_len = fn_len + 22;
-			char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
-			if(cmd) {
-				snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE", dl_filename);
-				ami_arexx_send(cmd);
-				FreeVec(cmd);
+			if(ok) {
+
+				/* We are running as a separate process, pass a message to the parent using ARexx */
+				ULONG cmd_len = fn_len + 22;
+				char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
+				if(cmd) {
+					snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE", dl_filename);
+					ami_arexx_send(cmd);
+					FreeVec(cmd);
+				} else {
+					open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+				}
 			} else {
 				open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
 			}
@@ -192,7 +197,7 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 {
 	/* Make this global for OS3 */
 	sslctx = ssl_ctx;
-	
+
 	if(uw_port = CreateMsgPort()) {
 
 		ci = AllocLBColumnInfo(4,
