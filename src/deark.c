@@ -101,7 +101,7 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 			CONFIG_UNLOCK;
 			return 0;
 		}
-		strcpy(du->tmpfile, config->tmpdir);
+		strncpy(du->tmpfile, config->tmpdir, config->tmpdirlen + 25);
 		AddPart(du->tmpfile, "deark_tmp", config->tmpdirlen + 25);
 		CONFIG_UNLOCK;
 	}
