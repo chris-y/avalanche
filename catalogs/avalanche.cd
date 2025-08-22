@@ -297,6 +297,3 @@ N/A
 MSG_UPDATE_INFO (//)
 Double-click on an entry with an update\navailable to download and extract.
 ;
-MSG_UPDATE_INFO_OS3 (//)
-Extraction will occur after this window is closed.
-;

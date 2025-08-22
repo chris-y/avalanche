@@ -80,7 +80,7 @@ static BOOL update_update(struct avalanche_version_numbers *vn)
 		APTR buffer = AllocVec(4096, MEMF_PRIVATE);
 		if(buffer == NULL) return FALSE;
 		char *tmpdir = CONFIG_GET_LOCK(tmpdir);
-		ULONG fn_len = strlen(tmpdir) + strlen(FilePart(vn->download_url)) + 3;
+		ULONG fn_len = strlen(tmpdir) + strlen(FilePart(vn->download_url)) + 5;
 		char *dl_filename = AllocVec(fn_len, MEMF_PRIVATE);
 		if(dl_filename == NULL) {
 			CONFIG_UNLOCK;
@@ -195,7 +195,7 @@ BOOL update_handle_events(void)
 	
 }
 
-void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
+void update_gui(struct avalanche_version_numbers avn[])
 {
 	if(uw_port = CreateMsgPort()) {
 
@@ -286,15 +286,11 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 						LISTBROWSER_SortColumn, 0,
 						LISTBROWSER_Striping, LBS_ROWS,
 						LISTBROWSER_FastRender, TRUE,
+						LISTBROWSER_HorizontalProp, TRUE,
 					ListBrowserEnd,
 					LAYOUT_AddImage, LabelObj,
 						LABEL_Text, locale_get_string(MSG_UPDATE_INFO),
 					LabelEnd,
-#ifndef __amigaos4__ /* extra message for OS3 - hopefully this is temporary */
-					LAYOUT_AddImage, LabelObj,
-						LABEL_Text, locale_get_string(MSG_UPDATE_INFO_OS3),
-					LabelEnd,
-#endif
 				LayoutEnd,
 			LayoutEnd,
 		EndWindow;
