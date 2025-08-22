@@ -67,12 +67,12 @@ static struct Window *windows[WID_U_LAST];
 static struct Gadget *gadgets[GID_U_LAST];
 static struct ColumnInfo *ci;
 static struct List list;
-static void *sslctx = NULL;
 
 /* returns FALSE on error */
-static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
+static BOOL update_update(struct avalanche_version_numbers *vn)
 {
 	char message[101];
+	void *sslctx;
 
 	snprintf(message, 100, locale_get_string(MSG_NEWVERSIONDL), vn->latest_version, vn->latest_revision);
 	if(ask_yesno_req(NULL, message)) {
@@ -93,7 +93,9 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 		AddPart(dl_filename, FilePart(vn->download_url), fn_len);
 		BPTR fh = Open(dl_filename, MODE_NEWFILE);
 		if(fh) {
+			sslctx = http_open_socket_libs();
 			BOOL ok = http_get_url(vn->download_url, sslctx, buffer, 4096, fh);
+			http_ssl_free_ctx(sslctx);
 			Close(fh);
 
 			if(ok) {
@@ -174,7 +176,7 @@ BOOL update_handle_events(void)
 									SetWindowPointer(windows[WID_U_MAIN],
 												WA_BusyPointer, TRUE,
 												TAG_DONE);
-									if(update_update(vn, sslctx) == FALSE) {
+									if(update_update(vn) == FALSE) {
 										open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
 									}
 									SetWindowPointer(windows[WID_U_MAIN],
@@ -195,9 +197,6 @@ BOOL update_handle_events(void)
 
 void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 {
-	/* Make this global for OS3 */
-	sslctx = ssl_ctx;
-
 	if(uw_port = CreateMsgPort()) {
 
 		ci = AllocLBColumnInfo(4,

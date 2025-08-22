@@ -198,7 +198,7 @@ BOOL http_get_url(char *url, void *ssl_ctx, char *buffer, ULONG bufsize, BPTR fh
 }
 
 
-SSL_CTX *http_open_socket_libs(void)
+void *http_open_socket_libs(void)
 {
 	SSL_CTX *SSL_ctx = NULL;
 	BOOL result = FALSE;
@@ -247,13 +247,13 @@ SSL_CTX *http_open_socket_libs(void)
 		return NULL;
 	}
 
-	return SSL_ctx;
+	return (void *)SSL_ctx;
 
 }
 
-void http_ssl_free_ctx(SSL_CTX *SSL_ctx)
+void http_ssl_free_ctx(void *SSL_ctx)
 {
-	SSL_CTX_free(SSL_ctx);
+	SSL_CTX_free((SSL_CTX *)SSL_ctx);
 	http_closesocketlibs();
 }
 
@@ -429,10 +429,11 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 		}
 
 		FreeVec(buffer);
-
-		update_gui(avn, SSL_ctx);
-
 		http_ssl_free_ctx(SSL_ctx);
+
+		update_gui(avn);
+
+
 		return TRUE;
 	}
 

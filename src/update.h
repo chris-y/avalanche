@@ -38,7 +38,7 @@ enum {
 };
 
 
-void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx);
+void update_gui(struct avalanche_version_numbers avn[]);
 BOOL update_handle_events(void);
 ULONG update_get_signal(void);
 void update_close(void);
