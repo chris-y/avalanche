@@ -154,6 +154,12 @@ BOOL mod_lha_new(void *awin, char *archive)
 	return ret;
 }
 
+#ifdef __amigaos4__
+#define AVALANCHE_LHA_VER_CMD "version lha"
+#else
+#define AVALANCHE_LHA_VER_CMD "version c:lha"
+#endif
+
 ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
 {
 	BPTR fh = 0;
@@ -169,7 +175,7 @@ ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
 	CONFIG_UNLOCK;
 
 	if(fh = Open(tmpfile, MODE_NEWFILE)) {
-		ULONG err = SystemTags("version lha",
+		ULONG err = SystemTags(AVALANCHE_LHA_VER_CMD,
 				SYS_Input, NULL,
 				SYS_Output, fh,
 				SYS_Error, NULL,

@@ -141,6 +141,10 @@ This is mostly for internal use, but has the following commands:
   - This keeps other Avalanche windows responsive
 * Add ability to open destination drawer after extraction
   - Also added button to open destination manually
+* Rewrite of update checker
+  - Added GUI
+  - Can download and extract all related components
+  - Shows version numbers of installed libraries
 
 @{u}2.5 (04.07.2025)@{uu}
 * Improve editing of files - file structure is now maintained

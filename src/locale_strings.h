@@ -139,7 +139,6 @@
 #define MSG_UPDATE_AVAILABLE 95
 #define MSG_NONE 96
 #define MSG_UPDATE_INFO 97
-#define MSG_UPDATE_INFO_OS3 98
 
 #endif /* CATCOMP_NUMBERS */
 
@@ -247,7 +246,6 @@
 #define MSG_UPDATE_AVAILABLE_STR "Update available"
 #define MSG_NONE_STR "N/A"
 #define MSG_UPDATE_INFO_STR "Double-click on an entry with an update\navailable to download and extract."
-#define MSG_UPDATE_INFO_OS3_STR "Extraction will occur after this window is closed."
 
 #endif /* CATCOMP_STRINGS */
 
@@ -455,8 +453,6 @@ STATIC CONST UBYTE CatCompBlock[] =
     MSG_NONE_STR "\x00"
     "\x00\x00\x00\x61\x00\x4C"
     MSG_UPDATE_INFO_STR "\x00\x00"
-    "\x00\x00\x00\x62\x00\x34"
-    MSG_UPDATE_INFO_OS3_STR "\x00\x00"
 };
 
 #endif /* CATCOMP_BLOCK */
