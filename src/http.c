@@ -465,7 +465,9 @@ BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *app
 			Signal(check_ver_process, SIGBREAKF_CTRL_F);
 		}
 	} else {
-		return http_check_version_internal(awin, winport, appport, appwin_mp);
+		if(update_to_front() == FALSE) {
+			return http_check_version_internal(awin, winport, appport, appwin_mp);
+		}
 	}
 }
 

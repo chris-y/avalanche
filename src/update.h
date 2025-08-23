@@ -43,4 +43,5 @@ BOOL update_handle_events(void);
 ULONG update_get_signal(void);
 void update_close(void);
 void update_break(void);
+BOOL update_to_front(void);
 #endif
