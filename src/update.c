@@ -145,6 +145,14 @@ ULONG update_get_signal(void)
 		else return(1L << uw_port->mp_SigBit);
 }
 
+BOOL update_to_front(void)
+{
+	if(windows[WID_U_MAIN] == NULL) return FALSE;
+
+	WindowToFront(windows[WID_U_MAIN]);
+	return TRUE;
+}
+
 BOOL update_handle_events(void)
 {
 	if(objects[OID_U_MAIN] == NULL) return FALSE;
@@ -317,7 +325,7 @@ void update_gui(struct avalanche_version_numbers avn[])
 			} else if(wait & SIGBREAKF_CTRL_C) {
 				done = TRUE;
 			} else if(wait & SIGBREAKF_CTRL_F) {
-				WindowToFront(windows[WID_U_MAIN]);
+				update_to_front();
 			}
 		}
 
