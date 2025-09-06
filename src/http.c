@@ -198,7 +198,7 @@ BOOL http_get_url(char *url, void *ssl_ctx, char *buffer, ULONG bufsize, BPTR fh
 }
 
 
-SSL_CTX *http_open_socket_libs(void)
+void *http_open_socket_libs(void)
 {
 	SSL_CTX *SSL_ctx = NULL;
 	BOOL result = FALSE;
@@ -247,13 +247,13 @@ SSL_CTX *http_open_socket_libs(void)
 		return NULL;
 	}
 
-	return SSL_ctx;
+	return (void *)SSL_ctx;
 
 }
 
-void http_ssl_free_ctx(SSL_CTX *SSL_ctx)
+void http_ssl_free_ctx(void *SSL_ctx)
 {
-	SSL_CTX_free(SSL_ctx);
+	SSL_CTX_free((SSL_CTX *)SSL_ctx);
 	http_closesocketlibs();
 }
 
@@ -314,46 +314,55 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 	BOOL update_available = FALSE;
 	ULONG ver, rev;
 	ULONG upd_ver, upd_rev;
-	struct avalanche_version_numbers avn[] = {
-		{	.name = "Avalanche",
-			.check_url = "https://aminet.net/util/arc/avalanche.readme",
-			.download_url = "https://aminet.net/util/arc/avalanche.lha"
+	static struct avalanche_version_numbers avn[] = {
+		{	.name = "Avalanche\0",
+			.check_url = "https://aminet.net/util/arc/avalanche.readme\0",
+			.download_url = "https://aminet.net/util/arc/avalanche.lha\0"
 		},
-		{	.name = "xadmaster.library",
+		{	.name = "xadmaster.library\0",
 #ifndef __amigaos4__ /* Included with OS4, so not upgradeable here */
-			.check_url = "https://aminet.net/util/arc/xadmaster000.readme",
-			.download_url = "https://aminet.net/util/arc/xadmaster000.lha",
+			.check_url = "https://aminet.net/util/arc/xadmaster000.readme\0",
+			.download_url = "https://aminet.net/util/arc/xadmaster000.lha\0",
 #else
 			.check_url = NULL,
 			.download_url = NULL,
 #endif
 		},
-		{	.name = "xfdmaster.library",
+		{	.name = "xfdmaster.library\0",
 #ifndef __amigaos4__
-			.check_url = "https://aminet.net/util/pack/xfdmaster.readme", /* Version number is in the wrong format on this */
-			.download_url = "https://aminet.net/util/pack/xfdmaster.lha",
+			.check_url = "https://aminet.net/util/pack/xfdmaster.readme\0", /* Version number is in the wrong format on this */
+			.download_url = "https://aminet.net/util/pack/xfdmaster.lha\0",
 #else
-			.check_url = "https://aminet.net/util/libs/xfdmaster_os4.readme",
-			.download_url = "https://aminet.net/util/libs/xfdmaster_os4.lha",
+			.check_url = "https://aminet.net/util/libs/xfdmaster_os4.readme\0",
+			.download_url = "https://aminet.net/util/libs/xfdmaster_os4.lha\0",
 #endif
 		},
-		{	.name = "xvs.library",
-			.check_url = "https://aminet.net/util/virus/xvslibrary.readme",
-			.download_url = "https://aminet.net/util/virus/xvslibrary.lha",
+		{	.name = "xvs.library\0",
+			.check_url = "https://aminet.net/util/virus/xvslibrary.readme\0",
+			.download_url = "https://aminet.net/util/virus/xvslibrary.lha\0",
 		},
-		{	.name = "Deark",
+		{	.name = "Deark\0",
 #ifdef __amigaos4__
-			.check_url = "https://os4depot.net/share/utility/archive/deark_lha.readme",
-			.download_url = "https://os4depot.net/share/utility/archive/deark.lha",
+			.check_url = "https://os4depot.net/share/utility/archive/deark_lha.readme\0",
+			.download_url = "https://os4depot.net/share/utility/archive/deark.lha\0",
 #else
-			.check_url = "https://aminet.net/util/arc/deark.readme",
-			.download_url = "https://aminet.net/util/arc/deark.lha",
+			.check_url = "https://aminet.net/util/arc/deark.readme\0",
+			.download_url = "https://aminet.net/util/arc/deark.lha\0",
+#endif
+		},
+		{	.name = "LhA\0",
+#ifdef __amigaos4__
+			.check_url = "https://aminet.net/util/arc/lha_os4.readme\0",
+			.download_url = "https://aminet.net/util/arc/lha_os4.lha\0",
+#else
+			.check_url = "https://aminet.net/util/arc/lha_68k.readme\0",
+			.download_url = "https://aminet.net/util/arc/lha_68k.lha\0",
 #endif
 		},
 #ifdef __amigaos4__
-		{	.name = "zip.library",
-			.check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme",
-			.download_url = "https://os4depot.net/share/library/misc/zip_lib.lha",
+		{	.name = "zip.library\0",
+			.check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme\0",
+			.download_url = "https://os4depot.net/share/library/misc/zip_lib.lha\0",
 		}
 #endif
 	};
@@ -395,6 +404,13 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 					avn[ACHECKVER_DEARK].current_revision = 0;
 					deark_get_ver(&avn[ACHECKVER_DEARK].current_version, &avn[ACHECKVER_DEARK].current_revision);
 				break;
+				
+				case ACHECKVER_LHA:
+					avn[ACHECKVER_LHA].current_version = 0;
+					avn[ACHECKVER_LHA].current_revision = 0;
+					mod_lha_get_ver(&avn[ACHECKVER_LHA].current_version, &avn[ACHECKVER_LHA].current_revision);
+				break;
+				
 #ifdef __amigaos4__
 				case ACHECKVER_ZIP:
 					avn[ACHECKVER_ZIP].current_version = 0;
@@ -413,10 +429,11 @@ static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, str
 		}
 
 		FreeVec(buffer);
-
-		update_gui(avn, SSL_ctx);
-
 		http_ssl_free_ctx(SSL_ctx);
+
+		update_gui(avn);
+
+
 		return TRUE;
 	}
 
@@ -448,7 +465,9 @@ BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *app
 			Signal(check_ver_process, SIGBREAKF_CTRL_F);
 		}
 	} else {
-		return http_check_version_internal(awin, winport, appport, appwin_mp);
+		if(update_to_front() == FALSE) {
+			return http_check_version_internal(awin, winport, appport, appwin_mp);
+		}
 	}
 }
 

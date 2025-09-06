@@ -42,6 +42,7 @@
 #include "misc.h"
 #include "module.h"
 #include "new.h"
+#include "update.h"
 #include "win.h"
 
 #include "Avalanche_rev.h"
@@ -339,8 +340,13 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 		while (done != WIN_DONE_QUIT) {
 			done = WIN_DONE_OK;
 			na_sig = newarc_window_get_signal();
-
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig | SIGBREAKF_CTRL_E);
+#ifndef __amigaos4__
+			ULONG uw_sig = update_get_signal();
+#else
+			/* OS4 runs this as a process, don't interfere here! */
+			ULONG uw_sig = 0;
+#endif
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig | uw_sig | SIGBREAKF_CTRL_E);
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
@@ -522,7 +528,14 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				while((na_done == FALSE) && ((result = newarc_window_handle_input(&code)) != WMHI_LASTMSG)) {
 					na_done = newarc_window_handle_input_events(result, code);
 				}
-			} else {
+			}
+#ifndef __amigaos4__
+			else if(uw_sig && (wait & uw_sig)) {
+				BOOL uw_done = update_handle_events();
+				if(uw_done) update_close();
+			}
+#endif
+			else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
 					struct Node *nnode;
@@ -536,6 +549,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					} while((done == WIN_DONE_OK) && (awin = (void *)nnode));
 				}
 			}
+
 			if(done == WIN_DONE_CLOSED) {
 				if(window_count == 1) {
 					ULONG ret = ask_quithide(NULL);
@@ -558,6 +572,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 	close_all_windows();
 	config_window_break();
+#ifndef __amigaos4__
+	update_close();
+#else
+	update_break();
+#endif
 
 	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 

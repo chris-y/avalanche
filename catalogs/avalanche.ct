@@ -1,4 +1,4 @@
-## version $VER: avalanche.catalog 1.0 (15.05.2022)
+## version $VER: xxxxxx.catalog 1.00 (22.08.2025)
 ## codeset 0
 ## language english
 ;
@@ -207,6 +207,7 @@ _OK|_Cancel
 MSG_UNABLETOOPENREQUESTERTOASKPASSWORD
 Unable to open requester to ask password\n
 ; Unable to open requester to ask password\n
+;
 MSG_INTERFACE
 (interface)
 ; (interface)
@@ -361,7 +362,37 @@ Check for update...
 ;
 MSG_DRAGLOCK
 Prevent drag'n'drop amendments
+; Prevent drag'n'drop amendments
 ;
 MSG_NEWVERSIONDL
 New version (%d.%d) available\nDownload now?
+; New version (%d.%d) available\nDownload now?
+;
+MSG_OPENINWB
+Open destination drawer on Workbench
+; Open destination drawer on Workbench
+;
+MSG_OPENWBONEXTRACT
+Open drawer on WB after extraction
+; Open drawer on WB after extraction
+;
+MSG_INSTALLED_VER
+Installed version
+; Installed version
+;
+MSG_LATEST_VER
+Latest version
+; Latest version
+;
+MSG_UPDATE_AVAILABLE
+Update available
+; Update available
+;
+MSG_NONE
+N/A
+; N/A
+;
+MSG_UPDATE_INFO
+Double-click on an entry with an update\navailable to download and extract.
+; Double-click on an entry with an update\navailable to download and extract.
 ;

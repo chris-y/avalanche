@@ -61,10 +61,18 @@ enum {
 	OID_U_LAST
 };
 
+static Object *objects[OID_U_LAST];
+static struct MsgPort *uw_port = NULL;
+static struct Window *windows[WID_U_LAST];
+static struct Gadget *gadgets[GID_U_LAST];
+static struct ColumnInfo *ci;
+static struct List list;
+
 /* returns FALSE on error */
-static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
+static BOOL update_update(struct avalanche_version_numbers *vn)
 {
 	char message[101];
+	void *sslctx;
 
 	snprintf(message, 100, locale_get_string(MSG_NEWVERSIONDL), vn->latest_version, vn->latest_revision);
 	if(ask_yesno_req(NULL, message)) {
@@ -72,7 +80,7 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 		APTR buffer = AllocVec(4096, MEMF_PRIVATE);
 		if(buffer == NULL) return FALSE;
 		char *tmpdir = CONFIG_GET_LOCK(tmpdir);
-		ULONG fn_len = strlen(tmpdir) + strlen(FilePart(vn->download_url)) + 3;
+		ULONG fn_len = strlen(tmpdir) + strlen(FilePart(vn->download_url)) + 5;
 		char *dl_filename = AllocVec(fn_len, MEMF_PRIVATE);
 		if(dl_filename == NULL) {
 			CONFIG_UNLOCK;
@@ -85,16 +93,23 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 		AddPart(dl_filename, FilePart(vn->download_url), fn_len);
 		BPTR fh = Open(dl_filename, MODE_NEWFILE);
 		if(fh) {
-			http_get_url(vn->download_url, ssl_ctx, buffer, 4096, fh);
+			sslctx = http_open_socket_libs();
+			BOOL ok = http_get_url(vn->download_url, sslctx, buffer, 4096, fh);
+			http_ssl_free_ctx(sslctx);
 			Close(fh);
 
-			/* We are running as a separate process, pass a message to the parent using ARexx */
-			ULONG cmd_len = fn_len + 22;
-			char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
-			if(cmd) {
-				snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE", dl_filename);
-				ami_arexx_send(cmd);
-				FreeVec(cmd);
+			if(ok) {
+
+				/* We are running as a separate process, pass a message to the parent using ARexx */
+				ULONG cmd_len = fn_len + 22;
+				char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
+				if(cmd) {
+					snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE", dl_filename);
+					ami_arexx_send(cmd);
+					FreeVec(cmd);
+				} else {
+					open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+				}
 			} else {
 				open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
 			}
@@ -108,15 +123,88 @@ static BOOL update_update(struct avalanche_version_numbers *vn, void *ssl_ctx)
 	return TRUE;
 }
 
-void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
+void update_close(void)
 {
-	struct Window *windows[WID_U_LAST];
-	struct Gadget *gadgets[GID_U_LAST];
-	Object *objects[OID_U_LAST];
-	struct MsgPort *uw_port;
-	struct ColumnInfo *ci;
-	struct List list;
+	if(objects[OID_U_MAIN] == NULL) return;
+	
+	RA_CloseWindow(objects[OID_U_MAIN]);
+	windows[WID_U_MAIN] = NULL;
+	DisposeObject(objects[OID_U_MAIN]);
+	objects[OID_U_MAIN] = NULL;
 
+	FreeLBColumnInfo(ci);
+	FreeListBrowserList(&list);
+
+	DeleteMsgPort(uw_port);
+	uw_port = NULL;
+}
+
+ULONG update_get_signal(void)
+{
+	if(uw_port == NULL) return 0;
+		else return(1L << uw_port->mp_SigBit);
+}
+
+BOOL update_to_front(void)
+{
+	if(windows[WID_U_MAIN] == NULL) return FALSE;
+
+	WindowToFront(windows[WID_U_MAIN]);
+	return TRUE;
+}
+
+BOOL update_handle_events(void)
+{
+	if(objects[OID_U_MAIN] == NULL) return FALSE;
+	
+	UWORD code;
+	ULONG result;
+	BOOL done = FALSE;
+
+	while(((result = RA_HandleInput(objects[OID_U_MAIN], &code)) != WMHI_LASTMSG) && (done == FALSE)) {
+
+		switch (result & WMHI_CLASSMASK) {
+			case WMHI_CLOSEWINDOW:
+				done = TRUE;
+			break;
+
+			case WMHI_GADGETUP:
+				switch (result & WMHI_GADGETMASK) {
+					ULONG list_event = 0;
+					struct Node *node = NULL;
+					struct avalanche_version_numbers *vn = NULL;
+					case GID_U_LIST:
+						GetAttr(LISTBROWSER_RelEvent, gadgets[GID_U_LIST], (APTR)&list_event);
+						switch(list_event) {
+							case LBRE_DOUBLECLICK:
+								GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_U_LIST], (APTR)&node);
+								GetListBrowserNodeAttrs(node, LBNA_UserData, (APTR)&vn, TAG_DONE);
+
+								if(vn->update_available) {
+									SetWindowPointer(windows[WID_U_MAIN],
+												WA_BusyPointer, TRUE,
+												TAG_DONE);
+									if(update_update(vn) == FALSE) {
+										open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+									}
+									SetWindowPointer(windows[WID_U_MAIN],
+												WA_BusyPointer, FALSE,
+												TAG_DONE);
+								}
+							break;
+						}
+					break;
+				}
+			break;
+		}
+	}
+	
+	return done;
+	
+}
+
+void update_gui(struct avalanche_version_numbers avn[])
+{
 	if(uw_port = CreateMsgPort()) {
 
 		ci = AllocLBColumnInfo(4,
@@ -206,16 +294,24 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 						LISTBROWSER_SortColumn, 0,
 						LISTBROWSER_Striping, LBS_ROWS,
 						LISTBROWSER_FastRender, TRUE,
+						LISTBROWSER_HorizontalProp, TRUE,
 					ListBrowserEnd,
+					LAYOUT_AddImage, LabelObj,
+						LABEL_Text, locale_get_string(MSG_UPDATE_INFO),
+					LabelEnd,
 				LayoutEnd,
 			LayoutEnd,
 		EndWindow;
-				
+
 		if(objects[OID_U_MAIN]) {
 			windows[WID_U_MAIN] = (struct Window *)RA_OpenWindow(objects[OID_U_MAIN]);
 		}
-	
-		ULONG sigbit = 1L << uw_port->mp_SigBit;
+
+#ifndef __amigaos4__
+		return;
+#endif
+
+		ULONG sigbit = update_get_signal();
 		BOOL done = FALSE;
 
 		if(windows[WID_U_MAIN] == NULL) done = TRUE;
@@ -224,58 +320,22 @@ void update_gui(struct avalanche_version_numbers avn[], void *ssl_ctx)
 			ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
 
 			if(wait & sigbit) {
-				UWORD code;
-				ULONG result = RA_HandleInput(objects[OID_U_MAIN], &code);
+				done = update_handle_events();
 
-				switch (result & WMHI_CLASSMASK) {
-					case WMHI_CLOSEWINDOW:
-						done = TRUE;
-					break;
-
-					case WMHI_GADGETUP:
-						switch (result & WMHI_GADGETMASK) {
-							ULONG list_event = 0;
-							struct Node *node = NULL;
-							struct avalanche_version_numbers *vn = NULL;
-							case GID_U_LIST:
-								GetAttr(LISTBROWSER_RelEvent, gadgets[GID_U_LIST], (APTR)&list_event);
-								switch(list_event) {
-									case LBRE_DOUBLECLICK:
-										GetAttr(LISTBROWSER_SelectedNode, gadgets[GID_U_LIST], (APTR)&node);
-										GetListBrowserNodeAttrs(node, LBNA_UserData, (APTR)&vn, TAG_DONE);
-
-										if(vn->update_available) {
-											SetWindowPointer(windows[WID_U_MAIN],
-															WA_BusyPointer, TRUE,
-															TAG_DONE);
-											if(update_update(vn, ssl_ctx) == FALSE) {
-												open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
-											}
-											SetWindowPointer(windows[WID_U_MAIN],
-															WA_BusyPointer, FALSE,
-															TAG_DONE);
-										}
-									break;
-								}
-							break;
-						}
-					break;
-				}
 			} else if(wait & SIGBREAKF_CTRL_C) {
 				done = TRUE;
 			} else if(wait & SIGBREAKF_CTRL_F) {
-				WindowToFront(windows[WID_U_MAIN]);
+				update_to_front();
 			}
 		}
 
-		RA_CloseWindow(objects[OID_U_MAIN]);
-		windows[WID_U_MAIN] = NULL;
-		DisposeObject(objects[OID_U_MAIN]);
-
-		FreeLBColumnInfo(ci);
-		FreeListBrowserList(&list);
-
-		DeleteMsgPort(uw_port);
-		uw_port = NULL;
+		update_close();
 	}
+}
+
+void update_break(void)
+{
+	struct Process *check_ver_proc = http_get_process_check_version();
+	if(check_ver_proc == NULL) return;
+	Signal(check_ver_proc, SIGBREAKF_CTRL_C);
 }
