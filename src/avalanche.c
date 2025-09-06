@@ -35,12 +35,14 @@
 #include "arexx.h"
 #include "avalanche.h"
 #include "config.h"
+#include "http.h"
 #include "req.h"
 #include "libs.h"
 #include "locale.h"
 #include "misc.h"
 #include "module.h"
 #include "new.h"
+#include "update.h"
 #include "win.h"
 
 #include "Avalanche_rev.h"
@@ -338,8 +340,13 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 		while (done != WIN_DONE_QUIT) {
 			done = WIN_DONE_OK;
 			na_sig = newarc_window_get_signal();
-
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig);
+#ifndef __amigaos4__
+			ULONG uw_sig = update_get_signal();
+#else
+			/* OS4 runs this as a process, don't interfere here! */
+			ULONG uw_sig = 0;
+#endif
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig | uw_sig | SIGBREAKF_CTRL_E);
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
@@ -498,10 +505,15 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				switch(evt) {
 					case RXEVT_OPEN: /* Archive set on OPEN */
 						{
-							void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
+							BOOL del = FALSE;
+							char *arexx_fn = arexx_get_event(&del);
+							void *arexx_awin = window_create(&config, arexx_fn, winport, AppPort);
 							if(arexx_awin) {
 								window_open(arexx_awin, appwin_mp);
 								window_req_open_archive(arexx_awin, &config, TRUE);
+
+								if(del) add_to_delete_list(arexx_awin, arexx_fn);
+
 							}
 						}
 					break;
@@ -516,7 +528,14 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				while((na_done == FALSE) && ((result = newarc_window_handle_input(&code)) != WMHI_LASTMSG)) {
 					na_done = newarc_window_handle_input_events(result, code);
 				}
-			} else {
+			}
+#ifndef __amigaos4__
+			else if(uw_sig && (wait & uw_sig)) {
+				BOOL uw_done = update_handle_events();
+				if(uw_done) update_close();
+			}
+#endif
+			else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
 					struct Node *nnode;
@@ -530,9 +549,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					} while((done == WIN_DONE_OK) && (awin = (void *)nnode));
 				}
 			}
+
 			if(done == WIN_DONE_CLOSED) {
 				if(window_count == 1) {
 					ULONG ret = ask_quithide(NULL);
+
 					/* Last window closed */
 					if(ret) {
 						window_close(awin, FALSE);
@@ -551,6 +572,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 	close_all_windows();
 	config_window_break();
+#ifndef __amigaos4__
+	update_close();
+#else
+	update_break();
+#endif
 
 	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 
@@ -793,7 +819,16 @@ int main(int argc, char **argv)
 		if(arc_opened == FALSE) ami_arexx_send("SHOW");
 	}
 
+	struct Process *check_ver_proc = http_get_process_check_version();
+	if(check_ver_proc != NULL) {
+		/* Send break */
+		Signal(check_ver_proc, SIGBREAKF_CTRL_C);
+		/* Wait for check version sub-process to exit */
+		Wait(SIGBREAKF_CTRL_E);
+	}
+
 	ami_arexx_cleanup();
+
 	Locale_Close();
 
 	DeleteFile(config.tmpdir);

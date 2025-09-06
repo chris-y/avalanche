@@ -36,6 +36,7 @@
 #include <libraries/amisslmaster.h>
 #include <libraries/amissl.h>
 #include <amissl/amissl.h>
+#include <dos/dostags.h>
 
 struct Library *SocketBase;
 struct Library *AmiSSLMasterBase;
@@ -50,11 +51,20 @@ struct Library *AmiSSLExtBase = NULL;
 #endif
 
 #include "avalanche.h"
+#include "arexx.h"
+#include "config.h"
 #include "http.h"
 #include "locale.h"
 #include "misc.h"
 #include "req.h"
+#include "update.h"
 #include "win.h"
+
+#include "deark.h"
+#include "module.h"
+#include "xad.h"
+#include "xfd.h"
+#include "xvs.h"
 
 #include "Avalanche_rev.h"
 
@@ -65,7 +75,9 @@ enum {
 	AHTTP_ERR_UNKNOWN
 };
 
-char *err_txt = NULL;
+static char *err_txt = NULL;
+static struct Task* avalanche_process = NULL;
+static struct Process *check_ver_process = NULL;
 
 void http_cleanup(void)
 {
@@ -127,12 +139,13 @@ static int err_cb(const char *str, size_t len, void *u)
 	return 1;
 }
 
-static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize, BPTR fh)
+BOOL http_get_url(char *url, void *ssl_ctx, char *buffer, ULONG bufsize, BPTR fh)
 {
 	STACK_OF(CONF_VALUE) *headers = NULL;
 	BIO *bio, *bio_err;
 	ULONG length;
 	char app[50];
+	SSL_CTX *sslctx = (SSL_CTX *)ssl_ctx;
 
 	/* Allow unsafe legacy renegotiation */
 	//SSL_CTX_set_options(sslctx, SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION);
@@ -185,7 +198,7 @@ static BOOL http_get_url(char *url, SSL_CTX *sslctx, char *buffer, ULONG bufsize
 }
 
 
-SSL_CTX *http_open_socket_libs(void)
+void *http_open_socket_libs(void)
 {
 	SSL_CTX *SSL_ctx = NULL;
 	BOOL result = FALSE;
@@ -234,116 +247,231 @@ SSL_CTX *http_open_socket_libs(void)
 		return NULL;
 	}
 
-	return SSL_ctx;
+	return (void *)SSL_ctx;
 
 }
 
-void http_ssl_free_ctx(SSL_CTX *SSL_ctx)
+void http_ssl_free_ctx(void *SSL_ctx)
 {
-	SSL_CTX_free(SSL_ctx);
+	SSL_CTX_free((SSL_CTX *)SSL_ctx);
 	http_closesocketlibs();
 }
 
-long http_get_version(char *buffer, ULONG bufsize, SSL_CTX *SSL_ctx)
+static BOOL http_get_version(char *buffer, ULONG bufsize, SSL_CTX *SSL_ctx, const char *url, ULONG ver, ULONG rev, ULONG *upd_ver, ULONG *upd_rev)
 {
 	int res = 0;
+	long val = 0;
+	long urev = 0;
+	BOOL update_available = FALSE;
 
-	/* TODO: Also check https://aminet.net/util/virus/xvslibrary.readme against current ver */
-	res = http_get_url("https://aminet.net/util/arc/avalanche.readme", SSL_ctx, buffer, bufsize, 0);
+	res = http_get_url(url, SSL_ctx, buffer, bufsize, 0);
 
 	if(res) {
-		return AHTTP_ERR_NONE;
+		char *dot = NULL;
+		char *p = buffer;
+		char *lf = NULL;
+
+		while(lf = strchr(p, '\n')) {
+			if((strncmp(p, "Version: ", 9) == 0) || (strncmp(p, "version: ", 9) == 0)) {
+				p += 9;
+				break;
+			}
+			p = lf + 1;
+		}
+
+		val = strtol(p, &dot, 10);
+
+		if(val > ver) {
+			update_available = TRUE;
+		}
+		
+		urev = strtol(dot + 1, NULL, 10);
+
+		if(val == ver) {
+			if(urev > rev) {
+				update_available = TRUE;
+			}
+		}
 	} else {
-		return AHTTP_ERR_UNKNOWN;
+		if(err_txt) {
+			open_error_req(err_txt, locale_get_string(MSG_OK), NULL);
+			free(err_txt);
+		} else {
+			open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), NULL);
+		}
 	}
+	
+	*upd_ver = val;
+	*upd_rev = urev;
+	
+	return update_available;
 }
 
-BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp)
+static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp)
 {
 	ULONG bufsize = 1024;
 	char *buffer = AllocVec(bufsize + 1, MEMF_CLEAR);
 	BOOL update_available = FALSE;
-
+	ULONG ver, rev;
+	ULONG upd_ver, upd_rev;
+	static struct avalanche_version_numbers avn[] = {
+		{	.name = "Avalanche\0",
+			.check_url = "https://aminet.net/util/arc/avalanche.readme\0",
+			.download_url = "https://aminet.net/util/arc/avalanche.lha\0"
+		},
+		{	.name = "xadmaster.library\0",
+#ifndef __amigaos4__ /* Included with OS4, so not upgradeable here */
+			.check_url = "https://aminet.net/util/arc/xadmaster000.readme\0",
+			.download_url = "https://aminet.net/util/arc/xadmaster000.lha\0",
+#else
+			.check_url = NULL,
+			.download_url = NULL,
+#endif
+		},
+		{	.name = "xfdmaster.library\0",
+#ifndef __amigaos4__
+			.check_url = "https://aminet.net/util/pack/xfdmaster.readme\0", /* Version number is in the wrong format on this */
+			.download_url = "https://aminet.net/util/pack/xfdmaster.lha\0",
+#else
+			.check_url = "https://aminet.net/util/libs/xfdmaster_os4.readme\0",
+			.download_url = "https://aminet.net/util/libs/xfdmaster_os4.lha\0",
+#endif
+		},
+		{	.name = "xvs.library\0",
+			.check_url = "https://aminet.net/util/virus/xvslibrary.readme\0",
+			.download_url = "https://aminet.net/util/virus/xvslibrary.lha\0",
+		},
+		{	.name = "Deark\0",
+#ifdef __amigaos4__
+			.check_url = "https://os4depot.net/share/utility/archive/deark_lha.readme\0",
+			.download_url = "https://os4depot.net/share/utility/archive/deark.lha\0",
+#else
+			.check_url = "https://aminet.net/util/arc/deark.readme\0",
+			.download_url = "https://aminet.net/util/arc/deark.lha\0",
+#endif
+		},
+		{	.name = "LhA\0",
+#ifdef __amigaos4__
+			.check_url = "https://aminet.net/util/arc/lha_os4.readme\0",
+			.download_url = "https://aminet.net/util/arc/lha_os4.lha\0",
+#else
+			.check_url = "https://aminet.net/util/arc/lha_68k.readme\0",
+			.download_url = "https://aminet.net/util/arc/lha_68k.lha\0",
+#endif
+		},
+#ifdef __amigaos4__
+		{	.name = "zip.library\0",
+			.check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme\0",
+			.download_url = "https://os4depot.net/share/library/misc/zip_lib.lha\0",
+		}
+#endif
+	};
+	
 	if(buffer) {
 		SSL_CTX *SSL_ctx = http_open_socket_libs();
 
 		if(SSL_ctx == NULL) {
 			FreeVec(buffer);
-			return AHTTP_ERR_AMISSL;
+			return FALSE;
 		}
 
-		long res = http_get_version(buffer, bufsize, SSL_ctx);
-
-		if(res == AHTTP_ERR_NONE) {
-			char *dot = NULL;
-			char *p = buffer;
-			char *lf = NULL;
-
-			while(lf = strchr(p, '\n')) {
-				if(strncmp(p, "Version: ", 9) == 0) {
-					p += 9;
-					break;
-				}
-				p = lf + 1;
+		for(int i = 0; i < ACHECKVER_MAX; i++) {
+			switch(i) {
+				case ACHECKVER_XAD:
+					xad_get_ver(&avn[ACHECKVER_XAD].current_version, &avn[ACHECKVER_XAD].current_revision);
+				break;
+				
+				case ACHECKVER_XFD:
+					avn[ACHECKVER_XFD].current_version = 0;
+					avn[ACHECKVER_XFD].current_revision = 0;
+					xfd_get_ver(&avn[ACHECKVER_XFD].current_version, &avn[ACHECKVER_XFD].current_revision);
+				break;
+				
+				case ACHECKVER_XVS:
+					avn[ACHECKVER_XVS].current_version = 0;
+					avn[ACHECKVER_XVS].current_revision = 0;
+					xvs_get_ver(&avn[ACHECKVER_XVS].current_version, &avn[ACHECKVER_XVS].current_revision);
+				break;
+					
+				case ACHECKVER_AVALANCHE:
+					avn[ACHECKVER_AVALANCHE].current_version = VERSION;
+					avn[ACHECKVER_AVALANCHE].current_revision = REVISION;
+				break;
+				
+				case ACHECKVER_DEARK:
+					/* TODO: Fix version having x.y.z format */
+					avn[ACHECKVER_DEARK].current_version = 0;
+					avn[ACHECKVER_DEARK].current_revision = 0;
+					deark_get_ver(&avn[ACHECKVER_DEARK].current_version, &avn[ACHECKVER_DEARK].current_revision);
+				break;
+				
+				case ACHECKVER_LHA:
+					avn[ACHECKVER_LHA].current_version = 0;
+					avn[ACHECKVER_LHA].current_revision = 0;
+					mod_lha_get_ver(&avn[ACHECKVER_LHA].current_version, &avn[ACHECKVER_LHA].current_revision);
+				break;
+				
+#ifdef __amigaos4__
+				case ACHECKVER_ZIP:
+					avn[ACHECKVER_ZIP].current_version = 0;
+					avn[ACHECKVER_ZIP].current_revision = 0;
+					mod_zip_get_ver(&avn[ACHECKVER_ZIP].current_version, &avn[ACHECKVER_ZIP].current_revision);
+				break;
+#endif
 			}
 
-			long val = strtol(p, &dot, 10);
-
-			if(val > VERSION) {
-				update_available = TRUE;
-			}
-			
-			long rev = strtol(dot + 1, NULL, 10);
-
-			if(val == VERSION) {
-				if(rev > REVISION) {
-					update_available = TRUE;
-				}
-			}
-
-			char message[101];
-
-			if(update_available) {
-				snprintf(message, 100, locale_get_string(MSG_NEWVERSIONDL), val, rev);
-				if(ask_yesno_req(awin, message)) {
-					// download
-					BPTR fh = Open("T:avalanche.lha", MODE_NEWFILE);
-					if(fh) {
-						res = http_get_url("https://aminet.net/util/arc/avalanche.lha", SSL_ctx, buffer, bufsize, fh);
-						Close(fh);
-
-						void *new_awin = window_create(get_config(), "T:avalanche.lha", winport, appport);
-						if(new_awin != NULL) {
-							window_open(new_awin, appwin_mp);
-							window_req_open_archive(new_awin, get_config(), TRUE);
-						} else {
-							open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
-						}
-					} else {
-						open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
-					}
-				}
+			if(avn[i].check_url) {
+				avn[i].update_available = http_get_version(buffer, bufsize, SSL_ctx, avn[i].check_url, avn[i].current_version, avn[i].current_revision, &avn[i].latest_version, &avn[i].latest_revision);
 			} else {
-				open_info_req(locale_get_string(MSG_NONEWVERSION), locale_get_string(MSG_OK), awin);
-			}
-
-		} else if(res == AHTTP_ERR_NOTCPIP) {
-			open_error_req(locale_get_string(MSG_ERR_NOTCPIP), locale_get_string(MSG_OK), awin);
-		} else if(res == AHTTP_ERR_AMISSL) {
-			open_error_req(locale_get_string(MSG_ERR_AMISSL), locale_get_string(MSG_OK), awin);
-		} else {
-			if(err_txt) {
-				open_error_req(err_txt, locale_get_string(MSG_OK), awin);
-				FreeVec(err_txt);
-			} else {
-				open_error_req(locale_get_string(MSG_ERR_UNKNOWN), locale_get_string(MSG_OK), awin);
+				avn[i].latest_version = 0;
+				avn[i].latest_revision = 0;
 			}
 		}
 
 		FreeVec(buffer);
 		http_ssl_free_ctx(SSL_ctx);
+
+		update_gui(avn);
+
+
 		return TRUE;
 	}
 
 	return FALSE;
+}
+
+#ifdef __amigaos4__
+static void http_check_version_p(void)
+#else
+static void __saveds http_check_version_p(void)
+#endif
+{
+	http_check_version_internal(NULL, NULL, NULL, NULL);
+
+	check_ver_process = NULL;
+
+	/* Tell the main process we are exiting */
+	Signal(avalanche_process, SIGBREAKF_CTRL_E);
+}
+
+BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp, BOOL np)
+{
+	if(np) {
+		if(check_ver_process == NULL) {
+			avalanche_process = FindTask(NULL);
+			check_ver_process = CreateNewProcTags(NP_Entry, http_check_version_p, NP_Name, "Avalanche version check process", TAG_DONE);
+		} else {
+			/* Already running - signal running process with Ctrl-F (bring to front) */
+			Signal(check_ver_process, SIGBREAKF_CTRL_F);
+		}
+	} else {
+		if(update_to_front() == FALSE) {
+			return http_check_version_internal(awin, winport, appport, appwin_mp);
+		}
+	}
+}
+
+struct Process *http_get_process_check_version(void)
+{
+	return check_ver_process;
 }

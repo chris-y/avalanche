@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@
 enum {
 	DEARK_RECOG,
 	DEARK_LIST,
-	DEARK_EXTRACT
+	DEARK_EXTRACT,
+	DEARK_VERSION
 };
 
 struct deark_userdata {
@@ -100,7 +101,7 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 			CONFIG_UNLOCK;
 			return 0;
 		}
-		strcpy(du->tmpfile, config->tmpdir);
+		strncpy(du->tmpfile, config->tmpdir, config->tmpdirlen + 25);
 		AddPart(du->tmpfile, "deark_tmp", config->tmpdirlen + 25);
 		CONFIG_UNLOCK;
 	}
@@ -272,7 +273,7 @@ long deark_extract(void *awin, char *file, char *dest, struct List *list, void *
 	long err = 0;
 	struct Node *fnode;
 
-	struct desrk_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 
 	if(du) {
 		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
@@ -303,6 +304,60 @@ long deark_extract_array(void *awin, ULONG total_items, char *dest, void **array
 	}
 
 	return err;
+}
+
+ULONG deark_get_ver(ULONG *ver, ULONG *rev)
+{
+	BPTR fh = 0;
+	int err = 1;
+	char cmd[1024];
+
+	struct avalanche_config *config = get_config();
+	char *tmpfile = AllocVec(config->tmpdirlen + 25, MEMF_CLEAR);
+	if(tmpfile == NULL) return 0;
+
+	strcpy(tmpfile, config->tmpdir);	
+	AddPart(tmpfile, "deark_tmp", config->tmpdirlen + 25);
+
+	snprintf(cmd, 1024, "deark -version");
+	
+	if(fh = Open(tmpfile, MODE_NEWFILE)) {
+		err = SystemTags(cmd,
+				SYS_Input, NULL,
+				SYS_Output, fh,
+				SYS_Error, NULL,
+				NP_Name, "Avalanche get Deark version process",
+				TAG_DONE);
+
+		Close(fh);
+	}
+
+	char *res;
+	char buf[200];
+	char *dot = NULL;
+	char *p = buf;
+			
+	if(fh = Open(tmpfile, MODE_OLDFILE)) {
+		res = (char *)&buf;
+		while(res != NULL) {
+			res = FGets(fh, buf, 200);
+			
+
+
+			if(strncmp(p, "Deark version: ", 15) == 0) {
+				p += 15;
+				break;
+			}
+		}
+
+		*ver = strtol(p, &dot, 10);
+		*rev = strtol(dot + 1, NULL, 10);
+			
+		Close(fh);
+		if(!config->debug) DeleteFile(tmpfile);
+	}
+
+	return *ver;
 }
 
 void deark_register(struct module_functions *funcs)

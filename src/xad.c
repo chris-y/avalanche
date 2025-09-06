@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,16 +108,22 @@ static const char *xad_error(void *awin, long code)
 	return NULL;
 }
 
-ULONG get_xad_ver(void)
+ULONG xad_get_ver(ULONG *ver, ULONG *rev)
 {
+	libs_xad_init();
+	if(xadMasterBase == NULL) return 0;
+	
 	struct Library *lib = (struct Library *)xadMasterBase;
+	if(ver) *ver = lib->lib_Version;
+	if(rev) *rev = lib->lib_Revision;
+
 	return lib->lib_Version;
 }
 
 static BOOL xad_is_dir(struct xadFileInfo *fi)
 {
 	if(fi->xfi_Flags & XADFIF_DIRECTORY) return TRUE;
-	if((get_xad_ver() == 12) && (fi->xfi_FileName[strlen(fi->xfi_FileName)-1] == '/')) return TRUE;
+	if((xad_get_ver(NULL, NULL) == 12) && (fi->xfi_FileName[strlen(fi->xfi_FileName)-1] == '/')) return TRUE;
 	return FALSE;
 }
 

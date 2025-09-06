@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -252,4 +252,16 @@ void xfd_register(struct module_functions *funcs)
 	funcs->get_format = xfd_get_arc_format;
 	funcs->get_subformat = NULL;
 	funcs->get_error = xfd_error;
+}
+
+ULONG xfd_get_ver(ULONG *ver, ULONG *rev)
+{
+	libs_xfd_init();
+	if(xfdMasterBase == NULL) return 0;
+	
+	struct Library *lib = (struct Library *)xfdMasterBase;
+	if(ver) *ver = lib->lib_Version;
+	if(rev) *rev = lib->lib_Revision;
+
+	return lib->lib_Version;
 }

@@ -282,3 +282,18 @@ Open destination drawer on Workbench
 MSG_OPENWBONEXTRACT (//)
 Open drawer on WB after extraction
 ;
+MSG_INSTALLED_VER (//)
+Installed version
+;
+MSG_LATEST_VER (//)
+Latest version
+;
+MSG_UPDATE_AVAILABLE (//)
+Update available
+;
+MSG_NONE (//)
+N/A
+;
+MSG_UPDATE_INFO (//)
+Double-click on an entry with an update\navailable to download and extract.
+;
