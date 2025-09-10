@@ -398,6 +398,10 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					struct WBArg *wbarg = appmsg->am_ArgList;
 					switch(appmsg->am_Type) {
 						case AMTYPE_APPWINDOW:
+#ifdef __amigaos4__
+							DebugPrintF("[Avalanche] Warning: AppWindow event\n");
+#endif
+#if 0
 							if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
 								if(appmsg->am_NumArgs > 1) {
 									for(int i = 1; i < appmsg->am_NumArgs; i++) {
@@ -406,6 +410,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 									}
 								}
 							}
+#endif
 						break;
 						case AMTYPE_APPWINDOWZONE:
 							switch(appmsg->am_ID) {

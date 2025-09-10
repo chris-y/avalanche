@@ -426,28 +426,30 @@ static void window_remove_dropzones(struct avalanche_window *aw)
 	}
 }
 
-static void window_add_dropzones(struct avalanche_window *aw)
+static void window_add_dropzones(struct avalanche_window *aw, BOOL edit)
 {
 	if(aw->appwin) {
 		aw->appwindzhook.h_Entry = appwindzhookfunc;
 		aw->appwindzhook.h_SubEntry = NULL;
 		aw->appwindzhook.h_Data = NULL;
 		
-		/* listbrowser */
-		ULONG left, top, width, height;
+		if(edit) {
+			/* listbrowser */
+			ULONG left, top, width, height;
 		
-		GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
-		GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
-		GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
-		GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
+			GetAttr(GA_Top, aw->gadgets[GID_LIST], &top);
+			GetAttr(GA_Left, aw->gadgets[GID_LIST], &left);
+			GetAttr(GA_Width, aw->gadgets[GID_LIST], &width);
+			GetAttr(GA_Height, aw->gadgets[GID_LIST], &height);
 
-		aw->appwindz[1] = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
+			aw->appwindz[1] = AddAppWindowDropZone(aw->appwin, 1, (ULONG)aw,
 										WBDZA_Left, left,
 										WBDZA_Top, top, 
 										WBDZA_Width, width,
 										WBDZA_Height, height,						
 										WBDZA_Hook, &aw->appwindzhook,
 									TAG_END);
+		}
 
 		/* whole window */
 		aw->appwindz[0] = AddAppWindowDropZone(aw->appwin, 0, (ULONG)aw,
@@ -539,8 +541,6 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 
 	if(disable) {
 		window_remove_dropzones(aw);
-		if(aw->appwin) RemoveAppWindow(aw->appwin);
-		aw->appwin = NULL;
 
 		if(stoppable) {
 			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
@@ -552,8 +552,7 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 				TAG_DONE);
 		}
 	} else {
-		aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], aw->appwin_mp, NULL);
-		if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+		window_add_dropzones(aw, !aw->drag_lock);
 
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Text, GID_EXTRACT_TEXT,
@@ -1679,8 +1678,8 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		
 		if(aw->windows[WID_MAIN]) {
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
-			if(aw->drag_lock == FALSE) window_add_dropzones(aw);
-		
+			window_add_dropzones(aw, !aw->drag_lock);
+
 			/* Refresh archive on window open */
 			if(aw->archiver != ARC_NONE) window_req_open_archive(awin, get_config(), TRUE);
 			window_menu_set_enable_state(aw);
@@ -1704,8 +1703,11 @@ void window_close(void *awin, BOOL iconify)
 
 	if(aw->windows[WID_MAIN]) {
 		window_remove_dropzones(aw);
-		if(aw->appwin) RemoveAppWindow(aw->appwin);
-		aw->appwin = NULL;
+		if(aw->appwin) {
+			RemoveAppWindow(aw->appwin);
+			aw->appwin = NULL;
+		}
+
 		if(iconify) {
 			RA_Iconify(aw->objects[OID_MAIN]);
 		} else {
@@ -2470,8 +2472,9 @@ static void toggle_drag_lock(struct avalanche_window *aw, struct MenuItem *item)
 		aw->drag_lock = TRUE;
 	} else {
 		aw->drag_lock = FALSE;
-		window_add_dropzones(aw);
 	}
+
+	window_add_dropzones(aw, !aw->drag_lock);
 }
 
 static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_config *config, BOOL on)
@@ -2569,7 +2572,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		case WMHI_NEWSIZE:
 			if(aw->disabled == FALSE) {
 				window_remove_dropzones(aw);
-				if(aw->drag_lock == FALSE) window_add_dropzones(aw);
+				window_add_dropzones(aw, !aw->drag_lock);
 			}
 		break;
 				
@@ -2610,9 +2613,9 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 											TAG_DONE);
 
 #ifdef __amigaos4__
-								http_check_version(awin, winport, AppPort, appwin_mp, TRUE);
+								http_check_version(TRUE);
 #else
-								http_check_version(awin, winport, AppPort, appwin_mp, FALSE);
+								http_check_version(FALSE);
 #endif
 								if(window_get_window(awin))
 									SetWindowPointer(window_get_window(awin),
