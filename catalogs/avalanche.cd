@@ -294,6 +294,21 @@ Update available
 MSG_NONE (//)
 N/A
 ;
+MSG_WINDOW (//)
+Window
+;
+MSG_CLOSE(//)
+Close
+;
+MSG_DIR_TREE (//)
+Directory tree
+;
+MSG_EXPAND_ALL (//)
+Expand all
+;
+MSG_COLLAPSE_ALL (//)
+Collapse all
+;
 MSG_UPDATE_INFO (//)
 Double-click on an entry with an update\navailable to download and extract.
 ;

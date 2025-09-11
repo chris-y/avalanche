@@ -18,7 +18,7 @@
 #include <exec/types.h>
 
 BOOL http_get_url(char *url, void *ssl_ctx, char *buffer, ULONG bufsize, BPTR fh);
-BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp, BOOL np);
+BOOL http_check_version(BOOL np);
 struct Process *http_get_process_check_version(void);
 
 /* Open and close SSL_CTX */

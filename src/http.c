@@ -307,7 +307,7 @@ static BOOL http_get_version(char *buffer, ULONG bufsize, SSL_CTX *SSL_ctx, cons
 	return update_available;
 }
 
-static BOOL http_check_version_internal(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp)
+static BOOL http_check_version_internal(void)
 {
 	ULONG bufsize = 1024;
 	char *buffer = AllocVec(bufsize + 1, MEMF_CLEAR);
@@ -446,7 +446,7 @@ static void http_check_version_p(void)
 static void __saveds http_check_version_p(void)
 #endif
 {
-	http_check_version_internal(NULL, NULL, NULL, NULL);
+	http_check_version_internal();
 
 	check_ver_process = NULL;
 
@@ -454,7 +454,7 @@ static void __saveds http_check_version_p(void)
 	Signal(avalanche_process, SIGBREAKF_CTRL_E);
 }
 
-BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *appport, struct MsgPort *appwin_mp, BOOL np)
+BOOL http_check_version(BOOL np)
 {
 	if(np) {
 		if(check_ver_process == NULL) {
@@ -466,7 +466,7 @@ BOOL http_check_version(void *awin, struct MsgPort *winport, struct MsgPort *app
 		}
 	} else {
 		if(update_to_front() == FALSE) {
-			return http_check_version_internal(awin, winport, appport, appwin_mp);
+			return http_check_version_internal();
 		}
 	}
 }
