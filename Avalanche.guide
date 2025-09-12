@@ -125,8 +125,9 @@ The 68k version appears to be very unstable.
 Avalanche has an ARexx port called "AVALANCHE".
 This is mostly for internal use, but has the following commands:
 
-@{b}OPEN@{ub} FILE/A
+@{b}OPEN@{ub} FILE/A DELETEONCLOSE/S
  - Open FILE in a new window
+ - DELETEONCLOSE will delete FILE on exit. Use with caution!
 @{b}SHOW@{ub}
  - Show Avalanche or bring window to front
 @{b}VERSION@{ub}
