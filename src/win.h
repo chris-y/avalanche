@@ -70,6 +70,7 @@ void fill_menu_labels(void);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
 Object *get_glyph(ULONG glyph);
 void add_to_delete_list(void *awin, char *fn);
+void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable);
 
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);

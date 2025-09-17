@@ -531,7 +531,7 @@ static void window_menu_set_enable_state(void *awin)
 	}
 }
 
-static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
+void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 

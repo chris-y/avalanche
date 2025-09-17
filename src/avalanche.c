@@ -427,6 +427,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 								case 1: // listbrowser
 									if(module_has_add((void *)appmsg->am_UserData)) {
+										window_disable_gadgets((void *)appmsg->am_UserData, TRUE, FALSE);
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
 											BOOL ret = TRUE;
 											if(wbarg->wa_Lock) {
@@ -451,13 +452,14 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 														}
 #endif
 													}
-													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 													FreeVec(file);
 												}
 											}
 											wbarg++;
 											if(ret == FALSE) break;
 										}
+										window_disable_gadgets((void *)appmsg->am_UserData, FALSE, FALSE);
+										window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 									} else {
 										if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
 											if(appmsg->am_NumArgs > 1) {
