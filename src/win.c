@@ -531,7 +531,7 @@ static void window_menu_set_enable_state(void *awin)
 	}
 }
 
-void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
+static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -2299,7 +2299,7 @@ BOOL window_edit_add(void *awin, char *file, char *root)
 	return FALSE;
 }
 
-static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
+BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 {
 	BOOL ret = TRUE;
 	
@@ -2332,7 +2332,7 @@ static BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 			window_disable_gadgets(awin, FALSE, FALSE);
 
 			}
-			window_req_open_archive(awin, get_config(), TRUE);
+
 			FreeVec(file);
 		}
 	}

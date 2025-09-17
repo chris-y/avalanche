@@ -427,38 +427,12 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 								case 1: // listbrowser
 									if(module_has_add((void *)appmsg->am_UserData)) {
-										window_disable_gadgets((void *)appmsg->am_UserData, TRUE, FALSE);
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
-											BOOL ret = TRUE;
-											if(wbarg->wa_Lock) {
-												char *file = NULL;
-												if(file = AllocVec(1024, MEMF_CLEAR)) {
-													NameFromLock(wbarg->wa_Lock, file, 1024);
-													if(*wbarg->wa_Name) {
-														AddPart(file, wbarg->wa_Name, 1024);
-														ret = window_edit_add((void *)appmsg->am_UserData, file, NULL);
-													} else {
-#ifdef __amigaos4__
-														if(object_is_dir(file)) {
-															recursive_scan((void *)appmsg->am_UserData, file, file);
-														} else {
-															ret = window_edit_add(awin, file, NULL);
-														}
-#else
-														if(object_is_dir(wbarg->wa_Lock)) {
-															recursive_scan((void *)appmsg->am_UserData, wbarg->wa_Lock, file);
-														} else {
-															ret = window_edit_add(awin, file, NULL);
-														}
-#endif
-													}
-													FreeVec(file);
-												}
-											}
+											BOOL ret = window_edit_add_wbarg((void *)appmsg->am_UserData, wbarg);
+											if(ret == FALSE) break; /* FALSE = Abort */
 											wbarg++;
-											if(ret == FALSE) break;
 										}
-										window_disable_gadgets((void *)appmsg->am_UserData, FALSE, FALSE);
+
 										window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 									} else {
 										if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
