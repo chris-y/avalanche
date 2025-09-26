@@ -2307,31 +2307,32 @@ BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 		char *file = NULL;
 		if(file = AllocVec(1024, MEMF_CLEAR)) {
 			NameFromLock(wbarg->wa_Lock, file, 1024);
+
+			window_disable_gadgets(awin, TRUE, FALSE);
+
 			if(*wbarg->wa_Name) {
-
-				window_disable_gadgets(awin, TRUE, FALSE);
-
 				AddPart(file, wbarg->wa_Name, 1024);
+			}
+
 #ifdef __amigaos4__
-				if(object_is_dir(file)) {
-					recursive_scan(awin, file, file);
+			if(object_is_dir(file)) {
+				recursive_scan(awin, file, file);
+			} else {
+				ret = window_edit_add(awin, file, NULL);
+			}
+#else
+			BPTR lock = Lock(file, ACCESS_READ);
+			if(lock) {
+				if(object_is_dir(lock)) {
+					recursive_scan(awin, lock, file);
 				} else {
 					ret = window_edit_add(awin, file, NULL);
 				}
-#else
-				BPTR lock = Lock(file, ACCESS_READ);
-				if(lock) {
-					if(object_is_dir(lock)) {
-						recursive_scan(awin, lock, file);
-					} else {
-						ret = window_edit_add(awin, file, NULL);
-					}
-					UnLock(lock);
-				}
-#endif
-			window_disable_gadgets(awin, FALSE, FALSE);
-
+				UnLock(lock);
 			}
+#endif
+
+			window_disable_gadgets(awin, FALSE, FALSE);
 
 			FreeVec(file);
 		}
