@@ -2,15 +2,16 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 2.5
+Version: 3.1
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
 This is a simple GUI for xadmaster.library using the ReAction
 gadget set, written as all the others on Aminet appear to
-require MUI.  It also supports decrunching with xfdmaster.library,
-scanning for viruses with xvs.library, and simple editing of LhA/Zip
-archives (Zip needs zip.library - OS4 only).
+require MUI. It also supports decrunching with xfdmaster.library,
+extracting various data with Deark, scanning for viruses with
+xvs.library, and simple editing of LhA/Zip archives (Zip needs
+zip.library - OS4 only).
 
 This is designed for AmigaOS 3.2.1+ (and tested on that and OS4). It
 probably won't work on older versions as it needs a new window.class :)
@@ -19,10 +20,17 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Improve editing of files - file structure is now maintained
-* Add ability to easily (un)lock the GUI for archive modifications
-  via drag'n'drop
-* Add correct extension if missing on new archive name
-* Improve version checks and allow immediate download
+* Extraction, listing and config now run in separate processes
+  - This keeps other Avalanche windows responsive
+  - Update window also has own process under OS4
+* Add ability to open destination drawer after extraction
+  - Also added button to open destination manually
+* Rewrite of update checker
+  - Added GUI
+  - Can download and extract all related components
+  - Shows version numbers of installed libraries
+
+Note that due to a bug in v2.5 the "download updated version"
+option is unlikely to work.  This was fixed in v3.1.
 
 For full history see documentation inside the archive.

@@ -137,7 +137,7 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}2.6 (xx.xx.xxxx)@{uu}
+@{u}3.1 (26.09.2025)@{uu}
 * Extraction, listing and config now run in separate processes
   - This keeps other Avalanche windows responsive
   - Update window also has own process under OS4
