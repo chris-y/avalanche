@@ -108,6 +108,13 @@ struct arc_entries {
 #define AVALANCHE_DROPZONES 2
 #define TITLE_MAX_SIZE 100
 
+/* HintInfo differs between OS4 and OS3.2 */
+#ifdef __amigaos4__
+#define HINTINFO GA_HintInfo
+#else
+#define HINTINFO GA_GadgetHelpText
+#endif
+
 struct avalanche_window {
 	struct MinNode node;
 	struct Window *windows[WID_LAST];
@@ -145,6 +152,9 @@ struct avalanche_window {
 	char *current_dir;
 	struct Node *root_node;
 	char title[TITLE_MAX_SIZE];
+#ifndef __amigaos4__
+	struct HintInfo hi;
+#endif
 };
 
 static struct List winlist;
@@ -1551,8 +1561,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WINDOW_IconTitle, "Avalanche",
 		WINDOW_SharedPort, winport,
 		WINDOW_AppPort, appport,
-#ifdef __amigaos4__ /* Enable HintInfo */
+		/* Enable HintInfo */
 		WINDOW_GadgetHelp, TRUE,
+#ifndef __amigaos4__
+		WINDOW_HintInfo, &aw->hi,
 #endif
 		tag_default_position, WPOS_CENTERSCREEN,
 		WINDOW_ParentGroup, aw->gadgets[GID_MAIN] = LayoutVObj,
@@ -1591,9 +1603,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 							GA_ID, GID_OPENWB,
 							GA_RelVerify, TRUE,
 							GA_Image, get_glyph(AVALANCHE_GLYPH_OPENDRAWER),
-#ifdef __amigaos4__ /* HintInfo hasn't made it to OS3.2 yet */
-							GA_HintInfo, locale_get_string(MSG_OPENINWB),
-#endif
+							HINTINFO, locale_get_string(MSG_OPENINWB),
 						ButtonEnd,
 						CHILD_NominalSize, TRUE,
 						CHILD_WeightedWidth, 0,
