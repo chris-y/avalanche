@@ -41,14 +41,13 @@ static int mod_lha_error(void *awin, int err, char *file)
 
 static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 {
-	int err;
 	int user_choice;
 	char cmd[1024];
 	
 	for(int i = 0; i < count; i++) {
 		snprintf(cmd, 1024, "lha -I d \"%s\" \"%s\"", archive, files[i]);
 
-		err = SystemTags(cmd,
+		int err = SystemTags(cmd,
 					SYS_Input, NULL,
 					SYS_Output, NULL,
 					SYS_Error, NULL,
@@ -136,7 +135,7 @@ BOOL mod_lha_new(void *awin, char *archive)
 
 	if(tmpfile) {
 		BPTR fh = 0;
-		strcpy(tmpfile, CONFIG_GET(tmpdir));
+		strncpy(tmpfile, CONFIG_GET(tmpdir), new_arc_size);
 		CONFIG_UNLOCK;
 		AddPart(tmpfile, NEW_ARC_NAME, new_arc_size);
 
@@ -170,7 +169,7 @@ ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
 		CONFIG_UNLOCK;
 		return 0;
 	}
-	strcpy(tmpfile, CONFIG_GET(tmpdir));
+	strncpy(tmpfile, CONFIG_GET(tmpdir), tmpfile_len);
 	AddPart(tmpfile, "lha_tmp", tmpfile_len);
 	CONFIG_UNLOCK;
 
@@ -186,13 +185,12 @@ ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
 		
 	}
 	
-	char *res;
 	char buf[20];
 	char *dot = NULL;
 	char *p = buf;
 			
 	if(fh = Open(tmpfile, MODE_OLDFILE)) {
-		res = (char *)&buf;
+		char *res = (char *)&buf;
 		while(res != NULL) {
 			res = FGets(fh, buf, 20);
 

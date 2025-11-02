@@ -519,7 +519,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 					
 					SetProtection(destfile, xad_get_fileprotection(fi));
 					SetFileDate(destfile, &ds);
-					if(fi && fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
+					if(fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
 				}
 			}
 		}
@@ -532,7 +532,6 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
 {
-	long err;
 	struct xadFileInfo *fi = NULL;
 	struct xadDiskInfo *di = NULL;
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);

@@ -274,7 +274,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 	struct AppMenuItem *appmenu = NULL;
 	ULONG appwin_sig = 0;
 
-	ULONG wait, signal, app, cw_sig, na_sig;
+	ULONG wait, signal, app, na_sig;
 	ULONG done = WIN_DONE_OK;
 	ULONG result;
 	UWORD code;
@@ -570,11 +570,10 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 static void gettooltypes(struct WBArg *wbarg)
 {
 	struct DiskObject *dobj;
-	STRPTR *toolarray;
-	char *s;
 
 	if((*wbarg->wa_Name) && (dobj = GetDiskObject(wbarg->wa_Name))) {
-		toolarray = (STRPTR *)dobj->do_ToolTypes;
+		STRPTR *toolarray = (STRPTR *)dobj->do_ToolTypes;
+		char *s;
 
 		if(s = (char *)FindToolType(toolarray, "CX_POPUP")) {
 			if(MatchToolValue(s, "NO")) {

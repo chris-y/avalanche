@@ -986,9 +986,10 @@ static char *extract_path_part(const char *path, int level)
 
 static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const char *dir_name)
 {
-	char *dir_name_slash = AllocVec(strlen(dir_name) + 2, MEMF_PRIVATE);
+	uint32 len = strlen(dir_name)+2;
+	char *dir_name_slash = AllocVec(len, MEMF_PRIVATE);
 	if(dir_name_slash == NULL) return FALSE;
-	sprintf(dir_name_slash, "%s/", dir_name);
+	snprintf(dir_name_slash, len, "%s/", dir_name);
 
 	for(int j = 0; j < dir_entry; j++) {
 		if((aw->dir_array[j]) && (strlen(aw->dir_array[j]->name) > strlen(dir_name_slash)) && (strncmp(aw->dir_array[j]->name, dir_name_slash, strlen(dir_name_slash)) == 0)) {
@@ -1260,7 +1261,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		aw->current_item = 0;
 		if(aw->windows[WID_MAIN] && aw->gadgets[GID_PROGRESS]) {
 			char msg[20];
-			sprintf(msg, "%d/%lu", 0, total);
+			snprintf(msg, 19, "%d/%lu", 0, total);
 			aw->total_items = total;
 
 			SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
@@ -2371,7 +2372,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 			} else {
 				ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
 				file = AllocVec(len, MEMF_PRIVATE);
-				strcpy(file, aslreq->fr_Drawer);
+				strncpy(file, aslreq->fr_Drawer, len);
 				AddPart(file, aslreq->fr_File, len);
 
 				window_disable_gadgets(awin, TRUE, FALSE);

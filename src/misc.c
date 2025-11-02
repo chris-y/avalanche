@@ -187,10 +187,10 @@ void recursive_scan(void *awin, BPTR lock, const char *root)
 				AddPart(file, ead->ed_Name, 1024);
 				
 				if(ead->ed_Type > 0) { /* dir? */
-					BPTR lock = Lock(file, ACCESS_READ);
-					if(lock) {
-						recursive_scan(awin, lock, root);
-						UnLock(lock);
+					BPTR lock2 = Lock(file, ACCESS_READ);
+					if(lock2) {
+						recursive_scan(awin, lock2, root);
+						UnLock(lock2);
 					}
 				} else {
 					window_edit_add(awin, file, root);

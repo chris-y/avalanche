@@ -129,7 +129,7 @@ long xvs_scan(char *file, BOOL delete, void *awin)
 		buffer = AllocVec(len, MEMF_ANY | MEMF_PRIVATE);
 		if(buffer == NULL) {
 			char message[200];
-			sprintf(message, locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ), file);
+			snprintf(message, 199, locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ), file);
 			open_error_req(message, locale_get_string( MSG_OK ), awin);
 			return -2;
 		}

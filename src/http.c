@@ -312,8 +312,7 @@ static BOOL http_check_version_internal(void)
 	ULONG bufsize = 1024;
 	char *buffer = AllocVec(bufsize + 1, MEMF_CLEAR);
 	BOOL update_available = FALSE;
-	ULONG ver, rev;
-	ULONG upd_ver, upd_rev;
+
 	static struct avalanche_version_numbers avn[] = {
 		{	.name = "Avalanche\0",
 			.check_url = "https://aminet.net/util/arc/avalanche.readme\0",

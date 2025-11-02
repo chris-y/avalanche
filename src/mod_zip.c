@@ -101,7 +101,7 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
 
 			if(fullfile) {
-				strcpy(fullfile, dir);
+				strncpy(fullfile, dir, fullfile_len);
 				if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
 					/* Skip past the slash or colon so AddPart doesn't think we want a different dir */
 					AddPart(fullfile, file + strlen(root) + 1, fullfile_len);
@@ -114,7 +114,7 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
 
 			if(fullfile) {
-				strcpy(fullfile, dir);
+				strncpy(fullfile, dir, fullfile_len);
 				AddPart(fullfile, FilePart(file), fullfile_len);
 			}
 		}
