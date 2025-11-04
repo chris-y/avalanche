@@ -108,13 +108,6 @@ struct arc_entries {
 #define AVALANCHE_DROPZONES 2
 #define TITLE_MAX_SIZE 100
 
-/* HintInfo differs between OS4 and OS3.2 */
-#ifdef __amigaos4__
-#define HINTINFO GA_HintInfo
-#else
-#define HINTINFO GA_GadgetHelpText
-#endif
-
 struct avalanche_window {
 	struct MinNode node;
 	struct Window *windows[WID_LAST];
