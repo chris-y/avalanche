@@ -45,6 +45,7 @@
 #include "new.h"
 #include "libs.h"
 #include "locale.h"
+#include "misc.h"
 #include "module.h"
 #include "win.h"
 
@@ -82,6 +83,10 @@ static struct Gadget *gadgets[GID_N_LAST];
 static Object *objects[OID_LAST];
 static struct MsgPort *naw_port = NULL;
 static void *newarc_parent = NULL;
+#ifndef __amigaos4__
+static struct HintInfo hi;
+#endif
+
 
 static void newarc_window_close(void)
 {
@@ -189,6 +194,11 @@ void newarc_window_open(void *awin)
 			WA_DragBar, TRUE,
 			WA_CloseGadget, TRUE,
 			WA_SizeGadget, FALSE,
+			/* Enable HintInfo */
+			WINDOW_GadgetHelp, TRUE,
+#ifndef __amigaos4__
+			WINDOW_HintInfo, &hi,
+#endif
 			WINDOW_SharedPort, naw_port,
 			WINDOW_Position, WPOS_CENTERSCREEN,
 			WINDOW_ParentGroup, gadgets[GID_N_MAIN] = LayoutVObj,
@@ -198,6 +208,7 @@ void newarc_window_open(void *awin)
 					LAYOUT_AddChild,  LayoutVObj,
 						LAYOUT_AddChild,  gadgets[GID_N_ARCHIVE] = GetFileObj,
 							GA_ID, GID_N_ARCHIVE,
+							HINTINFO, locale_get_string(MSG_HI_N_ARCHIVE),
 							GA_RelVerify, TRUE,
 							GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 							GETFILE_DoSaveMode, TRUE,
@@ -211,6 +222,7 @@ void newarc_window_open(void *awin)
 
 						LAYOUT_AddChild,  gadgets[GID_N_TYPE] = ChooserObj,
 							GA_ID, GID_N_TYPE,
+							HINTINFO, locale_get_string(MSG_HI_N_TYPE),
 							GA_RelVerify, TRUE,
 							GA_Selected, 0,
 							CHOOSER_PopUp, TRUE,
@@ -223,12 +235,14 @@ void newarc_window_open(void *awin)
 					LAYOUT_AddChild,  LayoutHObj,
 						LAYOUT_AddChild,  gadgets[GID_N_CREATE] = ButtonObj,
 							GA_ID, GID_N_CREATE,
+							HINTINFO, locale_get_string(MSG_HI_N_CREATE),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_CREATE ),
 							GA_Disabled, TRUE,
 						ButtonEnd,
 						LAYOUT_AddChild,  gadgets[GID_N_CANCEL] = ButtonObj,
 							GA_ID, GID_N_CANCEL,
+							HINTINFO, locale_get_string(MSG_HI_N_CANCEL),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_CANCEL ),
 						ButtonEnd,
