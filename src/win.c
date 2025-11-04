@@ -438,6 +438,11 @@ static void window_remove_dropzones(struct avalanche_window *aw)
 
 static void window_add_dropzones(struct avalanche_window *aw, BOOL edit)
 {
+	BOOL ndz = CONFIG_GET_LOCK(no_dropzones);
+	CONFIG_UNLOCK;
+
+	if(ndz) return;
+
 	if(aw->appwin) {
 		aw->appwindzhook.h_Entry = appwindzhookfunc;
 		aw->appwindzhook.h_SubEntry = NULL;
@@ -494,8 +499,13 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
 		if(aw->mf.add) {
 			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
+			if(CONFIG_GET_LOCK(no_dropzones) == FALSE) {
+				OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,7,0)); //draglock
+			}
+			CONFIG_UNLOCK;
 		} else {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,7,0)); //draglock
 		}
 		if(aw->mf.del) {
 			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
@@ -513,7 +523,6 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		if(busy == FALSE) {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
 		} else {
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
 			//OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
@@ -525,6 +534,7 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,7,0)); //draglock
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
 	}
@@ -2806,5 +2816,12 @@ void window_free_archive_userdata(void *awin)
 		FreeVec(aw->archive_userdata);
 		aw->archive_userdata = NULL;
 	}
+}
+
+BOOL window_get_disabled(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	return aw->disabled;
 }
 

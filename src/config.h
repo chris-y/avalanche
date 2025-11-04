@@ -34,6 +34,7 @@ struct avalanche_config {
 	BOOL ignorefs;
 	BOOL disable_vscan_menu;
 	BOOL drag_lock;
+	BOOL no_dropzones;
 	BOOL aiss;
 	BOOL openwb; /* open on WB after extract */
 	ULONG closeaction; /* [1 = quit, 2 = hide, 0 = cancel] -- same as quit req */

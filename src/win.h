@@ -58,6 +58,7 @@ struct List *window_get_lblist(void *awin);
 ULONG window_get_archiver(void *awin);
 void *array_get_userdata(void *awin, void *arc_entry);
 struct module_functions *window_get_module_funcs(void *awin);
+BOOL window_get_disabled(void *awin);
 
 /* Modify archive */
 BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
