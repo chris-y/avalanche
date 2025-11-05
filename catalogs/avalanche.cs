@@ -1,4 +1,4 @@
-## Version $VER: avalanche.catalog 1.0 (15.05.2022)
+## Version $VER: xxxxxx.catalog 1.00 (05.11.2025)
 ## Languages english
 ## Codeset english 0
 ## SimpleCatConfig CharsPerLine 200
@@ -160,6 +160,7 @@ _OK|_Cancel
 ;
 MSG_UNABLETOOPENREQUESTERTOASKPASSWORD
 Unable to open requester to ask password\n
+;
 MSG_INTERFACE
 (interface)
 ;
@@ -279,4 +280,94 @@ Prevent drag'n'drop amendments
 ;
 MSG_NEWVERSIONDL
 New version (%d.%d) available\nDownload now?
+;
+MSG_OPENINWB
+Open destination drawer on Workbench
+;
+MSG_OPENWBONEXTRACT
+Open drawer on WB after extraction
+;
+MSG_INSTALLED_VER
+Installed version
+;
+MSG_LATEST_VER
+Latest version
+;
+MSG_UPDATE_AVAILABLE
+Update available
+;
+MSG_NONE
+N/A
+;
+MSG_WINDOW
+Window
+;
+MSG_CLOSE
+Close
+;
+MSG_DIR_TREE
+Directory tree
+;
+MSG_EXPAND_ALL
+Expand all
+;
+MSG_COLLAPSE_ALL
+Collapse all
+;
+MSG_UPDATE_INFO
+Double-click on an entry with an update\navailable to download and extract.
+;
+MSG_HI_ARCHIVE
+Select archive to open
+;
+MSG_HI_DEST
+Select destination drawer to extract archive to
+;
+MSG_HI_PROGRESS
+Current file progress
+;
+MSG_HI_LIST
+Double-click a file to view
+;
+MSG_HI_EXTRACT
+Extract selected files
+;
+MSG_HI_TREE
+Select a directory to view contents
+;
+MSG_HI_N_ARCHIVE
+Choose the path and filename of archive to create
+;
+MSG_HI_N_TYPE
+Choose the archive format
+;
+MSG_HI_N_CREATE
+Create new archive
+;
+MSG_HI_N_CANCEL
+Close without creating a new archive
+;
+MSG_HI_C_SCAN
+Scan extracted files for viruses using xvs.library
+;
+MSG_HI_C_IGNOREFS
+Extract raw disk images
+;
+MSG_HI_C_OPENWB
+Open destination drawer after archive is extracted
+;
+MSG_HI_C_VIEWMODE
+Select default archive view
+;
+MSG_HI_C_QUIT
+Select action to take when last window is closed
+;
+MSG_HI_C_SAVE
+Save current preferences in tooltypes
+;
+MSG_HI_C_USE
+Use these preferences but do not save them as default
+;
+MSG_HI_C_CANCEL
+Close window and revert to previous preferences
 ;
