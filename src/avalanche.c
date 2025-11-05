@@ -1,4 +1,4 @@
-#/* Avalanche
+/* Avalanche
  * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -398,16 +398,18 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					struct WBArg *wbarg = appmsg->am_ArgList;
 					switch(appmsg->am_Type) {
 						case AMTYPE_APPWINDOW:
-							// this should only be called if no_dropzones
-							BOOL ndz = CONFIG_GET_LOCK(no_dropzones);
-							CONFIG_UNLOCK;
+							{
+								// this should only be called if no_dropzones
+								BOOL ndz = CONFIG_GET_LOCK(no_dropzones);
+								CONFIG_UNLOCK;
 
-							if(ndz && !window_get_disabled((void *)appmsg->am_UserData)) {
-								if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
-									if(appmsg->am_NumArgs > 1) {
-										for(int i = 1; i < appmsg->am_NumArgs; i++) {
-											wbarg++;
-											open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+								if(ndz && !window_get_disabled((void *)appmsg->am_UserData)) {
+									if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+										if(appmsg->am_NumArgs > 1) {
+											for(int i = 1; i < appmsg->am_NumArgs; i++) {
+												wbarg++;
+												open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+											}
 										}
 									}
 								}
