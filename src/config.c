@@ -106,7 +106,7 @@ static void config_save(struct avalanche_config *config)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[22];
+	UBYTE *newtooltypes[23];
 	char tt_dest[100];
 	char tt_srcdir[100];
 	char tt_tmp[100];
@@ -280,7 +280,13 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[20] = "(OPENWBONEXTRACT)";
 		}
 
-		newtooltypes[21] = NULL;
+		if(config->no_dropzones) {
+			newtooltypes[21] = "NODROPZONES";
+		} else {
+			newtooltypes[21] = "(NODROPZONES)";
+		}
+
+		newtooltypes[22] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(config->progname, dobj, NULL);
