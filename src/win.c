@@ -108,13 +108,6 @@ struct arc_entries {
 #define AVALANCHE_DROPZONES 2
 #define TITLE_MAX_SIZE 100
 
-/* HintInfo differs between OS4 and OS3.2 */
-#ifdef __amigaos4__
-#define HINTINFO GA_HintInfo
-#else
-#define HINTINFO GA_GadgetHelpText
-#endif
-
 struct avalanche_window {
 	struct MinNode node;
 	struct Window *windows[WID_LAST];
@@ -996,7 +989,7 @@ static char *extract_path_part(const char *path, int level)
 
 static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const char *dir_name)
 {
-	uint32 len = strlen(dir_name)+2;
+	ULONG len = strlen(dir_name)+2;
 	char *dir_name_slash = AllocVec(len, MEMF_PRIVATE);
 	if(dir_name_slash == NULL) return FALSE;
 	snprintf(dir_name_slash, len, "%s/", dir_name);
@@ -1380,6 +1373,7 @@ static void window_tree_add(struct avalanche_window *aw)
 
 	aw->gadgets[GID_TREE] = ListBrowserObj,
 					GA_ID, GID_TREE,
+					HINTINFO, locale_get_string(MSG_HI_TREE),
 					GA_RelVerify, TRUE,
 					GA_Disabled, !aw->flat_mode,
 					LISTBROWSER_ColumnInfo, aw->dtci,
@@ -1585,6 +1579,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				LAYOUT_AddChild, LayoutVObj,
 					LAYOUT_AddChild,  aw->gadgets[GID_ARCHIVE] = GetFileObj,
 						GA_ID, GID_ARCHIVE,
+						HINTINFO, locale_get_string(MSG_HI_ARCHIVE),
 						GA_RelVerify, TRUE,
 						GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 						GETFILE_FullFile, aw->archive,
@@ -1599,6 +1594,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					LAYOUT_AddChild, LayoutHObj,
 						LAYOUT_AddChild,  aw->gadgets[GID_DEST] = GetFileObj,
 							GA_ID, GID_DEST,
+							HINTINFO, locale_get_string(MSG_HI_DEST),
 							GA_RelVerify, TRUE,
 							GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
 							GETFILE_Drawer, config->dest,
@@ -1623,6 +1619,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				LAYOUT_WeightBar, TRUE,
 				LAYOUT_AddChild,  aw->gadgets[GID_PROGRESS] = FuelGaugeObj,
 					GA_ID, GID_PROGRESS,
+					HINTINFO, locale_get_string(MSG_HI_PROGRESS),
 				FuelGaugeEnd,
 				CHILD_WeightedWidth, config->progress_size,
 			LayoutEnd,
@@ -1635,6 +1632,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					LAYOUT_WeightBar, TRUE,
 					LAYOUT_AddChild,  aw->gadgets[GID_LIST] = ListBrowserObj,
 						GA_ID, GID_LIST,
+						HINTINFO, locale_get_string(MSG_HI_LIST),
 						GA_RelVerify, TRUE,
 						LISTBROWSER_ColumnInfo, aw->lbci,
 						LISTBROWSER_Labels, &(aw->lblist),
@@ -1648,6 +1646,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				LayoutEnd,
 				LAYOUT_AddChild,  aw->gadgets[GID_EXTRACT] = ButtonObj,
 					GA_ID, GID_EXTRACT,
+					HINTINFO, locale_get_string(MSG_HI_EXTRACT),
 					GA_RelVerify, TRUE,
 					GA_Text, GID_EXTRACT_TEXT,
 				ButtonEnd,

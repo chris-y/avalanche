@@ -50,6 +50,7 @@
 #include "config.h"
 #include "libs.h"
 #include "locale.h"
+#include "misc.h"
 
 #include "Avalanche_rev.h"
 
@@ -81,6 +82,9 @@ static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_C_LAST];
 static Object *objects[OID_LAST];
 static struct MsgPort *cw_port = NULL;
+#ifndef __amigaos4__
+static struct HintInfo hi;
+#endif
 
 static struct Process *config_process = NULL;
 static struct Process *avalanche_process = NULL;
@@ -356,6 +360,11 @@ static void config_window_open_internal(struct avalanche_config *config)
 			WA_DragBar, TRUE,
 			WA_CloseGadget, TRUE,
 			WA_SizeGadget, FALSE,
+			/* Enable HintInfo */
+			WINDOW_GadgetHelp, TRUE,
+#ifndef __amigaos4__
+			WINDOW_HintInfo, &hi,
+#endif
 			WINDOW_SharedPort, cw_port,
 			WINDOW_Position, WPOS_CENTERSCREEN,
 			WINDOW_ParentGroup, gadgets[GID_C_MAIN] = LayoutVObj,
@@ -379,6 +388,7 @@ static void config_window_open_internal(struct avalanche_config *config)
 #endif
 					LAYOUT_AddChild,  gadgets[GID_C_SCAN] = CheckBoxObj,
 						GA_ID, GID_C_SCAN,
+						HINTINFO, locale_get_string(MSG_HI_C_SCAN),
 						GA_RelVerify, TRUE,
 						GA_Disabled, config->disable_vscan_menu,
 						GA_Text, locale_get_string( MSG_SCANFORVIRUSES ) ,
@@ -386,11 +396,13 @@ static void config_window_open_internal(struct avalanche_config *config)
 					End,
 					LAYOUT_AddChild,  gadgets[GID_C_IGNOREFS] = CheckBoxObj,
 						GA_ID, GID_C_IGNOREFS,
+						HINTINFO, locale_get_string(MSG_HI_C_IGNOREFS),
 						GA_RelVerify, TRUE,
 						GA_Text, locale_get_string( MSG_IGNOREFILESYSTEMS ) ,
 						GA_Selected, config->ignorefs,
 					End,	
 					LAYOUT_AddChild,  gadgets[GID_C_OPENWB] = CheckBoxObj,
+						HINTINFO, locale_get_string(MSG_HI_C_OPENWB),
 						GA_ID, GID_C_OPENWB,
 						GA_RelVerify, TRUE,
 						GA_Text, locale_get_string( MSG_OPENWBONEXTRACT ) ,
@@ -398,6 +410,7 @@ static void config_window_open_internal(struct avalanche_config *config)
 					End,
 					LAYOUT_AddChild, gadgets[GID_C_VIEWMODE] = ChooserObj,
 						GA_ID, GID_C_VIEWMODE,
+						HINTINFO, locale_get_string(MSG_HI_C_VIEWMODE),
 						GA_RelVerify, TRUE,
 						CHOOSER_Selected, config->viewmode,
 						CHOOSER_PopUp, TRUE,
@@ -408,6 +421,7 @@ static void config_window_open_internal(struct avalanche_config *config)
 					LabelEnd,
 					LAYOUT_AddChild, gadgets[GID_C_QUIT] = ChooserObj,
 						GA_ID, GID_C_QUIT,
+						HINTINFO, locale_get_string(MSG_HI_C_QUIT),
 						GA_RelVerify, TRUE,
 						CHOOSER_Selected, config->closeaction,
 						CHOOSER_PopUp, TRUE,
@@ -419,17 +433,20 @@ static void config_window_open_internal(struct avalanche_config *config)
 					LAYOUT_AddChild,  LayoutHObj,
 						LAYOUT_AddChild,  gadgets[GID_C_SAVE] = ButtonObj,
 							GA_ID, GID_C_SAVE,
+							HINTINFO, locale_get_string(MSG_HI_C_SAVE),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_SAVE ),
 							GA_Disabled, save_disabled,
 						ButtonEnd,
 						LAYOUT_AddChild,  gadgets[GID_C_USE] = ButtonObj,
 							GA_ID, GID_C_USE,
+							HINTINFO, locale_get_string(MSG_HI_C_USE),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_USE ),
 						ButtonEnd,
 						LAYOUT_AddChild,  gadgets[GID_C_CANCEL] = ButtonObj,
 							GA_ID, GID_C_CANCEL,
+							HINTINFO, locale_get_string(MSG_HI_C_CANCEL),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_CANCEL ),
 						ButtonEnd,

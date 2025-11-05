@@ -38,6 +38,13 @@ void recursive_scan(void *awin, BPTR lock, const char *root);
 BOOL object_is_dir(BPTR lock);
 #endif
 
+/* HintInfo differs between OS4 and OS3.2 */
+#ifdef __amigaos4__
+#define HINTINFO GA_HintInfo
+#else
+#define HINTINFO GA_GadgetHelpText
+#endif
+
 char *strdup_vec(const char *s);
 
 #endif

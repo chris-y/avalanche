@@ -41,6 +41,7 @@
 #include "http.h"
 #include "libs.h"
 #include "locale.h"
+#include "misc.h"
 #include "req.h"
 #include "update.h"
 #include "win.h"
@@ -67,6 +68,9 @@ static struct Window *windows[WID_U_LAST];
 static struct Gadget *gadgets[GID_U_LAST];
 static struct ColumnInfo *ci;
 static struct List list;
+#ifndef __amigaos4__
+static struct HintInfo hi;
+#endif
 
 /* returns FALSE on error */
 static BOOL update_update(struct avalanche_version_numbers *vn)
@@ -277,6 +281,11 @@ void update_gui(struct avalanche_version_numbers avn[])
 			WA_DragBar, TRUE,
 			WA_CloseGadget, TRUE,
 			WA_SizeGadget, TRUE,
+			/* Enable HintInfo */
+			WINDOW_GadgetHelp, TRUE,
+#ifndef __amigaos4__
+			WINDOW_HintInfo, &hi,
+#endif
 			WINDOW_SharedPort, uw_port,
 			WINDOW_Position, WPOS_CENTERSCREEN,
 			WINDOW_ParentGroup, gadgets[GID_U_MAIN] = LayoutVObj,
@@ -285,6 +294,7 @@ void update_gui(struct avalanche_version_numbers avn[])
 				LAYOUT_AddChild, LayoutVObj,
 					LAYOUT_AddChild, gadgets[GID_U_LIST] = ListBrowserObj,
 						GA_ID, GID_U_LIST,
+						HINTINFO, locale_get_string(MSG_UPDATE_INFO),
 						GA_RelVerify, TRUE,
 						LISTBROWSER_AutoFit, TRUE,
 						LISTBROWSER_ColumnInfo, ci,
