@@ -979,7 +979,7 @@ static char *extract_path_part(const char *path, int level)
 
 static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const char *dir_name)
 {
-	uint32 len = strlen(dir_name)+2;
+	ULONG len = strlen(dir_name)+2;
 	char *dir_name_slash = AllocVec(len, MEMF_PRIVATE);
 	if(dir_name_slash == NULL) return FALSE;
 	snprintf(dir_name_slash, len, "%s/", dir_name);
