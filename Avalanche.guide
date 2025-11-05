@@ -143,6 +143,7 @@ This is mostly for internal use, but has the following commands:
   - Forces Avalanche to use a basic window for drag'n'drop
   - Disables drag to add functionality (like DRAGLOCK)
   - Intended for compatibility only, eg. with DOpus
+* Added HelpHints to all gadgets
 
 @{u}3.1 (26.09.2025)@{uu}
 * Extraction, listing and config now run in separate processes
