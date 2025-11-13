@@ -798,7 +798,6 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 										WA_PointerType, POINTERTYPE_PROGRESS,
 										TAG_DONE);
 		window_reset_count(awin);
-		window_disable_gadgets(awin, TRUE, TRUE);
 
 		if((node == NULL) && (aw->flat_mode) && (aw->archiver != ARC_XFD)) {
 			ret = module_extract_array(awin, aw->arc_array, aw->total_items, newdest);
@@ -867,6 +866,8 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 		FreeVec(aeu);
 		return -2;
 	}
+	
+	window_disable_gadgets(awin, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
 	SetSignal(0L, aw->process_exit_sig);
@@ -2076,8 +2077,6 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	long retxfd = 0;
 	long retark = 0;
 
-	window_disable_gadgets(awin, TRUE, FALSE);
-
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -2216,6 +2215,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		FreeVec(aeu);
 		return;
 	}
+	
+	window_disable_gadgets(awin, TRUE, FALSE);
 	
 	/* Ensure there are no pending signals for this already */
 	SetSignal(0L, aw->process_exit_sig);
