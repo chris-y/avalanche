@@ -1564,6 +1564,8 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WA_IDCMP, IDCMP_MENUPICK | IDCMP_RAWKEY | IDCMP_GADGETUP | IDCMP_NEWSIZE,
 		WINDOW_NewMenu, aw->menu,
 		WINDOW_IconifyGadget, TRUE,
+		WINDOW_Icon, (struct DiskObject *)config->iconify_icon,
+		WINDOW_IconNoDispose, TRUE,
 		WINDOW_IconTitle, "Avalanche",
 		WINDOW_SharedPort, winport,
 		WINDOW_AppPort, appport,

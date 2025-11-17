@@ -49,6 +49,8 @@ struct avalanche_config {
 	int cx_pri;
 	BOOL cx_popup;
 	char *cx_popkey;
+
+	void *iconify_icon;
 };
 
 /* Call CONFIG_UNLOCK for every CONFIG_GET_LOCK */

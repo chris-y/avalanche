@@ -28,6 +28,7 @@
 
 #include <exec/lists.h>
 #include <exec/nodes.h>
+#include <workbench/icon.h>
 #include <workbench/startup.h>
 
 #include <classes/window.h>
@@ -723,6 +724,8 @@ int main(int argc, char **argv)
 	config.tmpdir = AllocVec(100, MEMF_CLEAR);
 	config.tmpdirlen = 0;
 
+	config.iconify_icon = (void *)GetIconTagList("ENV:Sys/def_avalanche", NULL);
+
 	InitSemaphore((struct SignalSemaphore *)&config);
 
 	if(argc == 0) {
@@ -827,7 +830,7 @@ int main(int argc, char **argv)
 	if(config.tmpdir) FreeVec(config.tmpdir);
 	if(config.sourcedir) FreeVec(config.sourcedir);
 	if(config.progname != NULL) FreeVec(config.progname);
-
+	if(config.iconify_icon != NULL) FreeDiskObject((struct DiskObject *)config.iconify_icon);
 	CONFIG_UNLOCK;
 
 	if(dest_needs_free) free_dest_path();
