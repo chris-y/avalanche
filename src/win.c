@@ -1652,6 +1652,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					HINTINFO, locale_get_string(MSG_HI_EXTRACT),
 					GA_RelVerify, TRUE,
 					GA_Text, GID_EXTRACT_TEXT,
+					BUTTON_TextPadding, TRUE,
 				ButtonEnd,
 				CHILD_WeightedHeight, 0,
 			LayoutEnd,
