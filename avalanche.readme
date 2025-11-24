@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 3.1
+Version: 3.2
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -20,15 +20,12 @@ All use is at your own risk.
 GPL, source code available on website.
 
 Changes in this version:
-* Extraction, listing and config now run in separate processes
-  - This keeps other Avalanche windows responsive
-  - Update window also has own process under OS4
-* Add ability to open destination drawer after extraction
-  - Also added button to open destination manually
-* Rewrite of update checker
-  - Added GUI
-  - Can download and extract all related components
-  - Shows version numbers of installed libraries
+* Add new ToolType NODROPZONES
+  - Forces Avalanche to use a basic window for drag'n'drop
+  - Disables drag to add functionality (like DRAGLOCK)
+  - Intended for compatibility only, eg. with DOpus
+* Added HelpHints to all gadgets
+* Added custom iconify icon
 
 Note that due to a bug in v2.5 the "download updated version"
 option is unlikely to work.  This was fixed in v3.1.

@@ -138,12 +138,13 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}3.2 (xx.xx.xxxx)@{uu}
+@{u}3.2 (24.11.2025)@{uu}
 * Add new ToolType NODROPZONES
   - Forces Avalanche to use a basic window for drag'n'drop
   - Disables drag to add functionality (like DRAGLOCK)
   - Intended for compatibility only, eg. with DOpus
 * Added HelpHints to all gadgets
+* Added custom iconify icon
 
 @{u}3.1 (26.09.2025)@{uu}
 * Extraction, listing and config now run in separate processes

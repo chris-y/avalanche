@@ -28,7 +28,7 @@ struct avalanche_config;
 #endif
 
 #ifdef __amigaos4__
-#define BUTTON_TextPadding TAG_Ignore
+#define BUTTON_TextPadding TAG_IGNORE
 #endif
 
 extern const ULONG zero;

@@ -25,6 +25,8 @@ distrib: install
 	copy /libs/#? RAM:Avalanche/libs
 	makedir RAM:Avalanche/catalogs
 	copy /catalogs/#? RAM:Avalanche/catalogs
+	makedir RAM:Avalanche/misc
+	copy /misc/#? RAM:Avalanche/misc
 	lha a ram:avalanche.lha ram:Avalanche ram:Avalanche.info ram:AutoInstall
 
 clean:
