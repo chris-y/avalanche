@@ -336,7 +336,11 @@ Object *get_glyph(ULONG glyph)
 			break;
 
 			case AVALANCHE_GLYPH_OPENDRAWER:
+#ifdef __amigaos4__
 				img = "TBimages:draweropen";
+#else
+				img = "TBimages:drawer";
+#endif
 			break;
 
 			case GLYPH_POPFILE:
@@ -344,7 +348,11 @@ Object *get_glyph(ULONG glyph)
 			break;
 
 			case AVALANCHE_GLYPH_ROOT:
+#ifdef __amigaos4__
 				img = "TBimages:list_archive";
+#else
+				img = "TBimages:list_harddisk";
+#endif
 			break;
 
 			case GLYPH_UPARROW:

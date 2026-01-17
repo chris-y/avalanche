@@ -46,7 +46,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}NOASLHOOK@{ub} Disables the ASL filter so it shows all files
 @{b}DRAGLOCK@{ub} Prevent adding files with drag'n'drop
 @{b}NODROPZONES@{ub} Use a basic window for drag'n'drop (use for compatibility - eg. with DOpus)
-@{b}AISS@{ub} Use AISS images (intended for OS4, probably won't work correctly on OS3.2)
+@{b}AISS@{ub} Use AISS/AISSClassic images
 @{b}OPENWBONEXTRACT@{ub} Open destination drawer on Workbench after extraction
 @{b}MODULES@{ub} Select which modules to enable (XAD|XFD|DEARK) (default = XAD|XFD)
 @{b}CX_POPUP@{ub} Whether to open the window on startup
