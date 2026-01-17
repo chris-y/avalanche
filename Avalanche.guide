@@ -138,6 +138,10 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}3.3 (xx.xx.xxxx)@{uu}
+* Tweak AISS to work on AISS Classic on OS3.2
+  (Aminet:util/misc/aissclassic.lha)
+
 @{u}3.2 (24.11.2025)@{uu}
 * Add new ToolType NODROPZONES
   - Forces Avalanche to use a basic window for drag'n'drop
