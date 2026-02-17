@@ -356,7 +356,11 @@ Object *get_glyph(ULONG glyph)
 			break;
 
 			case GLYPH_UPARROW:
+#ifdef __amigaos4__
 				img = "TBimages:list_nav_north";
+#else
+				img = "TBimages:list_parent";
+#endif
 			break;
 
 			case GLYPH_RIGHTARROW:
@@ -368,7 +372,11 @@ Object *get_glyph(ULONG glyph)
 			break;
 
 			case GLYPH_CHECKMARK:
+#ifdef __amigaos4__
 				img = "TBimages:list_checkmark";
+#else
+				img = "TBimages:autobutton_checkbox";
+#endif
 			break;
 
 			default: // also AVALANCHE_GLYPH_NONE
