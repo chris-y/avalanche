@@ -327,31 +327,44 @@ Object *get_glyph(ULONG glyph)
 {
 	Object *glyphobj = NULL;
 	char *img = NULL;
+	char *img_s = NULL;
+	char *img_g = NULL;
 	struct Screen *screen = LockPubScreen(NULL);
 
 	if(get_config()->aiss) {
 		switch(glyph) {
 			case GLYPH_POPDRAWER:
 				img = "TBimages:list_drawer";
+				img_s = "TBimages:list_drawer_s";
+				img_g = "TBimages:list_drawer_g";
 			break;
 
 			case AVALANCHE_GLYPH_OPENDRAWER:
 #ifdef __amigaos4__
 				img = "TBimages:draweropen";
+				img_s = "TBimages:draweropen_s";
+				img_g = "TBimages:draweropen_g";
 #else
-				img = "TBimages:drawer";
+				/* This is intentionally the wrong way round */
+				img = "TBimages:drawer_s";
+				img_s = "TBimages:drawer";
 #endif
 			break;
 
 			case GLYPH_POPFILE:
 				img = "TBimages:list_file";
+				img_s = "TBimages:list_file_s";
+				img_g = "TBimages:list_file_g";
 			break;
 
 			case AVALANCHE_GLYPH_ROOT:
 #ifdef __amigaos4__
 				img = "TBimages:list_archive";
+				img_s = "TBimages:list_archive_s";
+				img_g = "TBimages:list_archive_g";
 #else
 				img = "TBimages:list_harddisk";
+				img_s = "TBimages:list_harddisk_s";
 #endif
 			break;
 
@@ -386,6 +399,10 @@ Object *get_glyph(ULONG glyph)
 
 		glyphobj = BitMapObj,
 					BITMAP_SourceFile, img,
+					BITMAP_SelectSourceFile, img_s,
+#ifdef __amigaos4__
+					BITMAP_DisabledSourceFile, img_g,
+#endif
 					BITMAP_Masking, TRUE,
 					BITMAP_Screen, screen,
 					/* BITMAP_Height, 16,
