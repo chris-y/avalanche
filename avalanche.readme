@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 3.2
+Version: 3.3
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -19,13 +19,15 @@ All use is at your own risk.
 
 GPL, source code available on website.
 
+
 Changes in this version:
-* Add new ToolType NODROPZONES
-  - Forces Avalanche to use a basic window for drag'n'drop
-  - Disables drag to add functionality (like DRAGLOCK)
-  - Intended for compatibility only, eg. with DOpus
-* Added HelpHints to all gadgets
-* Added custom iconify icon
+* Tweak AISS to work on AISS Classic on OS3.2
+  (Aminet:util/misc/aissclassic.lha)
+  - After installation, enable the AISS tooltype to use!
+* Cache glyphs
+  - Improved performance especially when using AISS
+  - Reduce memory usage
+  - Resolves some potential memory leaks
 
 Note that due to a bug in v2.5 the "download updated version"
 option is unlikely to work.  This was fixed in v3.1.

@@ -138,9 +138,14 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}3.3 (xx.xx.xxxx)@{uu}
+@{u}3.3 (15.03.2026)@{uu}
 * Tweak AISS to work on AISS Classic on OS3.2
   (Aminet:util/misc/aissclassic.lha)
+  - After installation, enable the @{"AISS tooltype" link config} to use!
+* Cache glyphs
+  - Improved performance especially when using AISS
+  - Reduce memory usage
+  - Resolves some potential memory leaks
 * Rebuilt with latest vasm/vlink
 
 @{u}3.2 (24.11.2025)@{uu}
