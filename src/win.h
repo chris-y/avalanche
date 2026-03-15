@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,6 @@
 
 struct MsgPort;
 struct module_functions;
-
-enum {
-	AVALANCHE_GLYPH_ROOT = 800,
-	AVALANCHE_GLYPH_OPENDRAWER,
-	AVALANCHE_GLYPH_NONE,
-	AVALANCHE_GLYPH_MAX
-};
 
 
 /* Basic window functions */
@@ -69,7 +62,6 @@ BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
-Object *get_glyph(ULONG glyph);
 void add_to_delete_list(void *awin, char *fn);
 
 /* Archiver userdata */

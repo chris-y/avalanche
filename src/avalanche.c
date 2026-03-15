@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@
 #include "arexx.h"
 #include "avalanche.h"
 #include "config.h"
+#include "glyph.h"
 #include "http.h"
 #include "req.h"
 #include "libs.h"
@@ -728,6 +729,8 @@ int main(int argc, char **argv)
 
 	InitSemaphore((struct SignalSemaphore *)&config);
 
+	glyph_init();
+
 	if(argc == 0) {
 		int i;
 		/* Started from WB */
@@ -834,6 +837,8 @@ int main(int argc, char **argv)
 	CONFIG_UNLOCK;
 
 	if(dest_needs_free) free_dest_path();
+
+	glyph_free();
 
 	module_exit();
 	libs_zip_exit();

@@ -38,13 +38,13 @@
 
 #include "arexx.h"
 #include "config.h"
+#include "glyph.h"
 #include "http.h"
 #include "libs.h"
 #include "locale.h"
 #include "misc.h"
 #include "req.h"
 #include "update.h"
-#include "win.h"
 
 enum {
 	GID_U_MAIN = 0,
@@ -266,7 +266,7 @@ void update_gui(struct avalanche_version_numbers avn[])
 					LBNCA_CopyText, TRUE,
 					LBNCA_Text, latest_version,
 				LBNA_Column, 3,
-					LBNCA_Image, get_glyph(update_glyph),
+					LBNCA_Image, glyph_get(update_glyph),
 				TAG_DONE);
 
 			AddTail(&list, node);

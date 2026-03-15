@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,11 +33,8 @@
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 
-#include <proto/bitmap.h>
 #include <proto/button.h>
-#include <proto/drawlist.h>
 #include <proto/getfile.h>
-#include <proto/glyph.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
@@ -47,9 +44,6 @@
 #include <gadgets/fuelgauge.h>
 #include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
-#include <images/bitmap.h>
-#include <images/drawlist.h>
-#include <images/glyph.h>
 #include <images/label.h>
 
 #include <reaction/reaction.h>
@@ -57,6 +51,7 @@
 
 #include "avalanche.h"
 #include "config.h"
+#include "glyph.h"
 #include "http.h"
 #include "libs.h"
 #include "locale.h"
@@ -166,48 +161,6 @@ struct avalanche_extract_userdata {
 	char *archive;
 	char *newdest;
 	struct Node *node;
-};
-
-/** Glyphs **/
-static struct DrawList dl_opendrawer[] = {
-	{DLST_LINE, 90, 50, 90, 80, 1},
-	{DLST_LINE, 90, 80, 10, 80, 1},
-	{DLST_LINE, 10, 80, 10, 50, 1},
-	{DLST_LINE, 10, 50, 90, 50, 1},
-	{DLST_LINE, 90, 50, 70, 20, 1},
-	{DLST_LINE, 70, 20, 30, 20, 1},
-	{DLST_LINE, 30, 20, 10, 50, 1},
-	{DLST_LINE, 30, 20, 20, 20, 1},
-	{DLST_LINE, 20, 20, 20, 40, 1},
-
-	{DLST_LINE, 70, 20, 80, 20, 1},
-	{DLST_LINE, 80, 20, 80, 40, 1},
-
-	{DLST_LINE, 40, 65, 60, 65, 1},
-
-	{DLST_END, 0, 0, 0, 0, 0},
-};
-
-static struct DrawList dl_archiveroot[] = {
-	{DLST_LINE, 10, 90, 60, 90, 1},
-	{DLST_LINE, 60, 90, 60, 40, 1},
-	{DLST_LINE, 60, 40, 10, 40, 1},
-	{DLST_LINE, 10, 40, 10, 90, 1},
-
-	{DLST_LINE, 60, 90, 90, 70, 1},
-	{DLST_LINE, 60, 40, 90, 20, 1},
-	{DLST_LINE, 10, 40, 40, 20, 1},
-
-	{DLST_LINE, 90, 70, 90, 20, 1},
-	{DLST_LINE, 90, 20, 40, 20, 1},
-
-	{DLST_LINE, 35, 40, 65, 20, 1},
-
-	{DLST_END, 0, 0, 0, 0, 0},
-};
-
-static struct DrawList dl_none[] = {
-	{DLST_END, 0, 0, 0, 0, 0},
 };
 
 /** Menu **/
@@ -321,128 +274,6 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 	}
 
 	return 0;
-}
-
-Object *get_glyph(ULONG glyph)
-{
-	Object *glyphobj = NULL;
-	char *img = NULL;
-	char *img_s = NULL;
-	char *img_g = NULL;
-	struct Screen *screen = LockPubScreen(NULL);
-
-	if(get_config()->aiss) {
-		switch(glyph) {
-			case GLYPH_POPDRAWER:
-				img = "TBimages:list_drawer";
-				img_s = "TBimages:list_drawer_s";
-				img_g = "TBimages:list_drawer_g";
-			break;
-
-			case AVALANCHE_GLYPH_OPENDRAWER:
-#ifdef __amigaos4__
-				img = "TBimages:draweropen";
-				img_s = "TBimages:draweropen_s";
-				img_g = "TBimages:draweropen_g";
-#else
-				/* This is intentionally the wrong way round */
-				img = "TBimages:drawer_s";
-				img_s = "TBimages:drawer";
-#endif
-			break;
-
-			case GLYPH_POPFILE:
-				img = "TBimages:list_file";
-				img_s = "TBimages:list_file_s";
-				img_g = "TBimages:list_file_g";
-			break;
-
-			case AVALANCHE_GLYPH_ROOT:
-#ifdef __amigaos4__
-				img = "TBimages:list_archive";
-				img_s = "TBimages:list_archive_s";
-				img_g = "TBimages:list_archive_g";
-#else
-				img = "TBimages:list_harddisk";
-				img_s = "TBimages:list_harddisk_s";
-#endif
-			break;
-
-			case GLYPH_UPARROW:
-#ifdef __amigaos4__
-				img = "TBimages:list_nav_north";
-#else
-				img = "TBimages:list_parent";
-#endif
-			break;
-
-			case GLYPH_RIGHTARROW:
-				img = "TBimages:autobutton_rtarrow";
-			break;
-
-			case GLYPH_DOWNARROW:
-				img = "TBimages:autobutton_dnarrow";
-			break;
-
-			case GLYPH_CHECKMARK:
-#ifdef __amigaos4__
-				img = "TBimages:list_checkmark";
-#else
-				img = "TBimages:autobutton_checkbox";
-#endif
-			break;
-
-			default: // also AVALANCHE_GLYPH_NONE
-				img = "TBimages:list_blank";
-			break;
-		}
-
-		glyphobj = BitMapObj,
-					BITMAP_SourceFile, img,
-					BITMAP_SelectSourceFile, img_s,
-#ifdef __amigaos4__
-					BITMAP_DisabledSourceFile, img_g,
-#endif
-					BITMAP_Masking, TRUE,
-					BITMAP_Screen, screen,
-					/* BITMAP_Height, 16,
-					BITMAP_Width, 16, */
-				BitMapEnd;
-	} else {
-		if((glyph >= AVALANCHE_GLYPH_ROOT) &&
-			(glyph < AVALANCHE_GLYPH_MAX)) {
-				
-			struct DrawList *dl = NULL;
-				
-			switch(glyph) {
-				case AVALANCHE_GLYPH_OPENDRAWER:
-					dl = &dl_opendrawer;
-				break;
-				case AVALANCHE_GLYPH_ROOT:
-					dl = &dl_archiveroot;
-				break;
-				case AVALANCHE_GLYPH_NONE:
-					dl = &dl_none;
-				break;
-			}
-				
-			glyphobj = DrawListObj,
-					DRAWLIST_Directives, dl,
-					DRAWLIST_RefHeight, 100,
-					DRAWLIST_RefWidth, 100,
-					IA_Width, 16,
-					IA_Height, 16,
-				End;
-		} else {
-			glyphobj = GlyphObj,
-					GLYPH_Glyph, glyph,
-				GlyphEnd;
-		}
-	}
-
-	UnlockPubScreen(NULL, screen);
-
-	return glyphobj;
 }
 
 static void window_free_archive_path(struct avalanche_window *aw)
@@ -954,7 +785,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		Amiga2Date(0, &cd);
 
 	if(dir) {
-		glyph = get_glyph(GLYPH_POPDRAWER);
+		glyph = glyph_get(GLYPH_POPDRAWER);
 		tag1 = LBNCA_CopyText;
 		val1 = TRUE;
 		tag2 = LBNCA_Text;
@@ -962,7 +793,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 
 		snprintf(datestr, 20, "\0");
 	} else {
-		glyph = get_glyph(GLYPH_POPFILE);
+		glyph = glyph_get(GLYPH_POPFILE);
 		val1 = (ULONG)size;
 		snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
 	}
@@ -1186,8 +1017,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 									LBNA_Generation, 1,
 									LBNA_Column, 0,
 										LBNCA_Image, LabelObj,
-											LABEL_DisposeImage, TRUE,
-											LABEL_Image, get_glyph(AVALANCHE_GLYPH_ROOT),
+											LABEL_DisposeImage, FALSE,
+											LABEL_Image, glyph_get(AVALANCHE_GLYPH_ROOT),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->archive),
@@ -1207,8 +1038,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 									LBNA_Generation, aw->dir_array[i]->level + 1,
 									LBNA_Column, 0,
 										LBNCA_Image, LabelObj,
-											LABEL_DisposeImage, TRUE,
-											LABEL_Image, get_glyph(GLYPH_POPDRAWER),
+											LABEL_DisposeImage, FALSE,
+											LABEL_Image, glyph_get(GLYPH_POPDRAWER),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->dir_array[i]->name),
@@ -1247,7 +1078,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 									LBNA_Generation, 1,
 									LBNA_CheckBox, FALSE,
 									LBNA_Column, 0,
-										LBNCA_Image, get_glyph(GLYPH_UPARROW),
+										LBNCA_Image, glyph_get(GLYPH_UPARROW),
 									LBNA_Column, 1,
 										LBNCA_CopyText, TRUE,
 										LBNCA_Text, "/",
@@ -1416,8 +1247,8 @@ static void window_tree_add(struct avalanche_window *aw)
 					LISTBROWSER_FastRender, TRUE,
 					LISTBROWSER_Hierarchical, TRUE,
 					LISTBROWSER_ShowSelected, TRUE,
-					LISTBROWSER_ShowImage, get_glyph(GLYPH_RIGHTARROW),
-					LISTBROWSER_HideImage, get_glyph(GLYPH_DOWNARROW),
+					LISTBROWSER_ShowImage, glyph_get(GLYPH_RIGHTARROW),
+					LISTBROWSER_HideImage, glyph_get(GLYPH_DOWNARROW),
 					LISTBROWSER_LeafImage, NULL,
 				ListBrowserEnd;
 
@@ -1645,7 +1476,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						LAYOUT_AddChild,  aw->gadgets[GID_OPENWB] = ButtonObj,
 							GA_ID, GID_OPENWB,
 							GA_RelVerify, TRUE,
-							GA_Image, get_glyph(AVALANCHE_GLYPH_OPENDRAWER),
+							GA_Image, glyph_get(AVALANCHE_GLYPH_OPENDRAWER),
 							HINTINFO, locale_get_string(MSG_OPENINWB),
 						ButtonEnd,
 						CHILD_NominalSize, TRUE,

@@ -17,6 +17,8 @@
 
 #include <proto/exec.h>
 
+#include "avalanche.h"
+
 struct avalanche_config {
 	struct SignalSemaphore semaphore;
 

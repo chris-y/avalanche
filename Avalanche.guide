@@ -141,6 +141,7 @@ This is mostly for internal use, but has the following commands:
 @{u}3.3 (xx.xx.xxxx)@{uu}
 * Tweak AISS to work on AISS Classic on OS3.2
   (Aminet:util/misc/aissclassic.lha)
+* Rebuilt with latest vasm/vlink
 
 @{u}3.2 (24.11.2025)@{uu}
 * Add new ToolType NODROPZONES
