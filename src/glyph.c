@@ -113,14 +113,9 @@ Object *glyph_get(ULONG glyph)
 			break;
 
 			case AVALANCHE_GLYPH_ROOT:
-#ifdef __amigaos4__
 				img = "TBimages:list_archive";
 				img_s = "TBimages:list_archive_s";
 				img_g = "TBimages:list_archive_g";
-#else
-				img = "TBimages:list_harddisk";
-				img_s = "TBimages:list_harddisk_s";
-#endif
 			break;
 
 			case GLYPH_UPARROW:
