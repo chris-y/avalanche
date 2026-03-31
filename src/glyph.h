@@ -18,9 +18,11 @@
 #include <images/glyph.h>
 
 enum {
-	AVALANCHE_GLYPH_ROOT = 100, /* System Glyph numbers end at ~36 */
+	AVALANCHE_GLYPH_ROOT = 70, /* System Glyph numbers end at ~36 */
+	AVALANCHE_GLYPH_POPFILE, /* Distinguish between list and full size */
 	AVALANCHE_GLYPH_OPENDRAWER,
 	AVALANCHE_GLYPH_NONE,
+	AVALANCHE_GLYPH_EXTRACT,
 	AVALANCHE_GLYPH_MAX
 };
 

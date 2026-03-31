@@ -70,6 +70,20 @@ static struct DrawList dl_archiveroot[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_extract[] = {
+	{DLST_LINE, 30, 30, 50, 10},
+	{DLST_LINE, 50, 10, 70, 30},
+	{DLST_LINE, 50, 10, 50, 80},
+
+	{DLST_LINE, 60, 40, 90, 40},
+	{DLST_LINE, 90, 40, 90, 90},
+	{DLST_LINE, 90, 90, 10, 90},
+	{DLST_LINE, 10, 90, 10, 40},
+	{DLST_LINE, 10, 40, 40, 40},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
 static struct DrawList dl_none[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
@@ -110,6 +124,12 @@ Object *glyph_get(ULONG glyph)
 				img = "TBimages:list_file";
 				img_s = "TBimages:list_file_s";
 				img_g = "TBimages:list_file_g";
+			break;
+			
+			case AVALANCHE_GLYPH_POPFILE:
+				img = "TBimages:open";
+				img_s = "TBimages:open_s";
+				img_g = "TBimages:open_g";
 			break;
 
 			case AVALANCHE_GLYPH_ROOT:
@@ -162,6 +182,8 @@ Object *glyph_get(ULONG glyph)
 		UnlockPubScreen(NULL, screen);
 
 	} else {
+		if(glyph == AVALANCHE_GLYPH_POPFILE) glyph == GLYPH_POPFILE;
+
 		if((glyph >= AVALANCHE_GLYPH_ROOT) &&
 			(glyph < AVALANCHE_GLYPH_MAX)) {
 				
