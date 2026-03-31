@@ -138,6 +138,12 @@ Object *glyph_get(ULONG glyph)
 				img_g = "TBimages:archiveextract_g";
 			break;
 
+			case AVALANCHE_GLYPH_STOP:
+				img = "TBimages:stop";
+				img_s = "TBimages:stop_s";
+				img_g = "TBimages:stop_g";
+			break;
+
 			case AVALANCHE_GLYPH_ROOT:
 				img = "TBimages:list_archive";
 				img_s = "TBimages:list_archive_s";
@@ -204,6 +210,9 @@ Object *glyph_get(ULONG glyph)
 				break;
 				case AVALANCHE_GLYPH_EXTRACT:
 					dl = &dl_extract;
+				break;
+				case AVALANCHE_GLYPH_STOP:
+					dl = &dl_none;
 				break;
 				case AVALANCHE_GLYPH_NONE:
 					dl = &dl_none;

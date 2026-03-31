@@ -78,6 +78,7 @@ enum {
 	GID_LIST,
 	GID_EXTRACT,
 	GID_PROGRESS,
+	GID_ABORT,
 	GID_LAST
 };
 
@@ -1458,6 +1459,14 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						GA_RelVerify, TRUE,
 						GA_Image, glyph_get(AVALANCHE_GLYPH_EXTRACT),
 						GA_Disabled, (!archive),
+					ButtonEnd,
+					CHILD_NominalSize, TRUE,
+					LAYOUT_AddChild,  aw->gadgets[GID_ABORT] = ButtonObj,
+						GA_ID, GID_ABORT,
+						GA_RelVerify, TRUE,
+						GA_Image, glyph_get(AVALANCHE_GLYPH_STOP),
+						HINTINFO, locale_get_string(MSG_ABORT),
+						GA_Disabled, TRUE,
 					ButtonEnd,
 					CHILD_NominalSize, TRUE,
 				LayoutEnd,

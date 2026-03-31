@@ -371,3 +371,6 @@ Use these preferences but do not save them as default
 MSG_HI_C_CANCEL
 Close window and revert to previous preferences
 ;
+MSG_ABORT
+Abort current operation
+;
