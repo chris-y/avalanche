@@ -84,6 +84,15 @@ static struct DrawList dl_extract[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_abort[] = {
+	{DLST_CIRCLE, 50, 50, 40, 40, 1},
+
+	{DLST_LINE, 30, 30, 70, 70, 1},
+	{DLST_LINE, 30, 70, 70, 30, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
 static struct DrawList dl_none[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
@@ -212,7 +221,7 @@ Object *glyph_get(ULONG glyph)
 					dl = &dl_extract;
 				break;
 				case AVALANCHE_GLYPH_STOP:
-					dl = &dl_none;
+					dl = &dl_abort;
 				break;
 				case AVALANCHE_GLYPH_NONE:
 					dl = &dl_none;
