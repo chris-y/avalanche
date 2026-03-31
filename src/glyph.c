@@ -71,15 +71,15 @@ static struct DrawList dl_archiveroot[] = {
 };
 
 static struct DrawList dl_extract[] = {
-	{DLST_LINE, 30, 30, 50, 10},
-	{DLST_LINE, 50, 10, 70, 30},
-	{DLST_LINE, 50, 10, 50, 80},
+	{DLST_LINE, 30, 30, 50, 10, 1},
+	{DLST_LINE, 50, 10, 70, 30, 1},
+	{DLST_LINE, 50, 10, 50, 80, 1},
 
-	{DLST_LINE, 60, 40, 90, 40},
-	{DLST_LINE, 90, 40, 90, 90},
-	{DLST_LINE, 90, 90, 10, 90},
-	{DLST_LINE, 10, 90, 10, 40},
-	{DLST_LINE, 10, 40, 40, 40},
+	{DLST_LINE, 60, 40, 90, 40, 1},
+	{DLST_LINE, 90, 40, 90, 90, 1},
+	{DLST_LINE, 90, 90, 10, 90, 1},
+	{DLST_LINE, 10, 90, 10, 40, 1},
+	{DLST_LINE, 10, 40, 40, 40, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
@@ -132,6 +132,12 @@ Object *glyph_get(ULONG glyph)
 				img_g = "TBimages:open_g";
 			break;
 
+			case AVALANCHE_GLYPH_EXTRACT:
+				img = "TBimages:archiveextract";
+				img_s = "TBimages:archiveextract_s";
+				img_g = "TBimages:archiveextract_g";
+			break;
+
 			case AVALANCHE_GLYPH_ROOT:
 				img = "TBimages:list_archive";
 				img_s = "TBimages:list_archive_s";
@@ -182,7 +188,7 @@ Object *glyph_get(ULONG glyph)
 		UnlockPubScreen(NULL, screen);
 
 	} else {
-		if(glyph == AVALANCHE_GLYPH_POPFILE) glyph == GLYPH_POPFILE;
+		if(glyph == AVALANCHE_GLYPH_POPFILE) glyph = GLYPH_POPFILE;
 
 		if((glyph >= AVALANCHE_GLYPH_ROOT) &&
 			(glyph < AVALANCHE_GLYPH_MAX)) {
@@ -195,6 +201,9 @@ Object *glyph_get(ULONG glyph)
 				break;
 				case AVALANCHE_GLYPH_ROOT:
 					dl = &dl_archiveroot;
+				break;
+				case AVALANCHE_GLYPH_EXTRACT:
+					dl = &dl_extract;
 				break;
 				case AVALANCHE_GLYPH_NONE:
 					dl = &dl_none;
