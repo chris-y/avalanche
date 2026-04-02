@@ -34,7 +34,6 @@
 #include <libraries/gadtools.h>
 
 #include <proto/button.h>
-#include <proto/getfile.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
@@ -42,7 +41,6 @@
 
 #include <classes/window.h>
 #include <gadgets/fuelgauge.h>
-#include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
 
@@ -1327,8 +1325,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	struct avalanche_window *aw = AllocVec(sizeof(struct avalanche_window), MEMF_CLEAR | MEMF_PRIVATE);
 	if(!aw) return NULL;
 	
-	ULONG getfile_drawer = GETFILE_Drawer;
-
 	struct Hook *lbsort_hook = (struct Hook *)&(aw->lbsorthook);
 
 	ULONG tag_default_position = WINDOW_Position;
@@ -1399,7 +1395,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	if(archive) {
 		aw->archive = strdup_vec(archive);
 		aw->archive_needs_free = TRUE;
-		getfile_drawer = TAG_IGNORE;
 	} else {
 		aw->archive = NULL;
 		aw->archive_needs_free = FALSE;
