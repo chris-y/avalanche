@@ -85,8 +85,9 @@ static struct DrawList dl_extract[] = {
 };
 
 static struct DrawList dl_abort[] = {
+#ifndef __amigaos4__ /* DLST_CIRCLE is "incorrectly implemented" in OS4.1 but fixed in OS3.2 */
 	{DLST_CIRCLE, 50, 50, 40, 40, 1},
-
+#endif
 	{DLST_LINE, 30, 30, 70, 70, 1},
 	{DLST_LINE, 30, 70, 70, 30, 1},
 

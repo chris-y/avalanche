@@ -210,8 +210,6 @@ static struct NewMenu menu[] = {
 #define MENU_FLATMODE 21
 #define MENU_LISTMODE 22
 
-#define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
-
 /* Private functions */
 #ifdef __amigaos4__
 static ULONG aslfilterfunc(struct Hook *h, struct FileRequester *fr, struct AnchorPathOld *ap)
@@ -420,21 +418,23 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 	if(disable) {
 		window_remove_dropzones(aw);
 
-		if(stoppable) {
-			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Text,  locale_get_string( MSG_STOP ) ,
-				TAG_DONE);
-		} else {
-			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, TRUE,
 				TAG_DONE);
+				
+		if(stoppable) {
+			SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, FALSE,
+				TAG_DONE);
+		} else {
+
 		}
 	} else {
 		window_add_dropzones(aw, !aw->drag_lock);
 
-		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Text, GID_EXTRACT_TEXT,
-			TAG_DONE);
+			SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, TRUE,
+				TAG_DONE);
 
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, FALSE,
@@ -2467,14 +2467,14 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_EXTRACT:
-					if(aw->disabled) {
-						aw->abort_requested = TRUE;
-					} else {
-						ret = extract(awin, aw->archive, aw->dest, NULL);
-						if(ret != 0) show_error(ret, awin);
-					}
+					ret = extract(awin, aw->archive, aw->dest, NULL);
+					if(ret != 0) show_error(ret, awin);
 				break;
 
+				case GID_ABORT:
+					aw->abort_requested = TRUE;
+				break;
+				
 				case GID_LIST:
 					window_list_handle(awin);
 				break;
