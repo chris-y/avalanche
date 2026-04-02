@@ -55,8 +55,6 @@ const ULONG zero = 0;
 #define IEVENT_POPUP 1L
 
 /** Global config **/
-static BOOL dest_needs_free = FALSE;
-
 static struct avalanche_config config;
 
 /** Shared variables **/
@@ -66,13 +64,13 @@ ULONG window_count = 0;
 
 void free_dest_path(void)
 {
-	if(dest_needs_free) {
-		CONFIG_LOCK_EX;
+	CONFIG_LOCK_EX;
+	if(config.dest_needs_free) {
 		if(config.dest) FreeVec(config.dest);
 		config.dest = NULL;
-		dest_needs_free = FALSE;
-		CONFIG_UNLOCK;
+		config.dest_needs_free = FALSE;
 	}
+	CONFIG_UNLOCK;
 }
 
 ULONG ask_quit(void *awin)
@@ -611,7 +609,7 @@ static void gettooltypes(struct WBArg *wbarg)
 			config.dest = strdup_vec("RAM:");
 		}
 
-		dest_needs_free = TRUE;
+		config.dest_needs_free = TRUE;
 
 		s = (char *)FindToolType(toolarray, "TMPDIR");
 		if(s == NULL) s = "T:";
@@ -709,6 +707,7 @@ int main(int argc, char **argv)
 	config.drag_lock = FALSE;
 	config.no_dropzones = FALSE;
 	config.aiss = FALSE;
+	config.dest_needs_free = FALSE;
 
 	config.activemodules = ARC_XAD | ARC_XFD; /* ARC_DEARK disabled by default */
 
@@ -836,7 +835,7 @@ int main(int argc, char **argv)
 	if(config.iconify_icon != NULL) FreeDiskObject((struct DiskObject *)config.iconify_icon);
 	CONFIG_UNLOCK;
 
-	if(dest_needs_free) free_dest_path();
+	if(config.dest_needs_free) free_dest_path();
 
 	glyph_free();
 

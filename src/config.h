@@ -26,6 +26,7 @@ struct avalanche_config {
 
 	char *sourcedir; /* default source dir for ASL */
 	char *dest; /* default destination */
+	BOOL dest_needs_free;
 	char *tmpdir;
 	int tmpdirlen;
 
