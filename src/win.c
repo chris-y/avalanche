@@ -1479,25 +1479,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				CHILD_WeightedWidth, config->progress_size,
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
-			
-			LAYOUT_AddChild, LayoutHObj,
-				LAYOUT_AddChild,  aw->gadgets[GID_DEST] = GetFileObj,
-					GA_ID, GID_DEST,
-					HINTINFO, locale_get_string(MSG_HI_DEST),
-					GA_RelVerify, TRUE,
-					GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-					GETFILE_Drawer, config->dest,
-					GETFILE_DoSaveMode, TRUE,
-					GETFILE_DrawersOnly, TRUE,
-					GETFILE_ReadOnly, TRUE,
-				End,
-				CHILD_WeightedHeight, 0,
-				CHILD_Label, LabelObj,
-					LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
-				LabelEnd,
-			LayoutEnd,
-			CHILD_WeightedHeight, 0,
-			
+
 			LAYOUT_AddChild, LayoutVObj,
 				LAYOUT_AddChild, aw->gadgets[GID_BROWSERLAYOUT] = LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
@@ -1527,8 +1509,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	/*  Object creation sucessful?
 	 */
 	if (aw->objects[OID_MAIN]) {
-	
-		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest); /* Ensure we have a local dest */
+		/* Ensure we have a local dest */
+		aw->dest = strdup_vec(CONFIG_GET_LOCK(dest));
+		CONFIG_UNLOCK;
 		
 		/* Add to our window list */
 		add_to_window_list(aw);
@@ -1633,6 +1616,7 @@ void window_dispose(void *awin)
 	if(aw->dtci) FreeLBColumnInfo(aw->dtci);
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	if(aw->menu) FreeVec(aw->menu);
+	if(aw->dest) FreeVec(aw->dest);
 	free_arc_array(aw);
 
 	delete_delete_list(aw);
@@ -1932,10 +1916,26 @@ void window_modify_all_list(void *awin, ULONG select)
 char *window_req_dest(void *awin)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	if(DoMethod((Object *)aw->gadgets[GID_DEST], GFILE_REQUEST, aw->windows[WID_MAIN])) {
-		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest);
+
+	char *dstdir = CONFIG_GET_LOCK(dest);
+	CONFIG_UNLOCK;
+
+	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
+	if(aslreq) {
+		if(AslRequestTags(aslreq,
+				ASLFR_DoSaveMode, TRUE,
+				ASLFR_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
+				ASLFR_InitialDrawer, dstdir,
+				ASLFR_DrawersOnly, TRUE,
+			TAG_DONE)) {
+
+			if(aw->dest) FreeVec(dstdir);
+			aw->dest = strdup_vec(aslreq->fr_Drawer);
+		}
+
+		FreeAslRequest(aslreq);
 	}
+
 	return aw->dest;
 }
 
@@ -2467,6 +2467,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_EXTRACT:
+					window_req_dest(aw);
 					ret = extract(awin, aw->archive, aw->dest, NULL);
 					if(ret != 0) show_error(ret, awin);
 				break;
