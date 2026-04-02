@@ -155,7 +155,8 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 				if(res) total++;
 			}
 
-			*list = AllocVec(total, MEMF_CLEAR);
+			*list = AllocVec(total * sizeof(char *), MEMF_CLEAR);
+			if(*list == NULL) return -1;
 
 			Seek(fh, 0, OFFSET_BEGINNING);
 
@@ -165,7 +166,7 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 
 				buf[strlen(buf) - 1] = '\0';
 
-				*list[i] = AllocVec(strlen(buf), MEMF_CLEAR);
+				*list[i] = AllocVec(strlen(buf)+1, MEMF_CLEAR);
 				strncpy(*list[i], buf, strlen(buf));
 
 			}
