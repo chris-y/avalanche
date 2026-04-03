@@ -1460,7 +1460,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						GA_ID, GID_ABORT,
 						GA_RelVerify, TRUE,
 						GA_Image, glyph_get(AVALANCHE_GLYPH_STOP),
-						HINTINFO, locale_get_string(MSG_ABORT),
+						HINTINFO, locale_get_string(MSG_HI_ABORT),
 						GA_Disabled, TRUE,
 					ButtonEnd,
 					CHILD_NominalSize, TRUE,
@@ -1471,7 +1471,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					GA_ID, GID_PROGRESS,
 					HINTINFO, locale_get_string(MSG_HI_PROGRESS),
 				FuelGaugeEnd,
-				CHILD_WeightedWidth, config->progress_size,
+				CHILD_WeightedWidth, 100,
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
 
@@ -1911,21 +1911,27 @@ void window_modify_all_list(void *awin, ULONG select)
 char *window_req_dest(void *awin)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	char *dest = NULL;
 
-	char *dstdir = CONFIG_GET_LOCK(dest);
+	BOOL npe = CONFIG_GET_LOCK(no_prompt_extract);
+	if(npe) dest = CONFIG_GET(dest);
 	CONFIG_UNLOCK;
+
+	if(npe) return(dest);
 
 	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
 	if(aslreq) {
 		if(AslRequestTags(aslreq,
 				ASLFR_DoSaveMode, TRUE,
 				ASLFR_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-				ASLFR_InitialDrawer, dstdir,
+				ASLFR_InitialDrawer, aw->dest,
 				ASLFR_DrawersOnly, TRUE,
 			TAG_DONE)) {
 
-			if(aw->dest) FreeVec(dstdir);
+			if(aw->dest) FreeVec(aw->dest);
 			aw->dest = strdup_vec(aslreq->fr_Drawer);
+		} else {
+			return NULL;
 		}
 
 		FreeAslRequest(aslreq);
@@ -1984,6 +1990,7 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 		if(srcdir) FreeVec(srcdir);
 		FreeAslRequest(aslreq);
 	}
+	if(sdir) FreeVec(sdir);
 	
 	return ret;
 }
@@ -2453,18 +2460,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					window_req_open_archive(awin, config, FALSE);
 				break;
 					
-				case GID_DEST:
-					window_req_dest(awin);
-				break;
-				
 				case GID_OPENWB:
 					window_open_dest(awin);
 				break;
 
 				case GID_EXTRACT:
-					window_req_dest(aw);
-					ret = extract(awin, aw->archive, aw->dest, NULL);
-					if(ret != 0) show_error(ret, awin);
+				{
+					char *dest = window_req_dest(aw);
+					if(dest != NULL) {
+						ret = extract(awin, aw->archive, dest, NULL);
+						if(ret != 0) show_error(ret, awin);
+					}
+				}
 				break;
 
 				case GID_ABORT:

@@ -488,7 +488,19 @@ MSG_HI_C_CANCEL
 Close window and revert to previous preferences
 ; Close window and revert to previous preferences
 ;
-MSG_ABORT
+MSG_HI_ABORT
 Abort current operation
 ; Abort current operation
+;
+MSG_C_ALWAYSEXTRACTTO
+Always extract to
+; Always extract to
+;
+MSG_HI_C_ALWAYSEXTRACTTO
+Suppress prompt for destination on extract; always extract to the default location
+; Suppress prompt for destination on extract; always extract to the default location
+;
+MSG_HI_C_SELECTDESTINATION
+Default destination for the extract requester
+; Default destination for the extract requester
 ;
