@@ -40,7 +40,7 @@ Configuration is done via ToolTypes or through the equivalent options in the GUI
 @{b}VIEWMODE@{ub} LIST or BROWSER (default = BROWSER)
 @{b}IGNOREFS@{ub} Enables the "Ignore filesystems" option
 @{b}WINX@{ub}/@{b}WINY@{ub}/@{b}WINW@{ub}/@{b}WINH@{ub} Window position/width/height
-@{b}PROGRESSSIZE@{ub} Size of progress bar (0-100) at window open
+@{b}NOPROMPTEXTRACT@{ub} Don't prompt for destination on extract; always use default
 @{b}VIRUSSCAN@{ub} Use xvs.library to @{"scan files" link vscan} after extraction
 @{b}CLOSE@{ub} Action to take when last window closed ASK|HIDE|QUIT (default = ASK)
 @{b}NOASLHOOK@{ub} Disables the ASL filter so it shows all files
@@ -64,7 +64,7 @@ When a valid archive or crunched file is loaded, the contents will be displayed.
 
 The state of checkboxes can be toggled by clicking on them, or by choosing "Select all" or "Clear selection" from the Edit menu.  Note that this will act on everything in the current and subdirectories when in the browser mode.
 
-Clicking Extract will extract the archive to the chosen destination.  If @{"scan for viruses" link config} is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
+Clicking Extract will prompt for a destination and then extract the archive to it.  If @{"scan for viruses" link config} is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
 
 The option to "Ignore filesystems" is only useful for DMS and similar disk archives.  Normally Avalanche will check for a valid filesystem, and list the individual files.  With this option set, the raw disk image will be listed instead.
 
@@ -73,7 +73,7 @@ If an Lha or Zip archive is loaded, basic editing is enabled, see @{"editing" li
 @{b}Limitations@{ub}:
 * Mixed file/disk archives are not supported.
 * Disk images containing multiple filesystems are not currently supported.
-* Encrypted archives are not fully supported.
+* Encrypted archives may not be fully supported.
 * xadmaster.library v12 has some bugs relating to certain LhA archives.
   The fix is to use v13 - there is an experimental build for 68k at https://github.com/Hagbard-Celin/xadmaster_Amiga_68k
 
@@ -116,7 +116,7 @@ Download from Aminet, source is at https://github.com/jsummers/deark
 
 To use in Avalanche it needs to be present in the path, and enabled in the MODULES @{"tooltype" link config}.
 
-There is a bug which prevents extraction to root directories on the Amiga, so currently extraction needs to be to a subdirectory.
+Use the latest version to avoid a bug which prevents extraction to root directories.
 
 The 68k version appears to be very unstable.
 
@@ -138,6 +138,13 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
+@{u}x.x (xx.xx.xxxx)@{uu}
+* More modern looking GUI
+  - All gadgets have been moved to a new toolbar
+  - Use AISS for a much nicer look!
+* Extract button now prompts for destination
+  - New config to disable prompt and extract to a default location
+
 @{u}3.3 (15.03.2026)@{uu}
 * Tweak AISS to work on AISS Classic on OS3.2
   (Aminet:util/misc/aissclassic.lha)
