@@ -65,11 +65,8 @@ ULONG window_count = 0;
 void free_dest_path(void)
 {
 	CONFIG_LOCK_EX;
-	if(config.dest_needs_free) {
-		if(config.dest) FreeVec(config.dest);
-		config.dest = NULL;
-		config.dest_needs_free = FALSE;
-	}
+	if(config.dest) FreeVec(config.dest);
+	config.dest = NULL;
 	CONFIG_UNLOCK;
 }
 
@@ -609,8 +606,6 @@ static void gettooltypes(struct WBArg *wbarg)
 			config.dest = strdup_vec("RAM:");
 		}
 
-		config.dest_needs_free = TRUE;
-
 		s = (char *)FindToolType(toolarray, "TMPDIR");
 		if(s == NULL) s = "T:";
 
@@ -707,7 +702,6 @@ int main(int argc, char **argv)
 	config.drag_lock = FALSE;
 	config.no_dropzones = FALSE;
 	config.aiss = FALSE;
-	config.dest_needs_free = FALSE;
 
 	config.activemodules = ARC_XAD | ARC_XFD; /* ARC_DEARK disabled by default */
 
@@ -835,7 +829,7 @@ int main(int argc, char **argv)
 	if(config.iconify_icon != NULL) FreeDiskObject((struct DiskObject *)config.iconify_icon);
 	CONFIG_UNLOCK;
 
-	if(config.dest_needs_free) free_dest_path();
+	free_dest_path();
 
 	glyph_free();
 

@@ -310,7 +310,6 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	free_dest_path();
 	GetAttr(GETFILE_Drawer, gadgets[GID_C_DEST], (APTR)&dst);
 	config->dest = strdup_vec(dst);
-	config->dest_needs_free = TRUE;
 
 	GetAttr(GA_Selected, gadgets[GID_C_SCAN],(ULONG *)&data);
 	config->virus_scan = (data ? TRUE : FALSE);
