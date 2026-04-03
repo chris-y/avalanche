@@ -34,7 +34,6 @@
 #include <libraries/gadtools.h>
 
 #include <proto/button.h>
-#include <proto/getfile.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
@@ -42,7 +41,6 @@
 
 #include <classes/window.h>
 #include <gadgets/fuelgauge.h>
-#include <gadgets/getfile.h>
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
 
@@ -78,6 +76,7 @@ enum {
 	GID_LIST,
 	GID_EXTRACT,
 	GID_PROGRESS,
+	GID_ABORT,
 	GID_LAST
 };
 
@@ -208,8 +207,6 @@ static struct NewMenu menu[] = {
 #define MENU_DRAGLOCK 18
 #define MENU_FLATMODE 21
 #define MENU_LISTMODE 22
-
-#define GID_EXTRACT_TEXT  locale_get_string(MSG_EXTRACT)
 
 /* Private functions */
 #ifdef __amigaos4__
@@ -419,21 +416,23 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 	if(disable) {
 		window_remove_dropzones(aw);
 
-		if(stoppable) {
-			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Text,  locale_get_string( MSG_STOP ) ,
-				TAG_DONE);
-		} else {
-			SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, TRUE,
 				TAG_DONE);
+				
+		if(stoppable) {
+			SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, FALSE,
+				TAG_DONE);
+		} else {
+
 		}
 	} else {
 		window_add_dropzones(aw, !aw->drag_lock);
 
-		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
-				GA_Text, GID_EXTRACT_TEXT,
-			TAG_DONE);
+			SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
+				GA_Disabled, TRUE,
+				TAG_DONE);
 
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, FALSE,
@@ -915,15 +914,15 @@ static void window_update_title(struct avalanche_window *aw)
 {
 	if(aw->archive != NULL) {
 		if(aw->current_dir) {
-			int title_len = strlen(VERS) + strlen(FilePart(aw->archive)) + strlen(aw->current_dir);
+			int title_len = strlen(VERS) + strlen((aw->archive)) + strlen(aw->current_dir);
 
 			if((title_len < TITLE_MAX_SIZE) || ((title_len - TITLE_MAX_SIZE + 3) > strlen(aw->current_dir))) {
-				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, FilePart(aw->archive), aw->current_dir);
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, (aw->archive), aw->current_dir);
 			} else {
-				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, FilePart(aw->archive), aw->current_dir + (strlen(aw->current_dir) - (title_len - TITLE_MAX_SIZE + 3)));		
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, (aw->archive), aw->current_dir + (strlen(aw->current_dir) - (title_len - TITLE_MAX_SIZE + 3)));		
 			}
 		} else {
-			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, FilePart(aw->archive));
+			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, (aw->archive));
 		}
 		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, aw->title);
 	} else {
@@ -1326,15 +1325,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	struct avalanche_window *aw = AllocVec(sizeof(struct avalanche_window), MEMF_CLEAR | MEMF_PRIVATE);
 	if(!aw) return NULL;
 	
-	ULONG getfile_drawer = GETFILE_Drawer;
-	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
-	
 	struct Hook *lbsort_hook = (struct Hook *)&(aw->lbsorthook);
-
-	if(CONFIG_GET_LOCK(disable_asl_hook)) {
-		asl_hook = NULL;
-	}
-	CONFIG_UNLOCK;
 
 	ULONG tag_default_position = WINDOW_Position;
 
@@ -1404,7 +1395,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	if(archive) {
 		aw->archive = strdup_vec(archive);
 		aw->archive_needs_free = TRUE;
-		getfile_drawer = TAG_IGNORE;
 	} else {
 		aw->archive = NULL;
 		aw->archive_needs_free = FALSE;
@@ -1443,54 +1433,48 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			//LAYOUT_DeferLayout, TRUE,
 			LAYOUT_SpaceOuter, TRUE,
 			LAYOUT_AddChild, LayoutHObj,
-				LAYOUT_AddChild, LayoutVObj,
-					LAYOUT_AddChild,  aw->gadgets[GID_ARCHIVE] = GetFileObj,
+				LAYOUT_AddChild, LayoutHObj,
+					LAYOUT_AddChild,  aw->gadgets[GID_ARCHIVE] = ButtonObj,
 						GA_ID, GID_ARCHIVE,
 						HINTINFO, locale_get_string(MSG_HI_ARCHIVE),
 						GA_RelVerify, TRUE,
-						GETFILE_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
-						GETFILE_FullFile, aw->archive,
-						GETFILE_ReadOnly, TRUE,
-						getfile_drawer, config->sourcedir,
-						GETFILE_FilterFunc, asl_hook,
-					End,
-					CHILD_WeightedHeight, 0,
-					CHILD_Label, LabelObj,
-						LABEL_Text,  locale_get_string( MSG_ARCHIVE ) ,
-					LabelEnd,
-					LAYOUT_AddChild, LayoutHObj,
-						LAYOUT_AddChild,  aw->gadgets[GID_DEST] = GetFileObj,
-							GA_ID, GID_DEST,
-							HINTINFO, locale_get_string(MSG_HI_DEST),
-							GA_RelVerify, TRUE,
-							GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-							GETFILE_Drawer, config->dest,
-							GETFILE_DoSaveMode, TRUE,
-							GETFILE_DrawersOnly, TRUE,
-							GETFILE_ReadOnly, TRUE,
-						End,
-						CHILD_WeightedHeight, 0,
-						CHILD_Label, LabelObj,
-							LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
-						LabelEnd,
-						LAYOUT_AddChild,  aw->gadgets[GID_OPENWB] = ButtonObj,
-							GA_ID, GID_OPENWB,
-							GA_RelVerify, TRUE,
-							GA_Image, glyph_get(AVALANCHE_GLYPH_OPENDRAWER),
-							HINTINFO, locale_get_string(MSG_OPENINWB),
-						ButtonEnd,
-						CHILD_NominalSize, TRUE,
-						CHILD_WeightedWidth, 0,
-					LayoutEnd,
+						GA_Image, glyph_get(AVALANCHE_GLYPH_POPFILE),
+					ButtonEnd,
+					CHILD_NominalSize, TRUE,
+					LAYOUT_AddChild,  aw->gadgets[GID_EXTRACT] = ButtonObj,
+						GA_ID, GID_EXTRACT,
+						HINTINFO, locale_get_string(MSG_HI_EXTRACT),
+						GA_RelVerify, TRUE,
+						GA_Image, glyph_get(AVALANCHE_GLYPH_EXTRACT),
+						GA_Disabled, (!archive),
+					ButtonEnd,
+					CHILD_NominalSize, TRUE,
+					LAYOUT_AddChild,  aw->gadgets[GID_OPENWB] = ButtonObj,
+						GA_ID, GID_OPENWB,
+						GA_RelVerify, TRUE,
+						GA_Image, glyph_get(AVALANCHE_GLYPH_OPENDRAWER),
+						HINTINFO, locale_get_string(MSG_OPENINWB),
+					ButtonEnd,
+					CHILD_NominalSize, TRUE,
+					LAYOUT_AddChild,  aw->gadgets[GID_ABORT] = ButtonObj,
+						GA_ID, GID_ABORT,
+						GA_RelVerify, TRUE,
+						GA_Image, glyph_get(AVALANCHE_GLYPH_STOP),
+						HINTINFO, locale_get_string(MSG_HI_ABORT),
+						GA_Disabled, TRUE,
+					ButtonEnd,
+					CHILD_NominalSize, TRUE,
 				LayoutEnd,
-				LAYOUT_WeightBar, TRUE,
+				CHILD_WeightedWidth, 0,
+				//LAYOUT_WeightBar, TRUE,
 				LAYOUT_AddChild,  aw->gadgets[GID_PROGRESS] = FuelGaugeObj,
 					GA_ID, GID_PROGRESS,
 					HINTINFO, locale_get_string(MSG_HI_PROGRESS),
 				FuelGaugeEnd,
-				CHILD_WeightedWidth, config->progress_size,
+				CHILD_WeightedWidth, 100,
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
+
 			LAYOUT_AddChild, LayoutVObj,
 				LAYOUT_AddChild, aw->gadgets[GID_BROWSERLAYOUT] = LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
@@ -1511,14 +1495,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					ListBrowserEnd,
 					CHILD_WeightedWidth, 80,
 				LayoutEnd,
-				LAYOUT_AddChild,  aw->gadgets[GID_EXTRACT] = ButtonObj,
-					GA_ID, GID_EXTRACT,
-					HINTINFO, locale_get_string(MSG_HI_EXTRACT),
-					GA_RelVerify, TRUE,
-					GA_Text, GID_EXTRACT_TEXT,
-					BUTTON_TextPadding, TRUE,
-				ButtonEnd,
-				CHILD_WeightedHeight, 0,
 			LayoutEnd,
 		EndGroup,
 	EndWindow;
@@ -1528,7 +1504,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	/*  Object creation sucessful?
 	 */
 	if (aw->objects[OID_MAIN]) {
-		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest); /* Ensure we have a local dest */
+		/* Ensure we have a local dest */
+		aw->dest = strdup_vec(CONFIG_GET_LOCK(dest));
+		CONFIG_UNLOCK;
 		
 		/* Add to our window list */
 		add_to_window_list(aw);
@@ -1633,6 +1611,7 @@ void window_dispose(void *awin)
 	if(aw->dtci) FreeLBColumnInfo(aw->dtci);
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	if(aw->menu) FreeVec(aw->menu);
+	if(aw->dest) FreeVec(aw->dest);
 	free_arc_array(aw);
 
 	delete_delete_list(aw);
@@ -1862,8 +1841,8 @@ void window_update_archive(void *awin, char *archive)
 	aw->archive = strdup_vec(archive);
 	aw->archive_needs_free = TRUE;
 
-	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
-					GETFILE_FullFile, aw->archive, TAG_DONE);
+	/* TODO: setwindow title SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
+					GETFILE_FullFile, aw->archive, TAG_DONE); */
 
 	if(aw->flat_mode && aw->current_dir) {
 		FreeVec(aw->current_dir);
@@ -1876,8 +1855,11 @@ void window_update_sourcedir(void *awin, char *sourcedir)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
-					GETFILE_Drawer, sourcedir, TAG_DONE);
+	CONFIG_LOCK_EX;
+	struct avalanche_config *config = get_config();
+	if(config->sourcedir) FreeVec(config->sourcedir);
+	config->sourcedir = strdup_vec(sourcedir);
+	CONFIG_UNLOCK;
 }
 
 void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
@@ -1929,11 +1911,88 @@ void window_modify_all_list(void *awin, ULONG select)
 char *window_req_dest(void *awin)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	if(DoMethod((Object *)aw->gadgets[GID_DEST], GFILE_REQUEST, aw->windows[WID_MAIN])) {
-		GetAttr(GETFILE_Drawer, aw->gadgets[GID_DEST], (APTR)&aw->dest);
+	char *dest = NULL;
+
+	BOOL npe = CONFIG_GET_LOCK(no_prompt_extract);
+	if(npe) dest = CONFIG_GET(dest);
+	CONFIG_UNLOCK;
+
+	if(npe) return(dest);
+
+	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
+	if(aslreq) {
+		if(AslRequestTags(aslreq,
+				ASLFR_DoSaveMode, TRUE,
+				ASLFR_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
+				ASLFR_InitialDrawer, aw->dest,
+				ASLFR_DrawersOnly, TRUE,
+			TAG_DONE)) {
+
+			if(aw->dest) FreeVec(aw->dest);
+			aw->dest = strdup_vec(aslreq->fr_Drawer);
+		} else {
+			return NULL;
+		}
+
+		FreeAslRequest(aslreq);
 	}
+
 	return aw->dest;
+}
+
+/* Returns FALSE if req cancelled */
+static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_config *config)
+{
+	BOOL ret = FALSE;
+	char *srcdir = NULL;
+	
+	struct Hook *asl_hook = (struct Hook *)&(aw->aslfilterhook);
+
+	if(CONFIG_GET_LOCK(disable_asl_hook)) {
+		asl_hook = NULL;
+	}
+	char *sdir = strdup_vec(CONFIG_GET(sourcedir));
+	CONFIG_UNLOCK;
+	
+	char *arc = NULL;
+	
+	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
+	if(aslreq) {
+		if(aw->archive) {
+			srcdir = strdup_vec(aw->archive);
+			char *p = PathPart(srcdir);
+			*p = '\0';
+			arc = FilePart(aw->archive);
+		} else {
+			srcdir = strdup_vec(sdir);
+		}
+		
+		if(AslRequestTags(aslreq,
+				ASLFR_DoMultiSelect, FALSE,
+				ASLFR_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
+				ASLFR_InitialFile, arc,
+				ASLFR_InitialDrawer, srcdir,
+				ASLFR_FilterFunc, asl_hook,
+			TAG_DONE)) {
+		
+			if(aw->archive_needs_free) window_free_archive_path(aw);
+		
+			ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
+			aw->archive = AllocVec(len, MEMF_PRIVATE);
+			strncpy(aw->archive, aslreq->fr_Drawer, len);
+			AddPart(aw->archive, aslreq->fr_File, len);
+			
+			//window_update_sourcedir(aw, aslreq->fr_Drawer);
+			aw->archive_needs_free = TRUE;
+			ret = TRUE;
+		}
+		
+		if(srcdir) FreeVec(srcdir);
+		FreeAslRequest(aslreq);
+	}
+	if(sdir) FreeVec(sdir);
+	
+	return ret;
 }
 
 static void window_req_open_archive_internal(void *awin, struct avalanche_config *config)
@@ -1951,9 +2010,6 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	free_arc_array(aw);
 
 	module_free(awin);
-
-	if(aw->archive_needs_free) window_free_archive_path(aw);
-	GetAttr(GETFILE_FullFile, aw->gadgets[GID_ARCHIVE], (APTR)&aw->archive);
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 										WA_BusyPointer, TRUE,
@@ -2057,11 +2113,9 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-	long ret = 0;
-
 	if(refresh_only == FALSE) {
-		ret = DoMethod((Object *) aw->gadgets[GID_ARCHIVE], GFILE_REQUEST, aw->windows[WID_MAIN]);
-		if(ret == 0) return;
+		BOOL ret = window_req_archive(aw, config);
+		if(ret == FALSE) return;
 	
 		if(aw->flat_mode && aw->current_dir) {
 			FreeVec(aw->current_dir);
@@ -2406,23 +2460,24 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					window_req_open_archive(awin, config, FALSE);
 				break;
 					
-				case GID_DEST:
-					window_req_dest(awin);
-				break;
-				
 				case GID_OPENWB:
 					window_open_dest(awin);
 				break;
 
 				case GID_EXTRACT:
-					if(aw->disabled) {
-						aw->abort_requested = TRUE;
-					} else {
-						ret = extract(awin, aw->archive, aw->dest, NULL);
+				{
+					char *dest = window_req_dest(aw);
+					if(dest != NULL) {
+						ret = extract(awin, aw->archive, dest, NULL);
 						if(ret != 0) show_error(ret, awin);
 					}
+				}
 				break;
 
+				case GID_ABORT:
+					aw->abort_requested = TRUE;
+				break;
+				
 				case GID_LIST:
 					window_list_handle(awin);
 				break;

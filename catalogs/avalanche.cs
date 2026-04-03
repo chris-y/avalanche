@@ -371,3 +371,15 @@ Use these preferences but do not save them as default
 MSG_HI_C_CANCEL
 Close window and revert to previous preferences
 ;
+MSG_HI_ABORT
+Abort current operation
+;
+MSG_C_ALWAYSEXTRACTTO
+Always extract to
+;
+MSG_HI_C_ALWAYSEXTRACTTO
+Suppress prompt for destination on extract; always extract to the default location
+;
+MSG_HI_C_SELECTDESTINATION
+Default destination for the extract requester
+;

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,7 @@ enum {
 	GID_C_IGNOREFS,
 	GID_C_OPENWB,
 	GID_C_DEST,
+	GID_C_NOPROMPTEXT,
 	GID_C_VIEWMODE,
 	GID_C_QUIT,
 	GID_C_SAVE,
@@ -175,13 +176,11 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[6] = "(WINH=0)";
 		}
 
-		if(config->progress_size != PROGRESS_SIZE_DEFAULT) {
-			snprintf(tt_progresssize, 20, "PROGRESSSIZE=%lu", config->progress_size);
+		if(config->no_prompt_extract) {
+			newtooltypes[7] = "NOPROMPTEXTRACT";
 		} else {
-			snprintf(tt_progresssize, 20, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
+			newtooltypes[7] = "(NOPROMPTEXTRACT)";
 		}
-
-		newtooltypes[7] = tt_progresssize;
 
 		if(config->virus_scan) {
 			newtooltypes[8] = "VIRUSSCAN";
@@ -306,10 +305,11 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 
 	CONFIG_LOCK_EX; /* EXCLUSIVE */
 
-#if 0
+	char *dst = NULL;
 	free_dest_path();
-	GetAttr(GETFILE_Drawer, gadgets[GID_C_DEST], (APTR)&config->dest);
-#endif
+	GetAttr(GETFILE_Drawer, gadgets[GID_C_DEST], (APTR)&dst);
+	config->dest = strdup_vec(dst);
+
 	GetAttr(GA_Selected, gadgets[GID_C_SCAN],(ULONG *)&data);
 	config->virus_scan = (data ? TRUE : FALSE);
 
@@ -318,6 +318,9 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	
 	GetAttr(GA_Selected, gadgets[GID_C_OPENWB],(ULONG *)&data);
 	config->openwb = (data ? TRUE : FALSE);
+
+	GetAttr(GA_Selected, gadgets[GID_C_NOPROMPTEXT],(ULONG *)&data);
+	config->no_prompt_extract = (data ? TRUE : FALSE);
 	
 	GetAttr(CHOOSER_Selected, gadgets[GID_C_QUIT], (ULONG *)&data);
 	config->closeaction = data;
@@ -371,21 +374,26 @@ static void config_window_open_internal(struct avalanche_config *config)
 				//LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
 				LAYOUT_AddChild, LayoutVObj,
-#if 0
-					LAYOUT_AddChild,  gadgets[GID_C_DEST] = GetFileObj,
-						GA_ID, GID_C_DEST,
-						GA_RelVerify, TRUE,
-						GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-						GETFILE_Drawer, config->dest,
-						GETFILE_DoSaveMode, TRUE,
-						GETFILE_DrawersOnly, TRUE,
-						GETFILE_ReadOnly, TRUE,
-					End,
-					CHILD_WeightedHeight, 0,
-					CHILD_Label, LabelObj,
-						LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
-					LabelEnd,
-#endif
+					LAYOUT_AddChild, LayoutHObj,
+						LAYOUT_AddChild,  gadgets[GID_C_NOPROMPTEXT] = CheckBoxObj,
+							GA_ID, GID_C_NOPROMPTEXT,
+							HINTINFO, locale_get_string(MSG_HI_C_ALWAYSEXTRACTTO),
+							GA_RelVerify, TRUE,
+							GA_Text, locale_get_string(MSG_C_ALWAYSEXTRACTTO) ,
+							GA_Selected, config->no_prompt_extract,
+						End,
+						LAYOUT_AddChild,  gadgets[GID_C_DEST] = GetFileObj,
+							GA_ID, GID_C_DEST,
+							GA_RelVerify, TRUE,
+							HINTINFO, locale_get_string(MSG_HI_C_SELECTDESTINATION),
+							GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
+							GETFILE_Drawer, config->dest,
+							GETFILE_DoSaveMode, TRUE,
+							GETFILE_DrawersOnly, TRUE,
+							GETFILE_ReadOnly, TRUE,
+						End,
+						CHILD_WeightedHeight, 0,
+					LayoutEnd,
 					LAYOUT_AddChild,  gadgets[GID_C_SCAN] = CheckBoxObj,
 						GA_ID, GID_C_SCAN,
 						HINTINFO, locale_get_string(MSG_HI_C_SCAN),
