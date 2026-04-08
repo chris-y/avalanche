@@ -461,12 +461,15 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 										if(appmenu_awin) {
 											window_open(appmenu_awin, appwin_mp);
 											window_req_open_archive(appmenu_awin, &config, TRUE);
+											/* TODO: This needs reworking as it will inhibit the rest of the program */
+											Wait(window_get_exit_sig(appmenu_awin));
 											if(window_get_archiver(appmenu_awin) != ARC_NONE) {
 												long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
-												FreeVec(tempdest);
-												if(ret != 0) show_error(ret, awin);
+												Wait(window_get_exit_sig(appmenu_awin));
 											}
+											window_close(appmenu_awin, FALSE);
 											window_dispose(appmenu_awin);
+											if(tempdest != NULL) FreeVec(tempdest);
 										}
 										FreeVec(am_archive);
 									}

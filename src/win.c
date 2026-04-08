@@ -707,9 +707,6 @@ static void __saveds extract_p(void)
 	
 	/* Signal that we've finished */
 	Signal(avalanche_process, aw->process_exit_sig);
-	
-	FreeSignal(aw->process_exit_sig);
-	aw->process_exit_sig = 0;
 }
 
 
@@ -724,11 +721,6 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	aeu->archive = archive;
 	aeu->newdest = newdest;
 	aeu->node = node;
-	
-	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
-		FreeVec(aeu);
-		return -2;
-	}
 	
 	window_disable_gadgets(awin, TRUE, TRUE);
 	
@@ -1329,6 +1321,12 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	ULONG tag_default_position = WINDOW_Position;
 
+	/* create process signal */
+	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
+		FreeVec(aw);
+		return NULL;
+	}
+
 	/* Listbrowser */
 	aw->lbsorthook.h_Entry = lbsortfunc;
 	aw->lbsorthook.h_SubEntry = NULL;
@@ -1562,7 +1560,7 @@ void window_close(void *awin, BOOL iconify)
 	newarc_window_close_if_associated(awin);
 
 	if((aw->disabled == TRUE)) {
-		SetSignal(0L, aw->process_exit_sig);
+		//SetSignal(0L, aw->process_exit_sig);
 		aw->abort_requested = TRUE;
 		Wait(aw->process_exit_sig);
 	}
@@ -1616,6 +1614,8 @@ void window_dispose(void *awin)
 
 	delete_delete_list(aw);
 
+	FreeSignal(aw->process_exit_sig);
+	
 	FreeVec(aw);
 }
 
@@ -1817,7 +1817,6 @@ it's incompatible with double-clicking as it resets the listview */
 			strncpy(dest_path, CONFIG_GET(tmpdir), dest_path_len - 1);
 			CONFIG_UNLOCK;
 
-			SetSignal(0L, aw->process_exit_sig);
 			ret = extract(aw, aw->archive, dest_path, node);
 			if(ret == 0) {
 				Wait(aw->process_exit_sig);
@@ -2104,9 +2103,6 @@ static void __saveds window_req_open_archive_p(void)
 	
 	/* Signal that we've finished */
 	Signal(avalanche_process, aw->process_exit_sig);
-	
-	FreeSignal(aw->process_exit_sig);
-	aw->process_exit_sig = 0;
 }
 
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
@@ -2132,11 +2128,6 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	aeu->newdest = NULL;
 	aeu->node = NULL;
 
-	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
-		FreeVec(aeu);
-		return;
-	}
-	
 	window_disable_gadgets(awin, TRUE, FALSE);
 	
 	/* Ensure there are no pending signals for this already */
@@ -2747,3 +2738,9 @@ BOOL window_get_disabled(void *awin)
 	return aw->disabled;
 }
 
+BYTE window_get_exit_sig(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	return aw->process_exit_sig;
+}
