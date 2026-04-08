@@ -29,6 +29,20 @@ Please use the included Installer script.
 If you must install manually, you can copy the program anywhere on your hard drive.
 The install script additionally modifies the default tool for "archive" type files to be Avalanche.  In a standard install of OS3.2 this is used for all subtypes.
 
+@{u}xvs.library@{uu}
+
+On OS4, install xvs.library @{b}before@{ub} Avalanche.  This will copy the required xvs.l.main to libs:.  If this is needed afterwards, it can be copied from the "libs" directory in Avalanche's archive.
+
+@{u}xfdmaster.library@{uu}
+
+On OS4, install the main archive, then update it with the OS4 native version (aminet:/util/libs/xfdmaster_os4)
+
+@{u}xadmaster.library@{uu}
+
+On OS3, there are two versions of xadmaster. v12 is on Aminet. There is a free keyfile also on Aminet that can be used with it.
+
+v13 is on GitHub (https://github.com/Hagbard-Celin/xadmaster_Amiga_68k).  This is an experimental version which needs copying over an existing v12 installation.  It solves some issues with certain LhA archives and if it works on your system it is recommended to use it.
+
 @endnode
 
 @node config "Configuration"
@@ -75,7 +89,7 @@ If an Lha or Zip archive is loaded, basic editing is enabled, see @{"editing" li
 * Disk images containing multiple filesystems are not currently supported.
 * Encrypted archives may not be fully supported.
 * xadmaster.library v12 has some bugs relating to certain LhA archives.
-  The fix is to use v13 - there is an experimental build for 68k at https://github.com/Hagbard-Celin/xadmaster_Amiga_68k
+  The fix is to use v13 - there is an experimental build for 68k, see @{"Install" link install}.
 
 @endnode
 
