@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,11 +15,18 @@
 #ifndef AVALANCHE_CONFIG_H
 #define AVALANCHE_CONFIG_H 1
 
+#include <proto/exec.h>
+
+#include "avalanche.h"
+
 struct avalanche_config {
+	struct SignalSemaphore semaphore;
+
 	char *progname;
-	
+
 	char *sourcedir; /* default source dir for ASL */
 	char *dest; /* default destination */
+	BOOL dest_needs_free;
 	char *tmpdir;
 	int tmpdirlen;
 
@@ -30,8 +37,10 @@ struct avalanche_config {
 	BOOL ignorefs;
 	BOOL disable_vscan_menu;
 	BOOL drag_lock;
+	BOOL no_dropzones;
 	BOOL aiss;
 	BOOL openwb; /* open on WB after extract */
+	BOOL no_prompt_extract; /* Don't prompt for dest on extract; always use 'dest' */
 	ULONG closeaction; /* [1 = quit, 2 = hide, 0 = cancel] -- same as quit req */
 	ULONG activemodules;
 
@@ -39,16 +48,26 @@ struct avalanche_config {
 	ULONG win_y;
 	ULONG win_w;
 	ULONG win_h;
-	ULONG progress_size;
 
 	int cx_pri;
 	BOOL cx_popup;
 	char *cx_popkey;
+
+	void *iconify_icon;
 };
 
-void config_window_open(struct avalanche_config *config);
-ULONG config_window_get_signal(void);
-ULONG config_window_handle_input(UWORD *code);
-BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code);
+/* Call CONFIG_UNLOCK for every CONFIG_GET_LOCK */
+#define CONFIG_LOCK ObtainSemaphoreShared((struct SignalSemaphore *)get_config())
+#define CONFIG_LOCK_EX ObtainSemaphore((struct SignalSemaphore *)get_config())
+#define CONFIG_GET(ATTRIBUTE) get_config()->ATTRIBUTE
+#define CONFIG_GET_LOCK(ATTRIBUTE) config_get()->ATTRIBUTE
+#define CONFIG_UNLOCK ReleaseSemaphore((struct SignalSemaphore *)get_config())
 
+void config_window_open(struct avalanche_config *config);
+void config_window_break(void);
+
+/* Obtains the avalanche_config structure if it is safe to do so.
+ * CONFIG_UNLOCK or ReleaseSemaphore() MUST be called when done.
+ * If obtaining a lock manually, use get_config() instead */
+struct avalanche_config *config_get(void);
 #endif

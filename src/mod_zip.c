@@ -101,7 +101,7 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
 
 			if(fullfile) {
-				strcpy(fullfile, dir);
+				strncpy(fullfile, dir, fullfile_len);
 				if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
 					/* Skip past the slash or colon so AddPart doesn't think we want a different dir */
 					AddPart(fullfile, file + strlen(root) + 1, fullfile_len);
@@ -114,7 +114,7 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
 
 			if(fullfile) {
-				strcpy(fullfile, dir);
+				strncpy(fullfile, dir, fullfile_len);
 				AddPart(fullfile, FilePart(file), fullfile_len);
 			}
 		}
@@ -164,6 +164,23 @@ static BOOL mod_zip_add(void *awin, char *archive, char *file, char *dir, const 
 	return FALSE;
 }
 #endif
+
+ULONG mod_zip_get_ver(ULONG *ver, ULONG *rev)
+{
+#ifdef __amigaos4__
+	if(!libs_zip_init()) return 0;
+	
+	struct Library *lib = (struct Library *)ZipBase;
+	if(ver) *ver = lib->lib_Version;
+	if(rev) *rev = lib->lib_Revision;
+	
+	return *ver;
+#else
+	*ver = 0;
+	*rev = 0;
+	return 0;
+#endif
+}
 
 BOOL mod_zip_new(void *awin, char *archive)
 {

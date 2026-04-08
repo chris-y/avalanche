@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/icon.h>
 #include <proto/intuition.h>
@@ -25,6 +26,7 @@
 #ifndef __amigaos4__
 #include <clib/alib_protos.h>
 #endif
+#include <dos/dostags.h>
 #include <libraries/asl.h>
 
 #include <proto/button.h>
@@ -48,6 +50,7 @@
 #include "config.h"
 #include "libs.h"
 #include "locale.h"
+#include "misc.h"
 
 #include "Avalanche_rev.h"
 
@@ -57,6 +60,7 @@ enum {
 	GID_C_IGNOREFS,
 	GID_C_OPENWB,
 	GID_C_DEST,
+	GID_C_NOPROMPTEXT,
 	GID_C_VIEWMODE,
 	GID_C_QUIT,
 	GID_C_SAVE,
@@ -79,6 +83,14 @@ static struct Window *windows[WID_LAST];
 static struct Gadget *gadgets[GID_C_LAST];
 static Object *objects[OID_LAST];
 static struct MsgPort *cw_port = NULL;
+#ifndef __amigaos4__
+static struct HintInfo hi;
+#endif
+
+static struct Process *config_process = NULL;
+static struct Process *avalanche_process = NULL;
+
+static BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code);
 
 static void config_window_close(void)
 {
@@ -99,7 +111,7 @@ static void config_save(struct avalanche_config *config)
 {
 	struct DiskObject *dobj;
 	UBYTE **oldtooltypes;
-	UBYTE *newtooltypes[22];
+	UBYTE *newtooltypes[23];
 	char tt_dest[100];
 	char tt_srcdir[100];
 	char tt_tmp[100];
@@ -111,6 +123,8 @@ static void config_save(struct avalanche_config *config)
 	char tt_cxpri[20];
 	char tt_cxpopkey[50];
 	char tt_modules[40];
+
+	CONFIG_LOCK;
 
 	if(dobj = GetIconTagList(config->progname, NULL)) {
 		oldtooltypes = (UBYTE **)dobj->do_ToolTypes;
@@ -162,13 +176,11 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[6] = "(WINH=0)";
 		}
 
-		if(config->progress_size != PROGRESS_SIZE_DEFAULT) {
-			snprintf(tt_progresssize, 20, "PROGRESSSIZE=%lu", config->progress_size);
+		if(config->no_prompt_extract) {
+			newtooltypes[7] = "NOPROMPTEXTRACT";
 		} else {
-			snprintf(tt_progresssize, 20, "(PROGRESSSIZE=%d)", PROGRESS_SIZE_DEFAULT);
+			newtooltypes[7] = "(NOPROMPTEXTRACT)";
 		}
-
-		newtooltypes[7] = tt_progresssize;
 
 		if(config->virus_scan) {
 			newtooltypes[8] = "VIRUSSCAN";
@@ -271,22 +283,33 @@ static void config_save(struct avalanche_config *config)
 			newtooltypes[20] = "(OPENWBONEXTRACT)";
 		}
 
-		newtooltypes[21] = NULL;
+		if(config->no_dropzones) {
+			newtooltypes[21] = "NODROPZONES";
+		} else {
+			newtooltypes[21] = "(NODROPZONES)";
+		}
+
+		newtooltypes[22] = NULL;
 
 		dobj->do_ToolTypes = (STRPTR *)&newtooltypes;
 		PutIconTags(config->progname, dobj, NULL);
 		dobj->do_ToolTypes = (STRPTR *)oldtooltypes;
 		FreeDiskObject(dobj);
 	}
+	CONFIG_UNLOCK;
 }
 
 static void config_window_settings(struct avalanche_config *config, BOOL save)
 {
 	ULONG data = 0;
-#if 0
+
+	CONFIG_LOCK_EX; /* EXCLUSIVE */
+
+	char *dst = NULL;
 	free_dest_path();
-	GetAttr(GETFILE_Drawer, gadgets[GID_C_DEST], (APTR)&config->dest);
-#endif
+	GetAttr(GETFILE_Drawer, gadgets[GID_C_DEST], (APTR)&dst);
+	config->dest = strdup_vec(dst);
+
 	GetAttr(GA_Selected, gadgets[GID_C_SCAN],(ULONG *)&data);
 	config->virus_scan = (data ? TRUE : FALSE);
 
@@ -295,6 +318,9 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	
 	GetAttr(GA_Selected, gadgets[GID_C_OPENWB],(ULONG *)&data);
 	config->openwb = (data ? TRUE : FALSE);
+
+	GetAttr(GA_Selected, gadgets[GID_C_NOPROMPTEXT],(ULONG *)&data);
+	config->no_prompt_extract = (data ? TRUE : FALSE);
 	
 	GetAttr(CHOOSER_Selected, gadgets[GID_C_QUIT], (ULONG *)&data);
 	config->closeaction = data;
@@ -302,11 +328,12 @@ static void config_window_settings(struct avalanche_config *config, BOOL save)
 	GetAttr(CHOOSER_Selected, gadgets[GID_C_VIEWMODE], (ULONG *)&data);
 	config->viewmode = data;
 
+	CONFIG_UNLOCK;
+
 	if(save) config_save(config);
 }
 
-/* Public functions */
-void config_window_open(struct avalanche_config *config)
+static void config_window_open_internal(struct avalanche_config *config)
 {
 	BOOL save_disabled = FALSE;
 	STRPTR quit_opts[] = {
@@ -322,14 +349,11 @@ void config_window_open(struct avalanche_config *config)
 			NULL
 	};
 
-	if(windows[WID_MAIN]) { // already open
-		WindowToFront(windows[WID_MAIN]);
-		return;
-	}
-
-	if(config->progname == NULL) save_disabled = TRUE;
+	if(CONFIG_GET_LOCK(progname) == NULL) save_disabled = TRUE;
+	CONFIG_UNLOCK;
 
 	if(cw_port = CreateMsgPort()) {
+		CONFIG_LOCK;
 		/* Create the window object */
 		objects[OID_MAIN] = WindowObj,
 			WA_ScreenTitle, VERS,
@@ -339,29 +363,40 @@ void config_window_open(struct avalanche_config *config)
 			WA_DragBar, TRUE,
 			WA_CloseGadget, TRUE,
 			WA_SizeGadget, FALSE,
+			/* Enable HintInfo */
+			WINDOW_GadgetHelp, TRUE,
+#ifndef __amigaos4__
+			WINDOW_HintInfo, &hi,
+#endif
 			WINDOW_SharedPort, cw_port,
 			WINDOW_Position, WPOS_CENTERSCREEN,
 			WINDOW_ParentGroup, gadgets[GID_C_MAIN] = LayoutVObj,
 				//LAYOUT_DeferLayout, TRUE,
 				LAYOUT_SpaceOuter, TRUE,
 				LAYOUT_AddChild, LayoutVObj,
-#if 0
-					LAYOUT_AddChild,  gadgets[GID_C_DEST] = GetFileObj,
-						GA_ID, GID_C_DEST,
-						GA_RelVerify, TRUE,
-						GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-						GETFILE_Drawer, config->dest,
-						GETFILE_DoSaveMode, TRUE,
-						GETFILE_DrawersOnly, TRUE,
-						GETFILE_ReadOnly, TRUE,
-					End,
-					CHILD_WeightedHeight, 0,
-					CHILD_Label, LabelObj,
-						LABEL_Text,  locale_get_string( MSG_DESTINATION ) ,
-					LabelEnd,
-#endif
+					LAYOUT_AddChild, LayoutHObj,
+						LAYOUT_AddChild,  gadgets[GID_C_NOPROMPTEXT] = CheckBoxObj,
+							GA_ID, GID_C_NOPROMPTEXT,
+							HINTINFO, locale_get_string(MSG_HI_C_ALWAYSEXTRACTTO),
+							GA_RelVerify, TRUE,
+							GA_Text, locale_get_string(MSG_C_ALWAYSEXTRACTTO) ,
+							GA_Selected, config->no_prompt_extract,
+						End,
+						LAYOUT_AddChild,  gadgets[GID_C_DEST] = GetFileObj,
+							GA_ID, GID_C_DEST,
+							GA_RelVerify, TRUE,
+							HINTINFO, locale_get_string(MSG_HI_C_SELECTDESTINATION),
+							GETFILE_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
+							GETFILE_Drawer, config->dest,
+							GETFILE_DoSaveMode, TRUE,
+							GETFILE_DrawersOnly, TRUE,
+							GETFILE_ReadOnly, TRUE,
+						End,
+						CHILD_WeightedHeight, 0,
+					LayoutEnd,
 					LAYOUT_AddChild,  gadgets[GID_C_SCAN] = CheckBoxObj,
 						GA_ID, GID_C_SCAN,
+						HINTINFO, locale_get_string(MSG_HI_C_SCAN),
 						GA_RelVerify, TRUE,
 						GA_Disabled, config->disable_vscan_menu,
 						GA_Text, locale_get_string( MSG_SCANFORVIRUSES ) ,
@@ -369,11 +404,13 @@ void config_window_open(struct avalanche_config *config)
 					End,
 					LAYOUT_AddChild,  gadgets[GID_C_IGNOREFS] = CheckBoxObj,
 						GA_ID, GID_C_IGNOREFS,
+						HINTINFO, locale_get_string(MSG_HI_C_IGNOREFS),
 						GA_RelVerify, TRUE,
 						GA_Text, locale_get_string( MSG_IGNOREFILESYSTEMS ) ,
 						GA_Selected, config->ignorefs,
 					End,	
 					LAYOUT_AddChild,  gadgets[GID_C_OPENWB] = CheckBoxObj,
+						HINTINFO, locale_get_string(MSG_HI_C_OPENWB),
 						GA_ID, GID_C_OPENWB,
 						GA_RelVerify, TRUE,
 						GA_Text, locale_get_string( MSG_OPENWBONEXTRACT ) ,
@@ -381,6 +418,7 @@ void config_window_open(struct avalanche_config *config)
 					End,
 					LAYOUT_AddChild, gadgets[GID_C_VIEWMODE] = ChooserObj,
 						GA_ID, GID_C_VIEWMODE,
+						HINTINFO, locale_get_string(MSG_HI_C_VIEWMODE),
 						GA_RelVerify, TRUE,
 						CHOOSER_Selected, config->viewmode,
 						CHOOSER_PopUp, TRUE,
@@ -391,6 +429,7 @@ void config_window_open(struct avalanche_config *config)
 					LabelEnd,
 					LAYOUT_AddChild, gadgets[GID_C_QUIT] = ChooserObj,
 						GA_ID, GID_C_QUIT,
+						HINTINFO, locale_get_string(MSG_HI_C_QUIT),
 						GA_RelVerify, TRUE,
 						CHOOSER_Selected, config->closeaction,
 						CHOOSER_PopUp, TRUE,
@@ -402,19 +441,25 @@ void config_window_open(struct avalanche_config *config)
 					LAYOUT_AddChild,  LayoutHObj,
 						LAYOUT_AddChild,  gadgets[GID_C_SAVE] = ButtonObj,
 							GA_ID, GID_C_SAVE,
+							HINTINFO, locale_get_string(MSG_HI_C_SAVE),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_SAVE ),
 							GA_Disabled, save_disabled,
+							BUTTON_TextPadding, TRUE,
 						ButtonEnd,
 						LAYOUT_AddChild,  gadgets[GID_C_USE] = ButtonObj,
 							GA_ID, GID_C_USE,
+							HINTINFO, locale_get_string(MSG_HI_C_USE),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_USE ),
+							BUTTON_TextPadding, TRUE,
 						ButtonEnd,
 						LAYOUT_AddChild,  gadgets[GID_C_CANCEL] = ButtonObj,
 							GA_ID, GID_C_CANCEL,
+							HINTINFO, locale_get_string(MSG_HI_C_CANCEL),
 							GA_RelVerify, TRUE,
 							GA_Text, locale_get_string( MSG_CANCEL ),
+							BUTTON_TextPadding, TRUE,
 						ButtonEnd,
 						CHILD_WeightedHeight, 0,
 					LayoutEnd,
@@ -422,29 +467,74 @@ void config_window_open(struct avalanche_config *config)
 			EndGroup,
 		EndWindow;
 
+		CONFIG_UNLOCK;
+
 		if(objects[OID_MAIN]) {
-			windows[WID_MAIN] = (struct Window *)RA_OpenWindow(objects[OID_MAIN]);
+			if(windows[WID_MAIN] = (struct Window *)RA_OpenWindow(objects[OID_MAIN])) {
+
+				ULONG sigbit = (1L << cw_port->mp_SigBit);
+				BOOL done = FALSE;
+
+				while(!done) {
+					ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+
+					if(wait & sigbit) {
+						UWORD code;
+						ULONG result = RA_HandleInput(objects[OID_MAIN], &code);
+						done = config_window_handle_input_events(config, result, code);
+					} else if (wait & SIGBREAKF_CTRL_C) {
+						config_window_close();
+						Signal(avalanche_process, SIGF_SINGLE);
+						done = TRUE;
+					} else if (wait & SIGBREAKF_CTRL_F) {
+						WindowToFront(windows[WID_MAIN]);
+					}
+				}
+			}
 		}
 	}
 	
 	return;
 }
 
-ULONG config_window_get_signal(void)
+#ifdef __amigaos4__
+static void config_window_open_p(void)
+#else
+static void __saveds config_window_open_p(void)
+#endif
 {
-	if(cw_port) {
-		return (1L << cw_port->mp_SigBit);
+	config_window_open_internal(get_config());
+
+	config_process = NULL;
+}
+
+
+
+/* public functions */
+
+void config_window_open(struct avalanche_config *config)
+{
+	if(config_process != NULL) {
+		/* Bring to front */
+		Signal(config_process, SIGBREAKF_CTRL_F);
 	} else {
-		return 0;
+		avalanche_process = FindTask(NULL);
+		config_process = CreateNewProcTags(NP_Entry, config_window_open_p,
+				NP_Name, "Avalanche config process",
+			TAG_DONE);
 	}
 }
 
-ULONG config_window_handle_input(UWORD *code)
+void config_window_break(void)
 {
-	return RA_HandleInput(objects[OID_MAIN], code);
+	if(config_process == NULL) return;
+
+	SetSignal(0L, SIGF_SINGLE);
+	Signal(config_process, SIGBREAKF_CTRL_C);
+	Wait(SIGF_SINGLE);
 }
 
-BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code)
+static BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG result, UWORD code)
 {
 	long ret = 0;
 	ULONG done = FALSE;
@@ -477,4 +567,12 @@ BOOL config_window_handle_input_events(struct avalanche_config *config, ULONG re
 	}
 
 	return done;
+}
+
+/* Get config if safe to obtain a shared lock */
+struct avalanche_config *config_get(void)
+{
+	struct avalanche_config *config = get_config();
+	ObtainSemaphoreShared((struct SignalSemaphore *)config);
+	return config;
 }

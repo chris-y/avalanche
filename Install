@@ -103,6 +103,7 @@
 
 (set #full-path (tackon @default-dest #Avalanche))
 (set #icon-exists (exists (cat #full-path ".info")))
+(set #def-icon-exists (exists ("ENVARC:Sys/def_avalanche.info")))
 
 (copyfiles
 	(prompt "Copying Avalanche")
@@ -131,6 +132,17 @@
 			(help @copyfiles-help)
 			(source (cat #Avalanche ".info"))
 			(dest @default-dest)
+		)
+	)
+)
+
+(if (= #def-icon-exists 0)
+	(
+		(copyfiles
+			(prompt "Copying Avalanche default icon")
+			(help @copyfiles-help)
+			(source ("misc/def_avalanche.info"))
+			(dest "ENVARC:Sys")
 		)
 	)
 )

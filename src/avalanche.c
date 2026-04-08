@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@
 
 #include <exec/lists.h>
 #include <exec/nodes.h>
+#include <workbench/icon.h>
 #include <workbench/startup.h>
 
 #include <classes/window.h>
@@ -35,12 +36,15 @@
 #include "arexx.h"
 #include "avalanche.h"
 #include "config.h"
+#include "glyph.h"
+#include "http.h"
 #include "req.h"
 #include "libs.h"
 #include "locale.h"
 #include "misc.h"
 #include "module.h"
 #include "new.h"
+#include "update.h"
 #include "win.h"
 
 #include "Avalanche_rev.h"
@@ -51,8 +55,6 @@ const ULONG zero = 0;
 #define IEVENT_POPUP 1L
 
 /** Global config **/
-static BOOL dest_needs_free = FALSE;
-
 static struct avalanche_config config;
 
 /** Shared variables **/
@@ -62,11 +64,10 @@ ULONG window_count = 0;
 
 void free_dest_path(void)
 {
-	if(dest_needs_free) {
-		if(config.dest) free(config.dest);
-		config.dest = NULL;
-		dest_needs_free = FALSE;
-	}
+	CONFIG_LOCK_EX;
+	if(config.dest) FreeVec(config.dest);
+	config.dest = NULL;
+	CONFIG_UNLOCK;
 }
 
 ULONG ask_quit(void *awin)
@@ -76,10 +77,11 @@ ULONG ask_quit(void *awin)
 
 ULONG ask_quithide(void *awin)
 {
-	if(config.closeaction == 0) {
+	if(CONFIG_GET_LOCK(closeaction) == 0) {
+		CONFIG_UNLOCK;
 		return ask_quithide_req();
 	}
-
+	CONFIG_UNLOCK;
 	return config.closeaction;
 }
 
@@ -269,7 +271,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 	struct AppMenuItem *appmenu[2];
 	ULONG appwin_sig = 0;
 
-	ULONG wait, signal, app, cw_sig, na_sig;
+	ULONG wait, signal, app, na_sig;
 	ULONG done = WIN_DONE_OK;
 	ULONG result;
 	UWORD code;
@@ -312,7 +314,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			}
 		} else if(initial_archive) {
 			awin = window_create(&config, initial_archive, winport, AppPort);
-			free(initial_archive);
+			FreeVec(initial_archive);
 			if(awin == NULL) return;
 			window_open(awin, appwin_mp);
 			window_req_open_archive(awin, &config, TRUE);
@@ -321,7 +323,8 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 		if(window_is_open == FALSE) {
 			/* If we wanted cx_popup but there's no window yet, open one */
-			if(config.cx_popup) {
+			if(CONFIG_GET_LOCK(cx_popup)) {
+				CONFIG_UNLOCK;
 				awin = window_create(&config, NULL, winport, AppPort);
 				if(awin == NULL) return;
 				window_open(awin, appwin_mp);
@@ -336,10 +339,14 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 		while (done != WIN_DONE_QUIT) {
 			done = WIN_DONE_OK;
-			cw_sig = config_window_get_signal();
 			na_sig = newarc_window_get_signal();
-
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | cw_sig | na_sig);
+#ifndef __amigaos4__
+			ULONG uw_sig = update_get_signal();
+#else
+			/* OS4 runs this as a process, don't interfere here! */
+			ULONG uw_sig = 0;
+#endif
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig | uw_sig | SIGBREAKF_CTRL_E);
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
@@ -391,11 +398,19 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					struct WBArg *wbarg = appmsg->am_ArgList;
 					switch(appmsg->am_Type) {
 						case AMTYPE_APPWINDOW:
-							if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
-								if(appmsg->am_NumArgs > 1) {
-									for(int i = 1; i < appmsg->am_NumArgs; i++) {
-										wbarg++;
-										open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+							{
+								// this should only be called if no_dropzones
+								BOOL ndz = CONFIG_GET_LOCK(no_dropzones);
+								CONFIG_UNLOCK;
+
+								if(ndz && !window_get_disabled((void *)appmsg->am_UserData)) {
+									if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+										if(appmsg->am_NumArgs > 1) {
+											for(int i = 1; i < appmsg->am_NumArgs; i++) {
+												wbarg++;
+												open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+											}
+										}
 									}
 								}
 							}
@@ -416,36 +431,12 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								case 1: // listbrowser
 									if(module_has_add((void *)appmsg->am_UserData)) {
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
-											BOOL ret = TRUE;
-											if(wbarg->wa_Lock) {
-												char *file = NULL;
-												if(file = AllocVec(1024, MEMF_CLEAR)) {
-													NameFromLock(wbarg->wa_Lock, file, 1024);
-													if(*wbarg->wa_Name) {
-														AddPart(file, wbarg->wa_Name, 1024);
-														ret = window_edit_add((void *)appmsg->am_UserData, file, NULL);
-													} else {
-#ifdef __amigaos4__
-														if(object_is_dir(file)) {
-															recursive_scan((void *)appmsg->am_UserData, file, file);
-														} else {
-															ret = window_edit_add(awin, file, NULL);
-														}
-#else
-														if(object_is_dir(wbarg->wa_Lock)) {
-															recursive_scan((void *)appmsg->am_UserData, wbarg->wa_Lock, file);
-														} else {
-															ret = window_edit_add(awin, file, NULL);
-														}
-#endif
-													}
-													window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
-													FreeVec(file);
-												}
-											}
+											BOOL ret = window_edit_add_wbarg((void *)appmsg->am_UserData, wbarg);
+											if(ret == FALSE) break; /* FALSE = Abort */
 											wbarg++;
-											if(ret == FALSE) break;
 										}
+
+										window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 									} else {
 										if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
 											if(appmsg->am_NumArgs > 1) {
@@ -468,7 +459,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 									char *am_archive = NULL;
 									if(am_archive = AllocVec(512, MEMF_CLEAR)) {
 										NameFromLock(wbarg->wa_Lock, am_archive, 512);
-										char *tempdest = strdup(am_archive);
+										char *tempdest = strdup_vec(am_archive);
 										AddPart(am_archive, wbarg->wa_Name, 512);
 										
 										/* Create a new window for our AppMenu to use */
@@ -476,12 +467,15 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 										if(appmenu_awin) {
 											window_open(appmenu_awin, appwin_mp);
 											window_req_open_archive(appmenu_awin, &config, TRUE);
+											/* TODO: This needs reworking as it will inhibit the rest of the program */
+											Wait(window_get_exit_sig(appmenu_awin));
 											if(window_get_archiver(appmenu_awin) != ARC_NONE) {
 												long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
-												free(tempdest);
-												if(ret != 0) show_error(ret, awin);
+												Wait(window_get_exit_sig(appmenu_awin));
 											}
+											window_close(appmenu_awin, FALSE);
 											window_dispose(appmenu_awin);
+											if(tempdest != NULL) FreeVec(tempdest);
 										}
 										FreeVec(am_archive);
 									}
@@ -516,10 +510,15 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				switch(evt) {
 					case RXEVT_OPEN: /* Archive set on OPEN */
 						{
-							void *arexx_awin = window_create(&config, arexx_get_event(), winport, AppPort);
+							BOOL del = FALSE;
+							char *arexx_fn = arexx_get_event(&del);
+							void *arexx_awin = window_create(&config, arexx_fn, winport, AppPort);
 							if(arexx_awin) {
 								window_open(arexx_awin, appwin_mp);
 								window_req_open_archive(arexx_awin, &config, TRUE);
+
+								if(del) add_to_delete_list(arexx_awin, arexx_fn);
+
 							}
 						}
 					break;
@@ -529,17 +528,19 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					break;
 				}
 				arexx_free_event();
-			} else if(cw_sig && (wait & cw_sig)) {
-				BOOL cw_done = FALSE;
-				while((cw_done == FALSE) && ((result = config_window_handle_input(&code)) != WMHI_LASTMSG)) {
-					cw_done = config_window_handle_input_events(&config, result, code);
-				}
 			} else if(na_sig && (wait & na_sig)) {
 				BOOL na_done = FALSE;
 				while((na_done == FALSE) && ((result = newarc_window_handle_input(&code)) != WMHI_LASTMSG)) {
 					na_done = newarc_window_handle_input_events(result, code);
 				}
-			} else {
+			}
+#ifndef __amigaos4__
+			else if(uw_sig && (wait & uw_sig)) {
+				BOOL uw_done = update_handle_events();
+				if(uw_done) update_close();
+			}
+#endif
+			else {
 				if(IsMinListEmpty((struct MinList *)&win_list) == FALSE) {
 					awin = (void *)GetHead((struct List *)&win_list);
 					struct Node *nnode;
@@ -553,9 +554,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 					} while((done == WIN_DONE_OK) && (awin = (void *)nnode));
 				}
 			}
+
 			if(done == WIN_DONE_CLOSED) {
 				if(window_count == 1) {
 					ULONG ret = ask_quithide(NULL);
+
 					/* Last window closed */
 					if(ret) {
 						window_close(awin, FALSE);
@@ -573,6 +576,12 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 	}
 
 	close_all_windows();
+	config_window_break();
+#ifndef __amigaos4__
+	update_close();
+#else
+	update_break();
+#endif
 
 	if(cx_broker && cx_mp) UnregisterCx(cx_broker, cx_mp);
 
@@ -586,11 +595,10 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 static void gettooltypes(struct WBArg *wbarg)
 {
 	struct DiskObject *dobj;
-	STRPTR *toolarray;
-	char *s;
 
 	if((*wbarg->wa_Name) && (dobj = GetDiskObject(wbarg->wa_Name))) {
-		toolarray = (STRPTR *)dobj->do_ToolTypes;
+		STRPTR *toolarray = (STRPTR *)dobj->do_ToolTypes;
+		char *s;
 
 		if(s = (char *)FindToolType(toolarray, "CX_POPUP")) {
 			if(MatchToolValue(s, "NO")) {
@@ -612,18 +620,16 @@ static void gettooltypes(struct WBArg *wbarg)
 		}
 
 		if(s = (char *)FindToolType(toolarray, "SOURCEDIR")) {
-			config.sourcedir = strdup(s);
+			config.sourcedir = strdup_vec(s);
 		} else {
-			config.sourcedir = strdup("RAM:");
+			config.sourcedir = strdup_vec("RAM:");
 		}
 
 		if(s = (char *)FindToolType(toolarray, "DEST")) {
-			config.dest = strdup(s);
+			config.dest = strdup_vec(s);
 		} else {
-			config.dest = strdup("RAM:");
+			config.dest = strdup_vec("RAM:");
 		}
-
-		dest_needs_free = TRUE;
 
 		s = (char *)FindToolType(toolarray, "TMPDIR");
 		if(s == NULL) s = "T:";
@@ -643,9 +649,14 @@ static void gettooltypes(struct WBArg *wbarg)
 		if(FindToolType(toolarray, "IGNOREFS")) config.ignorefs = TRUE;
 		if(FindToolType(toolarray, "DEBUG")) config.debug = TRUE;
 		if(FindToolType(toolarray, "DRAGLOCK")) config.drag_lock = TRUE;
+		if(FindToolType(toolarray, "NODROPZONES")) {
+			config.no_dropzones = TRUE;
+			config.drag_lock = TRUE; // implies drag_lock
+		}
 		if(FindToolType(toolarray, "AISS")) config.aiss = TRUE;
 		if(FindToolType(toolarray, "OPENWBONEXTRACT")) config.openwb = TRUE;
-		
+		if(FindToolType(toolarray, "NOPROMPTEXTRACT")) config.no_prompt_extract = TRUE;
+			
 		if(s = (char *)FindToolType(toolarray, "CLOSE")) {
 			if(MatchToolValue(s, "HIDE")) {
 				config.closeaction = 2;
@@ -671,8 +682,6 @@ static void gettooltypes(struct WBArg *wbarg)
 				config.activemodules |= ARC_DEARK;
 			}
 		}
-
-		if(s = (char *)FindToolType(toolarray,"PROGRESSSIZE")) config.progress_size = atoi(s);
 
 		if(s = (char *)FindToolType(toolarray,"WINX")) config.win_x = atoi(s);
 		if(s = (char *)FindToolType(toolarray,"WINY")) config.win_y = atoi(s);
@@ -715,7 +724,9 @@ int main(int argc, char **argv)
 	config.disable_vscan_menu = FALSE;
 	config.closeaction = 0; // Ask
 	config.drag_lock = FALSE;
+	config.no_dropzones = FALSE;
 	config.aiss = FALSE;
+	config.no_prompt_extract = FALSE;
 
 	config.activemodules = ARC_XAD | ARC_XFD; /* ARC_DEARK disabled by default */
 
@@ -723,7 +734,6 @@ int main(int argc, char **argv)
 	config.win_y = 0;
 	config.win_w = 0;
 	config.win_h = 0;
-	config.progress_size = PROGRESS_SIZE_DEFAULT;
 
 	config.cx_pri = 0;
 	config.cx_popup = TRUE;
@@ -731,6 +741,12 @@ int main(int argc, char **argv)
 
 	config.tmpdir = AllocVec(100, MEMF_CLEAR);
 	config.tmpdirlen = 0;
+
+	config.iconify_icon = (void *)GetIconTagList("ENV:Sys/def_avalanche", NULL);
+
+	InitSemaphore((struct SignalSemaphore *)&config);
+
+	glyph_init();
 
 	if(argc == 0) {
 		int i;
@@ -763,7 +779,7 @@ int main(int argc, char **argv)
 
 		if(args) {
 			if(rarray[A_FILE]) {
-				archive = strdup((char *)rarray[A_FILE]);
+				archive = strdup_vec((char *)rarray[A_FILE]);
 			}
 
 			FreeArgs(args);
@@ -807,23 +823,39 @@ int main(int argc, char **argv)
 		} else if(archive) {
 			char cmd[1024];
 			snprintf(cmd, 1024, "OPEN \"%s\"", archive);
-			free(archive);
+			FreeVec(archive);
 			ami_arexx_send(cmd);
 			arc_opened = TRUE;
 		}
 		if(arc_opened == FALSE) ami_arexx_send("SHOW");
 	}
 
+	struct Process *check_ver_proc = http_get_process_check_version();
+	if(check_ver_proc != NULL) {
+		/* Send break */
+		Signal(check_ver_proc, SIGBREAKF_CTRL_C);
+		/* Wait for check version sub-process to exit */
+		Wait(SIGBREAKF_CTRL_E);
+	}
+
 	ami_arexx_cleanup();
+
 	Locale_Close();
 
 	DeleteFile(config.tmpdir);
 
+	CONFIG_LOCK;
+
 	if(config.cx_popkey) FreeVec(config.cx_popkey);
 	if(config.tmpdir) FreeVec(config.tmpdir);
-	if(config.sourcedir) free(config.sourcedir);
+	if(config.sourcedir) FreeVec(config.sourcedir);
 	if(config.progname != NULL) FreeVec(config.progname);
-	if(dest_needs_free) free_dest_path();
+	if(config.iconify_icon != NULL) FreeDiskObject((struct DiskObject *)config.iconify_icon);
+	CONFIG_UNLOCK;
+
+	free_dest_path();
+
+	glyph_free();
 
 	module_exit();
 	libs_zip_exit();

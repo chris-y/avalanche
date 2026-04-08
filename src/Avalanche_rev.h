@@ -1,6 +1,6 @@
-#define VERSION		2
-#define REVISION	5
-#define DATE		"4.7.2025"
-#define VERS		"Avalanche 2.5"
-#define VSTRING		"Avalanche 2.5 (4.7.2025)\r\n"
-#define VERSTAG		"\0$VER: Avalanche 2.5 (4.7.2025)"
+#define VERSION		3
+#define REVISION	3
+#define DATE		"15.3.2026"
+#define VERS		"Avalanche 3.3"
+#define VSTRING		"Avalanche 3.3 (15.3.2026)\r\n"
+#define VERSTAG		"\0$VER: Avalanche 3.3 (15.3.2026)"

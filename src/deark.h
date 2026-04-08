@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 long deark_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry));
 long deark_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node));
 long deark_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node));
-
+ULONG deark_get_ver(ULONG *ver, ULONG *rev);
 
 void deark_register(struct module_functions *funcs);
 #endif

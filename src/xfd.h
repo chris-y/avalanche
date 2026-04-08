@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #ifndef XFD_H
 #define XFD_H 1
 
+ULONG xfd_get_ver(ULONG *ver, ULONG *rev);
 void xfd_exit(void);
 BOOL xfd_recog(char *file);
 long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));

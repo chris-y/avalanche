@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,11 +16,13 @@
 #define WIN_H 1
 
 #include <exec/types.h>
+#include <intuition/intuition.h>
 
 #include "avalanche.h"
 
 struct MsgPort;
 struct module_functions;
+
 
 /* Basic window functions */
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
@@ -49,17 +51,19 @@ struct List *window_get_lblist(void *awin);
 ULONG window_get_archiver(void *awin);
 void *array_get_userdata(void *awin, void *arc_entry);
 struct module_functions *window_get_module_funcs(void *awin);
+BOOL window_get_disabled(void *awin);
+BYTE window_get_exit_sig(void *awin);
 
 /* Modify archive */
-//BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
+BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
 BOOL window_edit_add(void *awin, char *file, char *root);
 
 /* Misc */
-void window_disable_gadgets(void *awin, BOOL disable);
 BOOL check_abort(void *awin);
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
+void add_to_delete_list(void *awin, char *fn);
 
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);

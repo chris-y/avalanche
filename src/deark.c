@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,8 @@
 enum {
 	DEARK_RECOG,
 	DEARK_LIST,
-	DEARK_EXTRACT
+	DEARK_EXTRACT,
+	DEARK_VERSION
 };
 
 struct deark_userdata {
@@ -63,9 +64,9 @@ static void deark_free(void *awin)
 
 	if(du) {
 		if(du->tmpfile) FreeVec(du->tmpfile);
-		if(du->file) free(du->file);
-		if(du->arctype) free(du->arctype);
-		if(du->last_error) free(du->last_error);
+		if(du->file) FreeVec(du->file);
+		if(du->arctype) FreeVec(du->arctype);
+		if(du->last_error) FreeVec(du->last_error);
 
 		if(du->list) free_list(du->list, du->total);
 	}
@@ -82,7 +83,7 @@ static const char *deark_error(void *awin, long code)
 	return(du->last_error);
 }
 
-static long deark_send_command(void *awin, char *file, int command, char ***list, char *dest, long index)
+static long deark_send_command(void *awin, char *file, int command, char ***list, char *dest, ULONG index)
 {
 	BPTR fh = 0;
 	int err = 1;
@@ -94,11 +95,15 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 	if(du == NULL) return -1;
 
 	if(du->tmpfile == NULL) {
+		CONFIG_LOCK;
 		du->tmpfile = AllocVec(config->tmpdirlen + 25, MEMF_CLEAR);
-		if(du->tmpfile == NULL) return 0;
-
-		strcpy(du->tmpfile, config->tmpdir);
+		if(du->tmpfile == NULL) {
+			CONFIG_UNLOCK;
+			return 0;
+		}
+		strncpy(du->tmpfile, config->tmpdir, config->tmpdirlen + 25);
 		AddPart(du->tmpfile, "deark_tmp", config->tmpdirlen + 25);
+		CONFIG_UNLOCK;
 	}
 
 	switch(command) {
@@ -111,7 +116,7 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 		break;
 
 		case DEARK_EXTRACT:
-			snprintf(cmd, 1024, "deark -get %d -od \"%s\" -q \"%s\"", index, dest, file);
+			snprintf(cmd, 1024, "deark -get %u -od \"%s\" -q \"%s\"", index, dest, file);
 		break;
 
 		default:
@@ -131,26 +136,27 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 	}
 
 //	if(err == 0) {
-		char *res;
 		char buf[200];
 		ULONG i = 0;
 		ULONG total = 0;
 
 		if(fh = Open(du->tmpfile, MODE_OLDFILE)) {
-			res = (char *)&buf;
+			char *res = (char *)&buf;
 			while(res != NULL) {
 				res = FGets(fh, buf, 200);
 				if(strncmp(buf, "Error: ", 7) == 0) {
-					if(du->last_error) free(du->last_error);
-					du->last_error = strdup(buf);
+					if(du->last_error) FreeVec(du->last_error);
+					du->last_error = strdup_vec(buf);
 					Close(fh);
-					if(!config->debug) DeleteFile(du->tmpfile);
+					if(!CONFIG_GET_LOCK(debug)) DeleteFile(du->tmpfile);
+					CONFIG_UNLOCK;
 					return -1;
 				}
 				if(res) total++;
 			}
 
-			*list = AllocVec(total, MEMF_CLEAR);
+			*list = AllocVec(total * sizeof(char *), MEMF_CLEAR);
+			if(*list == NULL) return -1;
 
 			Seek(fh, 0, OFFSET_BEGINNING);
 
@@ -160,13 +166,14 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 
 				buf[strlen(buf) - 1] = '\0';
 
-				*list[i] = AllocVec(strlen(buf), MEMF_CLEAR);
-				strcpy(*list[i], buf);
+				*list[i] = AllocVec(strlen(buf)+1, MEMF_CLEAR);
+				strncpy(*list[i], buf, strlen(buf));
 
 			}
 
 			Close(fh);
-			if(!config->debug) DeleteFile(du->tmpfile);
+			if(!CONFIG_GET_LOCK(debug)) DeleteFile(du->tmpfile);
+			CONFIG_UNLOCK;
 			return(total);
 		}
 
@@ -203,13 +210,13 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
 	if(du == NULL) return -1;
 
-	du->file = strdup(file);
+	du->file = strdup_vec(file);
 
 	char **list = NULL;
 	long entries = deark_send_command(awin, file, DEARK_RECOG, &list, NULL, 0);
 	if(entries > 0) {
 		if(strncmp(list[0], "Module:", 7) == 0) {
-			du->arctype = strdup(list[0]);
+			du->arctype = strdup_vec(list[0]);
 			free_list(list, entries);
 		} else {
 			return -1;
@@ -219,15 +226,12 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 	du->total = deark_send_command(awin, file, DEARK_LIST, &du->list, NULL, 0);
 
 	if(du->total > 0) {
-		char *res;
-		char buf[200];
 		ULONG i = 0;
 
 		/* Add to list */
 		for(i = 0; i < du->total; i++) {
 			addnode(du->list[i], &zero,
 				FALSE, i, du->total, (void *)i, config, awin);
-			i++;
 		}
 
 		return 0;
@@ -253,7 +257,6 @@ static long deark_extract_file_private(void *awin, char *dest, struct deark_user
 
 long deark_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node))
 {
-	long err;
 	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 	long idx = (long)getnode(awin, node);
 	
@@ -266,7 +269,7 @@ long deark_extract(void *awin, char *file, char *dest, struct List *list, void *
 	long err = 0;
 	struct Node *fnode;
 
-	struct desrk_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 
 	if(du) {
 		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
@@ -297,6 +300,58 @@ long deark_extract_array(void *awin, ULONG total_items, char *dest, void **array
 	}
 
 	return err;
+}
+
+ULONG deark_get_ver(ULONG *ver, ULONG *rev)
+{
+	BPTR fh = 0;
+	char cmd[1024];
+
+	struct avalanche_config *config = get_config();
+	char *tmpfile = AllocVec(config->tmpdirlen + 25, MEMF_CLEAR);
+	if(tmpfile == NULL) return 0;
+
+	strncpy(tmpfile, config->tmpdir, config->tmpdirlen + 25);
+	AddPart(tmpfile, "deark_tmp", config->tmpdirlen + 25);
+
+	snprintf(cmd, 1024, "deark -version");
+	
+	if(fh = Open(tmpfile, MODE_NEWFILE)) {
+		int err = SystemTags(cmd,
+				SYS_Input, NULL,
+				SYS_Output, fh,
+				SYS_Error, NULL,
+				NP_Name, "Avalanche get Deark version process",
+				TAG_DONE);
+
+		Close(fh);
+	}
+
+	char buf[200];
+	char *dot = NULL;
+	char *p = buf;
+			
+	if(fh = Open(tmpfile, MODE_OLDFILE)) {
+		char *res = (char *)&buf;
+		while(res != NULL) {
+			res = FGets(fh, buf, 200);
+			
+
+
+			if(strncmp(p, "Deark version: ", 15) == 0) {
+				p += 15;
+				break;
+			}
+		}
+
+		*ver = strtol(p, &dot, 10);
+		*rev = strtol(dot + 1, NULL, 10);
+			
+		Close(fh);
+		if(!config->debug) DeleteFile(tmpfile);
+	}
+
+	return *ver;
 }
 
 void deark_register(struct module_functions *funcs)

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
 
 #include "Avalanche_rev.h"
 
-#define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022-5 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
+#define MSG_COPYRIGHT VERS " (" DATE ")\n" "(c) 2022-6 Chris Young\n\33uhttps://github.com/chris-y/avalanche\33n\n\n"
 
 void open_info_req(const char *message, const char *buttons, void *awin)
 {
@@ -102,6 +102,8 @@ void show_error(long code, void *awin)
 	if(code == -1) {
 		/* TODO: check this, code is the same for xfd */
 		snprintf(message, 100, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xadmaster.library", 12 );
+	} else if(code == -2) {
+		snprintf(message, 100, locale_get_string( MSG_ERR_UNKNOWN ));
 	} else {
 		char *err_msg =  module_get_error(awin, code);
 		if (err_msg == NULL) return;

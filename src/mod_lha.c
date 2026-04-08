@@ -41,14 +41,13 @@ static int mod_lha_error(void *awin, int err, char *file)
 
 static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
 {
-	int err;
 	int user_choice;
 	char cmd[1024];
 	
 	for(int i = 0; i < count; i++) {
 		snprintf(cmd, 1024, "lha -I d \"%s\" \"%s\"", archive, files[i]);
 
-		err = SystemTags(cmd,
+		int err = SystemTags(cmd,
 					SYS_Input, NULL,
 					SYS_Output, NULL,
 					SYS_Error, NULL,
@@ -131,13 +130,13 @@ static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir, const 
 BOOL mod_lha_new(void *awin, char *archive)
 {
 	BOOL ret = FALSE;
-	struct avalanche_config *config = get_config();
-	ULONG new_arc_size = strlen(config->tmpdir) + strlen(NEW_ARC_NAME) + 2;
+	ULONG new_arc_size = strlen(CONFIG_GET_LOCK(tmpdir)) + strlen(NEW_ARC_NAME) + 2;
 	char *tmpfile = AllocVec(new_arc_size, MEMF_CLEAR);
 
 	if(tmpfile) {
 		BPTR fh = 0;
-		strcpy(tmpfile, config->tmpdir);
+		strncpy(tmpfile, CONFIG_GET(tmpdir), new_arc_size);
+		CONFIG_UNLOCK;
 		AddPart(tmpfile, NEW_ARC_NAME, new_arc_size);
 
 		if(fh = Open(tmpfile, MODE_NEWFILE)) {
@@ -148,9 +147,69 @@ BOOL mod_lha_new(void *awin, char *archive)
 
 			DeleteFile(tmpfile);
 		}
+	} else {
+		CONFIG_UNLOCK;
+	}
+	return ret;
+}
+
+#ifdef __amigaos4__
+#define AVALANCHE_LHA_VER_CMD "version lha"
+#else
+#define AVALANCHE_LHA_VER_CMD "version c:lha"
+#endif
+
+ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
+{
+	BPTR fh = 0;
+	CONFIG_LOCK;
+	ULONG tmpfile_len = CONFIG_GET(tmpdirlen) + 30;
+	char *tmpfile = AllocVec(tmpfile_len, MEMF_CLEAR);
+	if(tmpfile == NULL) {
+		CONFIG_UNLOCK;
+		return 0;
+	}
+	strncpy(tmpfile, CONFIG_GET(tmpdir), tmpfile_len);
+	AddPart(tmpfile, "lha_tmp", tmpfile_len);
+	CONFIG_UNLOCK;
+
+	if(fh = Open(tmpfile, MODE_NEWFILE)) {
+		ULONG err = SystemTags(AVALANCHE_LHA_VER_CMD,
+				SYS_Input, NULL,
+				SYS_Output, fh,
+				SYS_Error, NULL,
+				NP_Name, "Avalanche LhA version process",
+				TAG_DONE);
+
+		Close(fh);
+		
 	}
 	
-	return ret;
+	char buf[20];
+	char *dot = NULL;
+	char *p = buf;
+			
+	if(fh = Open(tmpfile, MODE_OLDFILE)) {
+		char *res = (char *)&buf;
+		while(res != NULL) {
+			res = FGets(fh, buf, 20);
+
+			if(strncmp(p, "LhA ", 4) == 0) {
+				p += 4;
+				break;
+			}
+		}
+
+		*ver = strtol(p, &dot, 10);
+		*rev = strtol(dot + 1, NULL, 10);
+			
+		Close(fh);
+		//DeleteFile(tmpfile);
+	}
+
+	FreeVec(tmpfile);
+
+	return *ver;
 }
 
 void mod_lha_register(struct module_functions *funcs)

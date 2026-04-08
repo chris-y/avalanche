@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-2025 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -12,22 +12,25 @@
  * GNU General Public License for more details.
 */
 
-#ifndef AREXX_H
-#define AREXX_H
+#ifndef GLYPH_H
+#define GLYPH_H 1
 
-#include <exec/types.h>
+#include <images/glyph.h>
 
 enum {
-	RXEVT_NONE = 0,
-	RXEVT_OPEN,
-	RXEVT_SHOW
+	AVALANCHE_GLYPH_ROOT = 70, /* System Glyph numbers end at ~36 */
+	AVALANCHE_GLYPH_POPFILE, /* Distinguish between list and full size */
+	AVALANCHE_GLYPH_OPENDRAWER,
+	AVALANCHE_GLYPH_NONE,
+	AVALANCHE_GLYPH_EXTRACT,
+	AVALANCHE_GLYPH_STOP,
+	AVALANCHE_GLYPH_MAX
 };
 
-BOOL ami_arexx_init(ULONG *rxsig);
-ULONG ami_arexx_handle(void);
-void ami_arexx_send(const char *);
-void ami_arexx_cleanup(void);
 
-char *arexx_get_event(BOOL *flag);
-void arexx_free_event(void);
+Object *glyph_get(ULONG glyph);
+void glyph_init(void);
+void glyph_free(void);
+
+
 #endif

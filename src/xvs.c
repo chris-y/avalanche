@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -129,7 +129,7 @@ long xvs_scan(char *file, BOOL delete, void *awin)
 		buffer = AllocVec(len, MEMF_ANY | MEMF_PRIVATE);
 		if(buffer == NULL) {
 			char message[200];
-			sprintf(message, locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ), file);
+			snprintf(message, 199, locale_get_string( MSG_OUTOFMEMORYSCANNINGFILE ), file);
 			open_error_req(message, locale_get_string( MSG_OK ), awin);
 			return -2;
 		}
@@ -142,4 +142,16 @@ long xvs_scan(char *file, BOOL delete, void *awin)
 	}
 
 	return res;
+}
+
+ULONG xvs_get_ver(ULONG *ver, ULONG *rev)
+{
+	long err = xvs_init(NULL);
+	if(err != 0) return err;
+	
+	struct Library *lib = (struct Library *)xvsBase;
+	if(ver) *ver = lib->lib_Version;
+	if(rev) *rev = lib->lib_Revision;
+	
+	return 0;
 }

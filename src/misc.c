@@ -49,13 +49,23 @@ struct Node *GetSucc(struct Node *node)
 }
 #endif
 
-char *strdup(const char *s)
+char *strdup_vec(const char *s)
 {
-  size_t len = strlen (s) + 1;
-  char *result = (char*) malloc (len);
-  if (result == (char*) 0)
-  return (char*) 0;
-  return (char*) memcpy (result, s, len);
+	BOOL cmq = FALSE;
+	size_t len = strlen (s) + 1;
+#ifdef __amigaos4__
+	if(len % 4 == 0) cmq = TRUE;
+#endif
+	char *result = (char*) AllocVec(len, MEMF_PRIVATE);
+	if (result == (char*) 0)
+		return (char*) 0;
+		
+	if(cmq) {
+		CopyMemQuick(s, result, len);
+	} else {
+		CopyMem(s, result, len);
+	}
+	return result;
 }
 
 #ifdef __amigaos4__
@@ -177,10 +187,10 @@ void recursive_scan(void *awin, BPTR lock, const char *root)
 				AddPart(file, ead->ed_Name, 1024);
 				
 				if(ead->ed_Type > 0) { /* dir? */
-					BPTR lock = Lock(file, ACCESS_READ);
-					if(lock) {
-						recursive_scan(awin, lock, root);
-						UnLock(lock);
+					BPTR lock2 = Lock(file, ACCESS_READ);
+					if(lock2) {
+						recursive_scan(awin, lock2, root);
+						UnLock(lock2);
 					}
 				} else {
 					window_edit_add(awin, file, root);

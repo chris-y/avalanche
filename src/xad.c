@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-5 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,16 +108,22 @@ static const char *xad_error(void *awin, long code)
 	return NULL;
 }
 
-ULONG get_xad_ver(void)
+ULONG xad_get_ver(ULONG *ver, ULONG *rev)
 {
+	libs_xad_init();
+	if(xadMasterBase == NULL) return 0;
+	
 	struct Library *lib = (struct Library *)xadMasterBase;
+	if(ver) *ver = lib->lib_Version;
+	if(rev) *rev = lib->lib_Revision;
+
 	return lib->lib_Version;
 }
 
 static BOOL xad_is_dir(struct xadFileInfo *fi)
 {
 	if(fi->xfi_Flags & XADFIF_DIRECTORY) return TRUE;
-	if((get_xad_ver() == 12) && (fi->xfi_FileName[strlen(fi->xfi_FileName)-1] == '/')) return TRUE;
+	if((xad_get_ver(NULL, NULL) == 12) && (fi->xfi_FileName[strlen(fi->xfi_FileName)-1] == '/')) return TRUE;
 	return FALSE;
 }
 
@@ -316,8 +322,9 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	ULONG total = 0;
 	ULONG i = 0;
 	ULONG size;
-	BOOL fs = !config->ignorefs;
-
+	BOOL fs = !CONFIG_GET_LOCK(ignorefs);
+	CONFIG_UNLOCK;
+	
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
 
@@ -429,17 +436,18 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 
 	if(fi || di) {
-		char destfile[1024];
-		strncpy(destfile, dest, 1023);
-		destfile[1023] = 0;
-
 		if(fi) {
 			fn = fi->xfi_FileName;
 		} else {
 			fn = "disk.img";
 		}
 
-		if(AddPart(destfile, fn, 1024)) {
+		ULONG dest_len = strlen(dest) + strlen(fn) + 4;
+		char *destfile = AllocVec(dest_len, MEMF_CLEAR | MEMF_PRIVATE);
+		if(destfile == NULL) return XADERR_NOMEMORY;
+		strncpy(destfile, dest, dest_len - 1);
+
+		if(AddPart(destfile, fn, dest_len - 1)) {
 			if((di) || (!xad_is_dir(fi))) {
 				if(((fi && (fi->xfi_Flags & XADFIF_CRYPTED)) || (di && (di->xdi_Flags & XADDIF_CRYPTED))) && (xu->pw == NULL)) {
 					xu->pw = AllocVec(100, MEMF_CLEAR);
@@ -482,12 +490,14 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 				if(err != XADERR_OK) {
 					if(err == XADERR_PASSWORD) xad_free_pw(awin);
+					FreeVec(destfile);
 					return err;
 				}
 
 				if(*pud == PUD_ABORT) {
 					if(xu->pw) FreeVec(xu->pw);
 					xu->pw = NULL;
+					FreeVec(destfile);
 					return XADERR_BREAK;
 				}
 
@@ -502,14 +512,18 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 										XAD_MAKELOCALDATE, TRUE,
 										TAG_DONE);
 
-					if(err != XADERR_OK) return err;
-
+					if(err != XADERR_OK) {
+						FreeVec(destfile);
+						return err;
+					}
+					
 					SetProtection(destfile, xad_get_fileprotection(fi));
 					SetFileDate(destfile, &ds);
-					if(fi && fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
+					if(fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
 				}
 			}
 		}
+		FreeVec(destfile);
 	}
 
 	return err;
@@ -518,7 +532,6 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 
 long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
 {
-	long err;
 	struct xadFileInfo *fi = NULL;
 	struct xadDiskInfo *di = NULL;
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
