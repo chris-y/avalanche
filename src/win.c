@@ -1907,6 +1907,46 @@ void window_modify_all_list(void *awin, ULONG select)
 			TAG_DONE);
 }
 
+char *window_req_new_lha(void *awin, char *drawer)
+{	
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
+	if(aslreq) {
+		if(AslRequestTags(aslreq,
+				ASLFR_DoSaveMode, TRUE,
+				ASLFR_TitleText, locale_get_string(MSG_SELECTARCHIVE) ,
+				ASLFR_InitialDrawer, drawer,
+			TAG_DONE)) {
+
+			ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
+			if(aw->archive = AllocVec(len, MEMF_PRIVATE)) {
+				strncpy(aw->archive, aslreq->fr_Drawer, len);
+				AddPart(aw->archive, aslreq->fr_File, len);
+			} else {
+				FreeAslRequest(aslreq);
+				return NULL;
+			}
+			
+			char *arc_r = NULL;
+			
+			if(arc_r = newarc_add_ext(aw->archive, "lha")) {
+				FreeVec(aw->archive);
+				aw->archive = arc_r;
+			}
+				
+			aw->archive_needs_free = TRUE;
+
+		} else {
+			return NULL;
+		}
+
+		FreeAslRequest(aslreq);
+	}
+
+	return aw->archive;
+}
+
 char *window_req_dest(void *awin)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;

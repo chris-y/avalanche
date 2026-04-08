@@ -53,6 +53,7 @@ void *array_get_userdata(void *awin, void *arc_entry);
 struct module_functions *window_get_module_funcs(void *awin);
 BOOL window_get_disabled(void *awin);
 BYTE window_get_exit_sig(void *awin);
+char *window_req_new_lha(void *awin, char *drawer);
 
 /* Modify archive */
 BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);

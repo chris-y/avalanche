@@ -144,6 +144,8 @@ This is mostly for internal use, but has the following commands:
   - Use AISS for a much nicer look!
 * Extract button now prompts for destination
   - New config to disable prompt and extract to a default location
+* Added a "Create LhA archive" option to WB Tools menu
+  - Quick way to create a new archive with the selected items
 
 @{u}3.3 (15.03.2026)@{uu}
 * Tweak AISS to work on AISS Classic on OS3.2

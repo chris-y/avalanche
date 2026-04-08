@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,4 +20,5 @@ ULONG newarc_window_get_signal(void);
 ULONG newarc_window_handle_input(UWORD *code);
 BOOL newarc_window_handle_input_events(ULONG result, UWORD code);
 void newarc_window_close_if_associated(void *awin);
+char *newarc_add_ext(const char *archive, const char *ext);
 #endif

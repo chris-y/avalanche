@@ -485,17 +485,29 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								
 								case 1:
 								{
-									struct avalanche_window *appmenu_awin = window_create(&config, "ram:appmenuarchive.lha", winport, AppPort);
+									struct avalanche_window *appmenu_awin = window_create(&config, NULL, winport, AppPort);
 									if(appmenu_awin) {
-										window_open(appmenu_awin, appwin_mp);
-										mod_lha_new(appmenu_awin, "ram:appmenuarchive.lha");
-										window_req_open_archive(appmenu_awin, &config, TRUE);
-										Wait(window_get_exit_sig(appmenu_awin));
-										for(int i=0; i<appmsg->am_NumArgs; i++) {
-											window_edit_add_wbarg(appmenu_awin, wbarg);
-											wbarg++;
+										char *lock = NULL;
+										if(wbarg->wa_Lock) {
+											if(lock = AllocVec(1024, MEMF_CLEAR)) {
+												NameFromLock(wbarg->wa_Lock, lock, 1024);
+											}
 										}
-										window_req_open_archive(appmenu_awin, &config, TRUE);
+										
+										char *arc = window_req_new_lha(appmenu_awin, lock);
+										if(lock) FreeVec(lock);
+										
+										if(arc) {
+											window_open(appmenu_awin, appwin_mp);
+											mod_lha_new(appmenu_awin, arc);
+											window_req_open_archive(appmenu_awin, &config, TRUE);
+											Wait(window_get_exit_sig(appmenu_awin));
+											for(int i=0; i<appmsg->am_NumArgs; i++) {
+												window_edit_add_wbarg(appmenu_awin, wbarg);
+												wbarg++;
+											}
+											window_req_open_archive(appmenu_awin, &config, TRUE);
+										}
 									}
 								}
 								break;
