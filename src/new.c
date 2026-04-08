@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023 Chris Young
+ * (c) 2023-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -111,7 +111,7 @@ static void newarc_req_archive(void)
 	}
 }
 
-static char *newarc_add_ext(const char *archive, const char *ext)
+char *newarc_add_ext(const char *archive, const char *ext)
 {
 	ULONG max_arc_size = strlen(archive) + strlen(ext) + 2;
 	char *arc_corrected = AllocVec(max_arc_size, MEMF_CLEAR);
