@@ -383,3 +383,6 @@ Suppress prompt for destination on extract; always extract to the default locati
 MSG_HI_C_SELECTDESTINATION
 Default destination for the extract requester
 ;
+MSG_APPMENU_NEWARCHIVE
+Create LhA archive
+;

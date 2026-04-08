@@ -293,10 +293,10 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 		if(appwin_mp = CreateMsgPort()) {
 			appmenu[0] = AddAppMenuItem(0, 0, locale_get_string(MSG_APPMENU_EXTRACTHERE), appwin_mp,
 							WBAPPMENUA_CommandKeyString, "X",
-							TAG_DONE));
+							TAG_DONE);
 
-                        appmenu[1] = AddAppMenuItem(1, 0, locale_get_string(MSG_APPMENU_NEWARCHIVE), appwin_mp,
-                                                        TAG_DONE));
+			appmenu[1] = AddAppMenuItem(1, 0, locale_get_string(MSG_APPMENU_NEWARCHIVE), appwin_mp,
+                                                        TAG_DONE);
 
 			appwin_sig = 1L << appwin_mp->mp_SigBit;
 		}
@@ -451,51 +451,55 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 							}
 						break;
 						case AMTYPE_APPMENUITEM:
-
-/* TODO check the ID of the menu item selected */
-
-							for(int i=0; i<appmsg->am_NumArgs; i++) {
-								if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
-									char *am_archive = NULL;
-									if(am_archive = AllocVec(512, MEMF_CLEAR)) {
-										NameFromLock(wbarg->wa_Lock, am_archive, 512);
-										char *tempdest = strdup_vec(am_archive);
-										AddPart(am_archive, wbarg->wa_Name, 512);
-										
-										/* Create a new window for our AppMenu to use */
-										struct avalanche_window *appmenu_awin = window_create(&config, am_archive, winport, AppPort);
-										if(appmenu_awin) {
-											window_open(appmenu_awin, appwin_mp);
-											window_req_open_archive(appmenu_awin, &config, TRUE);
-											/* TODO: This needs reworking as it will inhibit the rest of the program */
-											Wait(window_get_exit_sig(appmenu_awin));
-											if(window_get_archiver(appmenu_awin) != ARC_NONE) {
-												long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
-												Wait(window_get_exit_sig(appmenu_awin));
+							switch(appmsg->am_ID) {
+								case 0:	
+									for(int i=0; i<appmsg->am_NumArgs; i++) {
+										if((wbarg->wa_Lock)&&(*wbarg->wa_Name)) {
+											char *am_archive = NULL;
+											if(am_archive = AllocVec(512, MEMF_CLEAR)) {
+												NameFromLock(wbarg->wa_Lock, am_archive, 512);
+												char *tempdest = strdup_vec(am_archive);
+												AddPart(am_archive, wbarg->wa_Name, 512);
+												
+												/* Create a new window for our AppMenu to use */
+												struct avalanche_window *appmenu_awin = window_create(&config, am_archive, winport, AppPort);
+												if(appmenu_awin) {
+													window_open(appmenu_awin, appwin_mp);
+													window_req_open_archive(appmenu_awin, &config, TRUE);
+													/* TODO: This needs reworking as it will inhibit the rest of the program */
+													Wait(window_get_exit_sig(appmenu_awin));
+													if(window_get_archiver(appmenu_awin) != ARC_NONE) {
+														long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
+														Wait(window_get_exit_sig(appmenu_awin));
+													}
+													window_close(appmenu_awin, FALSE);
+													window_dispose(appmenu_awin);
+													if(tempdest != NULL) FreeVec(tempdest);
+												}
+												FreeVec(am_archive);
 											}
-											window_close(appmenu_awin, FALSE);
-											window_dispose(appmenu_awin);
-											if(tempdest != NULL) FreeVec(tempdest);
 										}
-										FreeVec(am_archive);
+										wbarg++;
+									}
+								break;
+								
+								case 1:
+								{
+									struct avalanche_window *appmenu_awin = window_create(&config, "ram:appmenuarchive.lha", winport, AppPort);
+									if(appmenu_awin) {
+										window_open(appmenu_awin, appwin_mp);
+										mod_lha_new(appmenu_awin, "ram:appmenuarchive.lha");
+										window_req_open_archive(appmenu_awin, &config, TRUE);
+										Wait(window_get_exit_sig(appmenu_awin));
+										for(int i=0; i<appmsg->am_NumArgs; i++) {
+											window_edit_add_wbarg(appmenu_awin, wbarg);
+											wbarg++;
+										}
+										window_req_open_archive(appmenu_awin, &config, TRUE);
 									}
 								}
-								wbarg++;
+								break;
 							}
-
-#if 0
-							struct avalanche_window *appmenu_awin = window_create(&config, am_archive, winport, AppPort);
-							if(appmenu_awin) {
-								ret = mod_lha_new(appmenu_awin, "ram:appmenuarchive.lha");
-								window_update_archive(appmenu_awin, archive);
-								window_req_open_archive(appmenu_awin, get_config(), TRUE);
-								for(int i=0; i<appmsg->am_NumArgs; i++) {
-									window_edit_add_wbarg(appmenu_awin, wbarg);
-									wbarg++;
-								}
-							}
-#endif
-
 
 						break;
 						default:
