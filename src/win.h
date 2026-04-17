@@ -65,6 +65,7 @@ void window_reset_count(void *awin);
 void fill_menu_labels(void);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);
 void add_to_delete_list(void *awin, char *fn);
+void window_update_fuelgauge_text(void *awin);
 
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);

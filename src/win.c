@@ -590,6 +590,9 @@ static void free_arc_array(struct avalanche_window *aw)
 	}
 	FreeVec(aw->dir_array);
 	aw->dir_array = NULL;
+
+	aw->total_items = 0;
+	aw->current_item = 0;
 }
 
 static int simple_sort(const char *a, const char *b)
@@ -1184,6 +1187,48 @@ static void update_fuelgauge_text(struct avalanche_window *aw)
 			FUELGAUGE_Justification, FGJ_CENTER,
 			FUELGAUGE_Level, 0,
 			TAG_DONE);
+}
+
+void window_update_fuelgauge_text(void *awin)
+{
+	char *msg;
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	if(aw->windows[WID_MAIN] == NULL) return;
+	if(aw->gadgets[GID_PROGRESS] == NULL) return;
+
+	if(aw->total_items == 0) {
+		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
+			GA_Text, locale_get_string(MSG_SCANNING),
+			FUELGAUGE_Percent, FALSE,
+			FUELGAUGE_Justification, FGJ_CENTER,
+			FUELGAUGE_Level, 0,
+			TAG_DONE);
+	}
+
+	aw->total_items++;
+
+	if(aw->current_item < 100) {
+		aw->current_item++;
+		return;
+	}
+
+	aw->current_item = 0;
+
+	msg = AllocVec(strlen(locale_get_string(MSG_SCANNING)) + 10, MEMF_PRIVATE | MEMF_CLEAR);
+	if(msg) {
+		snprintf(msg, 50, "%s %lu", locale_get_string(MSG_SCANNING), aw->total_items);
+
+		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
+			GA_Text, msg,
+			FUELGAUGE_Percent, FALSE,
+			FUELGAUGE_Justification, FGJ_CENTER,
+			FUELGAUGE_Level, 0,
+			TAG_DONE);
+
+		FreeVec(msg);
+	}
+
 }
 
 void *array_get_userdata(void *awin, void *arc_entry)
@@ -2168,7 +2213,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	aeu->newdest = NULL;
 	aeu->node = NULL;
 
-	window_disable_gadgets(awin, TRUE, FALSE);
+	window_disable_gadgets(awin, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
 	SetSignal(0L, aw->process_exit_sig);

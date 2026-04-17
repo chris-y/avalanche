@@ -508,3 +508,7 @@ MSG_APPMENU_NEWARCHIVE
 Create LhA archive
 ; Create LhA archive
 ;
+MSG_SCANNING
+Scanning...
+; Scanning...
+;

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -231,6 +231,10 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 			}
 		break;
 
+		case XADPMODE_NEWENTRY:
+			window_update_fuelgauge_text(xhd->awin);
+		break;
+
 		default:
 			//printf("%d\n", xpi->xpi_Mode);
 		break;
@@ -322,6 +326,8 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	ULONG total = 0;
 	ULONG i = 0;
 	ULONG size;
+	ULONG pud = 0;
+
 	BOOL fs = !CONFIG_GET_LOCK(ignorefs);
 	CONFIG_UNLOCK;
 	
@@ -337,13 +343,28 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	ai = xu->ai;
 	xu->arctype = XNONE;
 
+	struct xad_hookdata xhd;
+	xhd.pud = &pud;
+	xhd.awin = awin;
+
+	struct Hook progress_hook;
+	progress_hook.h_Entry = xad_progress;
+	progress_hook.h_SubEntry = NULL;
+	progress_hook.h_Data = &xhd;
+
 	if(ai) {
 		if((err = xadGetInfo(ai,
 				XAD_INFILENAME, file,
+				XAD_PROGRESSHOOK, &progress_hook,
 				TAG_DONE)) == 0) {
 			if(ai->xai_DiskInfo) xu->arctype = XDISK;
 			if(ai->xai_FileInfo) xu->arctype = XFILE; /* We only support one of file/disk so file preferred */
 
+		}
+
+		if(err != 0) {
+			xad_free(awin);
+			return XADERR_BREAK;
 		}
 
 		if(fs && ((xu->arctype == XNONE) || (xu->arctype == XDISK))) {
@@ -352,6 +373,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 			if(xu->arctype == XNONE) {
 				err = xadGetDiskInfo(dai,
 					XAD_INFILENAME, file,
+					XAD_PROGRESSHOOK, &progress_hook,
 					TAG_DONE);
 			} else {
 				struct TagItem ti[2];
@@ -361,6 +383,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 
 				err = xadGetDiskInfo(dai,
 					XAD_INDISKARCHIVE, &ti,
+					XAD_PROGRESSHOOK, &progress_hook,
 					TAG_DONE);
 			}
 

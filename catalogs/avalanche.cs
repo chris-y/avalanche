@@ -386,3 +386,6 @@ Default destination for the extract requester
 MSG_APPMENU_NEWARCHIVE
 Create LhA archive
 ;
+MSG_SCANNING
+Scanning...
+;
