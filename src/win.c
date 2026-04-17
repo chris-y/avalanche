@@ -2213,7 +2213,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	aeu->newdest = NULL;
 	aeu->node = NULL;
 
-	window_disable_gadgets(awin, TRUE, FALSE);
+	window_disable_gadgets(awin, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
 	SetSignal(0L, aw->process_exit_sig);
