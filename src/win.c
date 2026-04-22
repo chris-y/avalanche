@@ -28,18 +28,21 @@
 
 #include <dos/dostags.h>
 
+#include <intuition/icclass.h>
 #include <intuition/pointerclass.h>
 
 #include <libraries/asl.h>
 #include <libraries/gadtools.h>
 
 #include <proto/button.h>
+#include <proto/clicktab.h>
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
 #include <proto/window.h>
 
 #include <classes/window.h>
+#include <gadgets/clicktab.h>
 #include <gadgets/fuelgauge.h>
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
@@ -77,6 +80,7 @@ enum {
 	GID_EXTRACT,
 	GID_PROGRESS,
 	GID_ABORT,
+	GID_TABS,
 	GID_LAST
 };
 
@@ -139,6 +143,8 @@ struct avalanche_window {
 	char *current_dir;
 	struct Node *root_node;
 	char title[TITLE_MAX_SIZE];
+	struct List tab_list;
+	struct Node *tab_node;
 #ifndef __amigaos4__
 	struct HintInfo hi;
 #endif
@@ -207,6 +213,13 @@ static struct NewMenu menu[] = {
 #define MENU_DRAGLOCK 18
 #define MENU_FLATMODE 21
 #define MENU_LISTMODE 22
+
+#ifdef __amigaos4__
+#define CLICKTAB_MinorLabelChange TAG_IGNORE
+#define TNAHintInfo TNA_HintInfo
+#else
+#define TNAHintInfo TNA_HelpText
+#endif
 
 /* Private functions */
 #ifdef __amigaos4__
@@ -905,6 +918,28 @@ static void highlight_current_dir(struct avalanche_window *aw)
 	}
 }
 
+static void window_update_tab_title(struct avalanche_window *aw)
+{
+	SetGadgetAttrs(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL,
+		CLICKTAB_Labels, ~0,
+		CLICKTAB_MinorLabelChange, TRUE,
+		TAG_DONE);
+
+	SetClickTabNodeAttrs(aw->tab_node, TNA_Text, FilePart(aw->archive),
+		TNAHintInfo, aw->archive,
+		TAG_DONE);
+
+	SetGadgetAttrs(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL,
+		CLICKTAB_Labels, &aw->tab_list,
+		CLICKTAB_MinorLabelChange, TRUE,
+		TAG_DONE);
+		
+	RefreshGList(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL, 1);
+}
+
 static void window_update_title(struct avalanche_window *aw)
 {
 	if(aw->archive != NULL) {
@@ -920,6 +955,9 @@ static void window_update_title(struct avalanche_window *aw)
 			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, (aw->archive));
 		}
 		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, aw->title);
+		
+		window_update_tab_title(aw);
+		
 	} else {
 		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, VERS);
 	}
@@ -1445,6 +1483,14 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	NewMinList(&aw->deletelist);
 	
+	NewList(&aw->tab_list);
+	aw->tab_node = AllocClickTabNode(TNA_Text, "Avalanche",
+									TNA_Number, 0,
+									TNA_UserData, aw,
+									TNA_CloseGadget, TRUE,
+									TAG_DONE);
+	AddTail(&aw->tab_list, aw->tab_node);
+	
 	/* Create the window object */
 	aw->objects[OID_MAIN] = WindowObj,
 		WA_ScreenTitle, VERS,
@@ -1519,6 +1565,20 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			CHILD_WeightedHeight, 0,
 
 			LAYOUT_AddChild, LayoutVObj,
+			
+				LAYOUT_AddChild, aw->gadgets[GID_TABS] = ClickTabObj,
+					GA_ID, GID_TABS,
+					GA_RelVerify, TRUE,
+					GA_Underscore, 13, // disable kb shortcuts
+					CLICKTAB_Labels, &aw->tab_list,
+					CLICKTAB_LabelTruncate, TRUE,
+					CLICKTAB_CloseImage, glyph_get(AVALANCHE_GLYPH_TABCLOSE),
+					CLICKTAB_EvenSize, FALSE,
+#ifndef __amigaos4__
+					ICA_TARGET, ICTARGET_IDCMP,
+#endif
+				ClickTabEnd,
+			
 				LAYOUT_AddChild, aw->gadgets[GID_BROWSERLAYOUT] = LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
 					EndGroup,
@@ -1656,6 +1716,12 @@ void window_dispose(void *awin)
 	if(aw->menu) FreeVec(aw->menu);
 	if(aw->dest) FreeVec(aw->dest);
 	free_arc_array(aw);
+
+	/* Free tab (only ever one presently) */
+	if(aw->tab_node) {
+		Remove(aw->tab_node);
+		FreeClickTabNode(aw->tab_node);
+	}
 
 	delete_delete_list(aw);
 
