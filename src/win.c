@@ -1248,7 +1248,7 @@ void window_update_fuelgauge_text(void *awin)
 
 	aw->total_items++;
 
-	if(aw->current_item < 100) {
+	if(aw->current_item < 99) {
 		aw->current_item++;
 		return;
 	}
