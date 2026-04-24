@@ -61,6 +61,9 @@ BOOL window_edit_add(void *awin, char *file, char *root);
 
 /* Misc */
 BOOL check_abort(void *awin);
+#ifndef __amigaos4__
+BOOL check_closetab(void *awin);
+#endif
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
 long extract(void *awin, char *archive, char *newdest, struct Node *node);

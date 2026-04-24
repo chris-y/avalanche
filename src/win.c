@@ -147,6 +147,8 @@ struct avalanche_window {
 	struct Node *tab_node;
 #ifndef __amigaos4__
 	struct HintInfo hi;
+	struct Hook idcmphook;
+	BOOL tab_closed;
 #endif
 };
 
@@ -1392,6 +1394,41 @@ static void window_tree_remove(struct avalanche_window *aw)
 
 }
 
+//static void idcmp_hook_func(struct Hook *h, Object *obj, struct IntuiMessage *msg)
+#ifndef __amigaos4__
+static void __saveds idcmp_hook_func(__reg("a0") struct Hook *h, __reg("a2") Object *obj, __reg("a1") struct IntuiMessage *msg)
+{
+	ULONG gid;
+	// = h->h_Data;
+	struct Node *node = NULL;
+
+	switch(msg->Class)
+	{
+		case IDCMP_IDCMPUPDATE:
+			gid = GetTagData( GA_ID, 0, msg->IAddress );
+
+			switch( gid ) 
+			{
+				case GID_TABS:
+					if((node = (struct Node *)GetTagData(CLICKTAB_NodeClosed, 0, msg->IAddress))) {
+
+						struct avalanche_window *aw;
+
+						GetClickTabNodeAttrs(node,
+							TNA_UserData, &aw,
+							TAG_DONE);
+
+						aw->tab_closed = TRUE;
+					}
+				break;
+			} 
+		break;
+
+		default:
+		break;
+	}
+}
+#endif
 
 /* Window functions */
 
@@ -1473,6 +1510,15 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	aw->aslfilterhook.h_SubEntry = NULL;
 	aw->aslfilterhook.h_Data = NULL;
 	
+#ifndef __amigaos4__
+	/* IDCMP hook - OS3.2 tab close only */
+	aw->idcmphook.h_Entry = idcmp_hook_func;
+	aw->idcmphook.h_SubEntry = NULL;
+	aw->idcmphook.h_Data = aw;
+	
+	aw->tab_closed = FALSE;
+#endif
+	
 	if(archive) {
 		aw->archive = strdup_vec(archive);
 		aw->archive_needs_free = TRUE;
@@ -1504,7 +1550,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WA_Left, config->win_x,
 		WA_Width, config->win_w,
 		WA_Height, config->win_h,
-		WA_IDCMP, IDCMP_MENUPICK | IDCMP_RAWKEY | IDCMP_GADGETUP | IDCMP_NEWSIZE,
+		WA_IDCMP, IDCMP_MENUPICK | IDCMP_RAWKEY | IDCMP_GADGETUP | IDCMP_NEWSIZE | IDCMP_IDCMPUPDATE,
 		WINDOW_NewMenu, aw->menu,
 		WINDOW_IconifyGadget, TRUE,
 		WINDOW_Icon, (struct DiskObject *)config->iconify_icon,
@@ -1516,6 +1562,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		WINDOW_GadgetHelp, TRUE,
 #ifndef __amigaos4__
 		WINDOW_HintInfo, &aw->hi,
+		/* Hook only needed on OS3.2 for tab close gadget */
+		WINDOW_IDCMPHook, &aw->idcmphook,
+		WINDOW_IDCMPHookBits, IDCMP_IDCMPUPDATE,
 #endif
 		tag_default_position, WPOS_CENTERSCREEN,
 		WINDOW_ParentGroup, aw->gadgets[GID_MAIN] = LayoutVObj,
@@ -2591,6 +2640,10 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 	long ret = 0;
 	ULONG done = WIN_DONE_OK;
 
+#ifndef __amigaos4__
+	if(check_closetab(awin)) done = WIN_DONE_CLOSED;
+#endif
+
 	switch (result & WMHI_CLASSMASK) {
 		case WMHI_CLOSEWINDOW:
 			done = WIN_DONE_CLOSED;
@@ -2626,6 +2679,30 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				
 				case GID_TREE:
 					window_tree_handle(awin);
+				break;
+				
+				case GID_TABS:
+				{
+					struct Node *tabnode = NULL;
+
+#ifdef __amigaos4__ /* OS4 checks for tab close events here */
+					GetAttr(CLICKTAB_NodeClosed, aw->gadgets[GID_TABS], &tabnode);
+
+					if(tabnode) { /* Tab closed */
+						struct avalanche_window *closed_aw;
+
+						GetClickTabNodeAttrs(tabnode,
+							TNA_UserData, &closed_aw, /* Closed window; currently we only have one tab, so... */
+							TAG_DONE);
+
+						done = WIN_DONE_CLOSED;
+					} else
+#endif
+					{
+						GetAttr(CLICKTAB_CurrentNode, (Object *)aw->gadgets[GID_TABS], (ULONG *)&tabnode);
+						/* Tab switched; we only have one tab so can't switch yet */
+					}
+				}
 				break;
 			}
 			break;
@@ -2812,6 +2889,23 @@ BOOL check_abort(void *awin)
 	 * if ESC is pressed or Abort is clicked */
 	return aw->abort_requested;
 }
+
+#ifndef __amigaos4__
+BOOL check_closetab(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	/* This flag is set in the IDCMP hook if tab is closed
+	 * In future this might only indicate if the last tab is closed */
+	 
+	BOOL done = aw->tab_closed;
+	
+	/* Clear flag for next time */
+	aw->tab_closed = FALSE;
+	
+	return done;
+}
+#endif
 
 void window_reset_count(void *awin)
 {
