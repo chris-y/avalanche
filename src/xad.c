@@ -129,10 +129,10 @@ static BOOL xad_is_dir(struct xadFileInfo *fi)
 
 static BOOL xad_is_xxx(void *xfi, void *awin, ULONG flag)
 {
-        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-        if(xu && xu->arctype == XDISK) return FALSE;
-        if(xfi == NULL) return FALSE;
+	if(xu && (xu->arctype == XDISK)) return FALSE;
+	if(xfi == NULL) return FALSE;
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
@@ -142,7 +142,29 @@ static BOOL xad_is_xxx(void *xfi, void *awin, ULONG flag)
 
 static BOOL xad_is_crypted(void *userdata, void *awin)
 {
-	return xad_is_xxx(userdata, awin, XADFIF_CRYPTED);
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(userdata == NULL) return FALSE;
+
+	if(xu && (xu->arctype == XDISK)) {
+		struct xadDiskInfo *di = (struct xadDiskInfo *)userdata;
+
+		if(di->xdi_Flags & XADDIF_CRYPTED) return TRUE;		
+	} else {
+		struct xadFileInfo *fi = (struct xadFileInfo *)userdata;
+
+		if(fi->xfi_Flags & XADFIF_CRYPTED) return TRUE;
+	}
+	return FALSE;
+}
+
+BOOL xad_is_disk(void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu && (xu->arctype == XDISK)) return TRUE;
+
+	return FALSE;
 }
 
 BOOL xad_is_link(void *userdata, void *awin)
@@ -152,10 +174,10 @@ BOOL xad_is_link(void *userdata, void *awin)
 
 ULONG xad_get_fileprotection(void *xfi, void *awin)
 {
-        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-        if(xu && xu->arctype == XDISK) return 0;
-        if(xfi == NULL) return 0;
+	if(xu && (xu->arctype == XDISK)) return 0;
+	if(xfi == NULL) return 0;
 
 	ULONG protbits;
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
@@ -171,7 +193,7 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-	if(xu && xu->arctype == XDISK) return 0;
+	if(xu && (xu->arctype == XDISK)) return 0;
 	if(xfi == NULL) return 0;
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
@@ -196,10 +218,10 @@ static LONG *xad_get_crunchsize(void *userdata, void *awin)
 
 const char *xad_get_comment(void *xfi, void *awin)
 {
-        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-        if(xu && xu->arctype == XDISK) return NULL;
-        if(xfi == NULL) return NULL;
+	if(xu && xu->arctype == XDISK) return NULL;
+	if(xfi == NULL) return NULL;
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
@@ -208,16 +230,16 @@ const char *xad_get_comment(void *xfi, void *awin)
 
 const char *xad_get_link(void *xfi, void *awin)
 {
-        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-        if(xu && xu->arctype == XDISK) return NULL;
-        if(xfi == NULL) return NULL;
+	if(xu && xu->arctype == XDISK) return NULL;
+	if(xfi == NULL) return NULL;
 
 	if(xad_is_link(xfi, awin) == FALSE) return NULL;
 
-        struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
-        return fi->xfi_LinkName;
+	return fi->xfi_LinkName;
 }
 
 static const char *xad_get_filename(void *userdata, void *awin)
@@ -379,7 +401,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	struct xadArchiveInfo *ai = NULL;
 	ULONG total = 0;
 	ULONG i = 0;
-	ULONG size;
+	static ULONG size;
 	ULONG pud = 0;
 
 	BOOL fs = !CONFIG_GET_LOCK(ignorefs);

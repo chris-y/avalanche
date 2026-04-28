@@ -783,6 +783,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	BOOL crypted = FALSE;
 	BOOL link = FALSE;
 	BOOL title_needs_free = FALSE;
+	BOOL disk = FALSE;
 	void *xuserdata = userdata;
 	const char *comment = NULL;
 	const char *linkname = NULL;
@@ -791,6 +792,9 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	char datestr[20];
 	char hsparwed[9];
 	struct ClockData cd;
+
+	/* Set Year to 0 */
+	cd.year = 0;
 
 	if(userdata && aw->flat_mode) {
 		struct arc_entries *ud = (struct arc_entries *)userdata;
@@ -802,6 +806,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		comment = xad_get_comment(xuserdata, aw);
 		link = xad_is_link(xuserdata, aw);
 		linkname = xad_get_link(xuserdata, aw);
+		disk = xad_is_disk(aw);
 	}
 
 	crunchsize = module_get_crunched_size(aw, xuserdata);
@@ -828,18 +833,28 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 
 		snprintf(datestr, 20, "\0");
 	} else {
-		if(crypted == FALSE) {
-			if(link == FALSE) {
-				glyph = glyph_get(AVALANCHE_GLYPH_POPFILE);
+		if(disk == FALSE) {
+			if(crypted == FALSE) {
+				if(link == FALSE) {
+					glyph = glyph_get(AVALANCHE_GLYPH_POPFILE);
+				} else {
+					glyph = glyph_get(AVALANCHE_GLYPH_LINK);
+				}
 			} else {
-				glyph = glyph_get(AVALANCHE_GLYPH_LINK);
+				glyph = glyph_get(AVALANCHE_GLYPH_CRYPTFILE);
 			}
 		} else {
-			glyph = glyph_get(AVALANCHE_GLYPH_CRYPTFILE);
+			glyph = glyph_get(AVALANCHE_GLYPH_DISK);
 		}
+		
 		val1 = (ULONG)size;
-		snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
-
+		
+		if(cd.year > 0) {
+			snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+		} else {
+			strcpy(datestr, "");
+		}
+		
 		if(crunchsize == NULL) {
 			tag3 = LBNCA_CopyText;
 			val3 = TRUE;

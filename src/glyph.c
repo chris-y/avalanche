@@ -223,6 +223,12 @@ Object *glyph_get(ULONG glyph)
 #endif
 			break;
 
+			case AVALANCHE_GLYPH_DISK:
+				img = "TBimages:list_disk";
+				img_s = "TBimages:list_disk_s";
+				img_g = "TBimages:list_disk_g";
+			break;
+
 			case AVALANCHE_GLYPH_EXTRACT:
 				img = "TBimages:archiveextract";
 				img_s = "TBimages:archiveextract_s";
@@ -313,6 +319,7 @@ Object *glyph_get(ULONG glyph)
 					dl = &dl_abort;
 				break;
 				case AVALANCHE_GLYPH_NONE:
+				case AVALANCHE_GLYPH_DISK: // TODO
 					dl = &dl_none;
 				break;
 			}
