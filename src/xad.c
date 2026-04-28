@@ -127,8 +127,36 @@ static BOOL xad_is_dir(struct xadFileInfo *fi)
 	return FALSE;
 }
 
-static ULONG xad_get_fileprotection(void *xfi)
+static BOOL xad_is_xxx(void *xfi, void *awin, ULONG flag)
 {
+        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+        if(xu && xu->arctype == XDISK) return FALSE;
+        if(xfi == NULL) return FALSE;
+
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+	if(fi->xfi_Flags & flag) return TRUE;
+	return FALSE;
+}
+
+static BOOL xad_is_crypted(void *userdata, void *awin)
+{
+	return xad_is_xxx(userdata, awin, XADFIF_CRYPTED);
+}
+
+BOOL xad_is_link(void *userdata, void *awin)
+{
+	return xad_is_xxx(userdata, awin, XADFIF_LINK);
+}
+
+ULONG xad_get_fileprotection(void *xfi, void *awin)
+{
+        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+        if(xu && xu->arctype == XDISK) return 0;
+        if(xfi == NULL) return 0;
+
 	ULONG protbits;
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
@@ -164,6 +192,32 @@ static LONG *xad_get_crunchsize(void *userdata, void *awin)
 	struct xadFileInfo *fi = (struct xadFileInfo *)userdata;
 
 	return (LONG *)&fi->xfi_CrunchSize;
+}
+
+const char *xad_get_comment(void *xfi, void *awin)
+{
+        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+        if(xu && xu->arctype == XDISK) return NULL;
+        if(xfi == NULL) return NULL;
+
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+	return fi->xfi_Comment;
+}
+
+const char *xad_get_link(void *xfi, void *awin)
+{
+        struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+        if(xu && xu->arctype == XDISK) return NULL;
+        if(xfi == NULL) return NULL;
+
+	if(xad_is_link(xfi, awin) == FALSE) return NULL;
+
+        struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+        return fi->xfi_LinkName;
 }
 
 static const char *xad_get_filename(void *userdata, void *awin)
@@ -540,7 +594,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 						return err;
 					}
 					
-					SetProtection(destfile, xad_get_fileprotection(fi));
+					SetProtection(destfile, xad_get_fileprotection(fi, awin));
 					SetFileDate(destfile, &ds);
 					if(fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
 				}
@@ -631,4 +685,5 @@ void xad_register(struct module_functions *funcs)
 	funcs->get_subformat = xad_get_arc_subformat;
 	funcs->get_error = xad_error;
 	funcs->get_crunchsize = xad_get_crunchsize;
+	funcs->is_crypted = xad_is_crypted;
 }

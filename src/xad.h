@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,10 @@
 void xad_exit(void);
 ULONG xad_get_ver(ULONG *ver, ULONG *rev);
 ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin);
+ULONG xad_get_fileprotection(void *xfi, void *awin);
+const char *xad_get_comment(void *xfi, void *awin);
+const char *xad_get_link(void *xfi, void *awin);
+BOOL xad_is_link(void *userdata, void *awin);
 BOOL xad_recog(char *file);
 long xad_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));
 

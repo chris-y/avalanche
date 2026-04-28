@@ -156,6 +156,10 @@ This is mostly for internal use, but has the following commands:
 * More modern looking GUI
   - All gadgets have been moved to a new toolbar
   - Use AISS for a much nicer look!
+* Improved listview
+  - Added extra fields (crunched size, comment, attributes)
+  - Added icons for encrypted files and links
+  - 
 * Extract button now prompts for destination
   - New config to disable prompt and extract to a default location
 * Added a "Create LhA archive" option to WB Tools menu

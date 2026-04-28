@@ -52,6 +52,63 @@ static struct DrawList dl_opendrawer[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_file[] = {
+	{DLST_LINE, 20, 10, 60, 10, 1},
+	{DLST_LINE, 60, 10, 80, 30, 1},
+	{DLST_LINE, 80, 30, 80, 90, 1},
+	{DLST_LINE, 80, 90, 20, 90, 1},
+	{DLST_LINE, 20, 90, 20, 10, 1},
+
+	{DLST_LINE, 60, 10, 60, 30, 1},
+	{DLST_LINE, 60, 30, 80, 30, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
+static struct DrawList dl_cryptfile[] = {
+	{DLST_LINE, 20, 10, 60, 10, 1},
+	{DLST_LINE, 60, 10, 80, 30, 1},
+	{DLST_LINE, 80, 30, 80, 90, 1},
+	{DLST_LINE, 80, 90, 20, 90, 1},
+	{DLST_LINE, 20, 90, 20, 10, 1},
+
+	{DLST_LINE, 60, 10, 60, 30, 1},
+	{DLST_LINE, 60, 30, 80, 30, 1},
+
+	/* Padlock body */
+	{DLST_LINE, 40, 70, 60, 70, 1},
+	{DLST_LINE, 60, 70, 60, 50, 1},
+	{DLST_LINE, 60, 50, 40, 50, 1},
+	{DLST_LINE, 40, 50, 40, 70, 1},
+
+	/* Padlock lock */
+	{DLST_LINE, 45, 50, 45, 40, 1},
+	{DLST_LINE, 45, 40, 46, 39, 1},
+	{DLST_LINE, 46, 39, 54, 39, 1},
+	{DLST_LINE, 54, 39, 55, 40, 1},
+	{DLST_LINE, 55, 40, 55, 50, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
+static struct DrawList dl_link[] = {
+	{DLST_LINE, 20, 10, 60, 10, 1},
+	{DLST_LINE, 60, 10, 80, 30, 1},
+	{DLST_LINE, 80, 30, 80, 90, 1},
+	{DLST_LINE, 80, 90, 20, 90, 1},
+	{DLST_LINE, 20, 90, 20, 10, 1},
+
+	{DLST_LINE, 60, 10, 60, 30, 1},
+	{DLST_LINE, 60, 30, 80, 30, 1},
+
+	/* Arrow */
+	{DLST_LINE, 40, 70, 60, 50, 1},
+	{DLST_LINE, 50, 50, 60, 50, 1},
+	{DLST_LINE, 60, 60, 60, 50, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
 static struct DrawList dl_archiveroot[] = {
 	{DLST_LINE, 10, 90, 60, 90, 1},
 	{DLST_LINE, 60, 90, 60, 40, 1},
@@ -130,16 +187,40 @@ Object *glyph_get(ULONG glyph)
 #endif
 			break;
 
-			case GLYPH_POPFILE:
+			case AVALANCHE_GLYPH_POPFILE:
 				img = "TBimages:list_file";
 				img_s = "TBimages:list_file_s";
 				img_g = "TBimages:list_file_g";
 			break;
-			
-			case AVALANCHE_GLYPH_POPFILE:
+
+			case GLYPH_POPFILE:
 				img = "TBimages:open";
 				img_s = "TBimages:open_s";
 				img_g = "TBimages:open_g";
+			break;
+
+			case AVALANCHE_GLYPH_CRYPTFILE:
+#ifdef __amigaos4__
+				img = "TBimages:list_crypt";
+				img_s = "TBimages:list_crypt_s";
+				img_g = "TBimages:list_crypt_g";
+#else
+				img = "TBimages:list_protectfile";
+				img_s = "TBimages:list_protectfile_s";
+				img_g = "TBimages:list_protectfile_g";
+#endif
+			break;
+
+			case AVALANCHE_GLYPH_LINK:
+#ifdef __amigaos4__
+				img = "TBimages:list_filelink";
+				img_s = "TBimages:list_filelink_s";
+				img_g = "TBimages:list_filelink_g";
+#else		
+				img = "TBimages:list_linkamiga";
+				img_s = "TBimages:list_linkamiga_s";
+				img_g = "TBimages:list_linkamiga_g";
+#endif
 			break;
 
 			case AVALANCHE_GLYPH_EXTRACT:
@@ -204,16 +285,23 @@ Object *glyph_get(ULONG glyph)
 		UnlockPubScreen(NULL, screen);
 
 	} else {
-		if(glyph == AVALANCHE_GLYPH_POPFILE) glyph = GLYPH_POPFILE;
-
 		if((glyph >= AVALANCHE_GLYPH_ROOT) &&
 			(glyph < AVALANCHE_GLYPH_MAX)) {
-				
+
 			struct DrawList *dl = NULL;
-				
+
 			switch(glyph) {
 				case AVALANCHE_GLYPH_OPENDRAWER:
 					dl = &dl_opendrawer;
+				break;
+				case AVALANCHE_GLYPH_POPFILE:
+					dl = &dl_file;
+				break;
+				case AVALANCHE_GLYPH_CRYPTFILE:
+					dl = &dl_cryptfile;
+				break;
+				case AVALANCHE_GLYPH_LINK:
+					dl = &dl_link;
 				break;
 				case AVALANCHE_GLYPH_ROOT:
 					dl = &dl_archiveroot;
@@ -228,7 +316,7 @@ Object *glyph_get(ULONG glyph)
 					dl = &dl_none;
 				break;
 			}
-				
+
 			glyphobj = DrawListObj,
 					DRAWLIST_Directives, dl,
 					DRAWLIST_RefHeight, 100,

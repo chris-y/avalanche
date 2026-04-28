@@ -20,6 +20,8 @@
 enum {
 	AVALANCHE_GLYPH_ROOT = 70, /* System Glyph numbers end at ~36 */
 	AVALANCHE_GLYPH_POPFILE, /* Distinguish between list and full size */
+	AVALANCHE_GLYPH_CRYPTFILE, /* Encrypted */
+	AVALANCHE_GLYPH_LINK, /* Link */
 	AVALANCHE_GLYPH_OPENDRAWER,
 	AVALANCHE_GLYPH_NONE,
 	AVALANCHE_GLYPH_EXTRACT,
