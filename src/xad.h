@@ -26,7 +26,8 @@ ULONG xad_get_fileprotection(void *xfi, void *awin);
 const char *xad_get_comment(void *xfi, void *awin);
 const char *xad_get_link(void *xfi, void *awin);
 BOOL xad_is_link(void *userdata, void *awin);
-BOOL xad_is_disk(void *awin);
+BOOL xad_is_disk(void *awin); /* disk image (no fs) */
+BOOL xad_is_diskfile(void *awin); /* disk archive (fs) */
 BOOL xad_recog(char *file);
 long xad_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));
 

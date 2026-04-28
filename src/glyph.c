@@ -52,6 +52,23 @@ static struct DrawList dl_opendrawer[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_drawer[] = {
+	{DLST_LINE, 10, 50, 90, 50, 1},
+	{DLST_LINE, 90, 50, 90, 80, 1},
+	{DLST_LINE, 90, 80, 10, 80, 1},
+	{DLST_LINE, 10, 80, 10, 50, 1},
+
+	/* HANDLE */
+	{DLST_LINE, 40, 65, 60, 65, 1},
+
+	/* TOP */
+	{DLST_LINE, 10, 50, 30, 30, 1},
+	{DLST_LINE, 30, 30, 70, 30, 1},
+	{DLST_LINE, 70, 30, 90, 50, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+}; 
+
 static struct DrawList dl_file[] = {
 	{DLST_LINE, 20, 10, 60, 10, 1},
 	{DLST_LINE, 60, 10, 80, 30, 1},
@@ -109,20 +126,45 @@ static struct DrawList dl_link[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_disk[] = {
+	{DLST_LINE, 10, 10, 80, 10, 1},
+	{DLST_LINE, 80, 10, 90, 20, 1},
+	{DLST_LINE, 90, 20, 90, 90, 1},
+	{DLST_LINE, 90, 90, 10, 90, 1},
+	{DLST_LINE, 10, 90, 10, 10, 1},
+
+	/* Label */
+	{DLST_LINE, 20, 90, 20, 50, 1},
+	{DLST_LINE, 20, 50, 80, 50, 1},
+	{DLST_LINE, 80, 50, 80, 90, 1},
+
+	/* Shutter */
+	{DLST_LINE, 30, 10, 30, 40, 1},
+	{DLST_LINE, 30, 40, 70, 40, 1},
+	{DLST_LINE, 70, 40, 70, 10, 1},
+
+	{DLST_LINE, 55, 15, 65, 15, 1},
+	{DLST_LINE, 65, 15, 65, 35, 1},
+	{DLST_LINE, 65, 35, 55, 35, 1},
+	{DLST_LINE, 55, 35, 55, 15, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
 static struct DrawList dl_archiveroot[] = {
-	{DLST_LINE, 10, 90, 60, 90, 1},
-	{DLST_LINE, 60, 90, 60, 40, 1},
-	{DLST_LINE, 60, 40, 10, 40, 1},
-	{DLST_LINE, 10, 40, 10, 90, 1},
+	{DLST_LINE, 10, 30, 50, 10, 1},
+	{DLST_LINE, 50, 10, 90, 30, 1},
+	{DLST_LINE, 90, 30, 50, 50, 1},
+	{DLST_LINE, 10, 30, 50, 50, 1},
 
-	{DLST_LINE, 60, 90, 90, 70, 1},
-	{DLST_LINE, 60, 40, 90, 20, 1},
-	{DLST_LINE, 10, 40, 40, 20, 1},
+	{DLST_LINE, 10, 30, 10, 70, 1},
+	{DLST_LINE, 50, 50, 50, 90, 1},
+	{DLST_LINE, 90, 30, 90, 70, 1},
 
-	{DLST_LINE, 90, 70, 90, 20, 1},
-	{DLST_LINE, 90, 20, 40, 20, 1},
+	{DLST_LINE, 10, 70, 50, 90, 1},
+	{DLST_LINE, 50, 90, 90, 70, 1},
 
-	{DLST_LINE, 35, 40, 65, 20, 1},
+	{DLST_LINE, 30, 40, 70, 20, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
@@ -170,6 +212,7 @@ Object *glyph_get(ULONG glyph)
 
 		switch(glyph) {
 			case GLYPH_POPDRAWER:
+			case AVALANCHE_GLYPH_DRAWER:
 				img = "TBimages:list_drawer";
 				img_s = "TBimages:list_drawer_s";
 				img_g = "TBimages:list_drawer_g";
@@ -300,6 +343,9 @@ Object *glyph_get(ULONG glyph)
 				case AVALANCHE_GLYPH_OPENDRAWER:
 					dl = &dl_opendrawer;
 				break;
+				case AVALANCHE_GLYPH_DRAWER:
+					dl = &dl_drawer;
+				break;
 				case AVALANCHE_GLYPH_POPFILE:
 					dl = &dl_file;
 				break;
@@ -318,8 +364,10 @@ Object *glyph_get(ULONG glyph)
 				case AVALANCHE_GLYPH_STOP:
 					dl = &dl_abort;
 				break;
+				case AVALANCHE_GLYPH_DISK:
+					dl = &dl_disk;
+				break;
 				case AVALANCHE_GLYPH_NONE:
-				case AVALANCHE_GLYPH_DISK: // TODO
 					dl = &dl_none;
 				break;
 			}

@@ -158,13 +158,23 @@ static BOOL xad_is_crypted(void *userdata, void *awin)
 	return FALSE;
 }
 
-BOOL xad_is_disk(void *awin)
+static BOOL xad_is_filetype(void *awin, ULONG type)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-	if(xu && (xu->arctype == XDISK)) return TRUE;
+	if(xu && (xu->arctype == type)) return TRUE;
 
 	return FALSE;
+}
+
+BOOL xad_is_disk(void *awin)
+{
+	return xad_is_filetype(awin, XDISK);
+}
+
+BOOL xad_is_diskfile(void *awin)
+{
+	return xad_is_filetype(awin, XDISKFILE);
 }
 
 BOOL xad_is_link(void *userdata, void *awin)

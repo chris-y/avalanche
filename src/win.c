@@ -825,7 +825,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		Amiga2Date(0, &cd);
 
 	if(dir) {
-		glyph = glyph_get(GLYPH_POPDRAWER);
+		glyph = glyph_get(AVALANCHE_GLYPH_DRAWER);
 		tag1 = LBNCA_CopyText;
 		val1 = TRUE;
 		tag2 = LBNCA_Text;
@@ -1043,6 +1043,8 @@ static void window_update_title(struct avalanche_window *aw)
 
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
+	ULONG root_glyph = AVALANCHE_GLYPH_ROOT;
+
 	FreeListBrowserList(&aw->dir_tree);
 	aw->root_node = NULL;
 
@@ -1121,6 +1123,10 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 	if(dir_entry == 0) flags = 0;
 
+	if((aw->archiver == ARC_XAD) && (xad_is_diskfile(aw)) {
+		root_glyph = AVALANCHE_GLYPH_DISK;
+	}
+
 	aw->root_node = AllocListBrowserNode(1,
 									LBNA_UserData, NULL,
 									LBNA_Flags, flags,
@@ -1128,7 +1134,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 									LBNA_Column, 0,
 										LBNCA_Image, LabelObj,
 											LABEL_DisposeImage, FALSE,
-											LABEL_Image, glyph_get(AVALANCHE_GLYPH_ROOT),
+											LABEL_Image, glyph_get(root_glyph),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->archive),
@@ -1149,7 +1155,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 									LBNA_Column, 0,
 										LBNCA_Image, LabelObj,
 											LABEL_DisposeImage, FALSE,
-											LABEL_Image, glyph_get(GLYPH_POPDRAWER),
+											LABEL_Image, glyph_get(AVALANCHE_GLYPH_DRAWER),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->dir_array[i]->name),
