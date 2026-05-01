@@ -33,64 +33,117 @@
 /** Glyphs **/
 Object *glyph_cache[AVALANCHE_GLYPH_MAX];
 
+#define AVALANCHE_DRAWLIST_FILE \
+	{DLST_AMOVE, 20, 10, 60, 10, 1}, \
+	{DLST_ADRAW, 60, 10, 80, 30, 1}, \
+	{DLST_ADRAW, 80, 30, 80, 90, 1}, \
+	{DLST_ADRAW, 80, 90, 20, 90, 1}, \
+	{DLST_ADRAW, 20, 90, 20, 10, 1}, \
+	{DLST_ADRAW, 20, 10, 0, 0, 1}, \
+	{DLST_AFILL, 0, 0, 0, 0, 2}, \
+	\
+	/* Fold */ \
+	{DLST_LINE, 60, 10, 60, 30, 1}, \
+	{DLST_LINE, 60, 30, 80, 30, 1}, \
+	\
+	/* Outline */ \
+	{DLST_LINE, 20, 10, 60, 10, 1}, \
+	{DLST_LINE, 60, 10, 80, 30, 1}, \
+	{DLST_LINE, 80, 30, 80, 90, 1}, \
+	{DLST_LINE, 80, 90, 20, 90, 1}, \
+	{DLST_LINE, 20, 90, 20, 10, 1}
+
 static struct DrawList dl_opendrawer[] = {
-	{DLST_LINE, 90, 50, 90, 80, 1},
-	{DLST_LINE, 90, 80, 10, 80, 1},
-	{DLST_LINE, 10, 80, 10, 50, 1},
-	{DLST_LINE, 10, 50, 90, 50, 1},
-	{DLST_LINE, 90, 50, 70, 20, 1},
-	{DLST_LINE, 70, 20, 30, 20, 1},
-	{DLST_LINE, 30, 20, 10, 50, 1},
-	{DLST_LINE, 30, 20, 20, 20, 1},
-	{DLST_LINE, 20, 20, 20, 40, 1},
+	{DLST_RECT, 10, 10, 90, 80, 1},
+	{DLST_RECT, 15, 15, 85, 20, 2},
+	{DLST_RECT, 15, 20, 85, 75, 0},
 
-	{DLST_LINE, 70, 20, 80, 20, 1},
-	{DLST_LINE, 80, 20, 80, 40, 1},
+	{DLST_AMOVE, 40, 80, 0, 0, 1},
+	{DLST_ADRAW, 40, 87, 0, 0, 1},
+	{DLST_ADRAW, 30, 87, 0, 0, 1},
+	{DLST_ADRAW, 30, 90, 0, 0, 1},
+	{DLST_ADRAW, 70, 90, 0, 0, 1},
+	{DLST_ADRAW, 70, 87, 0, 0, 1},
+	{DLST_ADRAW, 60, 87, 0, 0, 1},
+	{DLST_ADRAW, 60, 80, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 1},
 
-	{DLST_LINE, 40, 65, 60, 65, 1},
+	/* Drawer */
+	{DLST_RECT, 25, 45, 65, 60, 3},
+
+	/* HANDLE */
+	{DLST_LINE, 40, 52, 50, 52, 1},
+
+	/* TOP */
+	{DLST_AMOVE, 25, 45, 0, 0, 1},
+	{DLST_ADRAW, 35, 35, 0, 0, 1},
+	{DLST_ADRAW, 55, 35, 0, 0, 1},
+	{DLST_ADRAW, 65, 45, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 3},
+
+	/* Outline */
+	{DLST_LINE, 25, 45, 65, 45, 1},
+	{DLST_LINE, 65, 45, 65, 60, 1},
+	{DLST_LINE, 65, 60, 25, 60, 1},
+	{DLST_LINE, 25, 60, 25, 45, 1},
+
+	{DLST_LINE, 25, 45, 35, 35, 1},
+	{DLST_LINE, 35, 35, 55, 35, 1},
+	{DLST_LINE, 55, 35, 65, 45, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
 static struct DrawList dl_drawer[] = {
-	{DLST_LINE, 10, 50, 90, 50, 1},
-	{DLST_LINE, 90, 50, 90, 80, 1},
-	{DLST_LINE, 90, 80, 10, 80, 1},
-	{DLST_LINE, 10, 80, 10, 50, 1},
+	{DLST_RECT, 10, 50, 90, 80, 3},
 
 	/* HANDLE */
 	{DLST_LINE, 40, 65, 60, 65, 1},
 
 	/* TOP */
+	{DLST_AMOVE, 10, 50, 30, 30, 1},
+	{DLST_ADRAW, 30, 30, 70, 30, 1},
+	{DLST_ADRAW, 70, 30, 90, 50, 1},
+	{DLST_ADRAW, 90, 50, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 3},
+
+	/* Outline */
+	{DLST_LINE, 10, 50, 90, 50, 1},
+	{DLST_LINE, 90, 50, 90, 80, 1},
+	{DLST_LINE, 90, 80, 10, 80, 1},
+	{DLST_LINE, 10, 80, 10, 50, 1},
+
 	{DLST_LINE, 10, 50, 30, 30, 1},
 	{DLST_LINE, 30, 30, 70, 30, 1},
 	{DLST_LINE, 70, 30, 90, 50, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
-}; 
+};
+
+static struct DrawList dl_parent[] = {
+	{DLST_AMOVE, 40, 10, 0, 0, 1},
+	{DLST_ADRAW, 10, 40, 0, 0, 1},
+	{DLST_ADRAW, 30, 40, 0, 0, 1},
+	{DLST_ADRAW, 30, 80, 0, 0, 1},
+	{DLST_ADRAW, 90, 80, 0, 0, 1},
+	{DLST_ADRAW, 90, 70, 0, 0, 1},
+	{DLST_ADRAW, 50, 70, 0, 0, 1},
+	{DLST_ADRAW, 50, 40, 0, 0, 1},
+	{DLST_ADRAW, 70, 40, 0, 0, 1},
+	{DLST_ADRAW, 40, 10, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
 
 static struct DrawList dl_file[] = {
-	{DLST_LINE, 20, 10, 60, 10, 1},
-	{DLST_LINE, 60, 10, 80, 30, 1},
-	{DLST_LINE, 80, 30, 80, 90, 1},
-	{DLST_LINE, 80, 90, 20, 90, 1},
-	{DLST_LINE, 20, 90, 20, 10, 1},
-
-	{DLST_LINE, 60, 10, 60, 30, 1},
-	{DLST_LINE, 60, 30, 80, 30, 1},
+	AVALANCHE_DRAWLIST_FILE,
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
 static struct DrawList dl_cryptfile[] = {
-	{DLST_LINE, 20, 10, 60, 10, 1},
-	{DLST_LINE, 60, 10, 80, 30, 1},
-	{DLST_LINE, 80, 30, 80, 90, 1},
-	{DLST_LINE, 80, 90, 20, 90, 1},
-	{DLST_LINE, 20, 90, 20, 10, 1},
-
-	{DLST_LINE, 60, 10, 60, 30, 1},
-	{DLST_LINE, 60, 30, 80, 30, 1},
+	AVALANCHE_DRAWLIST_FILE,
 
 	/* Padlock body */
 	{DLST_LINE, 40, 70, 60, 70, 1},
@@ -109,14 +162,7 @@ static struct DrawList dl_cryptfile[] = {
 };
 
 static struct DrawList dl_link[] = {
-	{DLST_LINE, 20, 10, 60, 10, 1},
-	{DLST_LINE, 60, 10, 80, 30, 1},
-	{DLST_LINE, 80, 30, 80, 90, 1},
-	{DLST_LINE, 80, 90, 20, 90, 1},
-	{DLST_LINE, 20, 90, 20, 10, 1},
-
-	{DLST_LINE, 60, 10, 60, 30, 1},
-	{DLST_LINE, 60, 30, 80, 30, 1},
+	AVALANCHE_DRAWLIST_FILE,
 
 	/* Arrow */
 	{DLST_LINE, 40, 70, 60, 50, 1},
@@ -127,68 +173,172 @@ static struct DrawList dl_link[] = {
 };
 
 static struct DrawList dl_disk[] = {
+	{DLST_AMOVE, 10, 10, 80, 10, 1},
+	{DLST_ADRAW, 80, 10, 90, 20, 1},
+	{DLST_ADRAW, 90, 20, 90, 90, 1},
+	{DLST_ADRAW, 90, 90, 10, 90, 1},
+	{DLST_ADRAW, 10, 90, 10, 10, 1},
+	{DLST_ADRAW, 10, 10, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 3},
+
+	/* Label */
+	{DLST_RECT, 20, 50, 80, 90, 2},
+
+	/* Shutter */
+	{DLST_RECT, 30, 10, 70, 40, 0},
+	{DLST_RECT, 50, 15, 60, 35, 3},
+
+	/* Outline */
 	{DLST_LINE, 10, 10, 80, 10, 1},
 	{DLST_LINE, 80, 10, 90, 20, 1},
 	{DLST_LINE, 90, 20, 90, 90, 1},
 	{DLST_LINE, 90, 90, 10, 90, 1},
 	{DLST_LINE, 10, 90, 10, 10, 1},
 
-	/* Label */
-	{DLST_LINE, 20, 90, 20, 50, 1},
-	{DLST_LINE, 20, 50, 80, 50, 1},
-	{DLST_LINE, 80, 50, 80, 90, 1},
-
-	/* Shutter */
-	{DLST_LINE, 30, 10, 30, 40, 1},
-	{DLST_LINE, 30, 40, 70, 40, 1},
-	{DLST_LINE, 70, 40, 70, 10, 1},
-
-	{DLST_LINE, 55, 15, 65, 15, 1},
-	{DLST_LINE, 65, 15, 65, 35, 1},
-	{DLST_LINE, 65, 35, 55, 35, 1},
-	{DLST_LINE, 55, 35, 55, 15, 1},
-
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
 static struct DrawList dl_archiveroot[] = {
+	{DLST_AMOVE, 10, 30, 50, 10, 1},
+	{DLST_ADRAW, 50, 10, 90, 30, 1},
+	{DLST_ADRAW, 90, 30, 50, 50, 1},
+	{DLST_ADRAW, 50, 50, 10, 30, 1},
+	{DLST_ADRAW, 10, 30, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 2},
+
+	{DLST_AMOVE, 10, 30, 10, 70, 1},
+	{DLST_ADRAW, 10, 70, 0, 0, 1},
+	{DLST_ADRAW, 50, 90, 0, 0, 1},
+	{DLST_ADRAW, 50, 50, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 3},
+
+	{DLST_AMOVE, 50, 50, 50, 90, 1},
+	{DLST_ADRAW, 50, 90, 0, 0, 1},
+	{DLST_ADRAW, 90, 70, 0, 0, 1},
+	{DLST_ADRAW, 90, 30, 90, 70, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 1},
+
+	/* Outline */
+	{DLST_LINE, 10, 70, 50, 90, 1},
 	{DLST_LINE, 10, 30, 50, 10, 1},
 	{DLST_LINE, 50, 10, 90, 30, 1},
-	{DLST_LINE, 90, 30, 50, 50, 1},
-	{DLST_LINE, 10, 30, 50, 50, 1},
-
 	{DLST_LINE, 10, 30, 10, 70, 1},
-	{DLST_LINE, 50, 50, 50, 90, 1},
-	{DLST_LINE, 90, 30, 90, 70, 1},
 
-	{DLST_LINE, 10, 70, 50, 90, 1},
-	{DLST_LINE, 50, 90, 90, 70, 1},
-
+	/* Opening */
 	{DLST_LINE, 30, 40, 70, 20, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
-static struct DrawList dl_extract[] = {
-	{DLST_LINE, 30, 30, 50, 10, 1},
-	{DLST_LINE, 50, 10, 70, 30, 1},
-	{DLST_LINE, 50, 10, 50, 80, 1},
+static struct DrawList dl_openfile[] = {
+	{DLST_AMOVE, 8, 58, 92, 58, 1},
+	{DLST_ADRAW, 92, 58, 92, 90, 1},
+	{DLST_ADRAW, 92, 90, 8, 90, 1},
+	{DLST_ADRAW, 8, 90, 8, 58, 1},
+	{DLST_ADRAW, 8, 58, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 3},
 
-	{DLST_LINE, 60, 40, 90, 40, 1},
-	{DLST_LINE, 90, 40, 90, 90, 1},
-	{DLST_LINE, 90, 90, 10, 90, 1},
-	{DLST_LINE, 10, 90, 10, 40, 1},
-	{DLST_LINE, 10, 40, 40, 40, 1},
+	/* dark area */
+	{DLST_AMOVE, 10, 50, 0, 0, 1},
+	{DLST_ADRAW, 90, 50, 0, 0, 1},
+	{DLST_ADRAW, 90, 58, 0, 0, 1},
+	{DLST_ADRAW, 10, 58, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 1},
+
+	/* HANDLE */
+	{DLST_LINE, 40, 74, 60, 74, 1},
+
+	/* TOP */
+	{DLST_AMOVE, 10, 50, 30, 30, 1},
+	{DLST_ADRAW, 30, 30, 70, 30, 1},
+	{DLST_ADRAW, 70, 30, 90, 50, 1},
+	{DLST_ADRAW, 90, 50, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 3},
+
+	/* Outline */
+	{DLST_LINE, 10, 50, 30, 30, 1},
+	{DLST_LINE, 30, 30, 70, 30, 1},
+	{DLST_LINE, 70, 30, 90, 50, 1},
+
+	/* Paper */
+	{DLST_AMOVE, 40, 58, 0, 0, 2},
+	{DLST_ADRAW, 80, 58, 0, 0, 2},
+	{DLST_ADRAW, 80, 20, 0, 0, 2},
+	{DLST_ADRAW, 40, 20, 0, 0, 2},
+	{DLST_AFILL, 0, 0, 0, 0, 2},
+
+	{DLST_LINE, 80, 58, 80, 20, 1},
+	{DLST_LINE, 80, 20, 40, 20, 1},
+	{DLST_LINE, 40, 20, 40, 58, 1},
+
+	/* Outline front */
+	{DLST_LINE, 8, 58, 92, 58, 1},
+	{DLST_LINE, 92, 58, 92, 90, 1},
+	{DLST_LINE, 92, 90, 8, 90, 1},
+	{DLST_LINE, 8, 90, 8, 58, 1},
+	
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
+
+static struct DrawList dl_extract[] = {
+	{DLST_LINE, 10, 30, 50, 10, 1},
+	{DLST_LINE, 50, 10, 90, 30, 1},
+	{DLST_LINE, 90, 30, 50, 50, 1},
+	{DLST_LINE, 50, 50, 10, 30, 1},
+
+	{DLST_AMOVE, 10, 30, 10, 70, 1},
+	{DLST_ADRAW, 10, 70, 0, 0, 1},
+	{DLST_ADRAW, 50, 90, 0, 0, 1},
+	{DLST_ADRAW, 50, 50, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 3},
+
+	{DLST_AMOVE, 50, 50, 50, 90, 1},
+	{DLST_ADRAW, 50, 90, 0, 0, 1},
+	{DLST_ADRAW, 90, 70, 0, 0, 1},
+	{DLST_ADRAW, 90, 30, 90, 70, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 1},
+
+	/* Outline */
+	{DLST_LINE, 10, 70, 50, 90, 1},
+	{DLST_LINE, 10, 30, 10, 70, 1},
+
+	{DLST_LINE, 50, 10, 50, 50, 1},
+
+	/* Arrow */
+	{DLST_AMOVE, 45, 45, 0, 0, 1},
+	{DLST_ADRAW, 55, 45, 0, 0, 1},
+	{DLST_ADRAW, 55, 25, 0, 0, 1},
+	{DLST_ADRAW, 65, 25, 0, 0, 1},
+	{DLST_ADRAW, 50, 5, 0, 0, 1},
+	{DLST_ADRAW, 35, 25, 0, 0, 1},
+	{DLST_ADRAW, 45, 25, 0, 0, 1},
+	{DLST_ADRAW, 45, 45, 0, 0, 1},
+	{DLST_AFILL, 0, 0, 0, 0, 2},
+
+	{DLST_LINE, 45, 45, 55, 45, 1},
+	{DLST_LINE, 55, 45, 55, 25, 1},
+	{DLST_LINE, 55, 25, 65, 25, 1},
+	{DLST_LINE, 65, 25, 50, 5, 1},
+	{DLST_LINE, 50, 5, 35, 25, 1},
+	{DLST_LINE, 35, 25, 45, 25, 1},
+	{DLST_LINE, 45, 25, 45, 45, 1},
 
 	{DLST_END, 0, 0, 0, 0, 0},
+
+
 };
 
 static struct DrawList dl_abort[] = {
 #ifndef __amigaos4__ /* DLST_CIRCLE is "incorrectly implemented" in OS4.1 but fixed in OS3.2 */
 	{DLST_CIRCLE, 50, 50, 40, 40, 1},
+#else
+	{DLST_RECT, 10, 10, 90, 90, 1},
 #endif
-	{DLST_LINE, 30, 30, 70, 70, 1},
-	{DLST_LINE, 30, 70, 70, 30, 1},
+
+	{DLST_LINESIZE, 0, 0, 0, 0, 5},
+	{DLST_LINE, 30, 30, 70, 70, 2},
+	{DLST_LINE, 30, 70, 70, 30, 2},
 
 	{DLST_END, 0, 0, 0, 0, 0},
 };
@@ -236,7 +386,7 @@ Object *glyph_get(ULONG glyph)
 				img_g = "TBimages:list_file_g";
 			break;
 
-			case GLYPH_POPFILE:
+			case AVALANCHE_GLYPH_OPENFILE:
 				img = "TBimages:open";
 				img_s = "TBimages:open_s";
 				img_g = "TBimages:open_g";
@@ -290,7 +440,7 @@ Object *glyph_get(ULONG glyph)
 				img_g = "TBimages:list_archive_g";
 			break;
 
-			case GLYPH_UPARROW:
+			case AVALANCHE_GLYPH_PARENT:
 #ifdef __amigaos4__
 				img = "TBimages:list_nav_north";
 #else
@@ -340,11 +490,17 @@ Object *glyph_get(ULONG glyph)
 			struct DrawList *dl = NULL;
 
 			switch(glyph) {
+				case AVALANCHE_GLYPH_OPENFILE:
+					dl = &dl_openfile;
+				break;
 				case AVALANCHE_GLYPH_OPENDRAWER:
 					dl = &dl_opendrawer;
 				break;
 				case AVALANCHE_GLYPH_DRAWER:
 					dl = &dl_drawer;
+				break;
+				case AVALANCHE_GLYPH_PARENT:
+					dl = &dl_parent;
 				break;
 				case AVALANCHE_GLYPH_POPFILE:
 					dl = &dl_file;
