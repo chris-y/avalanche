@@ -252,7 +252,7 @@ MSG_PARENT
 (parent)
 ;
 MSG_PACKEDSIZE
-Packed Size
+Packed
 ;
 MSG_SNAPSHOT_WARNING
 This will not be persistent until prefs are saved!
@@ -388,4 +388,13 @@ Create LhA archive
 ;
 MSG_SCANNING
 Scanning...
+;
+MSG_PERMISSIONS
+Attrs
+;
+MSG_COMMENT
+Comment
+;
+MSG_STORED
+(stored)
 ;

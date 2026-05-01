@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ struct module_functions {
 	char module[4];
 	const char *(*get_filename)(void *userdata, void *awin);
 	const LONG *(*get_crunchsize)(void *userdata, void *awin);
+	BOOL (*is_crypted)(void *userdata, void *awin);
 	const char *(*get_format)(void *awin);
 	const char *(*get_subformat)(void *awin);
 	const char *(*get_error)(void *awin, long code);
@@ -52,6 +53,7 @@ long module_extract(void *awin, void *node, void *archive, void *newdest);
 long module_extract_array(void *awin, void **array, ULONG total_items, void *dest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);
+BOOL module_is_crypted(void *awin, void *userdata);
 
 /* Editing */
 BOOL module_has_add(void *awin);

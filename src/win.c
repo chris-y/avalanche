@@ -99,6 +99,7 @@ struct arc_entries {
 	ULONG level;
 };
 
+#define AVALANCHE_AUTOFIT TRUE
 #define AVALANCHE_DROPZONES 2
 #define TITLE_MAX_SIZE 100
 
@@ -149,6 +150,16 @@ static struct List winlist;
 #ifndef __amigaos4__
 #define fr_NumArgs rf_NumArgs
 #define fr_ArgList rf_ArgList
+
+#define EXDF_HOLD FIBF_HOLD
+#define EXDF_SCRIPT FIBF_SCRIPT
+#define EXDF_PURE FIBF_PURE
+#define EXDF_ARCHIVE FIBF_ARCHIVE
+#define EXDF_NO_READ FIBF_READ
+#define EXDF_NO_WRITE FIBF_WRITE
+#define EXDF_NO_EXECUTE FIBF_EXECUTE
+#define EXDF_NO_DELETE FIBF_DELETE
+
 #endif
 
 /** Extract process **/
@@ -525,6 +536,7 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 	if(detach_list) {
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->lblist,
+			LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
 	}
 }
@@ -761,25 +773,59 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	ULONG val1 = 0;
 	ULONG tag2 = TAG_IGNORE;
 	ULONG val2 = 0;
+	ULONG tag3 = LBNCA_Integer;
+	ULONG val3 = 0;
+	ULONG tag4 = TAG_IGNORE;
+	ULONG val4 = 0;
 	BOOL debug = get_config()->debug;
+	ULONG protect_bits = 0;
+	ULONG *crunchsize = 0;
+	BOOL crypted = FALSE;
+	BOOL link = FALSE;
+	BOOL title_needs_free = FALSE;
+	BOOL disk = FALSE;
+	void *xuserdata = userdata;
+	const char *comment = NULL;
+	const char *linkname = NULL;
+	char *title = name;
 
 	char datestr[20];
+	char hsparwed[9];
 	struct ClockData cd;
 
-	if(aw->archiver != ARC_XFD) {
-		if(userdata && aw->flat_mode) {
-			struct arc_entries *ud = (struct arc_entries *)userdata;
-			if(aw->archiver == ARC_XAD) xad_get_filedate(ud->userdata, &cd, aw);
-		} else {
-			if(aw->archiver == ARC_XAD) xad_get_filedate(userdata, &cd, aw);
-		}
+	/* Set Year to 0 */
+	cd.year = 0;
+
+	if(userdata && aw->flat_mode) {
+		struct arc_entries *ud = (struct arc_entries *)userdata;
+		xuserdata = ud->userdata;
 	}
+	if(aw->archiver == ARC_XAD) {
+		xad_get_filedate(xuserdata, &cd, aw);
+		protect_bits = xad_get_fileprotection(xuserdata, aw);
+		comment = xad_get_comment(xuserdata, aw);
+		link = xad_is_link(xuserdata, aw);
+		linkname = xad_get_link(xuserdata, aw);
+		disk = xad_is_disk(aw);
+	}
+
+	crunchsize = module_get_crunched_size(aw, xuserdata);
+	crypted = module_is_crypted(aw, xuserdata);
+
+	if(protect_bits & EXDF_HOLD)       strcpy(hsparwed, "h"); else strcpy(hsparwed, "-");
+	if(protect_bits & EXDF_SCRIPT)     strcat(hsparwed, "s"); else strcat(hsparwed, "-");
+	if(protect_bits & EXDF_PURE)       strcat(hsparwed, "p"); else strcat(hsparwed, "-");
+	if(protect_bits & EXDF_ARCHIVE)    strcat(hsparwed, "a"); else strcat(hsparwed, "-");
+	if(protect_bits & EXDF_NO_READ)    strcat(hsparwed, "-"); else strcat(hsparwed, "r");
+	if(protect_bits & EXDF_NO_WRITE)   strcat(hsparwed, "-"); else strcat(hsparwed, "w");
+	if(protect_bits & EXDF_NO_EXECUTE) strcat(hsparwed, "-"); else strcat(hsparwed, "e");
+	if(protect_bits & EXDF_NO_DELETE)  strcat(hsparwed, "-"); else strcat(hsparwed, "d");
 
 	if(CheckDate(&cd) == 0)
 		Amiga2Date(0, &cd);
 
 	if(dir) {
-		glyph = glyph_get(GLYPH_POPDRAWER);
+		glyph = glyph_get(AVALANCHE_GLYPH_DRAWER);
 		tag1 = LBNCA_CopyText;
 		val1 = TRUE;
 		tag2 = LBNCA_Text;
@@ -787,11 +833,49 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 
 		snprintf(datestr, 20, "\0");
 	} else {
-		glyph = glyph_get(GLYPH_POPFILE);
+		if(disk == FALSE) {
+			if(crypted == FALSE) {
+				if(link == FALSE) {
+					glyph = glyph_get(AVALANCHE_GLYPH_POPFILE);
+				} else {
+					glyph = glyph_get(AVALANCHE_GLYPH_LINK);
+				}
+			} else {
+				glyph = glyph_get(AVALANCHE_GLYPH_CRYPTFILE);
+			}
+		} else {
+			glyph = glyph_get(AVALANCHE_GLYPH_DISK);
+		}
+		
 		val1 = (ULONG)size;
-		snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+		
+		if(cd.year > 0) {
+			snprintf(datestr, 20, "%04u-%02u-%02u %02u:%02u:%02u", cd.year, cd.month, cd.mday, cd.hour, cd.min, cd.sec);
+		} else {
+			strcpy(datestr, "");
+		}
+		
+		if(crunchsize == NULL) {
+			tag3 = LBNCA_CopyText;
+			val3 = TRUE;
+			tag4 = LBNCA_Text;
+			val4 = (ULONG)locale_get_string(MSG_STORED);
+		} else {
+			val3 = (ULONG)crunchsize;
+		}
 	}
 
+	if(linkname != NULL) {
+		ULONG title_len = strlen(name) + strlen(linkname) + 5;
+		if(title = AllocVec(title_len, MEMF_PRIVATE | MEMF_CLEAR)) {
+			snprintf(title, title_len, "%s -> %s", name, linkname);
+			title_needs_free = TRUE;
+		} else {
+			title = name;
+		}
+	}
+
+#ifdef AVALANCHE_SIMPLELIST
 	struct Node *node = AllocListBrowserNode(4,
 		LBNA_UserData, userdata,
 		LBNA_CheckBox, !dir,
@@ -802,7 +886,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 			LBNCA_Image, glyph,
 		LBNA_Column, 1,
 			LBNCA_CopyText, TRUE,
-			LBNCA_Text, name,
+			LBNCA_Text, title,
 		LBNA_Column, 2,
 			tag1, val1,
 			tag2, val2,
@@ -810,6 +894,38 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 			LBNCA_CopyText, TRUE,
 			LBNCA_Text, datestr,
 		TAG_DONE);
+#else
+	struct Node *node = AllocListBrowserNode(7,
+		LBNA_UserData, userdata,
+		LBNA_CheckBox, !dir,
+		LBNA_Checked, selected,
+		LBNA_Flags, flags,
+		LBNA_Generation, gen,
+		LBNA_Column, 0,
+			LBNCA_Image, glyph,
+		LBNA_Column, 1,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, title,
+		LBNA_Column, 2,
+			tag1, val1,
+			tag2, val2,
+		LBNA_Column, 3,
+			tag3, val3,
+			tag4, val4,
+		LBNA_Column, 4,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, hsparwed,
+		LBNA_Column, 5,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, datestr,
+		LBNA_Column, 6,
+			LBNCA_CopyText, TRUE,
+			LBNCA_Text, comment,
+		TAG_DONE);
+
+#endif
+
+	if(title_needs_free) FreeVec(title);
 
 	AddTail(&aw->lblist, node);
 }
@@ -927,6 +1043,8 @@ static void window_update_title(struct avalanche_window *aw)
 
 static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 {
+	ULONG root_glyph = AVALANCHE_GLYPH_ROOT;
+
 	FreeListBrowserList(&aw->dir_tree);
 	aw->root_node = NULL;
 
@@ -1005,6 +1123,10 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 	if(dir_entry == 0) flags = 0;
 
+	if((aw->archiver == ARC_XAD) && (xad_is_diskfile(aw)) {
+		root_glyph = AVALANCHE_GLYPH_DISK;
+	}
+
 	aw->root_node = AllocListBrowserNode(1,
 									LBNA_UserData, NULL,
 									LBNA_Flags, flags,
@@ -1012,7 +1134,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 									LBNA_Column, 0,
 										LBNCA_Image, LabelObj,
 											LABEL_DisposeImage, FALSE,
-											LABEL_Image, glyph_get(AVALANCHE_GLYPH_ROOT),
+											LABEL_Image, glyph_get(root_glyph),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->archive),
@@ -1033,7 +1155,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 									LBNA_Column, 0,
 										LBNCA_Image, LabelObj,
 											LABEL_DisposeImage, FALSE,
-											LABEL_Image, glyph_get(GLYPH_POPDRAWER),
+											LABEL_Image, glyph_get(AVALANCHE_GLYPH_DRAWER),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
 											LABEL_Text, FilePart(aw->dir_array[i]->name),
@@ -1067,12 +1189,13 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		
 		if(level > 0) {
 			/* Add "parent" entry */
+#if AVALANCHE_SIMPLELIST
 			struct Node *node = AllocListBrowserNode(4,
 									LBNA_UserData, NULL,
 									LBNA_Generation, 1,
 									LBNA_CheckBox, FALSE,
 									LBNA_Column, 0,
-										LBNCA_Image, glyph_get(GLYPH_UPARROW),
+										LBNCA_Image, glyph_get(AVALANCHE_GLYPH_PARENT),
 									LBNA_Column, 1,
 										LBNCA_CopyText, TRUE,
 										LBNCA_Text, "/",
@@ -1083,7 +1206,33 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 										LBNCA_CopyText, TRUE,
 										LBNCA_Text, "",
 								TAG_DONE);
-
+#else
+			struct Node *node = AllocListBrowserNode(7,
+									LBNA_UserData, NULL,
+									LBNA_CheckBox, FALSE,
+									LBNA_Generation, 1,
+									LBNA_Column, 0,
+										LBNCA_Image, glyph_get(AVALANCHE_GLYPH_PARENT),
+									LBNA_Column, 1,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "/",
+									LBNA_Column, 2,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, locale_get_string(MSG_PARENT),
+									LBNA_Column, 3,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "",
+									LBNA_Column, 4,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "",
+									LBNA_Column, 5,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "",
+									LBNA_Column, 6,
+										LBNCA_CopyText, TRUE,
+										LBNCA_Text, "",
+								TAG_DONE);
+#endif
 			AddTail(&aw->lblist, node);
 		}
 		
@@ -1377,6 +1526,8 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	aw->lbsorthook.h_SubEntry = NULL;
 	aw->lbsorthook.h_Data = NULL;
 
+#ifdef AVALANCHE_SIMPLELIST
+
 	aw->lbci = AllocLBColumnInfo(4, 
 		LBCIA_Column, 0,
 			LBCIA_Title, "",
@@ -1406,6 +1557,60 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LBCIA_SortArrow, TRUE,
 			LBCIA_AutoSort, TRUE,
 		TAG_DONE);
+
+#else
+	aw->lbci = AllocLBColumnInfo(7,
+		LBCIA_Column, 0,
+			LBCIA_Title, "",
+			LBCIA_Weight, 5,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, FALSE,
+		LBCIA_Column, 1,
+			LBCIA_Title,  locale_get_string(MSG_NAME),
+			LBCIA_Weight, 45,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+			LBCIA_CompareHook, lbsort_hook,
+		LBCIA_Column, 2,
+			LBCIA_Title,  locale_get_string(MSG_SIZE),
+			LBCIA_Weight, 10,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+		LBCIA_Column, 3,
+			LBCIA_Title,  locale_get_string(MSG_PACKEDSIZE),
+			LBCIA_Weight, 10,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+		LBCIA_Column, 4,
+			LBCIA_Title,  locale_get_string(MSG_PERMISSIONS),
+			LBCIA_Weight, 5,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+		LBCIA_Column, 5,
+			LBCIA_Title,  locale_get_string(MSG_DATE),
+			LBCIA_Weight, 15,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+		LBCIA_Column, 6,
+			LBCIA_Title,  locale_get_string(MSG_COMMENT),
+			LBCIA_Weight, 10,
+			LBCIA_DraggableSeparator, TRUE,
+			LBCIA_Sortable, TRUE,
+			LBCIA_SortArrow, TRUE,
+			LBCIA_AutoSort, TRUE,
+			LBCIA_CompareHook, lbsort_hook,
+		TAG_DONE);
+#endif
 
 	NewList(&aw->lblist);
 
@@ -1481,7 +1686,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						GA_ID, GID_ARCHIVE,
 						HINTINFO, locale_get_string(MSG_HI_ARCHIVE),
 						GA_RelVerify, TRUE,
-						GA_Image, glyph_get(AVALANCHE_GLYPH_POPFILE),
+						GA_Image, glyph_get(AVALANCHE_GLYPH_OPENFILE),
 					ButtonEnd,
 					CHILD_NominalSize, TRUE,
 					LAYOUT_AddChild,  aw->gadgets[GID_EXTRACT] = ButtonObj,
@@ -1535,6 +1740,8 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						LISTBROWSER_SortColumn, 1,
 						LISTBROWSER_Striping, LBS_ROWS,
 						LISTBROWSER_FastRender, TRUE,
+						LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
+						LISTBROWSER_HorizontalProp, TRUE,
 					ListBrowserEnd,
 					CHILD_WeightedWidth, 80,
 				LayoutEnd,
@@ -1685,6 +1892,7 @@ static void parent_dir(struct avalanche_window *aw)
 
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, &aw->lblist,
+			LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 		TAG_DONE);
 
 		highlight_current_dir(aw);
@@ -1735,6 +1943,7 @@ static void window_tree_handle(void *awin)
 
 				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 					LISTBROWSER_Labels, &aw->lblist,
+					LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 				TAG_DONE);
 			}
 		break;
@@ -1842,6 +2051,7 @@ it's incompatible with double-clicking as it resets the listview */
 
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, &aw->lblist,
+						LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 					TAG_DONE);
 
 					break;
@@ -1949,6 +2159,7 @@ void window_modify_all_list(void *awin, ULONG select)
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, &aw->lblist,
+				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
 }
 
@@ -2145,6 +2356,7 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, &aw->lblist,
 				LISTBROWSER_SortColumn, 1,
+				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
 
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
