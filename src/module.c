@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-3 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,6 +71,15 @@ LONG *module_get_crunched_size(void *awin, void *userdata)
 	if(mf->get_crunchsize) return mf->get_crunchsize(userdata, awin);
 
 	return NULL;
+}
+
+BOOL module_is_crypted(void *awin, void *userdata)
+{
+	struct module_functions *mf = window_get_module_funcs(awin);
+
+	if(mf->is_crypted) return mf->is_crypted(userdata, awin);
+
+	return FALSE;
 }
 
 void module_free(void *awin)

@@ -80,7 +80,7 @@ The state of checkboxes can be toggled by clicking on them, or by choosing "Sele
 
 Clicking Extract will prompt for a destination and then extract the archive to it.  If @{"scan for viruses" link config} is enabled then Avalanche will scan each file using xvs.library after extraction.  Any infected files will be deleted.  See @{"virus scanning" link vscan} for more details.
 
-The option to "Ignore filesystems" is only useful for DMS and similar disk archives.  Normally Avalanche will check for a valid filesystem, and list the individual files.  With this option set, the raw disk image will be listed instead.
+The option to "Ignore filesystems" is only useful for DMS and similar disk archives.  Normally Avalanche will check for a valid filesystem, and list the individual files.  With this option set, the raw disk image will be listed instead.  For DMS this image will show as an ADF which can be double-clicked to extract and mount on Workbench (on OS3.2 only - OS4 doesn't have this ability)
 
 If an Lha or Zip archive is loaded, basic editing is enabled, see @{"editing" link editing} for details.  These can also be created by selecting "New archive" from the Project menu.
 
@@ -155,7 +155,11 @@ This is mostly for internal use, but has the following commands:
 @{u}x.x (xx.xx.xxxx)@{uu}
 * More modern looking GUI
   - All gadgets have been moved to a new toolbar
-  - Use AISS for a much nicer look!
+  - Built-in list and toolbar images have been redesigned and colourised
+* Improved listview
+  - Added extra fields (crunched size, comment, attributes)
+  - Added icons for encrypted files, links and disk images
+  - Amiga disk images (DMS) will now show as ADF if filesystem ignored
 * Extract button now prompts for destination
   - New config to disable prompt and extract to a default location
 * Added a "Create LhA archive" option to WB Tools menu

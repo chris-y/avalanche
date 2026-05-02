@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,17 @@ static const char *xfd_get_filename(void *userdata, void *awin)
 {
 	return userdata;
 }
+
+static BOOL xfd_is_crypted(void *userdata, void *awin)
+{
+	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	if(!xu->bi) return FALSE;
+
+	if(xu->bi->xfdbi_PackerFlags & XFDPFF_PASSWORD) return TRUE;
+
+	return FALSE;
+}
+
 
 static LONG *xfd_get_crunchsize(void *userdata, void *awin)
 {
@@ -252,6 +263,7 @@ void xfd_register(struct module_functions *funcs)
 	funcs->get_format = xfd_get_arc_format;
 	funcs->get_subformat = NULL;
 	funcs->get_error = xfd_error;
+	funcs->is_crypted = xfd_is_crypted;
 }
 
 ULONG xfd_get_ver(ULONG *ver, ULONG *rev)

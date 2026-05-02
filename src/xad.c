@@ -56,6 +56,7 @@ struct xad_userdata {
 	struct xadArchiveInfo *ai;
 	int arctype;
 	char *pw;
+	char xdisk_filename[10];
 };
 
 static void xad_free_ai(struct xadArchiveInfo *a)
@@ -127,8 +128,101 @@ static BOOL xad_is_dir(struct xadFileInfo *fi)
 	return FALSE;
 }
 
-static ULONG xad_get_fileprotection(void *xfi)
+static BOOL xad_is_xxx(void *xfi, void *awin, ULONG flag)
 {
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu && (xu->arctype == XDISK)) return FALSE;
+	if(xfi == NULL) return FALSE;
+
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+	if(fi->xfi_Flags & flag) return TRUE;
+	return FALSE;
+}
+
+static BOOL xad_is_crypted(void *userdata, void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(userdata == NULL) return FALSE;
+
+	if(xu && (xu->arctype == XDISK)) {
+		struct xadDiskInfo *di = (struct xadDiskInfo *)userdata;
+
+		if(di->xdi_Flags & XADDIF_CRYPTED) return TRUE;		
+	} else {
+		struct xadFileInfo *fi = (struct xadFileInfo *)userdata;
+
+		if(fi->xfi_Flags & XADFIF_CRYPTED) return TRUE;
+	}
+	return FALSE;
+}
+
+static BOOL xad_is_filetype(void *awin, ULONG type)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu && (xu->arctype == type)) return TRUE;
+
+	return FALSE;
+}
+
+BOOL xad_is_disk(void *awin)
+{
+	return xad_is_filetype(awin, XDISK);
+}
+
+BOOL xad_is_diskfile(void *awin)
+{
+	return xad_is_filetype(awin, XDISKFILE);
+}
+
+BOOL xad_is_link(void *userdata, void *awin)
+{
+	return xad_is_xxx(userdata, awin, XADFIF_LINK);
+}
+
+static const char *xad_get_arc_format(void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	if(!xu->ai) return NULL;
+
+	return xu->ai->xai_Client->xc_ArchiverName;
+}
+
+static const char *xad_get_arc_subformat(void *awin)
+{
+	char *type;
+
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+	if(!xu->ai) return NULL;
+
+	switch(xu->arctype) {
+		case XFILE:
+			type =  locale_get_string( MSG_FILEARCHIVE ) ;
+		break;
+		case XDISK:
+			type =  locale_get_string( MSG_DISKARCHIVE ) ;
+		break;
+		case XDISKFILE:
+			type =  locale_get_string( MSG_DISKIMAGE ) ;
+		break;
+		default:
+			type =  locale_get_string( MSG_UNKNOWN ) ;
+		break;
+	}
+	
+	return type;
+}
+
+ULONG xad_get_fileprotection(void *xfi, void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu && (xu->arctype == XDISK)) return 0;
+	if(xfi == NULL) return 0;
+
 	ULONG protbits;
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
 
@@ -143,7 +237,7 @@ ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 
-	if(xu && xu->arctype == XDISK) return 0;
+	if(xu && (xu->arctype == XDISK)) return 0;
 	if(xfi == NULL) return 0;
 
 	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
@@ -166,14 +260,42 @@ static LONG *xad_get_crunchsize(void *userdata, void *awin)
 	return (LONG *)&fi->xfi_CrunchSize;
 }
 
+const char *xad_get_comment(void *xfi, void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu && xu->arctype == XDISK) return NULL;
+	if(xfi == NULL) return NULL;
+
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+	return fi->xfi_Comment;
+}
+
+const char *xad_get_link(void *xfi, void *awin)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
+
+	if(xu && xu->arctype == XDISK) return NULL;
+	if(xfi == NULL) return NULL;
+
+	if(xad_is_link(xfi, awin) == FALSE) return NULL;
+
+	struct xadFileInfo *fi = (struct xadFileInfo *)xfi;
+
+	return fi->xfi_LinkName;
+}
+
 static const char *xad_get_filename(void *userdata, void *awin)
 {
 	if(userdata == NULL) return NULL;
 	
 	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
 	
-	if(xu && (xu->arctype == XDISK)) return "disk.img";
-
+	if(xu && (xu->arctype == XDISK)) {
+		return xu->xdisk_filename;
+	}
+	
 	struct xadFileInfo *fi = (struct xadFileInfo *)userdata; /* userdata is userdata from the node! */
 
 	return fi->xfi_FileName;
@@ -248,39 +370,6 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 	return XADPIF_OK;
 }
 
-static const char *xad_get_arc_format(void *awin)
-{
-	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
-	if(!xu->ai) return NULL;
-
-	return xu->ai->xai_Client->xc_ArchiverName;
-}
-
-static const char *xad_get_arc_subformat(void *awin)
-{
-	char *type;
-
-	struct xad_userdata *xu = (struct xad_userdata *)window_get_archive_userdata(awin);
-	if(!xu->ai) return NULL;
-
-	switch(xu->arctype) {
-		case XFILE:
-			type =  locale_get_string( MSG_FILEARCHIVE ) ;
-		break;
-		case XDISK:
-			type =  locale_get_string( MSG_DISKARCHIVE ) ;
-		break;
-		case XDISKFILE:
-			type =  locale_get_string( MSG_DISKIMAGE ) ;
-		break;
-		default:
-			type =  locale_get_string( MSG_UNKNOWN ) ;
-		break;
-	}
-	
-	return type;
-}
-
 BOOL xad_recog(char *file)
 {
 	BPTR fh = 0;
@@ -325,7 +414,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 	struct xadArchiveInfo *ai = NULL;
 	ULONG total = 0;
 	ULONG i = 0;
-	ULONG size;
+	static ULONG size;
 	ULONG pud = 0;
 
 	BOOL fs = !CONFIG_GET_LOCK(ignorefs);
@@ -410,7 +499,12 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 			di = ai->xai_DiskInfo;
 			while(di) {
 				size = di->xdi_SectorSize * di->xdi_TotalSectors;
-				addnode("disk.img", &size, 0, i, total, di, config, awin);
+				if(strcmp(xad_get_arc_format(awin), "DMS") == 0) {
+					strcpy(xu->xdisk_filename, "disk.adf");
+				} else {
+					strcpy(xu->xdisk_filename, "disk.img");
+				}
+				addnode(xu->xdisk_filename, &size, 0, i, total, di, config, awin);
 				i++;
 				di = di->xdi_Next;
 			}
@@ -462,7 +556,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 		if(fi) {
 			fn = fi->xfi_FileName;
 		} else {
-			fn = "disk.img";
+			fn = xu->xdisk_filename;
 		}
 
 		ULONG dest_len = strlen(dest) + strlen(fn) + 4;
@@ -540,7 +634,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 						return err;
 					}
 					
-					SetProtection(destfile, xad_get_fileprotection(fi));
+					SetProtection(destfile, xad_get_fileprotection(fi, awin));
 					SetFileDate(destfile, &ds);
 					if(fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
 				}
@@ -631,4 +725,5 @@ void xad_register(struct module_functions *funcs)
 	funcs->get_subformat = xad_get_arc_subformat;
 	funcs->get_error = xad_error;
 	funcs->get_crunchsize = xad_get_crunchsize;
+	funcs->is_crypted = xad_is_crypted;
 }
