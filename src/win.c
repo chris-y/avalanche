@@ -28,6 +28,9 @@
 
 #include <dos/dostags.h>
 
+#ifdef __amigaos4__
+#include <intuition/gui.h>
+#endif
 #include <intuition/icclass.h>
 #include <intuition/pointerclass.h>
 
@@ -43,7 +46,9 @@
 
 #include <classes/window.h>
 #include <gadgets/clicktab.h>
+#ifndef __amigaos4__
 #include <gadgets/fuelgauge.h>
+#endif
 #include <gadgets/listbrowser.h>
 #include <images/label.h>
 
@@ -59,6 +64,7 @@
 #include "misc.h"
 #include "module.h"
 #include "new.h"
+#include "progress.h"
 #include "req.h"
 #include "win.h"
 
@@ -79,6 +85,7 @@ enum {
 	GID_LIST,
 	GID_EXTRACT,
 	GID_PROGRESS,
+	GID_PROGRESSFR,
 	GID_ABORT,
 	GID_TABS,
 	GID_LAST
@@ -1311,16 +1318,8 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 	if(item == 0) {
 		aw->current_item = 0;
 		if(aw->windows[WID_MAIN] && aw->gadgets[GID_PROGRESS]) {
-			char msg[20];
-			snprintf(msg, 19, "%d/%lu", 0, total);
 			aw->total_items = total;
-
-			SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-				GA_Text, msg,
-				FUELGAUGE_Percent, FALSE,
-				FUELGAUGE_Justification, FGJ_CENTER,
-				FUELGAUGE_Level, 0,
-				TAG_DONE);
+			progress_set_text(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], 0, total);
 		}
 	}
 
@@ -1362,20 +1361,11 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 
 static void update_fuelgauge_text(struct avalanche_window *aw)
 {
-	char msg[20];
-
 	aw->current_item++;
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
-	snprintf(msg, 20, "%lu/%lu", aw->current_item, aw->total_items);
-
-	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-			GA_Text, msg,
-			FUELGAUGE_Percent, FALSE,
-			FUELGAUGE_Justification, FGJ_CENTER,
-			FUELGAUGE_Level, 0,
-			TAG_DONE);
+	progress_set_text(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->current_item, aw->total_items);
 }
 
 void window_update_fuelgauge_text(void *awin)
@@ -1387,12 +1377,7 @@ void window_update_fuelgauge_text(void *awin)
 	if(aw->gadgets[GID_PROGRESS] == NULL) return;
 
 	if(aw->total_items == 0) {
-		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-			GA_Text, locale_get_string(MSG_SCANNING),
-			FUELGAUGE_Percent, FALSE,
-			FUELGAUGE_Justification, FGJ_CENTER,
-			FUELGAUGE_Level, 0,
-			TAG_DONE);
+		progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], 0);
 	}
 
 	aw->total_items++;
@@ -1404,19 +1389,7 @@ void window_update_fuelgauge_text(void *awin)
 
 	aw->current_item = 0;
 
-	msg = AllocVec(strlen(locale_get_string(MSG_SCANNING)) + 10, MEMF_PRIVATE | MEMF_CLEAR);
-	if(msg) {
-		snprintf(msg, 50, "%s %lu", locale_get_string(MSG_SCANNING), aw->total_items);
-
-		SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-			GA_Text, msg,
-			FUELGAUGE_Percent, FALSE,
-			FUELGAUGE_Justification, FGJ_CENTER,
-			FUELGAUGE_Level, 0,
-			TAG_DONE);
-
-		FreeVec(msg);
-	}
+	progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->total_items);
 
 }
 
@@ -1810,12 +1783,14 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				LayoutEnd,
 				CHILD_WeightedWidth, 0,
 				//LAYOUT_WeightBar, TRUE,
+#ifndef __amigaos4__
 				LAYOUT_AddChild,  aw->gadgets[GID_PROGRESS] = FuelGaugeObj,
 					GA_ID, GID_PROGRESS,
 					HINTINFO, locale_get_string(MSG_HI_PROGRESS),
 					FUELGAUGE_Percent, FALSE,
 				FuelGaugeEnd,
 				CHILD_WeightedWidth, 100,
+#endif
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
 
@@ -1867,7 +1842,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		/* Ensure we have a local dest */
 		aw->dest = strdup_vec(CONFIG_GET_LOCK(dest));
 		CONFIG_UNLOCK;
-		
+
 		/* Add to our window list */
 		add_to_window_list(aw);
 		return aw;
@@ -1903,6 +1878,59 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 		aw->windows[WID_MAIN] = (struct Window *)RA_OpenWindow(aw->objects[OID_MAIN]);
 		
 		if(aw->windows[WID_MAIN]) {
+#ifdef __amigaos4__
+			if(aw->gadgets[GID_PROGRESS] == NULL) {
+				struct Screen *scrn = LockPubScreen(NULL);
+				struct DrawInfo *dri = GetScreenDrawInfo(scrn);
+			
+				ULONG sz_gad_width = 0;
+				ULONG sz_gad_height = 0;
+	
+				GetGUIAttrs(NULL, dri,
+					GUIA_SizeGadgetWidth, &sz_gad_width,
+					GUIA_SizeGadgetHeight, &sz_gad_height,
+				TAG_DONE);
+		
+				aw->gadgets[GID_PROGRESSFR] = NewObject(
+					NULL,
+					"frbuttonclass", /* We need a gadgetclass object as a container to prevent lockup, this one works */
+					GA_Left, scrn->WBorLeft + 2,
+					GA_RelBottom, scrn->WBorBottom - (sz_gad_height/2),
+					GA_BottomBorder, TRUE,
+					GA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
+					GA_Height, 1 + sz_gad_height - scrn->WBorBottom,
+					GA_DrawInfo, dri,
+					GA_ReadOnly, TRUE,
+					GA_Disabled, TRUE,
+					GA_Image, aw->gadgets[GID_PROGRESS] = NewObject(
+						NULL,
+						"gaugeiclass",
+						GA_ID, GID_PROGRESS,
+						GAUGEIA_Level, 0,
+						IA_Top, (int)(- ceil((scrn->WBorBottom + sz_gad_height) / 2)),
+						IA_Left, -4,
+						IA_Height, 2 + sz_gad_height - scrn->WBorBottom,
+						IA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
+						IA_Label, NULL,
+						IA_InBorder, TRUE,
+						GAUGEIA_Ticks, 10,
+						GAUGEIA_Min, 0,
+						GAUGEIA_Max, 100,
+						IA_Screen, scrn,
+					TAG_DONE),
+				TAG_DONE);
+				
+				RefreshSetGadgetAttrs(aw->gadgets[GID_PROGRESSFR],
+					aw->windows[WID_MAIN], NULL,
+					GA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
+				TAG_DONE);
+			
+				FreeScreenDrawInfo(scrn, dri);
+				UnlockPubScreen(NULL, scrn);
+			}
+			AddGList(aw->windows[WID_MAIN], (struct Gadget *)aw->gadgets[GID_PROGRESSFR], (UWORD)~0, -1, NULL);
+#endif
+			
 			aw->appwin = AddAppWindowA(0, (ULONG)aw, aw->windows[WID_MAIN], appwin_mp, NULL);
 			window_add_dropzones(aw, !aw->drag_lock);
 
@@ -2238,10 +2266,7 @@ void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
-	SetGadgetAttrs(aw->gadgets[GID_PROGRESS], aw->windows[WID_MAIN], NULL,
-					FUELGAUGE_Max, total_size,
-					FUELGAUGE_Level, size,
-					TAG_DONE);
+	progress_set_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], size, total_size);
 }
 
 /* select: 0 = deselect all, 1 = select all, 2 = toggle all */
