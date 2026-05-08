@@ -47,7 +47,7 @@ void progress_set_text(struct Window *win, void *gauge, void *frame, ULONG curre
 		GA_Image, gauge,
 		TAG_DONE);
 		
-	RefreshWindowFrame(win);
+	RefreshGList((struct Gadget *)frame, win, NULL, 1);
 #else
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
 			GA_Text, progress_msg,
@@ -74,7 +74,7 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 		GA_Image, gauge,
 		TAG_DONE);
 
-	RefreshWindowFrame(win);
+	RefreshGList((struct Gadget *)frame, win, NULL, 1);
 #else
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
 		GA_Text, progress_msg,
@@ -104,7 +104,7 @@ void progress_set_level(struct Window *win, void *gauge, void *frame, ULONG leve
 		GA_Image, gauge,
 		TAG_DONE);
 		
-	RefreshWindowFrame(win);
+	RefreshGList((struct Gadget *)frame, win, NULL, 1);
 #else
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
 			FUELGAUGE_Max, max,
