@@ -1319,7 +1319,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		aw->current_item = 0;
 		if(aw->windows[WID_MAIN] && aw->gadgets[GID_PROGRESS]) {
 			aw->total_items = total;
-			progress_set_text(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], 0, total);
+			progress_set_text(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], 0, total);
 		}
 	}
 
@@ -1365,7 +1365,7 @@ static void update_fuelgauge_text(struct avalanche_window *aw)
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
-	progress_set_text(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->current_item, aw->total_items);
+	progress_set_text(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], aw->current_item, aw->total_items);
 }
 
 void window_update_fuelgauge_text(void *awin)
@@ -1377,7 +1377,7 @@ void window_update_fuelgauge_text(void *awin)
 	if(aw->gadgets[GID_PROGRESS] == NULL) return;
 
 	if(aw->total_items == 0) {
-		progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], 0);
+		progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], 0);
 	}
 
 	aw->total_items++;
@@ -1389,7 +1389,7 @@ void window_update_fuelgauge_text(void *awin)
 
 	aw->current_item = 0;
 
-	progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->total_items);
+	progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], aw->total_items);
 
 }
 
@@ -1898,7 +1898,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 					GA_RelBottom, scrn->WBorBottom - (sz_gad_height/2),
 					GA_BottomBorder, TRUE,
 					GA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
-					GA_Height, 1 + sz_gad_height - scrn->WBorBottom,
+					GA_Height, sz_gad_height - scrn->WBorBottom,
 					GA_DrawInfo, dri,
 					GA_ReadOnly, TRUE,
 					GA_Disabled, TRUE,
@@ -1909,7 +1909,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 						GAUGEIA_Level, 0,
 						IA_Top, (int)(- ceil((scrn->WBorBottom + sz_gad_height) / 2)),
 						IA_Left, -4,
-						IA_Height, 2 + sz_gad_height - scrn->WBorBottom,
+						IA_Height, 1 + sz_gad_height - scrn->WBorBottom,
 						IA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
 						IA_Label, NULL,
 						IA_InBorder, TRUE,
@@ -2266,7 +2266,7 @@ void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
-	progress_set_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], size, total_size);
+	progress_set_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size);
 }
 
 /* select: 0 = deselect all, 1 = select all, 2 = toggle all */

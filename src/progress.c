@@ -21,6 +21,7 @@
 #ifdef __amigaos4__
 #include <intuition/gui.h>
 #include <intuition/imageclass.h>
+#include <intuition/gadgetclass.h>
 #else
 #include <gadgets/fuelgauge.h>
 #endif
@@ -32,20 +33,24 @@
 #include "locale.h"
 #include "progress.h"
 
-void progress_set_text(struct Window *win, void *gauge, ULONG current, ULONG total)
+#define PROGRESS_MSG_SIZE 50
+static char progress_msg[PROGRESS_MSG_SIZE+1];
+
+void progress_set_text(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total)
 {
-	char msg[20];
-	snprintf(msg, 19, "%d/%lu", current, total);
+	snprintf(progress_msg, PROGRESS_MSG_SIZE, "%d/%lu", current, total);
 
 #ifdef __amigaos4__
-	RefreshSetGadgetAttrs((struct Gadget *)gauge, win, NULL,
-			IA_Label, msg,
-			IA_Justification, IJ_CENTER,
-			GAUGEIA_Level, 0,
-			TAG_DONE);
+	RefreshSetGadgetAttrs(frame,
+		win, NULL,
+		GA_Text, progress_msg,
+		GA_Image, gauge,
+		TAG_DONE);
+		
+	RefreshWindowFrame(win);
 #else
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
-			GA_Text, msg,
+			GA_Text, progress_msg,
 			FUELGAUGE_Percent, FALSE,
 			FUELGAUGE_Justification, FGJ_CENTER,
 			FUELGAUGE_Level, 0,
@@ -54,48 +59,51 @@ void progress_set_text(struct Window *win, void *gauge, ULONG current, ULONG tot
 
 }
 
-void progress_set_scanning(struct Window *win, void *gauge, ULONG total)
+void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG total)
 {
-	ULONG len = strlen(locale_get_string(MSG_SCANNING)) + 10;
-	char *msg = AllocVec(len, MEMF_PRIVATE | MEMF_CLEAR);
-	if(msg) {
-		if(total != 0) {
-			snprintf(msg, len, "%s %lu", locale_get_string(MSG_SCANNING), total);
-		} else {
-			snprintf(msg, len, "%s", locale_get_string(MSG_SCANNING));
-		}
-		
-#ifdef __amigaos4__
-		RefreshSetGadgetAttrs((struct Gadget *)gauge, win, NULL,
-			IA_Label, msg,
-			IA_Justification, IJ_CENTER,
-			GAUGEIA_Level, 0,
-			TAG_DONE);
-			
-		RefreshWindowFrame(win);
-#else
-		SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
-			GA_Text, msg,
-			FUELGAUGE_Percent, FALSE,
-			FUELGAUGE_Justification, FGJ_CENTER,
-			FUELGAUGE_Level, 0,
-			TAG_DONE);
-#endif
-
-		FreeVec(msg);
+	if(total != 0) {
+		snprintf(progress_msg, PROGRESS_MSG_SIZE, "%s %lu", locale_get_string(MSG_SCANNING), total);
+	} else {
+		snprintf(progress_msg, PROGRESS_MSG_SIZE, "%s", locale_get_string(MSG_SCANNING));
 	}
+	
+#ifdef __amigaos4__
+	RefreshSetGadgetAttrs(frame,
+		win, NULL,
+		GA_Text, progress_msg,
+		GA_Image, gauge,
+		TAG_DONE);
 
+	RefreshWindowFrame(win);
+#else
+	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
+		GA_Text, progress_msg,
+		FUELGAUGE_Percent, FALSE,
+		FUELGAUGE_Justification, FGJ_CENTER,
+		FUELGAUGE_Level, 0,
+		TAG_DONE);
+#endif
 
 }
 
-void progress_set_level(struct Window *win, void *gauge, ULONG level, ULONG max)
+void progress_set_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max)
 {
 #ifdef __amigaos4__
-	RefreshSetGadgetAttrs((struct Gadget *)gauge, win, NULL,
+	SetGadgetAttrs(frame,
+		win, NULL,
+		GA_Image, NULL,
+		TAG_DONE);
+
+	SetAttrs((Object *)gauge,
 			GAUGEIA_Level, level,
 			GAUGEIA_Max, max,
 			TAG_DONE);
-			
+
+	RefreshSetGadgetAttrs(frame,
+		win, NULL,
+		GA_Image, gauge,
+		TAG_DONE);
+		
 	RefreshWindowFrame(win);
 #else
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
