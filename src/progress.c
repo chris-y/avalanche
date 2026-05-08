@@ -41,7 +41,7 @@ void progress_set_text(struct Window *win, void *gauge, void *frame, ULONG curre
 	snprintf(progress_msg, PROGRESS_MSG_SIZE, "%d/%lu", current, total);
 
 #ifdef __amigaos4__
-	RefreshSetGadgetAttrs(frame,
+	SetGadgetAttrs(frame,
 		win, NULL,
 		GA_Text, progress_msg,
 		GA_Image, gauge,
@@ -68,7 +68,7 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 	}
 	
 #ifdef __amigaos4__
-	RefreshSetGadgetAttrs(frame,
+	SetGadgetAttrs(frame,
 		win, NULL,
 		GA_Text, progress_msg,
 		GA_Image, gauge,
@@ -99,7 +99,7 @@ void progress_set_level(struct Window *win, void *gauge, void *frame, ULONG leve
 			GAUGEIA_Max, max,
 			TAG_DONE);
 
-	RefreshSetGadgetAttrs(frame,
+	SetGadgetAttrs(frame,
 		win, NULL,
 		GA_Image, gauge,
 		TAG_DONE);
