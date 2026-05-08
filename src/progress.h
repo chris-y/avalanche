@@ -15,7 +15,12 @@
 #ifndef AVALANCHE_PROGRESS_H
 #define AVALANCHE_PROGRESS_H 1
 
-void progress_set_text(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total);
+/* Set progress bar values for full archive progress */
+void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total);
+
+/* Set progress bar scanning progress */
 void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG total);
-void progress_set_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max);
+
+/* Set progress bar values for single file progress */
+void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max);
 #endif

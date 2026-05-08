@@ -36,7 +36,7 @@
 #define PROGRESS_MSG_SIZE 50
 static char progress_msg[PROGRESS_MSG_SIZE+1];
 
-void progress_set_text(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total)
+void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total)
 {
 	snprintf(progress_msg, PROGRESS_MSG_SIZE, "%d/%lu", current, total);
 
@@ -86,7 +86,7 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 
 }
 
-void progress_set_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max)
+void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max)
 {
 #ifdef __amigaos4__
 	SetGadgetAttrs(frame,
