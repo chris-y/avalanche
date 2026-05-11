@@ -36,6 +36,43 @@
 #define PROGRESS_MSG_SIZE 50
 static char progress_msg[PROGRESS_MSG_SIZE+1];
 
+#ifdef __amigaos4__
+void progress_get_area(struct Window *win, ULONG **width, ULONG **height, ULONG **sz_height)
+{
+	ULONG sz_gad_width = 0;
+	ULONG sz_gad_height = 0;
+
+	struct Screen *scrn = LockPubScreen(NULL);
+	struct DrawInfo *dri = GetScreenDrawInfo(scrn);
+
+	GetGUIAttrs(NULL, dri,
+		GUIA_SizeGadgetWidth, &sz_gad_width,
+		GUIA_SizeGadgetHeight, &sz_gad_height,
+		TAG_DONE);
+
+	*width = win->Width - scrn->WBorLeft - sz_gad_width;
+	*height = sz_gad_height - scrn->WBorBottom;
+	*sz_height = sz_gad_height;
+
+	FreeScreenDrawInfo(scrn, dri);
+	UnlockPubScreen(NULL, scrn);
+}
+
+void progress_set_new_width(struct Window *win, void *gauge)
+{
+	ULONG width, height, sz_height;
+
+	progress_get_area(win, &width, &height, &sz_height);
+
+	RefreshSetGadgetAttrs((struct Gadget *)gauge,
+			win, NULL,
+			GA_Width, width,
+			TAG_DONE);
+
+	RefreshWindowFrame(win);
+}
+#endif
+
 void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total)
 {
 	snprintf(progress_msg, PROGRESS_MSG_SIZE, "%d/%lu", current, total);
@@ -46,7 +83,7 @@ void progress_set_archive_level(struct Window *win, void *gauge, void *frame, UL
 		GA_Text, progress_msg,
 		GA_Image, gauge,
 		TAG_DONE);
-		
+
 	RefreshGList((struct Gadget *)frame, win, NULL, 1);
 #else
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
@@ -66,7 +103,7 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 	} else {
 		snprintf(progress_msg, PROGRESS_MSG_SIZE, "%s", locale_get_string(MSG_SCANNING));
 	}
-	
+
 #ifdef __amigaos4__
 	SetGadgetAttrs(frame,
 		win, NULL,

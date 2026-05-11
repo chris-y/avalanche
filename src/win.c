@@ -28,9 +28,6 @@
 
 #include <dos/dostags.h>
 
-#ifdef __amigaos4__
-#include <intuition/gui.h>
-#endif
 #include <intuition/icclass.h>
 #include <intuition/pointerclass.h>
 
@@ -1882,23 +1879,21 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 			if(aw->gadgets[GID_PROGRESS] == NULL) {
 				struct Screen *scrn = LockPubScreen(NULL);
 				struct DrawInfo *dri = GetScreenDrawInfo(scrn);
-			
-				ULONG sz_gad_width = 0;
+
+				ULONG width = 0;
+				ULONG height = 0;
 				ULONG sz_gad_height = 0;
-	
-				GetGUIAttrs(NULL, dri,
-					GUIA_SizeGadgetWidth, &sz_gad_width,
-					GUIA_SizeGadgetHeight, &sz_gad_height,
-				TAG_DONE);
-		
+
+				progress_get_area(aw->windows[WID_MAIN], &width, &height, &sz_gad_height);
+
 				aw->gadgets[GID_PROGRESSFR] = NewObject(
 					NULL,
 					"frbuttonclass", /* We need a gadgetclass object as a container to prevent lockup, this one works */
 					GA_Left, scrn->WBorLeft + 2,
 					GA_RelBottom, scrn->WBorBottom - (sz_gad_height/2),
 					GA_BottomBorder, TRUE,
-					GA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
-					GA_Height, sz_gad_height - scrn->WBorBottom,
+					GA_Width, width,
+					GA_Height, height,
 					GA_DrawInfo, dri,
 					GA_ReadOnly, TRUE,
 					GA_Disabled, TRUE,
@@ -1909,8 +1904,8 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 						GAUGEIA_Level, 0,
 						IA_Top, (int)(- ceil((scrn->WBorBottom + sz_gad_height) / 2)),
 						IA_Left, -4,
-						IA_Height, 1 + sz_gad_height - scrn->WBorBottom,
-						IA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
+						IA_Height, 1 + height,
+						IA_Width, width,
 						IA_Label, NULL,
 						IA_InBorder, TRUE,
 						GAUGEIA_Ticks, 10,
@@ -2975,6 +2970,9 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				window_remove_dropzones(aw);
 				window_add_dropzones(aw, !aw->drag_lock);
 			}
+#ifdef __amigaos4__
+			progress_set_new_width(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESSFR]);
+#endif
 		break;
 				
 		case WMHI_MENUPICK:
