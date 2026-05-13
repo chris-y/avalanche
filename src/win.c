@@ -1847,14 +1847,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 				LayoutEnd,
 				CHILD_WeightedWidth, 0,
 				//LAYOUT_WeightBar, TRUE,
-#ifndef __amigaos4__
-				LAYOUT_AddChild,  aw->gadgets[GID_PROGRESS] = FuelGaugeObj,
-					GA_ID, GID_PROGRESS,
-					HINTINFO, locale_get_string(MSG_HI_PROGRESS),
-					FUELGAUGE_Percent, FALSE,
-				FuelGaugeEnd,
-				CHILD_WeightedWidth, 100,
-#endif
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
 
@@ -1894,6 +1886,14 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					ListBrowserEnd,
 					CHILD_WeightedWidth, 80,
 				LayoutEnd,
+#ifndef __amigaos4__
+				LAYOUT_AddChild,  aw->gadgets[GID_PROGRESS] = FuelGaugeObj,
+					GA_ID, GID_PROGRESS,
+					HINTINFO, locale_get_string(MSG_HI_PROGRESS),
+					FUELGAUGE_Percent, FALSE,
+				FuelGaugeEnd,
+				CHILD_WeightedHeight, 0,
+#endif
 			LayoutEnd,
 		EndGroup,
 	EndWindow;
