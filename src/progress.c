@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <proto/dos.h> /* FilePart() */
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
@@ -33,7 +34,7 @@
 #include "locale.h"
 #include "progress.h"
 
-#define PROGRESS_MSG_SIZE 50
+#define PROGRESS_MSG_SIZE 100
 static char progress_msg[PROGRESS_MSG_SIZE+1];
 
 #ifdef __amigaos4__
@@ -82,6 +83,7 @@ void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG
 	ULONG percent = (level * 100) / max;
 	char *fn = filename;
 	if(fn == NULL) fn = "";
+	if(strlen(fn) > 50) fn = FilePart(fn);
 	
 	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_EXTRACTING_FILE), fn, percent);
 
@@ -97,7 +99,7 @@ void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
 			GA_Text, progress_msg,
 			FUELGAUGE_Percent, FALSE,
-			FUELGAUGE_Justification, FGJ_CENTER,
+			FUELGAUGE_Justification, FGJ_LEFT,
 			FUELGAUGE_Level, 0,
 			TAG_DONE);
 #endif
@@ -124,7 +126,7 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
 		GA_Text, progress_msg,
 		FUELGAUGE_Percent, FALSE,
-		FUELGAUGE_Justification, FGJ_CENTER,
+		FUELGAUGE_Justification, FGJ_LEFT,
 		FUELGAUGE_Level, 0,
 		TAG_DONE);
 #endif
@@ -150,7 +152,7 @@ void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG s
         SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
                 GA_Text, progress_msg,
                 FUELGAUGE_Percent, FALSE,
-                FUELGAUGE_Justification, FGJ_CENTER,
+                FUELGAUGE_Justification, FGJ_LEFT,
                 FUELGAUGE_Level, 0,
                 TAG_DONE);
 #endif
