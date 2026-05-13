@@ -521,10 +521,14 @@ Comment
 ; Comment
 ;
 MSG_STORED
-(stored)
-; (stored)
+-
+; -
 ;
 MSG_SELECTED
 Selected %lu/%lu
 ; Selected %lu/%lu
+;
+MSG_EXTRACTING_FILE
+Extracting %s ... %03lu%%
+; Extracting %s ... %03lu%%
 ;

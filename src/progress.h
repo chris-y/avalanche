@@ -16,7 +16,7 @@
 #define AVALANCHE_PROGRESS_H 1
 
 /* Set progress bar values for full archive progress */
-void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total);
+void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max);
 
 /* Set progress bar scanning progress */
 void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG total);
@@ -25,7 +25,7 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG selected, ULONG total);
 
 /* Set progress bar values for single file progress */
-void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max);
+void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max, const char *filename);
 
 #ifdef __amigaos4__
 /* Get dimensions of bottom border */

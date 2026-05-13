@@ -1379,7 +1379,7 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 		aw->current_item = 0;
 		if(aw->windows[WID_MAIN] && aw->gadgets[GID_PROGRESS]) {
 			aw->total_items = total;
-			progress_set_archive_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], 0, total);
+			//progress_set_archive_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], 0, total);
 		}
 	}
 
@@ -2326,13 +2326,13 @@ void window_update_sourcedir(void *awin, char *sourcedir)
 	CONFIG_UNLOCK;
 }
 
-void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size)
+void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size, const char *filename)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
-	progress_set_file_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size);
+	progress_set_file_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size, filename);
 }
 
 /* select: 0 = deselect all, 1 = select all, 2 = toggle all */

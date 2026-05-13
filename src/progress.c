@@ -77,9 +77,13 @@ void progress_set_new_width(struct Window *win, void *frame, void *gauge)
 }
 #endif
 
-void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total)
+void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max, const char *filename)
 {
-	snprintf(progress_msg, PROGRESS_MSG_SIZE, "%lu/%lu", current, total);
+	ULONG percent = (level * 100) / max;
+	char *fn = filename;
+	if(fn == NULL) fn = "";
+	
+	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_EXTRACTING_FILE), fn, percent);
 
 #ifdef __amigaos4__
 	SetGadgetAttrs(frame,
@@ -152,14 +156,9 @@ void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG s
 #endif
 }
 
-void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max)
+void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max)
 {
 #ifdef __amigaos4__
-/*	SetGadgetAttrs(frame,
-		win, NULL,
-		GA_Image, NULL,
-		TAG_DONE);
-*/
 	SetAttrs((Object *)gauge,
 			GAUGEIA_Level, level,
 			GAUGEIA_Max, max,

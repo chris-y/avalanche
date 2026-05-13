@@ -346,10 +346,10 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 
 		case XADPMODE_PROGRESS:
 			if(xpi->xpi_FileInfo) {
-				window_fuelgauge_update(xhd->awin, xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size);
+				window_fuelgauge_update(xhd->awin, xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size, xpi->xpi_FileInfo->xfi_FileName);
 			} else if(xpi->xpi_DiskInfo) {
 				window_fuelgauge_update(xhd->awin, xpi->xpi_CurrentSize,
-					xpi->xpi_DiskInfo->xdi_TotalSectors * xpi->xpi_DiskInfo->xdi_SectorSize);
+					xpi->xpi_DiskInfo->xdi_TotalSectors * xpi->xpi_DiskInfo->xdi_SectorSize, NULL);
 			}
 		break;
 
