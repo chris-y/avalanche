@@ -136,6 +136,7 @@ struct avalanche_window {
 	ULONG dir_tree_size;
 	ULONG current_item;
 	ULONG total_items;
+	ULONG total_selectable;
 	BOOL archive_needs_free;
 	void *archive_userdata;
 	BOOL flat_mode;
@@ -521,6 +522,67 @@ static void collapse_tree(struct avalanche_window *aw, BOOL expand)
 
 }
 
+static ULONG array_count_selected_items(struct avalanche_window *aw)
+{
+	ULONG total_selectable = 0;
+	ULONG selected = 0;
+
+	for(int i = 0; i < aw->total_items; i++) {
+        	if(aw->flat_mode) {
+				struct arc_entries *arc_e = (struct arc_entries *)aw->arc_array[i];
+				if(arc_e->dir == FALSE) {
+					if(arc_e->selected) selected++;
+					total_selectable++;
+				}
+			}
+	}
+
+	aw->total_selectable = total_selectable;
+	return selected;
+}
+
+static ULONG list_count_selected_items(struct avalanche_window *aw)
+{
+	ULONG total_selectable = 0;
+	ULONG selected = 0;
+	struct List *list = window_get_lblist(aw);
+	struct Node *fnode;
+
+	for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
+		ULONG checked = FALSE;
+		ULONG checkbox = FALSE;
+
+		GetListBrowserNodeAttrs(fnode,
+				LBNA_CheckBox, &checkbox,
+				LBNA_Checked, &checked,
+				TAG_DONE);
+
+		if(checkbox != FALSE) { /* has checkbox, ie. not dir */
+			total_selectable++;
+
+			if(checked) selected++;
+		}
+	}
+
+	aw->total_selectable = total_selectable;
+	return selected;
+}
+
+static ULONG window_count_selected(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	ULONG selected = 0;
+
+	if(aw->flat_mode) {
+		selected = array_count_selected_items(aw);
+	} else {
+		selected = list_count_selected_items(aw);
+	}
+
+	progress_set_selected(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], selected, aw->total_selectable);
+
+	return selected;
+}
 
 static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG select, BOOL detach_list)
 {
@@ -707,10 +769,11 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 		CONFIG_UNLOCK;
 		
 		window_disable_gadgets(awin, FALSE, TRUE);
+		window_count_selected(awin);
 
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
-											WA_BusyPointer, FALSE,
-											TAG_DONE);
+								WA_BusyPointer, FALSE,
+								TAG_DONE);
 	}
 
 	return ret;
@@ -1390,11 +1453,9 @@ void window_update_fuelgauge_text(void *awin)
 
 }
 
-void *array_get_userdata(void *awin, void *arc_entry)
+static void *array_get_userdata_quiet(void *awin, void *arc_entry)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	update_fuelgauge_text(aw);
 
 	if(aw->flat_mode) {
 		struct arc_entries *arc_e = (struct arc_entries *)arc_entry;
@@ -1402,6 +1463,12 @@ void *array_get_userdata(void *awin, void *arc_entry)
 	}
 
 	return NULL;
+}
+
+void *array_get_userdata(void *awin, void *arc_entry)
+{
+	update_fuelgauge_text(awin);
+	return array_get_userdata_quiet(awin, arc_entry);
 }
 
 static const char *get_item_filename(void *awin, struct Node *node)
@@ -1917,7 +1984,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 				
 				RefreshSetGadgetAttrs(aw->gadgets[GID_PROGRESSFR],
 					aw->windows[WID_MAIN], NULL,
-					GA_Width, aw->windows[WID_MAIN]->Width - scrn->WBorLeft - sz_gad_width,
+					GA_Width, width,
 				TAG_DONE);
 			
 				FreeScreenDrawInfo(scrn, dri);
@@ -2115,6 +2182,7 @@ static void window_list_handle(void *awin)
 					arc_entry->selected = TRUE;
 				}
 			}
+			window_count_selected(aw);
 		break;
 
 		case LBRE_UNCHECKED:
@@ -2132,6 +2200,7 @@ static void window_list_handle(void *awin)
 					arc_entry->selected = FALSE;
 				}
 			}
+			window_count_selected(aw);
 		break;
 
 #if 0 /* This selects items when single-clicked off the checkbox -
@@ -2139,6 +2208,7 @@ it's incompatible with double-clicking as it resets the listview */
 		case LBRE_NORMAL:
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
 			toggle_item(aw, node, 2, TRUE);
+			window_count_selected(aw);
 		break;
 #endif
 		case LBRE_DOUBLECLICK:
@@ -2199,7 +2269,8 @@ it's incompatible with double-clicking as it resets the listview */
 			}
 
 			toggle_item(aw, node, 1, TRUE); /* ensure selected */
-			
+			window_count_selected(aw);
+
 			ULONG dest_path_len = strlen(CONFIG_GET_LOCK(tmpdir)) + strlen(get_item_filename(aw, node)) + 4;
 			char *dest_path = AllocVec(dest_path_len, MEMF_CLEAR | MEMF_PRIVATE);
 
@@ -2297,6 +2368,8 @@ void window_modify_all_list(void *awin, ULONG select)
 				LISTBROWSER_Labels, &aw->lblist,
 				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
+
+	window_count_selected(aw);
 }
 
 char *window_req_new_lha(void *awin, char *drawer)
@@ -2505,10 +2578,11 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	window_update_title(aw);
 
 	window_disable_gadgets(awin, FALSE, FALSE);
+	window_count_selected(awin);
 
 	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
-											WA_BusyPointer, FALSE,
-											TAG_DONE);
+							WA_BusyPointer, FALSE,
+							TAG_DONE);
 }
 
 #ifdef __amigaos4__
@@ -2603,7 +2677,7 @@ void *window_get_window(void *awin)
 	}
 }
 
-void *window_get_lbnode(void *awin, struct Node *node)
+static void *window_get_lbnode_quiet(void *awin, struct Node *node)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -2621,10 +2695,14 @@ void *window_get_lbnode(void *awin, struct Node *node)
 		userdata = arc_entry->userdata;
 	}
 
-	update_fuelgauge_text(aw);
-
 	if(checked == FALSE) return NULL;
 	return userdata;
+}
+
+void *window_get_lbnode(void *awin, struct Node *node)
+{
+	update_fuelgauge_text(awin);
+	return window_get_lbnode_quiet(awin, node);
 }
 
 struct List *window_get_lblist(void *awin)
@@ -2703,6 +2781,8 @@ BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 			FreeVec(file);
 		}
 	}
+	/* Archive refresh - maybe happens elsewhere? */
+
 	return ret;
 }
 
@@ -2971,7 +3051,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				window_add_dropzones(aw, !aw->drag_lock);
 			}
 #ifdef __amigaos4__
-			progress_set_new_width(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESSFR]);
+			progress_set_new_width(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESSFR], aw->gadgets[GID_PROGRESS]);
 #endif
 		break;
 				

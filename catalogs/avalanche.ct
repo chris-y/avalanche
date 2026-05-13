@@ -524,3 +524,7 @@ MSG_STORED
 (stored)
 ; (stored)
 ;
+MSG_SELECTED
+Selected %lu/%lu
+; Selected %lu/%lu
+;

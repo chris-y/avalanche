@@ -398,3 +398,6 @@ Comment
 MSG_STORED
 (stored)
 ;
+MSG_SELECTED
+Selected %lu/%lu
+;

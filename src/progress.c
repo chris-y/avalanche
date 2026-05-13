@@ -37,7 +37,7 @@
 static char progress_msg[PROGRESS_MSG_SIZE+1];
 
 #ifdef __amigaos4__
-void progress_get_area(struct Window *win, ULONG **width, ULONG **height, ULONG **sz_height)
+void progress_get_area(struct Window *win, ULONG *width, ULONG *height, ULONG *sz_height)
 {
 	ULONG sz_gad_width = 0;
 	ULONG sz_gad_height = 0;
@@ -58,24 +58,28 @@ void progress_get_area(struct Window *win, ULONG **width, ULONG **height, ULONG 
 	UnlockPubScreen(NULL, scrn);
 }
 
-void progress_set_new_width(struct Window *win, void *gauge)
+void progress_set_new_width(struct Window *win, void *frame, void *gauge)
 {
 	ULONG width, height, sz_height;
 
 	progress_get_area(win, &width, &height, &sz_height);
 
-	RefreshSetGadgetAttrs((struct Gadget *)gauge,
-			win, NULL,
-			GA_Width, width,
-			TAG_DONE);
+	SetAttrs((Object *)gauge,
+		IA_Width, width,
+		TAG_DONE);
 
-	RefreshWindowFrame(win);
+	SetGadgetAttrs(frame,
+		win, NULL,
+		GA_Width, width,
+		TAG_DONE);
+		
+	RefreshGList((struct Gadget *)frame, win, NULL, 1);
 }
 #endif
 
 void progress_set_archive_level(struct Window *win, void *gauge, void *frame, ULONG current, ULONG total)
 {
-	snprintf(progress_msg, PROGRESS_MSG_SIZE, "%d/%lu", current, total);
+	snprintf(progress_msg, PROGRESS_MSG_SIZE, "%lu/%lu", current, total);
 
 #ifdef __amigaos4__
 	SetGadgetAttrs(frame,
@@ -120,17 +124,42 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 		FUELGAUGE_Level, 0,
 		TAG_DONE);
 #endif
+}
 
+void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG selected, ULONG total)
+{
+	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_SELECTED), selected, total);
+
+#ifdef __amigaos4__
+		SetAttrs((Object *)gauge,
+				GAUGEIA_Level, 0,
+				TAG_DONE);
+
+        SetGadgetAttrs(frame,
+                win, NULL,
+                GA_Text, progress_msg,
+                GA_Image, gauge,
+                TAG_DONE);
+
+        RefreshGList((struct Gadget *)frame, win, NULL, 1);
+#else
+        SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
+                GA_Text, progress_msg,
+                FUELGAUGE_Percent, FALSE,
+                FUELGAUGE_Justification, FGJ_CENTER,
+                FUELGAUGE_Level, 0,
+                TAG_DONE);
+#endif
 }
 
 void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max)
 {
 #ifdef __amigaos4__
-	SetGadgetAttrs(frame,
+/*	SetGadgetAttrs(frame,
 		win, NULL,
 		GA_Image, NULL,
 		TAG_DONE);
-
+*/
 	SetAttrs((Object *)gauge,
 			GAUGEIA_Level, level,
 			GAUGEIA_Max, max,
