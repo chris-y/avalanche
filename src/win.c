@@ -1846,13 +1846,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					CHILD_NominalSize, TRUE,
 				LayoutEnd,
 				CHILD_WeightedWidth, 0,
-				//LAYOUT_WeightBar, TRUE,
-			LayoutEnd,
-			CHILD_WeightedHeight, 0,
-
-			LAYOUT_AddChild, LayoutVObj,
-			
-				LAYOUT_AddChild, aw->gadgets[GID_TABS] = ClickTabObj,
+								LAYOUT_AddChild, aw->gadgets[GID_TABS] = ClickTabObj,
 					GA_ID, GID_TABS,
 					GA_RelVerify, TRUE,
 					GA_Underscore, 13, // disable kb shortcuts
@@ -1864,7 +1858,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					ICA_TARGET, ICTARGET_IDCMP,
 #endif
 				ClickTabEnd,
-			
+			LayoutEnd,
+			CHILD_WeightedHeight, 0,
+
+			LAYOUT_AddChild, LayoutVObj,		
 				LAYOUT_AddChild, aw->gadgets[GID_BROWSERLAYOUT] = LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
 					EndGroup,
