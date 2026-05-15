@@ -1512,6 +1512,8 @@ static void window_tree_add(struct avalanche_window *aw)
 					LISTBROWSER_ShowImage, glyph_get(GLYPH_RIGHTARROW),
 					LISTBROWSER_HideImage, glyph_get(GLYPH_DOWNARROW),
 					LISTBROWSER_LeafImage, NULL,
+					LISTBROWSER_AutoFit, TRUE,
+					LISTBROWSER_HorizontalProp, TRUE,
 				ListBrowserEnd;
 
 #ifdef __amigaos4__
