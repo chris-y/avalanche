@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023-5 Chris Young
+ * (c) 2023-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -203,7 +203,7 @@ static const char *deark_get_filename(void *userdata, void *awin)
 
 }
 
-long deark_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
+long deark_info(char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
 {
 	int err = 1;
 	BPTR fh = 0;
@@ -231,7 +231,7 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, void(*a
 		/* Add to list */
 		for(i = 0; i < du->total; i++) {
 			addnode(du->list[i], &zero,
-				FALSE, i, du->total, (void *)i, config, awin);
+				FALSE, i, du->total, (void *)i, config, awin, tab_node);
 		}
 
 		return 0;

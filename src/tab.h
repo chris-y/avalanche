@@ -1,6 +1,6 @@
 /* Avalanche
  * (c) 2022-6 Chris Young
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -12,15 +12,23 @@
  * GNU General Public License for more details.
 */
 
-#ifndef XFD_H
-#define XFD_H 1
+#ifndef AVALANCHE_TAB_H
+#define AVALANCHE_TAB_H 1
+#include <exec/lists.h>
 
-ULONG xfd_get_ver(ULONG *ver, ULONG *rev);
-void xfd_exit(void);
-BOOL xfd_recog(char *file);
-long xfd_info(char *file, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node));
-long xfd_extract(void *awin, char *file, char *dest);
+struct Node *tab_create(void *awin, struct List *tab_list);
 
-void xfd_register(struct module_functions *funcs);
+/* Close tab; returns TRUE if last tab */
+BOOL tab_close(struct Node *tab_node);
+
+/* Close all tabs */
+void tab_close_all(struct List *tab_list);
+
+struct List *tab_get_listbrowser_list(struct Node *tab_node);
+struct List *tab_get_dirtree_list(struct Node *tab_node);
+
+/* Get the window the tab is in */
+void *tab_get_window(struct Node *tab_node);
 
 #endif
+

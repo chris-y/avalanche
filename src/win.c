@@ -63,6 +63,7 @@
 #include "new.h"
 #include "progress.h"
 #include "req.h"
+#include "tab.h"
 #include "win.h"
 
 #include "deark.h"
@@ -119,9 +120,7 @@ struct avalanche_window {
 	struct NewMenu *menu;
 	ULONG archiver;
 	struct ColumnInfo *lbci;
-	struct List lblist;
 	struct ColumnInfo *dtci;
-	struct List dir_tree;
 	struct Hook aslfilterhook;
 	struct Hook appwindzhook;
 	struct Hook lbsorthook;
@@ -184,6 +183,7 @@ struct avalanche_extract_userdata {
 	char *archive;
 	char *newdest;
 	struct Node *node;
+	struct Node *tab_node;
 };
 
 /** Menu **/
@@ -302,6 +302,20 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 	}
 
 	return 0;
+}
+
+static BOOL window_tab_is_current(struct avalanche_window *aw, struct Node *tab_node)
+{
+	if(tab_node == aw->tab_node) return TRUE;
+	
+	return FALSE;
+}
+
+static struct List *window_get_dirtree_list(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	return tab_get_dirtree_list(aw->tab_node);
 }
 
 static void window_free_archive_path(struct avalanche_window *aw)
@@ -511,14 +525,14 @@ static void collapse_tree(struct avalanche_window *aw, BOOL expand)
 
 	if(expand) {
 		/* expand instead of collapsing */
-		ShowAllListBrowserChildren(&aw->dir_tree);
+		ShowAllListBrowserChildren(window_get_dirtree_list(aw));
 	} else {
 		/* collapse */
-		HideAllListBrowserChildren(&aw->dir_tree);
+		HideAllListBrowserChildren(window_get_dirtree_list(aw));
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-		LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
+		LISTBROWSER_Labels, window_get_dirtree_list(aw), TAG_DONE);
 
 }
 
@@ -616,7 +630,7 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 
 	if(detach_list) {
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, &aw->lblist,
+			LISTBROWSER_Labels, window_get_lblist(aw),
 			LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
 	}
@@ -842,7 +856,7 @@ long extract(void *awin, char *archive, char *newdest, struct Node *node)
 	return 0;
 }
 
-static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw)
+static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw, struct Node *tab_node)
 {
 	BOOL dir_seen = FALSE;
 	ULONG flags = 0;
@@ -1009,7 +1023,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 
 	if(title_needs_free) FreeVec(title);
 
-	AddTail(&aw->lblist, node);
+	AddTail(window_get_lblist(aw), node);
 }
 
 static ULONG count_dir_level(char *filename)
@@ -1078,7 +1092,7 @@ static void highlight_current_dir(struct avalanche_window *aw)
 	if(aw->current_dir == NULL) {
 		cur_node = aw->root_node;
 	} else {
-		struct List *list = &aw->dir_tree;
+		struct List *list = window_get_dirtree_list(aw);
 		struct Node *node;
 		char *userdata = NULL;
 		char *cur_dir = strdup_vec(aw->current_dir);
@@ -1148,11 +1162,11 @@ static void window_update_title(struct avalanche_window *aw)
 	}
 }
 
-static void window_flat_browser_tree_construct(struct avalanche_window *aw)
+static void window_flat_browser_tree_construct(struct avalanche_window *aw, struct Node *tab_node)
 {
 	ULONG root_glyph = AVALANCHE_GLYPH_ROOT;
 
-	FreeListBrowserList(&aw->dir_tree);
+	FreeListBrowserList(tab_get_dirtree_list(tab_node));
 	aw->root_node = NULL;
 
 	int dir_entry = 0;
@@ -1230,7 +1244,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 	if(dir_entry == 0) flags = 0;
 
-	if((aw->archiver == ARC_XAD) && (xad_is_diskfile(aw)) {
+	if((aw->archiver == ARC_XAD) && (xad_is_diskfile(aw))) {
 		root_glyph = AVALANCHE_GLYPH_DISK;
 	}
 
@@ -1248,7 +1262,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 										LabelEnd,
 									TAG_DONE);
 
-	AddTail(&aw->dir_tree, aw->root_node);
+	AddTail(tab_get_dirtree_list(tab_node), aw->root_node);
 
 	for(int i = 0; i <= dir_entry; i++) {
 		flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
@@ -1269,22 +1283,24 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw)
 										LabelEnd,
 									TAG_DONE);
 
-		AddTail(&aw->dir_tree, node);
+		AddTail(tab_get_dirtree_list(tab_node), node);
 	}
 
-	window_update_title(aw);
+	if(window_tab_is_current(aw, tab_node)) window_update_title(aw);
 }
 
-static void window_flat_browser_construct(struct avalanche_window *aw)
+static void window_flat_browser_construct(struct avalanche_window *aw, struct Node *tab_node)
 {
 	ULONG level = 0;
 	ULONG skip_dir_len = 0;
 
-	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+	if(window_tab_is_current(aw, tab_node)) {
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 										WA_BusyPointer, TRUE,
 										TAG_DONE);
+	}
 
-	FreeListBrowserList(&aw->lblist);
+	FreeListBrowserList(tab_get_listbrowser_list(tab_node));
 
 	if(aw->current_dir) {
 		level = count_dir_level(aw->current_dir) + 1;
@@ -1340,14 +1356,14 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 										LBNCA_Text, "",
 								TAG_DONE);
 #endif
-			AddTail(&aw->lblist, node);
+			AddTail(tab_get_listbrowser_list(tab_node), node);
 		}
 		
 		for(int it = 0; it < aw->dir_tree_size; it++) {
 			/* Only show current level - NB dir levels are different from file levels */
 			if((aw->dir_array[it] && ((aw->dir_array[it]->level - 1) == level)) &&
 				((aw->current_dir == NULL) || (strncmp(aw->dir_array[it]->name, aw->current_dir, skip_dir_len) == 0))) {
-				addlbnode(aw->dir_array[it]->name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw);
+				addlbnode(aw->dir_array[it]->name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw, tab_node);
 			}
 		}
 	}
@@ -1359,19 +1375,20 @@ static void window_flat_browser_construct(struct avalanche_window *aw)
 		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
 			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
 			addlbnode(aw->arc_array[it]->name + skip_dir_len,
-				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], aw->arc_array[it]->selected, aw);
+				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], aw->arc_array[it]->selected, aw, tab_node);
 		}
 	}
 
-	window_update_title(aw);
+	if(window_tab_is_current(aw, tab_node)) {
+		window_update_title(aw);
 
-	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
 											TAG_DONE);
-
+	}
 }
 
-static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin)
+static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -1410,12 +1427,12 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 				#ifdef __amigaos4__ /* doesn't like OS3, may not be needed anyway */
 				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
 				#endif
-				window_flat_browser_tree_construct(aw);
-				window_flat_browser_construct(aw);
+				window_flat_browser_tree_construct(aw, tab_node);
+				window_flat_browser_construct(aw, tab_node);
 			}
 		}
 	} else {
-		addlbnode(name, size, dir, userdata, TRUE, aw);
+		addlbnode(name, size, dir, userdata, TRUE, aw, tab_node);
 	}
 }
 
@@ -1504,7 +1521,7 @@ static void window_tree_add(struct avalanche_window *aw)
 					GA_RelVerify, TRUE,
 					GA_Disabled, !aw->flat_mode,
 					LISTBROWSER_ColumnInfo, aw->dtci,
-					LISTBROWSER_Labels, &(aw->dir_tree),
+					LISTBROWSER_Labels, window_get_dirtree_list(aw),
 					LISTBROWSER_ColumnTitles, FALSE,
 					LISTBROWSER_FastRender, TRUE,
 					LISTBROWSER_Hierarchical, TRUE,
@@ -1593,23 +1610,17 @@ static void __saveds idcmp_hook_func(__reg("a0") struct Hook *h, __reg("a2") Obj
 	switch(msg->Class)
 	{
 		case IDCMP_IDCMPUPDATE:
-			gid = GetTagData( GA_ID, 0, msg->IAddress );
+			gid = GetTagData(GA_ID, 0, msg->IAddress);
 
-			switch( gid ) 
+			switch(gid)
 			{
 				case GID_TABS:
 					if((node = (struct Node *)GetTagData(CLICKTAB_NodeClosed, 0, msg->IAddress))) {
-
-						struct avalanche_window *aw;
-
-						GetClickTabNodeAttrs(node,
-							TNA_UserData, &aw,
-							TAG_DONE);
-
-						aw->tab_closed = TRUE;
+						struct avalanche_window *aw = (struct avalanche_window *)tab_get_window(node);
+						aw->tab_closed = tab_close(node);
 					}
 				break;
-			} 
+			}
 		break;
 
 		default:
@@ -1726,8 +1737,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 		TAG_DONE);
 #endif
 
-	NewList(&aw->lblist);
-
 	aw->dtci = AllocLBColumnInfo(1, 
 		LBCIA_Column, 0,
 			LBCIA_Title, "",
@@ -1735,8 +1744,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LBCIA_DraggableSeparator, FALSE,
 			LBCIA_Sortable, FALSE,
 		TAG_DONE);
-
-	NewList(&aw->dir_tree);
 
 	if(aw->menu = AllocVec(sizeof(menu), MEMF_PRIVATE))
 		CopyMem(&menu, aw->menu, sizeof(menu));
@@ -1774,13 +1781,9 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	NewMinList(&aw->deletelist);
 	
 	NewList(&aw->tab_list);
-	aw->tab_node = AllocClickTabNode(TNA_Text, "Avalanche",
-									TNA_Number, 0,
-									TNA_UserData, aw,
-									TNA_CloseGadget, TRUE,
-									TAG_DONE);
-	AddTail(&aw->tab_list, aw->tab_node);
-	
+
+	aw->tab_node = tab_create(aw, &aw->tab_list);
+
 	/* Create the window object */
 	aw->objects[OID_MAIN] = WindowObj,
 		WA_ScreenTitle, VERS,
@@ -1855,7 +1858,8 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					CLICKTAB_Labels, &aw->tab_list,
 					CLICKTAB_LabelTruncate, TRUE,
 					CLICKTAB_CloseImage, glyph_get(AVALANCHE_GLYPH_TABCLOSE),
-					CLICKTAB_EvenSize, FALSE,
+					//CLICKTAB_EvenSize, FALSE,
+					CLICKTAB_AutoFit, TRUE,
 #ifndef __amigaos4__
 					ICA_TARGET, ICTARGET_IDCMP,
 #endif
@@ -1874,7 +1878,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						HINTINFO, locale_get_string(MSG_HI_LIST),
 						GA_RelVerify, TRUE,
 						LISTBROWSER_ColumnInfo, aw->lbci,
-						LISTBROWSER_Labels, &(aw->lblist),
+						LISTBROWSER_Labels, window_get_lblist(aw),
 						LISTBROWSER_ColumnTitles, TRUE,
 						LISTBROWSER_TitleClickable, TRUE,
 						LISTBROWSER_SortColumn, 1,
@@ -2054,20 +2058,15 @@ void window_dispose(void *awin)
 	DisposeObject(aw->objects[OID_MAIN]);
 	
 	/* Free archive browser list and column info */
-	FreeListBrowserList(&aw->lblist);
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
-	FreeListBrowserList(&aw->dir_tree);
 	if(aw->dtci) FreeLBColumnInfo(aw->dtci);
 	if(aw->archive_needs_free) window_free_archive_path(aw);
 	if(aw->menu) FreeVec(aw->menu);
 	if(aw->dest) FreeVec(aw->dest);
 	free_arc_array(aw);
 
-	/* Free tab (only ever one presently) */
-	if(aw->tab_node) {
-		Remove(aw->tab_node);
-		FreeClickTabNode(aw->tab_node);
-	}
+	/* Free all tabs (only ever one presently) */
+	tab_close_all(&aw->tab_list);
 
 	delete_delete_list(aw);
 
@@ -2093,10 +2092,10 @@ static void parent_dir(struct avalanche_window *aw)
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
-		window_flat_browser_construct(aw);
+		window_flat_browser_construct(aw, aw->tab_node);
 
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, &aw->lblist,
+			LISTBROWSER_Labels, window_get_lblist(aw),
 			LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 		TAG_DONE);
 
@@ -2144,10 +2143,10 @@ static void window_tree_handle(void *awin)
 				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 					LISTBROWSER_Labels, ~0, TAG_DONE);
 
-				window_flat_browser_construct(aw);
+				window_flat_browser_construct(aw, aw->tab_node);
 
 				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-					LISTBROWSER_Labels, &aw->lblist,
+					LISTBROWSER_Labels, window_get_lblist(aw),
 					LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 				TAG_DONE);
 			}
@@ -2254,11 +2253,11 @@ it's incompatible with double-clicking as it resets the listview */
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
-					window_flat_browser_construct(aw);
+					window_flat_browser_construct(aw, aw->tab_node);
 					highlight_current_dir(aw);
 
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-						LISTBROWSER_Labels, &aw->lblist,
+						LISTBROWSER_Labels, window_get_lblist(aw),
 						LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 					TAG_DONE);
 
@@ -2359,12 +2358,14 @@ void window_modify_all_list(void *awin, ULONG select)
 		}
 	}
 
-	for(node = aw->lblist.lh_Head; node->ln_Succ; node=node->ln_Succ) {
+	struct List *lblist = window_get_lblist(aw);
+
+	for(node = lblist->lh_Head; node->ln_Succ; node=node->ln_Succ) {
 		toggle_item(aw, node, select, FALSE);
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-				LISTBROWSER_Labels, &aw->lblist,
+				LISTBROWSER_Labels, lblist,
 				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
 
@@ -2498,7 +2499,7 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 	return ret;
 }
 
-static void window_req_open_archive_internal(void *awin, struct avalanche_config *config)
+static void window_req_open_archive_internal(void *awin, struct Node *tab_node, struct avalanche_config *config)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -2506,29 +2507,31 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 	long retxfd = 0;
 	long retark = 0;
 
-	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, ~0, TAG_DONE);
-
-	FreeListBrowserList(&aw->dir_tree);
-	free_arc_array(aw);
-
-	module_free(awin);
-
-	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+	if(window_tab_is_current(aw, tab_node)) {
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 										WA_BusyPointer, TRUE,
 										TAG_DONE);
+		
+		if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+											LISTBROWSER_Labels, ~0, TAG_DONE);
+											
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+							LISTBROWSER_Labels, ~0, TAG_DONE);
+	}
 
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, ~0, TAG_DONE);
+	FreeListBrowserList(tab_get_dirtree_list(tab_node));
+	free_arc_array(aw); // needs moving to tab
 
-	FreeListBrowserList(&aw->lblist);
+	module_free(awin); // check
+
+	FreeListBrowserList(tab_get_listbrowser_list(tab_node));
 
 	aw->archiver = ARC_XAD; /* Set in advance for flat browser tree use */
 	ULONG active_modules = CONFIG_GET_LOCK(activemodules);
 	CONFIG_UNLOCK;
-	
+
 	if(active_modules & ARC_XAD) {
-		ret = xad_info(aw->archive, config, aw, addlbnode_cb);
+		ret = xad_info(aw->archive, config, aw, tab_node, addlbnode_cb); /* TODO: move aw->archive to tab */
 	} else {
 		ret = 1;
 	}
@@ -2536,7 +2539,7 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 		aw->archiver = ARC_XFD;
 
 		if(active_modules & ARC_XFD) {
-			retxfd = xfd_info(aw->archive, aw, addlbnode_cb);
+			retxfd = xfd_info(aw->archive, aw, tab_node, addlbnode_cb);
 		} else {
 			retxfd = 1;
 		}
@@ -2544,7 +2547,7 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 		if(retxfd != 0) {
 			aw->archiver = ARC_DEARK;
 			if(active_modules & ARC_DEARK) {
-				retark = deark_info(aw->archive, config, aw, addlbnode_cb);
+				retark = deark_info(aw->archive, config, aw, tab_node, addlbnode_cb);
 			} else {
 				retark = 1;
 			}
@@ -2557,31 +2560,33 @@ static void window_req_open_archive_internal(void *awin, struct avalanche_config
 		}
 	}
 
-	module_register(aw, &aw->mf);
+	module_register(aw, &aw->mf); // check
 
-	window_menu_set_enable_state(aw);
+	if(window_tab_is_current(aw, tab_node)) {
+		window_menu_set_enable_state(aw);
 
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-				LISTBROWSER_Labels, &aw->lblist,
-				LISTBROWSER_SortColumn, 1,
-				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
-			TAG_DONE);
+		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+					LISTBROWSER_Labels, tab_get_listbrowser_list(tab_node),
+					LISTBROWSER_SortColumn, 1,
+					LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
+				TAG_DONE);
 
-	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, &aw->dir_tree, TAG_DONE);
+		if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+				LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
 
-	if(aw->flat_mode) {
-		highlight_current_dir(aw);
+		if(aw->flat_mode) {
+			highlight_current_dir(aw);
+		}
+
+		window_update_title(aw);
+
+		window_disable_gadgets(awin, FALSE, FALSE);
+		window_count_selected(awin);
+
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+								WA_BusyPointer, FALSE,
+								TAG_DONE);
 	}
-
-	window_update_title(aw);
-
-	window_disable_gadgets(awin, FALSE, FALSE);
-	window_count_selected(awin);
-
-	if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
-							WA_BusyPointer, FALSE,
-							TAG_DONE);
 }
 
 #ifdef __amigaos4__
@@ -2602,7 +2607,7 @@ static void __saveds window_req_open_archive_p(void)
 	struct avalanche_window *aw = (struct avalanche_window *)aeu->awin;
 	
 	/* Call Open on our new process */
-	window_req_open_archive_internal(aeu->awin, get_config());
+	window_req_open_archive_internal(aeu->awin, aeu->tab_node, get_config());
 	
 	/* Free UserData */
 	FreeVec(aeu);
@@ -2633,6 +2638,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	aeu->archive = NULL;
 	aeu->newdest = NULL;
 	aeu->node = NULL;
+	aeu->tab_node = aw->tab_node;
 
 	window_disable_gadgets(awin, TRUE, TRUE);
 	
@@ -2708,7 +2714,7 @@ struct List *window_get_lblist(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-	return &aw->lblist;
+	return tab_get_listbrowser_list(aw->tab_node);
 }
 
 ULONG window_get_archiver(void *awin)
@@ -3001,13 +3007,9 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					GetAttr(CLICKTAB_NodeClosed, aw->gadgets[GID_TABS], &tabnode);
 
 					if(tabnode) { /* Tab closed */
-						struct avalanche_window *closed_aw;
-
-						GetClickTabNodeAttrs(tabnode,
-							TNA_UserData, &closed_aw, /* Closed window; currently we only have one tab, so... */
-							TAG_DONE);
-
-						done = WIN_DONE_CLOSED;
+						if(tab_close(tabnode)) {
+							done = WIN_DONE_CLOSED;
+						}
 					} else
 #endif
 					{
@@ -3212,12 +3214,12 @@ BOOL check_closetab(void *awin)
 
 	/* This flag is set in the IDCMP hook if tab is closed
 	 * In future this might only indicate if the last tab is closed */
-	 
+
 	BOOL done = aw->tab_closed;
-	
+
 	/* Clear flag for next time */
 	aw->tab_closed = FALSE;
-	
+
 	return done;
 }
 #endif

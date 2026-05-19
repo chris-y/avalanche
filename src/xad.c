@@ -405,7 +405,7 @@ BOOL xad_recog(char *file)
 	return TRUE;
 }
 
-long xad_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
+long xad_info(char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
 {
 	long err = 0;
 	struct xadFileInfo *fi;
@@ -504,7 +504,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 				} else {
 					strcpy(xu->xdisk_filename, "disk.img");
 				}
-				addnode(xu->xdisk_filename, &size, 0, i, total, di, config, awin);
+				addnode(xu->xdisk_filename, &size, 0, i, total, di, config, awin, tab_node);
 				i++;
 				di = di->xdi_Next;
 			}
@@ -521,7 +521,7 @@ long xad_info(char *file, struct avalanche_config *config, void *awin, void(*add
 			fi = ai->xai_FileInfo;
 			while(fi) {
 				addnode(fi->xfi_FileName, &fi->xfi_Size,
-					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi, config, awin);
+					(fi->xfi_Flags & XADFIF_DIRECTORY), i, total, fi, config, awin, tab_node);
 				i++;
 				fi = fi->xfi_Next;
 			}

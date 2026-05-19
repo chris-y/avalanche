@@ -139,7 +139,7 @@ BOOL xfd_recog(char *file)
 	return res;
 }
 
-long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin))
+long xfd_info(char *file, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
 {
 	BPTR fh = 0;
 	ULONG len;
@@ -186,7 +186,7 @@ long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOO
 	if(res == TRUE) {
 		xu->fn = strdup_vec(FilePart(file));
 		/* Add to list */
-		addnode(xu->fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, xu->fn, get_config(), awin);
+		addnode(xu->fn, &bi->xfdbi_FinalTargetLen, 0, 0, 1, xu->fn, get_config(), awin, tab_node);
 
 		return 0;
 	}
