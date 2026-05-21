@@ -52,7 +52,7 @@ void *array_get_userdata(void *awin, void *arc_entry);
 struct module_functions *window_get_module_funcs(void *awin);
 BOOL window_get_disabled(void *awin);
 BYTE window_get_exit_sig(void *awin);
-char *window_req_new_lha(void *awin, char *drawer);
+const char *window_req_new_lha(void *awin, char *drawer);
 
 /* Modify archive */
 BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
@@ -65,7 +65,7 @@ BOOL check_closetab(void *awin);
 #endif
 void window_reset_count(void *awin);
 void fill_menu_labels(void);
-long extract(void *awin, char *archive, char *newdest, struct Node *node);
+long extract(void *awin, const char *archive, const char *newdest, struct Node *node);
 void add_to_delete_list(void *awin, char *fn);
 void window_update_fuelgauge_text(void *awin);
 

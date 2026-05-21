@@ -22,15 +22,18 @@
 #include <gadgets/listbrowser.h>
 
 #include "avalanche.h"
+#include "config.h"
+#include "misc.h"
 #include "tab.h"
 
 struct avalanche_tab {
 	void *awin;
 	struct List lblist;
 	struct List dir_tree;
-#if 0 /* items targetted for moving */
 	char *archive;
 	char *dest;
+#if 0 /* items targetted for moving */
+	ULONG archiver; // RENAME THIS
 	struct MinList deletelist;
 	struct arc_entries **arc_array;
 	struct arc_entries **dir_array;
@@ -38,7 +41,6 @@ struct avalanche_tab {
 	ULONG current_item;
 	ULONG total_items;
 	ULONG total_selectable;
-	BOOL archive_needs_free;
 	void *archive_userdata;
 	BOOL disabled;
 	BOOL abort_requested;
@@ -47,7 +49,6 @@ struct avalanche_tab {
 	char *current_dir;
 #endif
 };
-
 
 static struct avalanche_tab *tab_get_tab(struct Node *tab_node)
 {
@@ -60,51 +61,19 @@ static struct avalanche_tab *tab_get_tab(struct Node *tab_node)
 	return at;
 }
 
-struct Node *tab_create(void *awin, struct List *tab_list)
+const char *tab_get_archive(struct Node *tab_node)
 {
-	struct avalanche_tab *at = AllocVec(sizeof(struct avalanche_tab), MEMF_CLEAR | MEMF_PRIVATE);
-
-	at->awin = awin;
-
-	struct Node *tab_node = AllocClickTabNode(TNA_Text, "Avalanche",
-						TNA_Number, 0,
-						TNA_UserData, at,
-						TNA_CloseGadget, TRUE,
-						TAG_DONE);
-	AddTail(tab_list, tab_node);
-
-	NewList(&at->lblist);
-	NewList(&at->dir_tree);
-
-	return tab_node;
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	return (const char *)at->archive;
 }
 
-BOOL tab_close(struct Node *tab_node)
+const char *tab_get_dest(struct Node *tab_node)
 {
-	if(tab_node == NULL) return FALSE;
-	
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
-	Remove(tab_node);
-	FreeClickTabNode(tab_node);
-
-	FreeListBrowserList(&at->lblist);
-	FreeListBrowserList(&at->dir_tree);
-
-	FreeVec(at);
-
-	return TRUE; /* return TRUE if last tab closed */
+	return (const char *)at->dest;
 }
-
-void tab_close_all(struct List *tab_list)
-{
-	struct Node *fnode = NULL;
-
-	for(fnode = tab_list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
-		tab_close(fnode);
-	}
-}
-
 
 struct List *tab_get_listbrowser_list(struct Node *tab_node)
 {
@@ -125,5 +94,82 @@ void *tab_get_window(struct Node *tab_node)
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	return at->awin;
+}
+
+void tab_set_archive(struct Node *tab_node, const char *archive)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	/* Free old archive */
+	if(at->archive) FreeVec(at->archive);
+	at->archive = NULL;
+
+	/* Alloc new archive */
+	if(archive) at->archive = strdup_vec(archive);
+}
+
+void tab_set_dest(struct Node *tab_node, const char *dest)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	/* Free old dest */
+	if(at->dest) FreeVec(at->dest);
+	at->dest = NULL;
+
+	/* Alloc new dest */
+	if(dest) at->dest = strdup_vec(dest);
+}
+
+struct Node *tab_create(void *awin, struct List *tab_list)
+{
+	struct avalanche_tab *at = AllocVec(sizeof(struct avalanche_tab), MEMF_CLEAR | MEMF_PRIVATE);
+
+	at->awin = awin;
+	at->archive = NULL;
+
+	struct Node *tab_node = AllocClickTabNode(TNA_Text, "Avalanche",
+						TNA_Number, 0,
+						TNA_UserData, at,
+						TNA_CloseGadget, TRUE,
+						TAG_DONE);
+	AddTail(tab_list, tab_node);
+
+	NewList(&at->lblist);
+	NewList(&at->dir_tree);
+
+	/* Set local dest */
+	tab_set_dest(tab_node, CONFIG_GET_LOCK(dest));
+        CONFIG_UNLOCK;
+
+	return tab_node;
+}
+
+BOOL tab_close(struct Node *tab_node)
+{
+	if(tab_node == NULL) return FALSE;
+	
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	Remove(tab_node);
+	FreeClickTabNode(tab_node);
+
+	FreeListBrowserList(&at->lblist);
+	FreeListBrowserList(&at->dir_tree);
+
+	tab_set_archive(tab_node, NULL);
+	tab_set_dest(tab_node, NULL);
+
+	FreeVec(at);
+
+	return TRUE; /* return TRUE if last tab closed */
+}
+
+void tab_close_all(struct List *tab_list)
+{
+	struct Node *fnode = NULL;
+
+	for(fnode = tab_list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
+		tab_close(fnode);
+	}
 }
 

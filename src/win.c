@@ -1,6 +1,6 @@
 /* Avalanche
  * (c) 2022-6 Chris Young
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -127,8 +127,6 @@ struct avalanche_window {
 	struct MsgPort *appwin_mp;
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
-	char *archive;
-	char *dest;
 	struct MinList deletelist;
 	struct arc_entries **arc_array;
 	struct arc_entries **dir_array;
@@ -136,7 +134,6 @@ struct avalanche_window {
 	ULONG current_item;
 	ULONG total_items;
 	ULONG total_selectable;
-	BOOL archive_needs_free;
 	void *archive_userdata;
 	BOOL flat_mode;
 	BOOL drag_lock;
@@ -149,7 +146,7 @@ struct avalanche_window {
 	struct Node *root_node;
 	char title[TITLE_MAX_SIZE];
 	struct List tab_list;
-	struct Node *tab_node;
+	struct Node *tab_node; /* current tab */
 #ifndef __amigaos4__
 	struct HintInfo hi;
 	struct Hook idcmphook;
@@ -316,13 +313,6 @@ static struct List *window_get_dirtree_list(void *awin)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	return tab_get_dirtree_list(aw->tab_node);
-}
-
-static void window_free_archive_path(struct avalanche_window *aw)
-{
-	if(aw->archive) FreeVec(aw->archive);
-	aw->archive = NULL;
-	aw->archive_needs_free = FALSE;
 }
 
 static void window_remove_dropzones(struct avalanche_window *aw)
@@ -515,7 +505,7 @@ static BOOL window_open_dest(void *awin)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
-	return OpenWorkbenchObjectA(aw->dest, NULL);
+	return OpenWorkbenchObjectA(tab_get_dest(aw->tab_node), NULL);
 }
 
 static void collapse_tree(struct avalanche_window *aw, BOOL expand)
@@ -821,7 +811,7 @@ static void __saveds extract_p(void)
 }
 
 
-long extract(void *awin, char *archive, char *newdest, struct Node *node)
+long extract(void *awin, const char *archive, const char *newdest, struct Node *node)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
@@ -1117,7 +1107,7 @@ static void highlight_current_dir(struct avalanche_window *aw)
 	}
 }
 
-static void window_update_tab_title(struct avalanche_window *aw)
+static void window_update_tab_title(struct avalanche_window *aw, struct Node *tab_node)
 {
 	SetGadgetAttrs(aw->gadgets[GID_TABS],
 		window_get_window(aw), NULL,
@@ -1125,8 +1115,8 @@ static void window_update_tab_title(struct avalanche_window *aw)
 		CLICKTAB_MinorLabelChange, TRUE,
 		TAG_DONE);
 
-	SetClickTabNodeAttrs(aw->tab_node, TNA_Text, FilePart(aw->archive),
-		TNAHintInfo, aw->archive,
+	SetClickTabNodeAttrs(tab_node, TNA_Text, FilePart(tab_get_archive(tab_node)),
+		TNAHintInfo, tab_get_archive(tab_node),
 		TAG_DONE);
 
 	SetGadgetAttrs(aw->gadgets[GID_TABS],
@@ -1139,23 +1129,24 @@ static void window_update_tab_title(struct avalanche_window *aw)
 		window_get_window(aw), NULL, 1);
 }
 
-static void window_update_title(struct avalanche_window *aw)
+static void window_update_title(struct avalanche_window *aw, struct Node *tab_node)
 {
-	if(aw->archive != NULL) {
+	const char *archive = tab_get_archive(tab_node);
+	if(archive != NULL) {
 		if(aw->current_dir) {
-			int title_len = strlen(VERS) + strlen((aw->archive)) + strlen(aw->current_dir);
+			int title_len = strlen(VERS) + strlen((archive)) + strlen(aw->current_dir);
 
 			if((title_len < TITLE_MAX_SIZE) || ((title_len - TITLE_MAX_SIZE + 3) > strlen(aw->current_dir))) {
-				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, (aw->archive), aw->current_dir);
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, (archive), aw->current_dir);
 			} else {
-				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, (aw->archive), aw->current_dir + (strlen(aw->current_dir) - (title_len - TITLE_MAX_SIZE + 3)));		
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, (archive), aw->current_dir + (strlen(aw->current_dir) - (title_len - TITLE_MAX_SIZE + 3)));
 			}
 		} else {
-			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, (aw->archive));
+			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, (archive));
 		}
 		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, aw->title);
-		
-		window_update_tab_title(aw);
+
+		window_update_tab_title(aw, tab_node); /* TODO: fix for multi-tab */
 		
 	} else {
 		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, VERS);
@@ -1258,7 +1249,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 											LABEL_Image, glyph_get(root_glyph),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
-											LABEL_Text, FilePart(aw->archive),
+											LABEL_Text, FilePart(tab_get_archive(tab_node)),
 										LabelEnd,
 									TAG_DONE);
 
@@ -1286,7 +1277,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 		AddTail(tab_get_dirtree_list(tab_node), node);
 	}
 
-	if(window_tab_is_current(aw, tab_node)) window_update_title(aw);
+	if(window_tab_is_current(aw, tab_node)) window_update_title(aw, tab_node);
 }
 
 static void window_flat_browser_construct(struct avalanche_window *aw, struct Node *tab_node)
@@ -1380,7 +1371,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 	}
 
 	if(window_tab_is_current(aw, tab_node)) {
-		window_update_title(aw);
+		window_update_title(aw, tab_node);
 
 		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 											WA_BusyPointer, FALSE,
@@ -1770,19 +1761,12 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	aw->tab_closed = FALSE;
 #endif
 	
-	if(archive) {
-		aw->archive = strdup_vec(archive);
-		aw->archive_needs_free = TRUE;
-	} else {
-		aw->archive = NULL;
-		aw->archive_needs_free = FALSE;
-	}
-	
 	NewMinList(&aw->deletelist);
-	
+
 	NewList(&aw->tab_list);
 
 	aw->tab_node = tab_create(aw, &aw->tab_list);
+	if(archive) tab_set_archive(aw->tab_node, archive);
 
 	/* Create the window object */
 	aw->objects[OID_MAIN] = WindowObj,
@@ -1906,10 +1890,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	/*  Object creation sucessful?
 	 */
 	if (aw->objects[OID_MAIN]) {
-		/* Ensure we have a local dest */
-		aw->dest = strdup_vec(CONFIG_GET_LOCK(dest));
-		CONFIG_UNLOCK;
-
 		/* Add to our window list */
 		add_to_window_list(aw);
 		return aw;
@@ -2060,9 +2040,7 @@ void window_dispose(void *awin)
 	/* Free archive browser list and column info */
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
 	if(aw->dtci) FreeLBColumnInfo(aw->dtci);
-	if(aw->archive_needs_free) window_free_archive_path(aw);
 	if(aw->menu) FreeVec(aw->menu);
-	if(aw->dest) FreeVec(aw->dest);
 	free_arc_array(aw);
 
 	/* Free all tabs (only ever one presently) */
@@ -2280,7 +2258,7 @@ it's incompatible with double-clicking as it resets the listview */
 			strncpy(dest_path, CONFIG_GET(tmpdir), dest_path_len - 1);
 			CONFIG_UNLOCK;
 
-			ret = extract(aw, aw->archive, dest_path, node);
+			ret = extract(aw, tab_get_archive(aw->tab_node), dest_path, node);
 			if(ret == 0) {
 				Wait(aw->process_exit_sig);
 				AddPart(dest_path, get_item_filename(aw, node), dest_path_len);
@@ -2299,18 +2277,13 @@ void window_update_archive(void *awin, char *archive)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-	if(aw->archive_needs_free) window_free_archive_path(aw);
-	aw->archive = strdup_vec(archive);
-	aw->archive_needs_free = TRUE;
+	tab_set_archive(aw->tab_node, archive);
 
-	/* TODO: setwindow title SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
-					GETFILE_FullFile, aw->archive, TAG_DONE); */
-
+	/* TODO: move this to tab */
 	if(aw->flat_mode && aw->current_dir) {
 		FreeVec(aw->current_dir);
 		aw->current_dir = NULL;
 	}
-
 }
 
 void window_update_sourcedir(void *awin, char *sourcedir)
@@ -2372,7 +2345,7 @@ void window_modify_all_list(void *awin, ULONG select)
 	window_count_selected(aw);
 }
 
-char *window_req_new_lha(void *awin, char *drawer)
+const char *window_req_new_lha(void *awin, char *drawer)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
@@ -2385,9 +2358,10 @@ char *window_req_new_lha(void *awin, char *drawer)
 			TAG_DONE)) {
 
 			ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
-			if(aw->archive = AllocVec(len, MEMF_PRIVATE)) {
-				strncpy(aw->archive, aslreq->fr_Drawer, len);
-				AddPart(aw->archive, aslreq->fr_File, len);
+			char *archive;
+			if(archive = AllocVec(len, MEMF_PRIVATE)) {
+				strncpy(archive, aslreq->fr_Drawer, len);
+				AddPart(archive, aslreq->fr_File, len);
 			} else {
 				FreeAslRequest(aslreq);
 				return NULL;
@@ -2395,12 +2369,13 @@ char *window_req_new_lha(void *awin, char *drawer)
 			
 			char *arc_r = NULL;
 			
-			if(arc_r = newarc_add_ext(aw->archive, "lha")) {
-				FreeVec(aw->archive);
-				aw->archive = arc_r;
+			if(arc_r = newarc_add_ext(archive, "lha")) {
+				tab_set_archive(aw->tab_node, arc_r);
+			} else {
+				tab_set_archive(aw->tab_node, archive);
 			}
-				
-			aw->archive_needs_free = TRUE;
+			
+			FreeVec(archive);
 
 		} else {
 			return NULL;
@@ -2409,11 +2384,11 @@ char *window_req_new_lha(void *awin, char *drawer)
 		FreeAslRequest(aslreq);
 	}
 
-	return aw->archive;
+	return tab_get_archive(aw->tab_node);
 }
 
 char *window_req_dest(void *awin)
-{	
+{
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	char *dest = NULL;
 
@@ -2428,12 +2403,11 @@ char *window_req_dest(void *awin)
 		if(AslRequestTags(aslreq,
 				ASLFR_DoSaveMode, TRUE,
 				ASLFR_TitleText,  locale_get_string( MSG_SELECTDESTINATION ) ,
-				ASLFR_InitialDrawer, aw->dest,
+				ASLFR_InitialDrawer, tab_get_dest(aw->tab_node),
 				ASLFR_DrawersOnly, TRUE,
-			TAG_DONE)) {
+				TAG_DONE)) {
 
-			if(aw->dest) FreeVec(aw->dest);
-			aw->dest = strdup_vec(aslreq->fr_Drawer);
+			tab_set_dest(aw->tab_node, aslreq->fr_Drawer);
 		} else {
 			return NULL;
 		}
@@ -2441,7 +2415,7 @@ char *window_req_dest(void *awin)
 		FreeAslRequest(aslreq);
 	}
 
-	return aw->dest;
+	return tab_get_dest(aw->tab_node);
 }
 
 /* Returns FALSE if req cancelled */
@@ -2462,11 +2436,12 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 	
 	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
 	if(aslreq) {
-		if(aw->archive) {
-			srcdir = strdup_vec(aw->archive);
+		const char *archive = NULL;
+		if(archive = tab_get_archive(aw->tab_node)) {
+			srcdir = strdup_vec(archive);
 			char *p = PathPart(srcdir);
 			*p = '\0';
-			arc = FilePart(aw->archive);
+			arc = FilePart(archive);
 		} else {
 			srcdir = strdup_vec(sdir);
 		}
@@ -2479,15 +2454,12 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 				ASLFR_FilterFunc, asl_hook,
 			TAG_DONE)) {
 		
-			if(aw->archive_needs_free) window_free_archive_path(aw);
-		
 			ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
-			aw->archive = AllocVec(len, MEMF_PRIVATE);
-			strncpy(aw->archive, aslreq->fr_Drawer, len);
-			AddPart(aw->archive, aslreq->fr_File, len);
-			
-			//window_update_sourcedir(aw, aslreq->fr_Drawer);
-			aw->archive_needs_free = TRUE;
+			char *arc = AllocVec(len, MEMF_PRIVATE);
+			strncpy(arc, aslreq->fr_Drawer, len);
+			AddPart(arc, aslreq->fr_File, len);
+			tab_set_archive(aw->tab_node, arc);
+			FreeVec(arc);
 			ret = TRUE;
 		}
 		
@@ -2531,7 +2503,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 	CONFIG_UNLOCK;
 
 	if(active_modules & ARC_XAD) {
-		ret = xad_info(aw->archive, config, aw, tab_node, addlbnode_cb); /* TODO: move aw->archive to tab */
+		ret = xad_info(tab_get_archive(tab_node), config, aw, tab_node, addlbnode_cb);
 	} else {
 		ret = 1;
 	}
@@ -2539,7 +2511,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 		aw->archiver = ARC_XFD;
 
 		if(active_modules & ARC_XFD) {
-			retxfd = xfd_info(aw->archive, aw, tab_node, addlbnode_cb);
+			retxfd = xfd_info(tab_get_archive(tab_node), aw, tab_node, addlbnode_cb);
 		} else {
 			retxfd = 1;
 		}
@@ -2547,7 +2519,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 		if(retxfd != 0) {
 			aw->archiver = ARC_DEARK;
 			if(active_modules & ARC_DEARK) {
-				retark = deark_info(aw->archive, config, aw, tab_node, addlbnode_cb);
+				retark = deark_info(tab_get_archive(tab_node), config, aw, tab_node, addlbnode_cb);
 			} else {
 				retark = 1;
 			}
@@ -2578,7 +2550,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 			highlight_current_dir(aw);
 		}
 
-		window_update_title(aw);
+		window_update_title(aw, tab_node);
 
 		window_disable_gadgets(awin, FALSE, FALSE);
 		window_count_selected(awin);
@@ -2742,7 +2714,7 @@ BOOL window_edit_add(void *awin, char *file, char *root)
 	
 	if(module_vscan(awin, file, NULL, 0, FALSE) == 0) {
 		module_free(aw);
-		if(aw->mf.add) return aw->mf.add(aw, aw->archive, file, aw->current_dir, root);
+		if(aw->mf.add) return aw->mf.add(aw, tab_get_archive(aw->tab_node), file, aw->current_dir, root);
 	}
 
 	return FALSE;
@@ -2893,7 +2865,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 				}
 
 				module_free(aw);
-				aw->mf.del(aw, aw->archive, name_array, entries);
+				aw->mf.del(aw, tab_get_archive(aw->tab_node), name_array, entries);
 
 				for(i = 0; i<entries; i++) {
 					FreeVec(name_array[i]);
@@ -2981,7 +2953,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				{
 					char *dest = window_req_dest(aw);
 					if(dest != NULL) {
-						ret = extract(awin, aw->archive, dest, NULL);
+						ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 						if(ret != 0) show_error(ret, awin);
 					}
 				}
@@ -3032,7 +3004,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case RAWKEY_RETURN:
-					ret = extract(awin, aw->archive, aw->dest, NULL);
+					ret = extract(awin, tab_get_archive(aw->tab_node), tab_get_dest(aw->tab_node), NULL);
 					if(ret != 0) show_error(ret, awin);
 				break;
 			}

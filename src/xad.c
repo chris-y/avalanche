@@ -647,7 +647,7 @@ static long xad_extract_file_private(void *awin, char *dest, struct xad_userdata
 }
 
 
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
+long xad_extract_file(void *awin, const char *file, const char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud)
 {
 	struct xadFileInfo *fi = NULL;
 	struct xadDiskInfo *di = NULL;
@@ -662,7 +662,7 @@ long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, voi
 }
 
 /* returns 0 on success */
-long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
+long xad_extract(void *awin, const char *file, const char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
 {
 	long err = XADERR_OK;
 	struct Node *fnode;
@@ -682,7 +682,7 @@ long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(g
 	return err;
 }
 
-long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
+long xad_extract_array(void *awin, ULONG total_items, const char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
 {
 	long err = XADERR_OK;
 	ULONG pud = 0;

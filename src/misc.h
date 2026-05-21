@@ -15,6 +15,7 @@
 #ifndef MISC_H
 #define MISC_H 1
 
+#include <dos/dos.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
 

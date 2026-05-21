@@ -24,6 +24,16 @@ BOOL tab_close(struct Node *tab_node);
 /* Close all tabs */
 void tab_close_all(struct List *tab_list);
 
+
+/** Setters **/
+
+/* Set archive/dest, or NULL to free */
+void tab_set_archive(struct Node *tab_node, const char *archive);
+void tab_set_dest(struct Node *tab_node, const char *dest);
+
+/** Getters **/
+const char *tab_get_archive(struct Node *tab_node);
+const char *tab_get_dest(struct Node *tab_node);
 struct List *tab_get_listbrowser_list(struct Node *tab_node);
 struct List *tab_get_dirtree_list(struct Node *tab_node);
 
