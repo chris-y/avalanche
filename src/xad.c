@@ -405,7 +405,7 @@ BOOL xad_recog(char *file)
 	return TRUE;
 }
 
-long xad_info(char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
+long xad_info(const char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
 {
 	long err = 0;
 	struct xadFileInfo *fi;

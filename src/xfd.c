@@ -139,7 +139,7 @@ BOOL xfd_recog(char *file)
 	return res;
 }
 
-long xfd_info(char *file, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
+long xfd_info(const char *file, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
 {
 	BPTR fh = 0;
 	ULONG len;
@@ -195,7 +195,7 @@ long xfd_info(char *file, void *awin, struct Node *tab_node, void(*addnode)(char
 	return XFD_ERR_FILEOPEN;
 }
 
-long xfd_extract(void *awin, char *file, char *dest)
+long xfd_extract(void *awin, const char *file, const char *dest)
 {
 	BPTR fh;
 	char *pw = NULL;

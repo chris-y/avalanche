@@ -203,7 +203,7 @@ static const char *deark_get_filename(void *userdata, void *awin)
 
 }
 
-long deark_info(char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
+long deark_info(const char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
 {
 	int err = 1;
 	BPTR fh = 0;
@@ -240,7 +240,7 @@ long deark_info(char *file, struct avalanche_config *config, void *awin, struct 
 	return err;
 }
 
-static long deark_extract_file_private(void *awin, char *dest, struct deark_userdata *du, long idx)
+static long deark_extract_file_private(void *awin, const char *dest, struct deark_userdata *du, long idx)
 {
 	char **list = NULL;
 	long err = 1;
@@ -255,7 +255,7 @@ static long deark_extract_file_private(void *awin, char *dest, struct deark_user
 }
 
 
-long deark_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node))
+long deark_extract_file(void *awin, const char *file, const char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node))
 {
 	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
 	long idx = (long)getnode(awin, node);
@@ -264,7 +264,7 @@ long deark_extract_file(void *awin, char *file, char *dest, struct Node *node, v
 }
 
 /* returns 0 on success */
-long deark_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
+long deark_extract(void *awin, const char *file, const char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
 {
 	long err = 0;
 	struct Node *fnode;
@@ -283,7 +283,7 @@ long deark_extract(void *awin, char *file, char *dest, struct List *list, void *
 	return err;
 }
 
-long deark_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
+long deark_extract_array(void *awin, ULONG total_items, const char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
 {
 	long err = 0;
 

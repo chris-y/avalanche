@@ -33,7 +33,7 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 
 long xad_extract(void *awin, const char *file, const char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node));
 long xad_extract_file(void *awin, const char *file, const char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud);
-long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry));
+long xad_extract_array(void *awin, ULONG total_items, const char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry));
 
 void xad_register(struct module_functions *funcs);
 #endif

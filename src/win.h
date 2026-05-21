@@ -38,7 +38,7 @@ void window_modify_all_list(void *awin, ULONG select);
 
 /* Handle events */
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
-char *window_req_dest(void *awin);
+const char *window_req_dest(void *awin);
 ULONG window_handle_input(void *awin, UWORD *code);
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort);
 
