@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ static int mod_lha_error(void *awin, int err, char *file)
 	return open_error_req(msg, locale_get_string(MSG_SKIPRETRYABORT), awin);
 }
 
-static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
+static BOOL mod_lha_del(void *awin, const char *archive, char **files, ULONG count)
 {
 	int user_choice;
 	char cmd[1024];
@@ -79,7 +79,7 @@ static BOOL mod_lha_del(void *awin, char *archive, char **files, ULONG count)
  * dir - directory user is currently in within the archive
  * root - root of directory where the files are being added from
  */
-static BOOL mod_lha_add(void *awin, char *archive, char *file, char *dir, const char *root)
+static BOOL mod_lha_add(void *awin, const char *archive, char *file, char *dir, const char *root)
 {
 	int err;
 	char cmd[1024];

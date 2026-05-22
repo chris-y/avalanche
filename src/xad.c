@@ -50,6 +50,7 @@ enum {
 struct xad_hookdata {
 	ULONG *pud;
 	void *awin;
+	struct Node *tab;
 };
 
 struct xad_userdata {
@@ -346,15 +347,15 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 
 		case XADPMODE_PROGRESS:
 			if(xpi->xpi_FileInfo) {
-				window_fuelgauge_update(xhd->awin, xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size, xpi->xpi_FileInfo->xfi_FileName);
+				window_fuelgauge_update(xhd->awin, xhd->tab, xpi->xpi_CurrentSize, xpi->xpi_FileInfo->xfi_Size, xpi->xpi_FileInfo->xfi_FileName);
 			} else if(xpi->xpi_DiskInfo) {
-				window_fuelgauge_update(xhd->awin, xpi->xpi_CurrentSize,
+				window_fuelgauge_update(xhd->awin, xhd->tab, xpi->xpi_CurrentSize,
 					xpi->xpi_DiskInfo->xdi_TotalSectors * xpi->xpi_DiskInfo->xdi_SectorSize, NULL);
 			}
 		break;
 
 		case XADPMODE_NEWENTRY:
-			window_update_fuelgauge_text(xhd->awin);
+			window_update_fuelgauge_text(xhd->awin, xhd->tab);
 		break;
 
 		default:
@@ -435,6 +436,7 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 	struct xad_hookdata xhd;
 	xhd.pud = &pud;
 	xhd.awin = awin;
+	xhd.tab = tab_node;
 
 	struct Hook progress_hook;
 	progress_hook.h_Entry = xad_progress;

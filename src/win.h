@@ -33,7 +33,7 @@ void window_dispose(void *awin);
 /* Update window */
 void window_update_archive(void *awin, char *archive);
 void window_update_sourcedir(void *awin, char *sourcedir);
-void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size, const char *filename);
+void window_fuelgauge_update(void *awin, struct Node *tab_node, ULONG size, ULONG total_size, const char *filename);
 void window_modify_all_list(void *awin, ULONG select);
 
 /* Handle events */
@@ -63,11 +63,10 @@ BOOL check_abort(void *awin);
 #ifndef __amigaos4__
 BOOL check_closetab(void *awin);
 #endif
-void window_reset_count(void *awin);
 void fill_menu_labels(void);
 long extract(void *awin, const char *archive, const char *newdest, struct Node *node);
 void add_to_delete_list(void *awin, char *fn);
-void window_update_fuelgauge_text(void *awin);
+void window_update_fuelgauge_text(void *awin, struct Node *tab_node);
 
 /* Archiver userdata */
 void *window_get_archive_userdata(void *awin);

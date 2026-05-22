@@ -12,7 +12,9 @@
  * GNU General Public License for more details.
 */
 
+#include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
 #include <clib/alib_protos.h>
 
 #include <proto/clicktab.h>
@@ -21,10 +23,20 @@
 #include <gadgets/clicktab.h>
 #include <gadgets/listbrowser.h>
 
+#include <images/label.h>
+
+#include <reaction/reaction_macros.h>
+
 #include "avalanche.h"
 #include "config.h"
+#include "glyph.h"
+#include "libs.h"
 #include "misc.h"
 #include "tab.h"
+
+#include <string.h>
+
+struct arc_entries;
 
 struct avalanche_tab {
 	void *awin;
@@ -33,20 +45,21 @@ struct avalanche_tab {
 	char *archive;
 	char *dest;
 	ULONG format;
-#if 0 /* items targetted for moving */
-	struct MinList deletelist;
 	struct arc_entries **arc_array;
 	struct arc_entries **dir_array;
 	ULONG dir_tree_size;
-	ULONG current_item;
 	ULONG total_items;
+	ULONG current_item;
 	ULONG total_selectable;
+	char *current_dir;
+	struct Node *root_node;
+#if 0 /* items targetted for moving */
+	struct MinList deletelist;
 	void *archive_userdata;
 	BOOL disabled;
 	BOOL abort_requested;
-	struct Node *root_node;
 	struct module_functions mf;
-	char *current_dir;
+	
 #endif
 };
 
@@ -59,6 +72,37 @@ static struct avalanche_tab *tab_get_tab(struct Node *tab_node)
 		TAG_DONE);
 
 	return at;
+}
+
+static void tab_free_dir_array(struct avalanche_tab *at)
+{
+	if((at->dir_array == NULL) || (at->dir_tree_size == 0)) return;
+
+	for(int i = 0; i < at->dir_tree_size; i++) {
+		if(at->dir_array[i]) {
+			if(at->dir_array[i]->name) FreeVec(at->dir_array[i]->name);
+			FreeVec(at->dir_array[i]);
+		}
+	}
+	FreeVec(at->dir_array);
+	at->dir_array = NULL;
+}
+
+static void tab_free_arc_array(struct avalanche_tab *at)
+{
+	if((at->arc_array == NULL) || (at->total_items == 0)) return;
+	
+	for(int i = 0; i < at->total_items; i++) {
+		FreeVec(at->arc_array[i]);
+	}
+	FreeVec(at->arc_array);
+	at->arc_array = NULL;
+	
+	tab_free_dir_array(at);
+
+	at->total_selectable = 0;
+	at->total_items = 0;
+	at->current_item = 0;
 }
 
 const char *tab_get_archive(struct Node *tab_node)
@@ -75,11 +119,46 @@ const char *tab_get_dest(struct Node *tab_node)
 	return (const char *)at->dest;
 }
 
+const char *tab_get_current_dir(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return (const char *)at->current_dir;
+}
+
 const ULONG tab_get_format(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	return (const ULONG)at->format;
+}
+
+const ULONG tab_get_current_item(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return (const ULONG)at->current_item;
+}
+
+const ULONG tab_get_total_items(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return (const ULONG)at->total_items;
+}
+
+const ULONG tab_get_total_selectable(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return (const ULONG)at->total_selectable;
+}
+
+const ULONG tab_get_dir_tree_size(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return (const ULONG)at->dir_tree_size;
 }
 
 struct List *tab_get_listbrowser_list(struct Node *tab_node)
@@ -101,6 +180,114 @@ void *tab_get_window(struct Node *tab_node)
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	return at->awin;
+}
+
+struct arc_entries **tab_alloc_dir_array(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->dir_tree_size = at->total_items * 2; /* temp set to large value */
+
+	tab_free_dir_array(at);
+	
+	at->dir_array = AllocVec(sizeof(struct arc_entries *) * at->dir_tree_size, MEMF_CLEAR);
+	
+	return (const struct arc_entries **)at->dir_array;
+}
+
+struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir_entries)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+	if(dir_entries == 0) flags = 0;
+	
+	FreeListBrowserList(&at->dir_tree);
+
+	at->root_node = AllocListBrowserNode(1,
+									LBNA_UserData, NULL,
+									LBNA_Flags, flags,
+									LBNA_Generation, 1,
+									LBNA_Column, 0,
+										LBNCA_Image, LabelObj,
+											LABEL_DisposeImage, FALSE,
+											LABEL_Image, glyph_get(glyph),
+											LABEL_Underscore, NULL,
+											LABEL_Text, " ",
+											LABEL_Text, FilePart(at->archive),
+										LabelEnd,
+									TAG_DONE);
+
+	AddTail(&at->dir_tree, at->root_node);
+
+	return at->root_node;
+}
+
+struct Node *tab_dir_find_current_node(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	struct Node *cur_node = NULL;
+
+	if(at->current_dir == NULL) {
+		cur_node = at->root_node;
+	} else {
+		struct List *list = &at->dir_tree;
+		struct Node *node;
+		char *userdata = NULL;
+		char *cur_dir = strdup_vec(at->current_dir);
+
+		if(cur_dir) cur_dir[strlen(cur_dir) - 1] = '\0';
+
+		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
+			GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
+
+			if((userdata) && (strcmp(cur_dir, userdata) == 0)) {
+				cur_node = node;
+				break;
+			}
+		}
+		if(cur_dir) FreeVec(cur_dir);
+	}
+	
+	return cur_node;
+}
+
+struct arc_entries **tab_get_arc_array(struct Node *tab_node, ULONG alloc_new)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	if(alloc_new > 0) {
+		if(at->arc_array) tab_free_arc_array(at);
+		at->arc_array = AllocVec(alloc_new * sizeof(struct arc_entries *), MEMF_CLEAR);
+	}
+	
+	return (const struct arc_entries **)at->arc_array;
+}
+
+struct arc_entries *tab_get_arc_entry(struct Node *tab_node, ULONG entry)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	if(at->arc_array == NULL) return NULL;
+
+	if(at->arc_array[entry] == NULL) {
+		at->arc_array[entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+	}
+
+	return (struct arc_entries *)at->arc_array[entry];
+}
+
+struct arc_entries *tab_get_dir_entry(struct Node *tab_node, ULONG entry)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	if(at->dir_array == NULL) return NULL;
+
+	if(at->dir_array[entry] == NULL) {
+		at->dir_array[entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
+	}
+
+	return (struct arc_entries *)at->dir_array[entry];
 }
 
 void tab_set_archive(struct Node *tab_node, const char *archive)
@@ -134,6 +321,66 @@ void tab_set_format(struct Node *tab_node, ULONG format)
 	at->format = format;
 }
 
+void tab_set_current_item(struct Node *tab_node, ULONG item)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->current_item = item;
+}
+
+void tab_set_total_items(struct Node *tab_node, ULONG total)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->total_items = total;
+}
+
+void tab_set_total_selectable(struct Node *tab_node, ULONG total)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->total_selectable = total;
+}
+
+void tab_set_dir_tree_size(struct Node *tab_node, ULONG size)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->dir_tree_size = size;
+}
+
+BOOL tab_set_current_dir_to_parent(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	if(at->current_dir == NULL) return FALSE;
+	
+	at->current_dir[strlen(at->current_dir) - 1] = '\0';
+
+	char *slash = strrchr(at->current_dir, '/');
+
+	if(slash == NULL) {
+		FreeVec(at->current_dir);
+		at->current_dir = NULL;
+	} else {
+		*(slash+1) = '\0';
+	}
+	
+	return TRUE;
+}
+
+void tab_set_current_dir(struct Node *tab_node, const char *dir)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	/* Free old dire */
+	if(at->current_dir) FreeVec(at->current_dir);
+	at->current_dir = NULL;
+
+	/* Alloc new archive */
+	if(dir) at->current_dir = strdup_vec(dir);
+}
+
 struct Node *tab_create(void *awin, struct List *tab_list)
 {
 	struct avalanche_tab *at = AllocVec(sizeof(struct avalanche_tab), MEMF_CLEAR | MEMF_PRIVATE);
@@ -158,6 +405,15 @@ struct Node *tab_create(void *awin, struct List *tab_list)
 	return tab_node;
 }
 
+void tab_reset(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	FreeListBrowserList(&at->dir_tree);
+	FreeListBrowserList(&at->lblist);
+	tab_free_arc_array(at);
+}
+
 BOOL tab_close(struct Node *tab_node)
 {
 	if(tab_node == NULL) return FALSE;
@@ -169,6 +425,8 @@ BOOL tab_close(struct Node *tab_node)
 
 	FreeListBrowserList(&at->lblist);
 	FreeListBrowserList(&at->dir_tree);
+
+	tab_free_arc_array(at);
 
 	tab_set_archive(tab_node, NULL);
 	tab_set_dest(tab_node, NULL);

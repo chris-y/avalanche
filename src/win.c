@@ -99,15 +99,6 @@ enum {
 	OID_LAST
 };
 
-struct arc_entries {
-	char *name;
-	ULONG *size;
-	BOOL selected;
-	BOOL dir;
-	void *userdata;
-	ULONG level;
-};
-
 #define AVALANCHE_AUTOFIT TRUE
 #define AVALANCHE_DROPZONES 2
 #define TITLE_MAX_SIZE 100
@@ -127,12 +118,6 @@ struct avalanche_window {
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
 	struct MinList deletelist;
-	struct arc_entries **arc_array;
-	struct arc_entries **dir_array;
-	ULONG dir_tree_size;
-	ULONG current_item;
-	ULONG total_items;
-	ULONG total_selectable;
 	void *archive_userdata;
 	BOOL flat_mode;
 	BOOL drag_lock;
@@ -141,8 +126,6 @@ struct avalanche_window {
 	BOOL abort_requested;
 	BYTE process_exit_sig;
 	struct module_functions mf;
-	char *current_dir;
-	struct Node *root_node;
 	char title[TITLE_MAX_SIZE];
 	struct List tab_list;
 	struct Node *tab_node; /* current tab */
@@ -525,14 +508,14 @@ static void collapse_tree(struct avalanche_window *aw, BOOL expand)
 
 }
 
-static ULONG array_count_selected_items(struct avalanche_window *aw)
+static ULONG array_count_selected_items(struct avalanche_window *aw, struct Node *tab_node)
 {
 	ULONG total_selectable = 0;
 	ULONG selected = 0;
 
-	for(int i = 0; i < aw->total_items; i++) {
+	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
         	if(aw->flat_mode) {
-				struct arc_entries *arc_e = (struct arc_entries *)aw->arc_array[i];
+				struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
 				if(arc_e->dir == FALSE) {
 					if(arc_e->selected) selected++;
 					total_selectable++;
@@ -540,15 +523,15 @@ static ULONG array_count_selected_items(struct avalanche_window *aw)
 			}
 	}
 
-	aw->total_selectable = total_selectable;
+	tab_set_total_selectable(tab_node, total_selectable);
 	return selected;
 }
 
-static ULONG list_count_selected_items(struct avalanche_window *aw)
+static ULONG list_count_selected_items(struct Node *tab_node)
 {
 	ULONG total_selectable = 0;
 	ULONG selected = 0;
-	struct List *list = window_get_lblist(aw);
+	struct List *list = tab_get_listbrowser_list(tab_node);
 	struct Node *fnode;
 
 	for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
@@ -567,23 +550,25 @@ static ULONG list_count_selected_items(struct avalanche_window *aw)
 		}
 	}
 
-	aw->total_selectable = total_selectable;
+	tab_set_total_selectable(tab_node, total_selectable);
 	return selected;
 }
 
-static ULONG window_count_selected(void *awin)
+static ULONG window_count_selected(void *awin, struct Node *tab_node)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	ULONG selected = 0;
 
 	if(aw->flat_mode) {
-		selected = array_count_selected_items(aw);
+		selected = array_count_selected_items(aw, tab_node);
 	} else {
-		selected = list_count_selected_items(aw);
+		selected = list_count_selected_items(tab_node);
 	}
 
-	progress_set_selected(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], selected, aw->total_selectable);
-
+	if(window_tab_is_current(aw, tab_node) {
+		progress_set_selected(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], selected, tab_get_total_selectable(tab_node));
+	}
+	
 	return selected;
 }
 
@@ -666,31 +651,6 @@ void add_to_delete_list(void *awin, char *fn)
 	}
 }
 
-static void free_arc_array(struct avalanche_window *aw)
-{
-	if((aw->arc_array == NULL) || (aw->total_items == 0)) return;
-	
-	for(int i = 0; i < aw->total_items; i++) {
-		FreeVec(aw->arc_array[i]);
-	}
-	FreeVec(aw->arc_array);
-	aw->arc_array = NULL;
-	
-	if((aw->dir_array == NULL) || (aw->dir_tree_size == 0)) return;
-
-	for(int i = 0; i < aw->dir_tree_size; i++) {
-		if(aw->dir_array[i]) {
-			if(aw->dir_array[i]->name) FreeVec(aw->dir_array[i]->name);
-			FreeVec(aw->dir_array[i]);
-		}
-	}
-	FreeVec(aw->dir_array);
-	aw->dir_array = NULL;
-
-	aw->total_items = 0;
-	aw->current_item = 0;
-}
-
 static int simple_sort(const char *a, const char *b)
 {
 	return strcmp(a, b);
@@ -759,10 +719,11 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 										WA_PointerType, POINTERTYPE_PROGRESS,
 										TAG_DONE);
-		window_reset_count(awin);
+										
+		tab_set_current_item(tab_node, 0);
 
 		if((node == NULL) && (aw->flat_mode) && (tab_get_format(tab_node) != ARC_XFD)) {
-			ret = module_extract_array(awin, tab_node, aw->arc_array, aw->total_items, newdest);
+			ret = module_extract_array(awin, tab_node, tab_get_arc_array(tab_node, 0), tab_get_total_items(tab_node), newdest);
 		} else {
 			ret = module_extract(awin, tab_node, node, archive, newdest);
 		}
@@ -772,7 +733,7 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 		CONFIG_UNLOCK;
 		
 		window_disable_gadgets(awin, FALSE, TRUE);
-		window_count_selected(awin);
+		window_count_selected(awin, tab_node);
 
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 								WA_BusyPointer, FALSE,
@@ -1048,7 +1009,7 @@ static char *extract_path_part(const char *path, int level)
 }
 
 
-static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const char *dir_name)
+static BOOL check_if_subdir(struct Node *tab_node, int dir_entry, const char *dir_name)
 {
 	ULONG len = strlen(dir_name)+2;
 	char *dir_name_slash = AllocVec(len, MEMF_PRIVATE);
@@ -1056,7 +1017,8 @@ static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const ch
 	snprintf(dir_name_slash, len, "%s/", dir_name);
 
 	for(int j = 0; j < dir_entry; j++) {
-		if((aw->dir_array[j]) && (strlen(aw->dir_array[j]->name) > strlen(dir_name_slash)) && (strncmp(aw->dir_array[j]->name, dir_name_slash, strlen(dir_name_slash)) == 0)) {
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, j);
+		if((dir_e) && (strlen(dir_e->name) > strlen(dir_name_slash)) && (strncmp(dir_e->name, dir_name_slash, strlen(dir_name_slash)) == 0)) {
 			FreeVec(dir_name_slash);
 			return TRUE;
 		}
@@ -1065,40 +1027,20 @@ static BOOL check_if_subdir(struct avalanche_window *aw, int dir_entry, const ch
 	return FALSE;
 }
 
-static BOOL check_duplicates(struct avalanche_window *aw, int dir_entry, const char *dir_name)
+static BOOL check_duplicates(struct Node *tab_node, int dir_entry, const char *dir_name)
 {
 	for(int j = 0; j < dir_entry; j++) {
-		if((aw->dir_array[j]) && (strlen(dir_name) > 0) && (strcmp(aw->dir_array[j]->name, dir_name) == 0)) {
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, j);
+		if((dir_e) && (strlen(dir_name) > 0) && (strcmp(dir_e->name, dir_name) == 0)) {
 			return TRUE;
 		}
 	}
 	return FALSE;
 }
 
-static void highlight_current_dir(struct avalanche_window *aw)
+static void highlight_current_dir(struct avalanche_window *aw, struct Node *tab_node)
 {
-	struct Node *cur_node = NULL;
-
-	if(aw->current_dir == NULL) {
-		cur_node = aw->root_node;
-	} else {
-		struct List *list = window_get_dirtree_list(aw);
-		struct Node *node;
-		char *userdata = NULL;
-		char *cur_dir = strdup_vec(aw->current_dir);
-
-		if(cur_dir) cur_dir[strlen(cur_dir) - 1] = '\0';
-
-		for(node = list->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-			GetListBrowserNodeAttrs(node, LBNA_UserData, &userdata, TAG_DONE);
-
-			if((userdata) && (strcmp(cur_dir, userdata) == 0)) {
-				cur_node = node;
-				break;
-			}
-		}
-		if(cur_dir) FreeVec(cur_dir);
-	}
+	struct Node *cur_node = tab_dir_find_current_node(tab_node);
 
 	if(cur_node) {
 		SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
@@ -1132,14 +1074,15 @@ static void window_update_tab_title(struct avalanche_window *aw, struct Node *ta
 static void window_update_title(struct avalanche_window *aw, struct Node *tab_node)
 {
 	const char *archive = tab_get_archive(tab_node);
+	const char *c_dir = tab_get_current_dir(tab_node);
 	if(archive != NULL) {
-		if(aw->current_dir) {
-			int title_len = strlen(VERS) + strlen((archive)) + strlen(aw->current_dir);
+		if(c_dir) {
+			int title_len = strlen(VERS) + strlen((archive)) + strlen(c_dir);
 
-			if((title_len < TITLE_MAX_SIZE) || ((title_len - TITLE_MAX_SIZE + 3) > strlen(aw->current_dir))) {
-				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, (archive), aw->current_dir);
+			if((title_len < TITLE_MAX_SIZE) || ((title_len - TITLE_MAX_SIZE + 3) > strlen(c_dir))) {
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - %s", VERS, (archive), c_dir);
 			} else {
-				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, (archive), aw->current_dir + (strlen(aw->current_dir) - (title_len - TITLE_MAX_SIZE + 3)));
+				snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s] - ...%s", VERS, (archive), c_dir + (strlen(c_dir) - (title_len - TITLE_MAX_SIZE + 3)));
 			}
 		} else {
 			snprintf(aw->title, TITLE_MAX_SIZE, "%s [%s]", VERS, (archive));
@@ -1157,16 +1100,14 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 {
 	ULONG root_glyph = AVALANCHE_GLYPH_ROOT;
 
-	FreeListBrowserList(tab_get_dirtree_list(tab_node));
-	aw->root_node = NULL;
-
 	int dir_entry = 0;
-	aw->dir_tree_size = aw->total_items * 2;
-	aw->dir_array = AllocVec(sizeof(struct arc_entries *) * aw->dir_tree_size, MEMF_CLEAR);
-	if(aw->dir_array == NULL) return;
 
-	for(int it = 0; it < aw->total_items; it++) {
-		char *dir_name = AllocVec(strlen(aw->arc_array[it]->name)+1, MEMF_CLEAR);
+	struct arc_entries **dir_a = tab_alloc_dir_array(tab_node);
+	if(dir_a == NULL) return;
+
+	for(int it = 0; it < tab_get_total_items(tab_node); it++) {
+		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, it);
+		char *dir_name = AllocVec(strlen(arc_e->name)+1, MEMF_CLEAR);
 		int i = 0;
 		int slash = 0;
 		int last_slash = 0;
@@ -1175,44 +1116,45 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 
 		if(dir_name == NULL) continue;
 
-		while(aw->arc_array[it]->name[i+1]) {
-			if(aw->arc_array[it]->name[i] == '/') {
+		while(arc_e->name[i+1]) {
+			if(arc_e->name[i] == '/') {
 				slash++;
 				last_slash = i;
 			}
-			dir_name[i] = aw->arc_array[it]->name[i];
+			dir_name[i] = arc_e->name[i];
 			i++;
 		}
 		dir_name[last_slash] = '\0';
 
-		dupe = check_duplicates(aw, dir_entry, dir_name);
+		dupe = check_duplicates(tab_node, dir_entry, dir_name);
 
 		if((slash > 0) && (dupe == FALSE)) {
 			for(int l = 1; l < slash; l++) {
 				char *part_dir = extract_path_part(dir_name, l);
-				dupe = check_duplicates(aw, dir_entry, part_dir);
+				dupe = check_duplicates(tab_node, dir_entry, part_dir);
 				if(dupe) {
 					FreeVec(part_dir);
 					continue;
 				}
-				aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
-				if(aw->dir_array[dir_entry] == NULL) continue;
-				aw->dir_array[dir_entry]->name = part_dir;
-				aw->dir_array[dir_entry]->level = l;
+				struct arc_entries *dir_e = tab_get_dir_entry(tab_node, dir_entry);
+				if(dir_e == NULL) continue;
+				
+				dir_e->name = part_dir;
+				dir_e->level = l;
 
 				dir_entry++;
 			}
 
-			aw->dir_array[dir_entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
-			if(aw->dir_array[dir_entry] == NULL) continue;
+			struct arc_entries *dir_e = tab_get_dir_entry(tab_node, dir_entry);
+			if(dir_e == NULL) continue;
 			
-			aw->dir_array[dir_entry]->name = dir_name;
-			aw->dir_array[dir_entry]->level = slash;
-			aw->dir_array[dir_entry]->dir = FALSE;
+			dir_e->name = dir_name;
+			dir_e->level = slash;
+			dir_e->dir = FALSE;
 
 			dir_entry++;
 
-			if(dir_entry > aw->dir_tree_size) {
+			if(dir_entry > tab_get_dir_tree_size(tab_node)) {
 				open_error_req(locale_get_string(MSG_ERR_TREE_ALLOC), locale_get_string(MSG_OK), aw);
 				return;
 			}
@@ -1223,54 +1165,39 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 	}
 
 	for(int i = 0; i < dir_entry; i++) {
-		if((check_if_subdir(aw, dir_entry, aw->dir_array[i]->name))) {
-			aw->dir_array[i]->dir = TRUE;  //LBFLG_HASCHILDREN
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i);
+		if((check_if_subdir(tab_node, dir_entry, dir_e->name))) {
+			dir_e->dir = TRUE;  //LBFLG_HASCHILDREN
 		} else {
-			aw->dir_array[i]->dir = FALSE;
+			dir_e->dir = FALSE;
 		}
 	}
 
-	aw->dir_tree_size = dir_entry;
-
-	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
-	if(dir_entry == 0) flags = 0;
+	tab_set_dir_tree_size(tab_node, dir_entry);
 
 	if((tab_get_format(tab_node) == ARC_XAD) && (xad_is_diskfile(aw))) {
 		root_glyph = AVALANCHE_GLYPH_DISK;
 	}
 
-	aw->root_node = AllocListBrowserNode(1,
-									LBNA_UserData, NULL,
-									LBNA_Flags, flags,
-									LBNA_Generation, 1,
-									LBNA_Column, 0,
-										LBNCA_Image, LabelObj,
-											LABEL_DisposeImage, FALSE,
-											LABEL_Image, glyph_get(root_glyph),
-											LABEL_Underscore, NULL,
-											LABEL_Text, " ",
-											LABEL_Text, FilePart(tab_get_archive(tab_node)),
-										LabelEnd,
-									TAG_DONE);
-
-	AddTail(tab_get_dirtree_list(tab_node), aw->root_node);
+	tab_dir_add_root_node(tab_node, root_glyph, dir_entry);
 
 	for(int i = 0; i <= dir_entry; i++) {
-		flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
-		if(aw->dir_array[i] == NULL) break;
-		if(aw->dir_array[i]->dir == FALSE) flags = 0;
-		
+		ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i);
+		if(dir_e == NULL) break;
+		if(dir_e->dir == FALSE) flags = 0;
+
 		struct Node *node = AllocListBrowserNode(1,
-									LBNA_UserData, aw->dir_array[i]->name,
+									LBNA_UserData, dir_e->name,
 									LBNA_Flags, flags,
-									LBNA_Generation, aw->dir_array[i]->level + 1,
+									LBNA_Generation, dir_e->level + 1,
 									LBNA_Column, 0,
 										LBNCA_Image, LabelObj,
 											LABEL_DisposeImage, FALSE,
 											LABEL_Image, glyph_get(AVALANCHE_GLYPH_DRAWER),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
-											LABEL_Text, FilePart(aw->dir_array[i]->name),
+											LABEL_Text, FilePart(dir_e->name),
 										LabelEnd,
 									TAG_DONE);
 
@@ -1293,9 +1220,11 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 
 	FreeListBrowserList(tab_get_listbrowser_list(tab_node));
 
-	if(aw->current_dir) {
-		level = count_dir_level(aw->current_dir) + 1;
-		skip_dir_len = strlen(aw->current_dir);
+	const char *c_dir = tab_get_current_dir(tab_node);
+
+	if(c_dir) {
+		level = count_dir_level(c_dir) + 1;
+		skip_dir_len = strlen(c_dir);
 	}
 
 	if(tab_get_format(tab_node) != ARC_XFD) {
@@ -1350,23 +1279,27 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 			AddTail(tab_get_listbrowser_list(tab_node), node);
 		}
 		
-		for(int it = 0; it < aw->dir_tree_size; it++) {
+		for(int it = 0; it < tab_get_dir_tree_size(tab_node); it++) {
 			/* Only show current level - NB dir levels are different from file levels */
-			if((aw->dir_array[it] && ((aw->dir_array[it]->level - 1) == level)) &&
-				((aw->current_dir == NULL) || (strncmp(aw->dir_array[it]->name, aw->current_dir, skip_dir_len) == 0))) {
-				addlbnode(aw->dir_array[it]->name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw, tab_node);
+			struct arc_entries *dir_e = tab_get_dir_entry(tab_node, it);
+			const char *c_dir = tab_get_current_dir(tab_node);
+			if((dir_e && ((dir_e->level - 1) == level)) &&
+				((c_dir == NULL) || (strncmp(dir_e->name, c_dir, skip_dir_len) == 0))) {
+				addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw, tab_node);
 			}
 		}
 	}
 
 	/* Add files */
 
-	for(int it = 0; it < aw->total_items; it++) {
+	for(int it = 0; it < tab_get_total_items(tab_node); it++) {
 		/* Only show current level */
-		if((aw->arc_array[it]->level == level) && (aw->arc_array[it]->dir == FALSE) &&
-			((aw->current_dir == NULL) || (strncmp(aw->arc_array[it]->name, aw->current_dir, strlen(aw->current_dir)) == 0))) {
-			addlbnode(aw->arc_array[it]->name + skip_dir_len,
-				aw->arc_array[it]->size, aw->arc_array[it]->dir, aw->arc_array[it], aw->arc_array[it]->selected, aw, tab_node);
+		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, it);
+		const char *c_dir = tab_get_current_dir(tab_node);
+		if((arc_e->level == level) && (arc_e->dir == FALSE) &&
+			((c_dir == NULL) || (strncmp(arc_e->name, c_dir, strlen(c_dir)) == 0))) {
+			addlbnode(arc_e->name + skip_dir_len,
+				arc_e->size, arc_e->dir, arc_e, arc_e->selected, aw, tab_node);
 		}
 	}
 
@@ -1384,42 +1317,39 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(item == 0) {
-		aw->current_item = 0;
+		tab_set_current_item(tab_node, 0);
 		if(aw->windows[WID_MAIN] && aw->gadgets[GID_PROGRESS]) {
-			aw->total_items = total;
+			tab_set_total_items(tab_node, total);
 			//progress_set_archive_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], 0, total);
 		}
 	}
 
 	if(aw->flat_mode) {
-		if(item == 0) {
-			if(aw->arc_array) free_arc_array(aw);
-			aw->arc_array = AllocVec(total * sizeof(struct arc_entries *), MEMF_CLEAR);
-		}
+		struct arc_entries **arc_a = tab_get_arc_array(tab_node, (item==0) ? total : 0);
 
-		if(aw->arc_array) {
-			int i = 0;
+		if(arc_a) {
+			struct arc_entries *arc_e = tab_get_arc_entry(tab_node, item);
+			if(arc_e) {
 			
-			aw->arc_array[item] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
-			
-			aw->arc_array[item]->name = name;
-			aw->arc_array[item]->size = size;
-			aw->arc_array[item]->dir = dir;
-			aw->arc_array[item]->userdata = userdata;
-			aw->arc_array[item]->selected = TRUE;
-			
-			aw->arc_array[item]->level = 0;
+				arc_e->name = name;
+				arc_e->size = size;
+				arc_e->dir = dir;
+				arc_e->userdata = userdata;
+				arc_e->selected = TRUE;
+				
+				arc_e->level = 0;
 
-			/* Count the slashes to find directory level */
-			aw->arc_array[item]->level = count_dir_level(name);
-			
-			if(item == (total - 1)) {
-				/* Sort the array */
-				#ifdef __amigaos4__ /* doesn't like OS3, may not be needed anyway */
-				qsort(aw->arc_array, total, sizeof(struct arc_entries *), sort_array);
-				#endif
-				window_flat_browser_tree_construct(aw, tab_node);
-				window_flat_browser_construct(aw, tab_node);
+				/* Count the slashes to find directory level */
+				arc_e->level = count_dir_level(name);
+				
+				if(item == (total - 1)) {
+					/* Sort the array */
+					#ifdef __amigaos4__ /* doesn't like OS3, may not be needed anyway */
+					qsort(arc_a, total, sizeof(struct arc_entries *), sort_array);
+					#endif
+					window_flat_browser_tree_construct(aw, tab_node);
+					window_flat_browser_construct(aw, tab_node);
+				}
 			}
 		}
 	} else {
@@ -1429,14 +1359,17 @@ static void addlbnode_cb(char *name, LONG *size, BOOL dir, ULONG item, ULONG tot
 
 static void update_fuelgauge_text(struct avalanche_window *aw)
 {
-	aw->current_item++;
+	ULONG current_item  = tab_get_current_item(aw->tab_node);
+	current_item++;
+	tab_set_current_item(aw->tab_node, current_item);
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
-	progress_set_archive_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], aw->current_item, aw->total_items);
+	/* TODO: Need to propagate tab_node to this function so we can check if tab is the active one */
+	progress_set_archive_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], tab_get_current_item(aw->tab_node), tab_get_total_items(aw->tab_node));
 }
 
-void window_update_fuelgauge_text(void *awin)
+void window_update_fuelgauge_text(void *awin, struct Node *tab_node)
 {
 	char *msg;
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -1444,21 +1377,30 @@ void window_update_fuelgauge_text(void *awin)
 	if(aw->windows[WID_MAIN] == NULL) return;
 	if(aw->gadgets[GID_PROGRESS] == NULL) return;
 
-	if(aw->total_items == 0) {
-		progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], 0);
+	ULONG total = tab_get_total_items(tab_node);
+
+	if(total == 0) {
+		if(window_tab_is_current(aw, tab_node)) {
+			progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], 0);
+		}
 	}
 
-	aw->total_items++;
+	total++;
 
-	if(aw->current_item < 99) {
-		aw->current_item++;
+	tab_set_total_items(tab_node, total);
+
+	ULONG current = tab_get_current_item(tab_node);
+
+	if(current < 99) {
+		current++;
+		tab_set_current_item(tab_node, current);
 		return;
 	}
 
-	aw->current_item = 0;
-
-	progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], aw->total_items);
-
+	tab_set_current_item(tab_node, 0);
+	if(window_tab_is_current(aw, tab_node)) {
+		progress_set_scanning(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], total);
+	}
 }
 
 static void *array_get_userdata_quiet(void *awin, void *arc_entry)
@@ -2041,7 +1983,6 @@ void window_dispose(void *awin)
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
 	if(aw->dtci) FreeLBColumnInfo(aw->dtci);
 	if(aw->menu) FreeVec(aw->menu);
-	free_arc_array(aw);
 
 	/* Free all tabs (only ever one presently) */
 	tab_close_all(&aw->tab_list);
@@ -2053,31 +1994,21 @@ void window_dispose(void *awin)
 	FreeVec(aw);
 }
 
-static void parent_dir(struct avalanche_window *aw)
+static void parent_dir(struct avalanche_window *aw, struct Node *tab_node)
 {
-	if(aw->current_dir) {
-		aw->current_dir[strlen(aw->current_dir) - 1] = '\0';
-
-		char *slash = strrchr(aw->current_dir, '/');
-	
-		if(slash == NULL) {
-			FreeVec(aw->current_dir);
-			aw->current_dir = NULL;
-		} else {
-			*(slash+1) = '\0';
-		}
+	if(tab_set_current_dir_to_parent(tab_node)) {
 
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
-		window_flat_browser_construct(aw, aw->tab_node);
+		window_flat_browser_construct(aw, tab_node);
 
 		SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, window_get_lblist(aw),
 			LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 		TAG_DONE);
 
-		highlight_current_dir(aw);
+		highlight_current_dir(aw, tab_node);
 	}
 }
 
@@ -2104,18 +2035,13 @@ static void window_tree_handle(void *awin)
 				if(userdata) {
 					cdir = AllocVec(strlen(userdata) + 2, MEMF_CLEAR);
 					if(cdir == NULL) return;
-				}
 
-				if(aw->current_dir) {
-					FreeVec(aw->current_dir);
-					aw->current_dir = NULL;
-				}
-
-				if(userdata) {
 					strncpy(cdir, userdata, strlen(userdata));
 					strcat(cdir, "/"); // add trailing slash
-					aw->current_dir = cdir;
 				}
+				
+				tab_set_current_dir(aw->tab_node, cdir);
+				if(cdir) FreeVec(cdir); /* tab_set_current_dir copies the string */
 
 				/* switch to dir */
 				SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
@@ -2158,7 +2084,7 @@ static void window_list_handle(void *awin)
 					arc_entry->selected = TRUE;
 				}
 			}
-			window_count_selected(aw);
+			window_count_selected(aw, aw->tab_node);
 		break;
 
 		case LBRE_UNCHECKED:
@@ -2176,7 +2102,7 @@ static void window_list_handle(void *awin)
 					arc_entry->selected = FALSE;
 				}
 			}
-			window_count_selected(aw);
+			window_count_selected(aw, aw->tab_node);
 		break;
 
 #if 0 /* This selects items when single-clicked off the checkbox -
@@ -2184,7 +2110,7 @@ it's incompatible with double-clicking as it resets the listview */
 		case LBRE_NORMAL:
 			GetAttr(LISTBROWSER_SelectedNode, aw->gadgets[GID_LIST], (APTR)&node);
 			toggle_item(aw, node, 2, TRUE);
-			window_count_selected(aw);
+			window_count_selected(aw, aw->tab_node);
 		break;
 #endif
 		case LBRE_DOUBLECLICK:
@@ -2211,28 +2137,28 @@ it's incompatible with double-clicking as it resets the listview */
 					TAG_DONE);
 
 					/* Special case: parent dir */
-					if(strcmp(dir, "/") == 0) return parent_dir(aw);
+					if(strcmp(dir, "/") == 0) return parent_dir(aw, aw->tab_node);
 
 					ULONG cdir_len = 0;
-					if(aw->current_dir) cdir_len = strlen(aw->current_dir);
+					const char *c_dir = tab_get_current_dir(aw->tab_node);
+					if(c_dir) cdir_len = strlen(c_dir);
 					
 					char *cdir = AllocVec(cdir_len + 1 + strlen(dir) + 2, MEMF_CLEAR);
 					
-					if(aw->current_dir) {
-						strncpy(cdir, aw->current_dir, cdir_len);
-						FreeVec(aw->current_dir);
+					if(c_dir) {
+						strncpy(cdir, c_dir, cdir_len);
 					}
 					
 					AddPart(cdir, dir, cdir_len + 1 + strlen(dir) + 2);
 					strcat(cdir, "/"); // add trailing slash
-					aw->current_dir = cdir;
+					tab_set_current_dir(aw->tab_node, cdir);
 
 					/* switch to dir */
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
 					window_flat_browser_construct(aw, aw->tab_node);
-					highlight_current_dir(aw);
+					highlight_current_dir(aw, aw->tab_node);
 
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, window_get_lblist(aw),
@@ -2245,7 +2171,7 @@ it's incompatible with double-clicking as it resets the listview */
 			}
 
 			toggle_item(aw, node, 1, TRUE); /* ensure selected */
-			window_count_selected(aw);
+			window_count_selected(aw, aw->tab_node);
 
 			ULONG dest_path_len = strlen(CONFIG_GET_LOCK(tmpdir)) + strlen(get_item_filename(aw, node)) + 4;
 			char *dest_path = AllocVec(dest_path_len, MEMF_CLEAR | MEMF_PRIVATE);
@@ -2280,9 +2206,8 @@ void window_update_archive(void *awin, char *archive)
 	tab_set_archive(aw->tab_node, archive);
 
 	/* TODO: move this to tab */
-	if(aw->flat_mode && aw->current_dir) {
-		FreeVec(aw->current_dir);
-		aw->current_dir = NULL;
+	if(aw->flat_mode) {
+		tab_set_current_dir(aw->tab_node, NULL);
 	}
 }
 
@@ -2297,11 +2222,12 @@ void window_update_sourcedir(void *awin, char *sourcedir)
 	CONFIG_UNLOCK;
 }
 
-void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size, const char *filename)
+void window_fuelgauge_update(void *awin, struct Node *tab_node, ULONG size, ULONG total_size, const char *filename)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
 	if(aw->windows[WID_MAIN] == NULL) return;
+	if(window_tab_is_current(aw, tab_node) == FALSE) return;
 
 	progress_set_file_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size, filename);
 }
@@ -2320,12 +2246,14 @@ void window_modify_all_list(void *awin, ULONG select)
 			LISTBROWSER_Labels, ~0, TAG_DONE);
 
 	if(aw->flat_mode) {
-		for(int i = 0; i < aw->total_items; i++) {
-			if((aw->current_dir == NULL) || (strncmp(aw->arc_array[i]->name, aw->current_dir, strlen(aw->current_dir)) == 0)) {
+		for(int i = 0; i < tab_get_total_items(aw->tab_node); i++) {
+			struct arc_entries *arc_e = tab_get_arc_entry(aw->tab_node, i);
+			const char *c_dir = tab_get_current_dir(aw->tab_node);
+			if((c_dir == NULL) || (strncmp(arc_e->name, c_dir, strlen(c_dir)) == 0)) {
 				if(select == 2) {
-					aw->arc_array[i]->selected = !aw->arc_array[i]->selected;
+					arc_e->selected = !arc_e->selected;
 				} else {
-					aw->arc_array[i]->selected = selected;
+					arc_e->selected = selected;
 				}
 			}
 		}
@@ -2342,7 +2270,7 @@ void window_modify_all_list(void *awin, ULONG select)
 				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
 
-	window_count_selected(aw);
+	window_count_selected(aw, aw->tab_node);
 }
 
 const char *window_req_new_lha(void *awin, char *drawer)
@@ -2491,14 +2419,12 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 							LISTBROWSER_Labels, ~0, TAG_DONE);
 	}
 
-	FreeListBrowserList(tab_get_dirtree_list(tab_node));
-	free_arc_array(aw); // needs moving to tab
+	tab_reset(tab_node);
 
 	module_free(awin); // check
-
-	FreeListBrowserList(tab_get_listbrowser_list(tab_node));
-
+	
 	tab_set_format(tab_node, ARC_XAD); /* Set in advance for flat browser tree use */
+	
 	ULONG active_modules = CONFIG_GET_LOCK(activemodules);
 	CONFIG_UNLOCK;
 
@@ -2547,13 +2473,13 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 				LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
 
 		if(aw->flat_mode) {
-			highlight_current_dir(aw);
+			highlight_current_dir(aw, tab_node);
 		}
 
 		window_update_title(aw, tab_node);
 
 		window_disable_gadgets(awin, FALSE, FALSE);
-		window_count_selected(awin);
+		window_count_selected(awin, tab_node);
 
 		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 								WA_BusyPointer, FALSE,
@@ -2596,9 +2522,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		BOOL ret = window_req_archive(aw, config);
 		if(ret == FALSE) return;
 	
-		if(aw->flat_mode && aw->current_dir) {
-			FreeVec(aw->current_dir);
-			aw->current_dir = NULL;
+		if(aw->flat_mode) {
+			tab_set_current_dir(aw->tab_node, NULL);
 		}
 	}
 
@@ -2707,7 +2632,7 @@ BOOL window_edit_add(void *awin, char *file, char *root)
 	
 	if(module_vscan(awin, file, NULL, 0, FALSE) == 0) {
 		module_free(aw);
-		if(aw->mf.add) return aw->mf.add(aw, tab_get_archive(aw->tab_node), file, aw->current_dir, root);
+		if(aw->mf.add) return aw->mf.add(aw, tab_get_archive(aw->tab_node), file, tab_get_current_dir(aw->tab_node), root);
 	}
 
 	return FALSE;
@@ -2825,7 +2750,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 										WA_PointerDelay, TRUE,
 										TAG_DONE);
 
-	window_reset_count(awin);
+	tab_set_current_item(aw->tab_node, 0);
 	window_disable_gadgets(awin, TRUE, FALSE);
 
 	/* module_free(aw);
@@ -3188,13 +3113,6 @@ BOOL check_closetab(void *awin)
 	return done;
 }
 #endif
-
-void window_reset_count(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	aw->current_item = 0;
-}
 
 void fill_menu_labels(void)
 {
