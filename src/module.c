@@ -18,6 +18,7 @@
 #include "config.h"
 #include "libs.h"
 #include "module.h"
+#include "tab.h"
 #include "win.h"
 
 #include "deark.h"
@@ -123,14 +124,14 @@ const char *module_get_read_module(void *awin)
 	return mf->module;
 }
 
-long module_extract(void *awin, void *node, void *archive, void *newdest)
+long module_extract(void *awin, void *tab_node, void *node, void *archive, void *newdest)
 {
 	long ret = 0;
 
-	switch(window_get_archiver(awin)) {
+	switch(tab_get_format(tab_node)) {
 		case ARC_XAD:
 			if(node == NULL) {
-				ret = xad_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode);
+				ret = xad_extract(awin, archive, newdest, tab_get_listbrowser_list(tab_node), window_get_lbnode);
 			} else {
 				ULONG pud = 0;
 				ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, &pud);
@@ -141,7 +142,7 @@ long module_extract(void *awin, void *node, void *archive, void *newdest)
 		break;
 		case ARC_DEARK:
 			if(node == NULL) {
-				ret = deark_extract(awin, archive, newdest, window_get_lblist(awin), window_get_lbnode);
+				ret = deark_extract(awin, archive, newdest, tab_get_listbrowser_list(tab_node), window_get_lbnode);
 			} else {
 				ret = deark_extract_file(awin, archive, newdest, node, window_get_lbnode);
 			}
@@ -151,11 +152,11 @@ long module_extract(void *awin, void *node, void *archive, void *newdest)
 	return ret;
 }
 
-long module_extract_array(void *awin, void **array, ULONG total_items, void *dest)
+long module_extract_array(void *awin, void *tab_node, void **array, ULONG total_items, void *dest)
 {
 	long ret = 0;
 	
-	switch(window_get_archiver(awin)) {
+	switch(tab_get_format(tab_node)) {
 		case ARC_XAD:
 			ret = xad_extract_array(awin, total_items, dest, array, array_get_userdata);
 		break;
@@ -186,7 +187,7 @@ BOOL module_recog(void* fullfilename)
 	return found;
 }
 
-static void module_extract_register(void *awin, struct module_functions *mf)
+static void module_extract_register(void *awin, struct Node *tab_node, struct module_functions *mf)
 {
 	/* Remove existing registration */
 	mf->module[0] = 'N';
@@ -202,7 +203,7 @@ static void module_extract_register(void *awin, struct module_functions *mf)
 	mf->free = NULL;
 
 	/* Register correct module */
-	switch(window_get_archiver(awin)) {
+	switch(tab_get_format(tab_node)) {
 		case ARC_XAD:
 			xad_register(mf);
 		break;
@@ -225,9 +226,9 @@ BOOL module_has_add(void *awin)
 	return FALSE;
 }
 
-void module_register(void *awin, struct module_functions *mf)
+void module_register(void *awin, struct Node *tab_node, struct module_functions *mf)
 {
-	module_extract_register(awin, mf);
+	module_extract_register(awin, tab_node, mf);
 
 	const char *format = module_get_format(awin);
 

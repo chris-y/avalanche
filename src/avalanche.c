@@ -44,6 +44,7 @@
 #include "misc.h"
 #include "module.h"
 #include "new.h"
+#include "tab.h"
 #include "update.h"
 #include "win.h"
 
@@ -468,7 +469,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 													window_req_open_archive(appmenu_awin, &config, TRUE);
 													/* TODO: This needs reworking as it will inhibit the rest of the program */
 													Wait(window_get_exit_sig(appmenu_awin));
-													if(window_get_archiver(appmenu_awin) != ARC_NONE) {
+													if(tab_get_format(window_get_current_tab(appmenu_awin)) != ARC_NONE) {
 														long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
 														Wait(window_get_exit_sig(appmenu_awin));
 													}
@@ -494,7 +495,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 											}
 										}
 										
-										char *arc = window_req_new_lha(appmenu_awin, lock);
+										const char *arc = window_req_new_lha(appmenu_awin, lock);
 										if(lock) FreeVec(lock);
 										
 										if(arc) {

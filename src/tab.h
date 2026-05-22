@@ -30,10 +30,12 @@ void tab_close_all(struct List *tab_list);
 /* Set archive/dest, or NULL to free */
 void tab_set_archive(struct Node *tab_node, const char *archive);
 void tab_set_dest(struct Node *tab_node, const char *dest);
+void tab_set_format(struct Node *tab_node, ULONG format);
 
 /** Getters **/
 const char *tab_get_archive(struct Node *tab_node);
 const char *tab_get_dest(struct Node *tab_node);
+const ULONG tab_get_format(struct Node *tab_node);
 struct List *tab_get_listbrowser_list(struct Node *tab_node);
 struct List *tab_get_dirtree_list(struct Node *tab_node);
 

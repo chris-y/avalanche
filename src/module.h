@@ -49,8 +49,8 @@ const char *module_get_format(void *awin);
 const char *module_get_subformat(void *awin);
 const char *module_get_read_module(void *awin);
 const char *module_get_error(void *awin, long code);
-long module_extract(void *awin, void *node, void *archive, void *newdest);
-long module_extract_array(void *awin, void **array, ULONG total_items, void *dest);
+long module_extract(void *awin, void *tab_node, void *node, void *archive, void *newdest);
+long module_extract_array(void *awin, void *tab_node, void **array, ULONG total_items, void *dest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);
 BOOL module_is_crypted(void *awin, void *userdata);
@@ -63,7 +63,7 @@ BOOL mod_lha_new(void *awin, char *archive);
 BOOL mod_zip_new(void *awin, char *archive);
 
 /*** Register modules ***/
-void module_register(void *awin, struct module_functions *mf);
+void module_register(void *awin, struct Node *tab_node, struct module_functions *mf);
 
 /*** Register extended modules ***/
 void mod_zip_register(struct module_functions *funcs);

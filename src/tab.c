@@ -32,8 +32,8 @@ struct avalanche_tab {
 	struct List dir_tree;
 	char *archive;
 	char *dest;
+	ULONG format;
 #if 0 /* items targetted for moving */
-	ULONG archiver; // RENAME THIS
 	struct MinList deletelist;
 	struct arc_entries **arc_array;
 	struct arc_entries **dir_array;
@@ -73,6 +73,13 @@ const char *tab_get_dest(struct Node *tab_node)
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	return (const char *)at->dest;
+}
+
+const ULONG tab_get_format(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return (const ULONG)at->format;
 }
 
 struct List *tab_get_listbrowser_list(struct Node *tab_node)
@@ -118,6 +125,13 @@ void tab_set_dest(struct Node *tab_node, const char *dest)
 
 	/* Alloc new dest */
 	if(dest) at->dest = strdup_vec(dest);
+}
+
+void tab_set_format(struct Node *tab_node, ULONG format)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->format = format;
 }
 
 struct Node *tab_create(void *awin, struct List *tab_list)

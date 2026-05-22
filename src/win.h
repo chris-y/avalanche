@@ -47,12 +47,12 @@ void *window_get_window(void *awin);
 Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
-ULONG window_get_archiver(void *awin);
 void *array_get_userdata(void *awin, void *arc_entry);
 struct module_functions *window_get_module_funcs(void *awin);
 BOOL window_get_disabled(void *awin);
 BYTE window_get_exit_sig(void *awin);
 const char *window_req_new_lha(void *awin, char *drawer);
+struct Node *window_get_current_tab(void *awin);
 
 /* Modify archive */
 BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
