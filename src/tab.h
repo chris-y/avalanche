@@ -76,7 +76,7 @@ struct arc_entries **tab_alloc_dir_array(struct Node *tab_node);
 
 /* Get arc entry from array, will alocate if not found */
 struct arc_entries *tab_get_arc_entry(struct Node *tab_node, ULONG entry);
-struct arc_entries *tab_get_dir_entry(struct Node *tab_node, ULONG entry);
+struct arc_entries *tab_get_dir_entry(struct Node *tab_node, ULONG entry, BOOL alloc_new);
 
 /* Get the window the tab is in */
 void *tab_get_window(struct Node *tab_node);

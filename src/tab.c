@@ -277,13 +277,13 @@ struct arc_entries *tab_get_arc_entry(struct Node *tab_node, ULONG entry)
 	return (struct arc_entries *)at->arc_array[entry];
 }
 
-struct arc_entries *tab_get_dir_entry(struct Node *tab_node, ULONG entry)
+struct arc_entries *tab_get_dir_entry(struct Node *tab_node, ULONG entry, BOOL alloc_new)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	if(at->dir_array == NULL) return NULL;
 
-	if(at->dir_array[entry] == NULL) {
+	if((at->dir_array[entry] == NULL) && (alloc_new)) {
 		at->dir_array[entry] = AllocVec(sizeof(struct arc_entries), MEMF_CLEAR);
 	}
 

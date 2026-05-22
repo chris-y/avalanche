@@ -977,7 +977,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	AddTail(window_get_lblist(aw), node);
 }
 
-static ULONG count_dir_level(char *filename)
+static ULONG count_dir_level(const char *filename)
 {
 	ULONG i = 0;
 	ULONG level = 0;
@@ -1017,7 +1017,7 @@ static BOOL check_if_subdir(struct Node *tab_node, int dir_entry, const char *di
 	snprintf(dir_name_slash, len, "%s/", dir_name);
 
 	for(int j = 0; j < dir_entry; j++) {
-		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, j);
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, j, FALSE);
 		if((dir_e) && (strlen(dir_e->name) > strlen(dir_name_slash)) && (strncmp(dir_e->name, dir_name_slash, strlen(dir_name_slash)) == 0)) {
 			FreeVec(dir_name_slash);
 			return TRUE;
@@ -1030,7 +1030,7 @@ static BOOL check_if_subdir(struct Node *tab_node, int dir_entry, const char *di
 static BOOL check_duplicates(struct Node *tab_node, int dir_entry, const char *dir_name)
 {
 	for(int j = 0; j < dir_entry; j++) {
-		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, j);
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, j, FALSE);
 		if((dir_e) && (strlen(dir_name) > 0) && (strcmp(dir_e->name, dir_name) == 0)) {
 			return TRUE;
 		}
@@ -1136,7 +1136,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 					FreeVec(part_dir);
 					continue;
 				}
-				struct arc_entries *dir_e = tab_get_dir_entry(tab_node, dir_entry);
+				struct arc_entries *dir_e = tab_get_dir_entry(tab_node, dir_entry, TRUE);
 				if(dir_e == NULL) continue;
 				
 				dir_e->name = part_dir;
@@ -1145,7 +1145,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 				dir_entry++;
 			}
 
-			struct arc_entries *dir_e = tab_get_dir_entry(tab_node, dir_entry);
+			struct arc_entries *dir_e = tab_get_dir_entry(tab_node, dir_entry, TRUE);
 			if(dir_e == NULL) continue;
 			
 			dir_e->name = dir_name;
@@ -1165,7 +1165,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 	}
 
 	for(int i = 0; i < dir_entry; i++) {
-		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i);
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i, FALSE);
 		if((check_if_subdir(tab_node, dir_entry, dir_e->name))) {
 			dir_e->dir = TRUE;  //LBFLG_HASCHILDREN
 		} else {
@@ -1183,7 +1183,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 
 	for(int i = 0; i <= dir_entry; i++) {
 		ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
-		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i);
+		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i, FALSE);
 		if(dir_e == NULL) break;
 		if(dir_e->dir == FALSE) flags = 0;
 
@@ -1281,7 +1281,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 		
 		for(int it = 0; it < tab_get_dir_tree_size(tab_node); it++) {
 			/* Only show current level - NB dir levels are different from file levels */
-			struct arc_entries *dir_e = tab_get_dir_entry(tab_node, it);
+			struct arc_entries *dir_e = tab_get_dir_entry(tab_node, it, FALSE);
 			const char *c_dir = tab_get_current_dir(tab_node);
 			if((dir_e && ((dir_e->level - 1) == level)) &&
 				((c_dir == NULL) || (strncmp(dir_e->name, c_dir, skip_dir_len) == 0))) {
