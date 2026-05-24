@@ -565,7 +565,7 @@ static ULONG window_count_selected(void *awin, struct Node *tab_node)
 		selected = list_count_selected_items(tab_node);
 	}
 
-	if(window_tab_is_current(aw, tab_node) {
+	if(window_tab_is_current(aw, tab_node)) {
 		progress_set_selected(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], selected, tab_get_total_selectable(tab_node));
 	}
 	

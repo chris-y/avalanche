@@ -17,6 +17,7 @@
 
 #include <exec/types.h>
 #include <intuition/intuition.h>
+#include <workbench/startup.h>
 
 #include "avalanche.h"
 

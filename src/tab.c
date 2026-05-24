@@ -82,10 +82,12 @@ static void tab_free_dir_array(struct avalanche_tab *at)
 		if(at->dir_array[i]) {
 			if(at->dir_array[i]->name) FreeVec(at->dir_array[i]->name);
 			FreeVec(at->dir_array[i]);
+			at->dir_array[i] = NULL;
 		}
 	}
 	FreeVec(at->dir_array);
 	at->dir_array = NULL;
+	at->dir_tree_size = 0;
 }
 
 static void tab_free_arc_array(struct avalanche_tab *at)
@@ -186,12 +188,12 @@ struct arc_entries **tab_alloc_dir_array(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
-	at->dir_tree_size = at->total_items * 2; /* temp set to large value */
-
 	tab_free_dir_array(at);
-	
+
+	at->dir_tree_size = at->total_items * 2; /* temp set to large value */
+		
 	at->dir_array = AllocVec(sizeof(struct arc_entries *) * at->dir_tree_size, MEMF_CLEAR);
-	
+
 	return (const struct arc_entries **)at->dir_array;
 }
 
