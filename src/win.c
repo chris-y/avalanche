@@ -117,7 +117,6 @@ struct avalanche_window {
 	struct MsgPort *appwin_mp;
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
-	struct MinList deletelist;
 	BOOL flat_mode;
 	BOOL drag_lock;
 	BOOL iconified;
@@ -605,47 +604,6 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 			LISTBROWSER_Labels, window_get_lblist(aw),
 			LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 			TAG_DONE);
-	}
-}
-
-static void delete_delete_list(struct avalanche_window *aw)
-{
-	struct Node *node;
-	struct Node *nnode;
-
-	if(IsMinListEmpty((struct MinList *)&aw->deletelist) == FALSE) {
-		node = (struct Node *)GetHead((struct List *)&aw->deletelist);
-
-		do {
-			nnode = (struct Node *)GetSucc((struct Node *)node);
-			Remove((struct Node *)node);
-			if(node->ln_Name) {
-				DeleteFile(node->ln_Name);
-				FreeVec(node->ln_Name);
-			}
-			FreeVec(node);
-		} while((node = nnode));
-	}
-}
-
-void add_to_delete_list(void *awin, char *fn)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	char *tmpdir = CONFIG_GET_LOCK(tmpdir);
-
-	/* Ensure we're only deleting things in our temp dir */
-	if(strncmp(tmpdir, fn, strlen(tmpdir)) != 0) {
-		CONFIG_UNLOCK;
-		return;
-	}
-
-	CONFIG_UNLOCK;
-
-	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-	if(node) {
-		node->ln_Name = strdup_vec(fn);
-		AddTail((struct List *)&aw->deletelist, (struct Node *)node);
 	}
 }
 
@@ -1701,8 +1659,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	aw->tab_closed = FALSE;
 #endif
 	
-	NewMinList(&aw->deletelist);
-
 	NewList(&aw->tab_list);
 
 	aw->tab_node = tab_create(aw, &aw->tab_list);
@@ -1981,8 +1937,6 @@ void window_dispose(void *awin)
 	/* Free all tabs (only ever one presently) */
 	tab_close_all(&aw->tab_list);
 
-	delete_delete_list(aw);
-
 	FreeSignal(aw->process_exit_sig);
 	
 	FreeVec(aw);
@@ -2182,7 +2136,7 @@ it's incompatible with double-clicking as it resets the listview */
 			if(ret == 0) {
 				Wait(aw->process_exit_sig);
 				AddPart(dest_path, get_item_filename(aw, node), dest_path_len);
-				add_to_delete_list(aw, dest_path);
+				tab_add_to_delete_list(aw->tab_node, dest_path);
 				OpenWorkbenchObjectA(dest_path, NULL);
 			} else {
 				show_error(ret, aw);
@@ -2609,14 +2563,6 @@ struct List *window_get_lblist(void *awin)
 ULONG window_handle_input(void *awin, UWORD *code)
 {
 	return RA_HandleInput(window_get_object(awin), code);
-}
-
-/* appwindow userdata currently has no concept of tabs */
-BOOL window_module_has_add(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	return module_has_add(aw->tab_node);
 }
 
 BOOL window_edit_add(void *awin, char *file, char *root)

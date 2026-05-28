@@ -430,7 +430,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								break;
 
 								case 1: // listbrowser
-									if(window_module_has_add((void *)appmsg->am_UserData)) {
+									if(module_has_add(window_get_current_tab((void *)appmsg->am_UserData))) {
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
 											BOOL ret = window_edit_add_wbarg((void *)appmsg->am_UserData, wbarg);
 											if(ret == FALSE) break; /* FALSE = Abort */
@@ -534,7 +534,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								window_open(arexx_awin, appwin_mp);
 								window_req_open_archive(arexx_awin, &config, TRUE);
 
-								if(del) add_to_delete_list(arexx_awin, arexx_fn);
+								if(del) tab_add_to_delete_list(window_get_current_tab(arexx_awin), arexx_fn);
 
 							}
 						}

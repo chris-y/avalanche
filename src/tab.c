@@ -56,8 +56,8 @@ struct avalanche_tab {
 	struct Node *root_node;
 	void *archive_userdata;
 	struct module_functions mf;
-#if 0 /* items targetted for moving */
 	struct MinList deletelist;
+#if 0 /* items targetted for moving */
 	BOOL disabled;
 	BOOL abort_requested;
 	process_exit_sig??
@@ -106,6 +106,47 @@ static void tab_free_arc_array(struct avalanche_tab *at)
 	at->total_selectable = 0;
 	at->total_items = 0;
 	at->current_item = 0;
+}
+
+static void tab_delete_delete_list(struct avalanche_tab *at)
+{
+	struct Node *node;
+	struct Node *nnode;
+
+	if(IsMinListEmpty((struct MinList *)&at->deletelist) == FALSE) {
+		node = (struct Node *)GetHead((struct List *)&at->deletelist);
+
+		do {
+			nnode = (struct Node *)GetSucc((struct Node *)node);
+			Remove((struct Node *)node);
+			if(node->ln_Name) {
+				DeleteFile(node->ln_Name);
+				FreeVec(node->ln_Name);
+			}
+			FreeVec(node);
+		} while((node = nnode));
+	}
+}
+
+void tab_add_to_delete_list(struct Node *tab_node, char *fn)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	char *tmpdir = CONFIG_GET_LOCK(tmpdir);
+
+	/* Ensure we're only deleting things in our temp dir */
+	if(strncmp(tmpdir, fn, strlen(tmpdir)) != 0) {
+		CONFIG_UNLOCK;
+		return;
+	}
+
+	CONFIG_UNLOCK;
+
+	struct Node *node = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+	if(node) {
+		node->ln_Name = strdup_vec(fn);
+		AddTail((struct List *)&at->deletelist, (struct Node *)node);
+	}
 }
 
 const char *tab_get_archive(struct Node *tab_node)
@@ -430,6 +471,9 @@ struct Node *tab_create(void *awin, struct List *tab_list)
 	at->awin = awin;
 	at->archive = NULL;
 
+	/* Create tab node.
+	 * Currently we put the tab structure into userdata but
+	 * maybe it's more efficient to extend the ClickTabNode? */
 	struct Node *tab_node = AllocClickTabNode(TNA_Text, "Avalanche",
 						TNA_Number, 0,
 						TNA_UserData, at,
@@ -437,8 +481,10 @@ struct Node *tab_create(void *awin, struct List *tab_list)
 						TAG_DONE);
 	AddTail(tab_list, tab_node);
 
+	/* Initialise the archive browser lists and the delete list */
 	NewList(&at->lblist);
 	NewList(&at->dir_tree);
+	NewMinList(&at->deletelist);
 
 	/* Set local dest */
 	tab_set_dest(tab_node, CONFIG_GET_LOCK(dest));
@@ -476,6 +522,9 @@ BOOL tab_close(struct Node *tab_node)
 	tab_set_archive(tab_node, NULL);
 	tab_set_dest(tab_node, NULL);
 
+	/* Delete items in the delete list */
+	tab_delete_delete_list(at);
+	
 	/* Release archive when tab is closed */
 	module_free(tab_node);
 

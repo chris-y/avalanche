@@ -51,7 +51,6 @@ BOOL window_get_disabled(void *awin);
 BYTE window_get_exit_sig(void *awin);
 const char *window_req_new_lha(void *awin, char *drawer);
 struct Node *window_get_current_tab(void *awin);
-BOOL window_module_has_add(void *awin);
 
 /* Modify archive */
 BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);

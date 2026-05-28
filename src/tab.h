@@ -90,5 +90,7 @@ void tab_set_archive_userdata(struct Node *tab_node, void *userdata);
 void *tab_alloc_archive_userdata(struct Node *tab_node, ULONG size);
 void tab_free_archive_userdata(struct Node *tab_node);
 
+/* delete list */
+void tab_add_to_delete_list(struct Node *tab_node, char *fn);
 #endif
 
