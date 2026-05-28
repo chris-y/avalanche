@@ -483,28 +483,28 @@ void tab_free_archive_userdata(struct Node *tab_node)
 	}
 }
 
-const BYTE tab_get_signal(struct Node *tab_node)
+const ULONG tab_get_signal(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 	
-	return at->process_exit_sig;
+	return 1 << at->process_exit_sig;
 }
 
 void tab_signal_clear(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 	
-	SetSignal(0L, at->process_exit_sig);
+	SetSignal(0L, 1 << at->process_exit_sig);
 }
 
 void tab_signal_wait(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 	
-	Wait(at->process_exit_sig);
+	Wait(1 << at->process_exit_sig);
 }
 
-void tab_signal_signal(const BYTE sig, struct Task *process)
+void tab_signal_signal(const ULONG sig, struct Task *process)
 {
 	Signal(process, sig);
 }

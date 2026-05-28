@@ -157,7 +157,7 @@ struct avalanche_extract_userdata {
 	const char *newdest;
 	struct Node *node;
 	struct Node *tab_node;
-	BYTE sig;
+	ULONG sig;
 };
 
 /** Menu **/
