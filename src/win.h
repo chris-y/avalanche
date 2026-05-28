@@ -47,8 +47,6 @@ Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
 void *array_get_userdata(void *awin, void *arc_entry);
-BOOL window_get_disabled(void *awin);
-BYTE window_get_exit_sig(void *awin);
 const char *window_req_new_lha(void *awin, char *drawer);
 struct Node *window_get_current_tab(void *awin);
 

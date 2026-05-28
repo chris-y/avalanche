@@ -364,7 +364,7 @@ static ULONG __saveds xad_progress(__reg("a0") struct Hook *h, __reg("a2") APTR 
 		break;
 	}
 
-	if(check_abort(xhd->awin)) {
+	if(tab_check_abort(xhd->tab)) {
 		*pud = PUD_ABORT;
 		return 0;
 	}

@@ -120,9 +120,6 @@ struct avalanche_window {
 	BOOL flat_mode;
 	BOOL drag_lock;
 	BOOL iconified;
-	BOOL disabled;
-	BOOL abort_requested;
-	BYTE process_exit_sig;
 	char title[TITLE_MAX_SIZE];
 	struct List tab_list;
 	struct Node *tab_node; /* current tab */
@@ -160,6 +157,7 @@ struct avalanche_extract_userdata {
 	const char *newdest;
 	struct Node *node;
 	struct Node *tab_node;
+	BYTE sig;
 };
 
 /** Menu **/
@@ -423,7 +421,7 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
-	aw->disabled = disable;
+	tab_set_disabled(aw->tab_node, disable);
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
@@ -451,9 +449,6 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, FALSE,
 				TAG_DONE);
-
-		/* Clear the state of the Abort flag */
-		aw->abort_requested = FALSE;
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
@@ -723,7 +718,7 @@ static void __saveds extract_p(void)
 	FreeVec(aeu);
 	
 	/* Signal that we've finished */
-	Signal(avalanche_process, aw->process_exit_sig);
+	tab_signal_signal(aeu->sig, avalanche_process);
 }
 
 
@@ -739,11 +734,12 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 	aeu->newdest = newdest;
 	aeu->node = node;
 	aeu->tab_node = aw->tab_node;
+	aeu->sig = tab_get_signal(aw->tab_node);
 	
 	window_disable_gadgets(awin, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
-	SetSignal(0L, aw->process_exit_sig);
+	tab_signal_clear(aw->tab_node);
 	
 	avalanche_process = FindTask(NULL);
 	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p,
@@ -1529,12 +1525,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 
 	ULONG tag_default_position = WINDOW_Position;
 
-	/* create process signal */
-	if((aw->process_exit_sig = AllocSignal(-1)) == -1) {
-		FreeVec(aw);
-		return NULL;
-	}
-
 	/* Listbrowser */
 	aw->lbsorthook.h_Entry = lbsortfunc;
 	aw->lbsorthook.h_SubEntry = NULL;
@@ -1662,6 +1652,11 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	NewList(&aw->tab_list);
 
 	aw->tab_node = tab_create(aw, &aw->tab_list);
+	if(aw->tab_node == NULL) {
+		/* Initial tab creation failed - this is fatal */
+		FreeVec(aw);
+		return NULL;
+	}
 	if(archive) tab_set_archive(aw->tab_node, archive);
 
 	/* Create the window object */
@@ -1890,11 +1885,7 @@ void window_close(void *awin, BOOL iconify)
 	/* Close new archive window if it's attached to this one */
 	newarc_window_close_if_associated(awin);
 
-	if((aw->disabled == TRUE)) {
-		//SetSignal(0L, aw->process_exit_sig);
-		aw->abort_requested = TRUE;
-		Wait(aw->process_exit_sig);
-	}
+	/* TODO: tab_close_all() should be here instead?? */
 
 	if(aw->windows[WID_MAIN]) {
 		window_remove_dropzones(aw);
@@ -1937,8 +1928,6 @@ void window_dispose(void *awin)
 	/* Free all tabs (only ever one presently) */
 	tab_close_all(&aw->tab_list);
 
-	FreeSignal(aw->process_exit_sig);
-	
 	FreeVec(aw);
 }
 
@@ -2134,7 +2123,7 @@ it's incompatible with double-clicking as it resets the listview */
 
 			ret = extract(aw, tab_get_archive(aw->tab_node), dest_path, node);
 			if(ret == 0) {
-				Wait(aw->process_exit_sig);
+				tab_signal_wait(aw->tab_node);
 				AddPart(dest_path, get_item_filename(aw, node), dest_path_len);
 				tab_add_to_delete_list(aw->tab_node, dest_path);
 				OpenWorkbenchObjectA(dest_path, NULL);
@@ -2457,7 +2446,8 @@ static void __saveds window_req_open_archive_p(void)
 	FreeVec(aeu);
 	
 	/* Signal that we've finished */
-	Signal(avalanche_process, aw->process_exit_sig);
+	tab_signal_signal(aeu->sig, avalanche_process);
+	
 }
 
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
@@ -2482,11 +2472,12 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	aeu->newdest = NULL;
 	aeu->node = NULL;
 	aeu->tab_node = aw->tab_node;
+	aeu->sig = tab_get_signal(aw->tab_node);
 
 	window_disable_gadgets(awin, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
-	SetSignal(0L, aw->process_exit_sig);
+	tab_signal_clear(aw->tab_node);
 	
 	avalanche_process = FindTask(NULL);
 	struct Process *list_process = CreateNewProcTags(NP_Entry, window_req_open_archive_p,
@@ -2817,7 +2808,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_ABORT:
-					aw->abort_requested = TRUE;
+					tab_abort(aw->tab_node);
 				break;
 				
 				case GID_LIST:
@@ -2853,8 +2844,8 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		case WMHI_RAWKEY:
 			switch(result & WMHI_GADGETMASK) {
 				case RAWKEY_ESC:
-					if(aw->disabled) {
-						aw->abort_requested = TRUE;
+					if(tab_get_disabled(aw->tab_node)) {
+						tab_abort(aw->tab_node);
 					} else {
 						done = WIN_DONE_CLOSED;
 					}
@@ -2876,7 +2867,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 		break;
 		
 		case WMHI_NEWSIZE:
-			if(aw->disabled == FALSE) {
+			if(tab_get_disabled(aw->tab_node) == FALSE) {
 				window_remove_dropzones(aw);
 				window_add_dropzones(aw, !aw->drag_lock);
 			}
@@ -3026,16 +3017,6 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 	return done;
 }
 
-/* Check if abort button is pressed - only called from xad hook */
-BOOL check_abort(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	/* This flag is set in the main loop
-	 * if ESC is pressed or Abort is clicked */
-	return aw->abort_requested;
-}
-
 #ifndef __amigaos4__
 BOOL check_closetab(void *awin)
 {
@@ -3081,20 +3062,6 @@ void fill_menu_labels(void)
 	menu[28].nm_Label = locale_get_string( MSG_SETTINGS );
 	menu[29].nm_Label = locale_get_string( MSG_SNAPSHOT );
 	menu[30].nm_Label = locale_get_string( MSG_PREFERENCES );
-}
-
-BOOL window_get_disabled(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	return aw->disabled;
-}
-
-BYTE window_get_exit_sig(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	return aw->process_exit_sig;
 }
 
 struct Node *window_get_current_tab(void *awin)

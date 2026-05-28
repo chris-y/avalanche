@@ -404,7 +404,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								BOOL ndz = CONFIG_GET_LOCK(no_dropzones);
 								CONFIG_UNLOCK;
 
-								if(ndz && !window_get_disabled((void *)appmsg->am_UserData)) {
+								if(ndz && !tab_get_disabled(window_get_current_tab((void *)appmsg->am_UserData))) {
 									if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
 										if(appmsg->am_NumArgs > 1) {
 											for(int i = 1; i < appmsg->am_NumArgs; i++) {
@@ -468,10 +468,10 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 													window_open(appmenu_awin, appwin_mp);
 													window_req_open_archive(appmenu_awin, &config, TRUE);
 													/* TODO: This needs reworking as it will inhibit the rest of the program */
-													Wait(window_get_exit_sig(appmenu_awin));
+													tab_signal_wait(window_get_current_tab(appmenu_awin));
 													if(tab_get_format(window_get_current_tab(appmenu_awin)) != ARC_NONE) {
 														long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
-														Wait(window_get_exit_sig(appmenu_awin));
+														tab_signal_wait(window_get_current_tab(appmenu_awin));
 													}
 													window_close(appmenu_awin, FALSE);
 													window_dispose(appmenu_awin);
@@ -502,7 +502,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 											window_open(appmenu_awin, appwin_mp);
 											mod_lha_new(appmenu_awin, arc);
 											window_req_open_archive(appmenu_awin, &config, TRUE);
-											Wait(window_get_exit_sig(appmenu_awin));
+											tab_signal_wait(window_get_current_tab(appmenu_awin));
 											for(int i=0; i<appmsg->am_NumArgs; i++) {
 												window_edit_add_wbarg(appmenu_awin, wbarg);
 												wbarg++;

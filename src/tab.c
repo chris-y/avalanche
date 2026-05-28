@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-6 Chris Young
+ * (c) 2026 Chris Young
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -57,11 +57,9 @@ struct avalanche_tab {
 	void *archive_userdata;
 	struct module_functions mf;
 	struct MinList deletelist;
-#if 0 /* items targetted for moving */
 	BOOL disabled;
 	BOOL abort_requested;
-	process_exit_sig??
-#endif
+	BYTE process_exit_sig;
 };
 
 static struct avalanche_tab *tab_get_tab(struct Node *tab_node)
@@ -224,6 +222,13 @@ void *tab_get_window(struct Node *tab_node)
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	return at->awin;
+}
+
+const BOOL tab_get_disabled(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return at->disabled;
 }
 
 struct module_functions *tab_get_module_funcs(struct Node *tab_node)
@@ -424,12 +429,26 @@ void tab_set_current_dir(struct Node *tab_node, const char *dir)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
-	/* Free old dire */
+	/* Free old dir */
 	if(at->current_dir) FreeVec(at->current_dir);
 	at->current_dir = NULL;
 
 	/* Alloc new archive */
 	if(dir) at->current_dir = strdup_vec(dir);
+}
+
+void tab_set_disabled(struct Node *tab_node, BOOL disable)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	at->disabled = disable;
+	
+	if(disable) {
+		/* TODO: set tab flag */
+	} else {
+		/* Clear the state of the Abort flag */
+		at->abort_requested = FALSE;
+	}
 }
 
 void *tab_get_archive_userdata(struct Node *tab_node)
@@ -464,9 +483,43 @@ void tab_free_archive_userdata(struct Node *tab_node)
 	}
 }
 
+const BYTE tab_get_signal(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	return at->process_exit_sig;
+}
+
+void tab_signal_clear(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	SetSignal(0L, at->process_exit_sig);
+}
+
+void tab_signal_wait(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	Wait(at->process_exit_sig);
+}
+
+void tab_signal_signal(const BYTE sig, struct Task *process)
+{
+	Signal(process, sig);
+}
+
 struct Node *tab_create(void *awin, struct List *tab_list)
 {
 	struct avalanche_tab *at = AllocVec(sizeof(struct avalanche_tab), MEMF_CLEAR | MEMF_PRIVATE);
+
+	/* create process signal
+	 * TODO: use less signals!
+	 */
+	if((at->process_exit_sig = AllocSignal(-1)) == -1) {
+		FreeVec(at);
+		return NULL;
+	}
 
 	at->awin = awin;
 	at->archive = NULL;
@@ -493,6 +546,23 @@ struct Node *tab_create(void *awin, struct List *tab_list)
 	return tab_node;
 }
 
+void tab_abort(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	if(at->disabled) at->abort_requested = TRUE;
+}
+
+/* Check if abort button is pressed - only called from xad hook */
+const BOOL tab_check_abort(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	/* This flag is set in the main loop
+	 * if ESC is pressed or Abort is clicked */
+	return at->abort_requested;
+}
+
 void tab_reset(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
@@ -509,6 +579,12 @@ BOOL tab_close(struct Node *tab_node)
 	if(tab_node == NULL) return FALSE;
 	
 	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	if((at->disabled == TRUE)) {
+		//SetSignal(0L, aw->process_exit_sig);
+		at->abort_requested = TRUE;
+		Wait(at->process_exit_sig);
+	}
 
 	Remove(tab_node);
 	FreeClickTabNode(tab_node);
@@ -528,6 +604,8 @@ BOOL tab_close(struct Node *tab_node)
 	/* Release archive when tab is closed */
 	module_free(tab_node);
 
+	FreeSignal(at->process_exit_sig);
+	
 	FreeVec(at);
 
 	return TRUE; /* return TRUE if last tab closed */

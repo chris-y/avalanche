@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-6 Chris Young
+ * (c) 2026 Chris Young
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,11 +35,29 @@ BOOL tab_close(struct Node *tab_node);
 /* Close all tabs */
 void tab_close_all(struct List *tab_list);
 
+/* Abort a tab process (or at least flag it for abort) */
+void tab_abort(struct Node *tab_node);
+
+/* Check if abort has been pressed */
+const BOOL tab_check_abort(struct Node *tab_node);
+
 /* Reset list etc */
 void tab_reset(struct Node *tab_node);
 
 /* Alloc the root node in the dir tree */
 struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir_entries);
+
+/* Clear tab process exit signal */
+void tab_signal_clear(struct Node *tab_node);
+
+/* Wait for a process exit signal */
+void tab_signal_wait(struct Node *tab_node);
+
+/* Get signal for the below, so the process doesn't go poking about in clicktab nodes */
+const BYTE tab_get_signal(struct Node *tab_node);
+
+/* Send the tab process_exit_signal to a process */
+void tab_signal_signal(const BYTE sig, struct Task *process);
 
 /** Setters **/
 
@@ -52,6 +70,7 @@ void tab_set_total_items(struct Node *tab_node, ULONG total);
 void tab_set_total_selectable(struct Node *tab_node, ULONG total);
 void tab_set_dir_tree_size(struct Node *tab_node, ULONG size);
 void tab_set_current_dir(struct Node *tab_node, const char *dir);
+void tab_set_disabled(struct Node *tab_node, BOOL disable);
 
 /* returns FALSE if already at root, TRUE otherwise */
 BOOL tab_set_current_dir_to_parent(struct Node *tab_node);
@@ -64,6 +83,7 @@ const ULONG tab_get_format(struct Node *tab_node);
 const ULONG tab_get_current_item(struct Node *tab_node);
 const ULONG tab_get_total_items(struct Node *tab_node);
 const ULONG tab_get_total_selectable(struct Node *tab_node);
+const BOOL tab_get_disabled(struct Node *tab_node);
 struct module_functions *tab_get_module_funcs(struct Node *tab_node);
 const ULONG tab_get_dir_tree_size(struct Node *tab_node);
 struct List *tab_get_listbrowser_list(struct Node *tab_node);
