@@ -118,14 +118,12 @@ struct avalanche_window {
 	struct AppWindow *appwin;
 	struct AppWindowDropZone *appwindz[AVALANCHE_DROPZONES];
 	struct MinList deletelist;
-	void *archive_userdata;
 	BOOL flat_mode;
 	BOOL drag_lock;
 	BOOL iconified;
 	BOOL disabled;
 	BOOL abort_requested;
 	BYTE process_exit_sig;
-	struct module_functions mf;
 	char title[TITLE_MAX_SIZE];
 	struct List tab_list;
 	struct Node *tab_node; /* current tab */
@@ -248,7 +246,7 @@ static LONG __saveds appwindzhookfunc(__reg("a0") struct Hook *h, __reg("a2") AP
 	struct avalanche_window *aw = (struct avalanche_window *)awdzm->adzm_UserData;
 
 	/* Only change if we are able to add files */
-	if(aw->mf.add == NULL) return 0;
+	if(module_has_add(aw->tab_node) == FALSE) return 0;
 
 	/* This hook function does some very basic drawing to highlight the listbrowser
 	 * in event that writing is allowed and the user is dragging a file over the listbrowser */
@@ -368,7 +366,7 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
-		if(aw->mf.add) {
+		if(module_has_add(aw->tab_node)) {
 			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 			if(CONFIG_GET_LOCK(no_dropzones) == FALSE) {
 				OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,7,0)); //draglock
@@ -378,7 +376,7 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,7,0)); //draglock
 		}
-		if(aw->mf.del) {
+		if(module_has_del(aw->tab_node)) {
 			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		} else {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
@@ -848,16 +846,16 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		xuserdata = ud->userdata;
 	}
 	if(tab_get_format(tab_node) == ARC_XAD) {
-		xad_get_filedate(xuserdata, &cd, aw);
-		protect_bits = xad_get_fileprotection(xuserdata, aw);
-		comment = xad_get_comment(xuserdata, aw);
-		link = xad_is_link(xuserdata, aw);
-		linkname = xad_get_link(xuserdata, aw);
-		disk = xad_is_disk(aw);
+		xad_get_filedate(xuserdata, &cd, tab_node);
+		protect_bits = xad_get_fileprotection(xuserdata, tab_node);
+		comment = xad_get_comment(xuserdata, tab_node);
+		link = xad_is_link(xuserdata, tab_node);
+		linkname = xad_get_link(xuserdata, tab_node);
+		disk = xad_is_disk(tab_node);
 	}
 
-	crunchsize = module_get_crunched_size(aw, xuserdata);
-	crypted = module_is_crypted(aw, xuserdata);
+	crunchsize = module_get_crunched_size(tab_node, xuserdata);
+	crypted = module_is_crypted(tab_node, xuserdata);
 
 	if(protect_bits & EXDF_HOLD)       strcpy(hsparwed, "h"); else strcpy(hsparwed, "-");
 	if(protect_bits & EXDF_SCRIPT)     strcat(hsparwed, "s"); else strcat(hsparwed, "-");
@@ -1175,7 +1173,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 
 	tab_set_dir_tree_size(tab_node, dir_entry);
 
-	if((tab_get_format(tab_node) == ARC_XAD) && (xad_is_diskfile(aw))) {
+	if((tab_get_format(tab_node) == ARC_XAD) && (xad_is_diskfile(tab_node))) {
 		root_glyph = AVALANCHE_GLYPH_DISK;
 	}
 
@@ -1959,10 +1957,6 @@ void window_close(void *awin, BOOL iconify)
 		if(iconify) {
 			aw->iconified = TRUE;
 		}
-
-		/* Release archive when window is closed */
-		module_free(aw);
-		window_free_archive_userdata(aw);
 	}
 }
 
@@ -2420,8 +2414,6 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 	}
 
 	tab_reset(tab_node);
-
-	module_free(awin); // check
 	
 	tab_set_format(tab_node, ARC_XAD); /* Set in advance for flat browser tree use */
 	
@@ -2458,7 +2450,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 		}
 	}
 
-	module_register(aw, tab_node, &aw->mf); // check
+	module_register(tab_node);
 
 	if(window_tab_is_current(aw, tab_node)) {
 		window_menu_set_enable_state(aw);
@@ -2614,16 +2606,17 @@ struct List *window_get_lblist(void *awin)
 	return tab_get_listbrowser_list(aw->tab_node);
 }
 
-struct module_functions *window_get_module_funcs(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	return &aw->mf;
-}
-
 ULONG window_handle_input(void *awin, UWORD *code)
 {
 	return RA_HandleInput(window_get_object(awin), code);
+}
+
+/* appwindow userdata currently has no concept of tabs */
+BOOL window_module_has_add(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	return module_has_add(aw->tab_node);
 }
 
 BOOL window_edit_add(void *awin, char *file, char *root)
@@ -2631,8 +2624,8 @@ BOOL window_edit_add(void *awin, char *file, char *root)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	if(module_vscan(awin, file, NULL, 0, FALSE) == 0) {
-		module_free(aw);
-		if(aw->mf.add) return aw->mf.add(aw, tab_get_archive(aw->tab_node), file, tab_get_current_dir(aw->tab_node), root);
+		module_free(aw->tab_node);
+		return module_add(aw, aw->tab_node, file, tab_get_current_dir(aw->tab_node), root);
 	}
 
 	return FALSE;
@@ -2687,7 +2680,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 	BOOL ok = FALSE;
 	char *file;
 
-	if(aw->mf.add == NULL) return;
+	if(module_has_add(aw->tab_node) == FALSE) return;
 	
 	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
 	if(aslreq) {
@@ -2743,7 +2736,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 	struct Node *node;
 	struct List *list = window_get_lblist(awin);
 	
-	if(aw->mf.del == NULL) return;
+	if(module_has_del(aw->tab_node) == FALSE) return;
 
 	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 										WA_BusyPointer, TRUE,
@@ -2777,13 +2770,13 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 				for(node = list->lh_Head; node->ln_Succ; node = node->ln_Succ) {
 					void *userdata = window_get_lbnode(awin, node);
 					if(userdata) {
-						name_array[i] = strdup_vec(module_get_item_filename(awin, userdata));
+						name_array[i] = strdup_vec(module_get_item_filename(aw->tab_node, userdata));
 						i++;
 					}
 				}
 
-				module_free(aw);
-				aw->mf.del(aw, tab_get_archive(aw->tab_node), name_array, entries);
+				module_free(aw->tab_node);
+				module_del(aw, aw->tab_node, name_array, entries);
 
 				for(i = 0; i<entries; i++) {
 					FreeVec(name_array[i]);
@@ -3142,38 +3135,6 @@ void fill_menu_labels(void)
 	menu[28].nm_Label = locale_get_string( MSG_SETTINGS );
 	menu[29].nm_Label = locale_get_string( MSG_SNAPSHOT );
 	menu[30].nm_Label = locale_get_string( MSG_PREFERENCES );
-}
-
-void *window_get_archive_userdata(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	return aw->archive_userdata;
-}
-
-void window_set_archive_userdata(void *awin, void *userdata)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	aw->archive_userdata = userdata;
-}
-
-void *window_alloc_archive_userdata(void *awin, ULONG size)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	aw->archive_userdata = AllocVec(size, MEMF_CLEAR | MEMF_PRIVATE);
-	return aw->archive_userdata;
-}
-
-void window_free_archive_userdata(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	if(aw->archive_userdata) {
-		FreeVec(aw->archive_userdata);
-		aw->archive_userdata = NULL;
-	}
 }
 
 BOOL window_get_disabled(void *awin)

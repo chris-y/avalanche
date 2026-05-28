@@ -26,7 +26,7 @@
 #include "misc.h"
 #include "module.h"
 #include "req.h"
-#include "win.h"
+#include "tab.h"
 #include "xfd.h"
 
 #define XFD_ERR_LIBOPEN -1
@@ -39,9 +39,9 @@ struct xfd_userdata {
 	UBYTE *buffer;
 };
 
-static void xfd_free(void *awin)
+static void xfd_free(struct Node *tab_node)
 {
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	struct xfd_userdata *xu = (struct xfd_userdata *)tab_get_archive_userdata(tab_node);
 	if(xu) {
 		if(xu->bi != NULL) xfdFreeObject(xu->bi);
 		if(xu->buffer != NULL) FreeVec(xu->buffer);
@@ -51,17 +51,17 @@ static void xfd_free(void *awin)
 		}
 	}
 
-	window_free_archive_userdata(awin);
+	tab_free_archive_userdata(tab_node);
 }
 
-static const char *xfd_get_filename(void *userdata, void *awin)
+static const char *xfd_get_filename(void *userdata, struct Node *tab_node)
 {
 	return userdata;
 }
 
-static BOOL xfd_is_crypted(void *userdata, void *awin)
+static BOOL xfd_is_crypted(void *userdata, struct Node *tab_node)
 {
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	struct xfd_userdata *xu = (struct xfd_userdata *)tab_get_archive_userdata(tab_node);
 	if(!xu->bi) return FALSE;
 
 	if(xu->bi->xfdbi_PackerFlags & XFDPFF_PASSWORD) return TRUE;
@@ -70,23 +70,23 @@ static BOOL xfd_is_crypted(void *userdata, void *awin)
 }
 
 
-static LONG *xfd_get_crunchsize(void *userdata, void *awin)
+static LONG *xfd_get_crunchsize(void *userdata, struct Node *tab_node)
 {
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	struct xfd_userdata *xu = (struct xfd_userdata *)tab_get_archive_userdata(tab_node);
 	if(!xu->bi) return NULL;
 	
 	return (LONG *)&xu->bi->xfdbi_SourceBufLen;
 }
 
-static const char *xfd_get_arc_format(void *awin)
+static const char *xfd_get_arc_format(struct Node *tab_node)
 {
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	struct xfd_userdata *xu = (struct xfd_userdata *)tab_get_archive_userdata(tab_node);
 	if(!xu->bi) return NULL;
 	
 	return xu->bi->xfdbi_PackerName;
 }
 
-static const char *xfd_error(void *awin, long code)
+static const char *xfd_error(struct Node *tab_node, long code)
 {
 	if(code < 0) {
 		switch(code) {
@@ -150,8 +150,8 @@ long xfd_info(const char *file, void *awin, struct Node *tab_node, void(*addnode
 
 	struct xfdMasterBase *xfdmb = (struct xfdMasterBase *)xfdMasterBase;
 	
-	xfd_free(awin);
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_alloc_archive_userdata(awin, sizeof(struct xfd_userdata));
+	xfd_free(tab_node);
+	struct xfd_userdata *xu = (struct xfd_userdata *)tab_alloc_archive_userdata(tab_node, sizeof(struct xfd_userdata));
 
 	xu->bi = xfdAllocObject(XFDOBJ_BUFFERINFO);
 	if(xu->bi == NULL) return XFD_ERR_MEM;
@@ -191,11 +191,11 @@ long xfd_info(const char *file, void *awin, struct Node *tab_node, void(*addnode
 		return 0;
 	}
 
-	xfd_free(awin);
+	xfd_free(tab_node);
 	return XFD_ERR_FILEOPEN;
 }
 
-long xfd_extract(void *awin, const char *file, const char *dest)
+long xfd_extract(void *awin, struct Node *tab_node, const char *file, const char *dest)
 {
 	BPTR fh;
 	char *pw = NULL;
@@ -203,7 +203,7 @@ long xfd_extract(void *awin, const char *file, const char *dest)
 	ULONG err;
 	ULONG res = 1;
 
-	struct xfd_userdata *xu = (struct xfd_userdata *)window_get_archive_userdata(awin);
+	struct xfd_userdata *xu = (struct xfd_userdata *)tab_get_archive_userdata(tab_node);
 	struct xfdBufferInfo *bi = xu->bi;
 
 	if(bi->xfdbi_PackerFlags & XFDPFF_PASSWORD) {

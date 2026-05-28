@@ -32,6 +32,7 @@
 #include "glyph.h"
 #include "libs.h"
 #include "misc.h"
+#include "module.h"
 #include "tab.h"
 
 #include <string.h>
@@ -53,13 +54,13 @@ struct avalanche_tab {
 	ULONG total_selectable;
 	char *current_dir;
 	struct Node *root_node;
+	void *archive_userdata;
+	struct module_functions mf;
 #if 0 /* items targetted for moving */
 	struct MinList deletelist;
-	void *archive_userdata;
 	BOOL disabled;
 	BOOL abort_requested;
-	struct module_functions mf;
-	
+	process_exit_sig??
 #endif
 };
 
@@ -182,6 +183,13 @@ void *tab_get_window(struct Node *tab_node)
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	return at->awin;
+}
+
+struct module_functions *tab_get_module_funcs(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+        return &at->mf;
 }
 
 struct arc_entries **tab_alloc_dir_array(struct Node *tab_node)
@@ -383,6 +391,38 @@ void tab_set_current_dir(struct Node *tab_node, const char *dir)
 	if(dir) at->current_dir = strdup_vec(dir);
 }
 
+void *tab_get_archive_userdata(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return at->archive_userdata;
+}
+
+void tab_set_archive_userdata(struct Node *tab_node, void *userdata)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->archive_userdata = userdata;
+}
+
+void *tab_alloc_archive_userdata(struct Node *tab_node, ULONG size)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	at->archive_userdata = AllocVec(size, MEMF_CLEAR | MEMF_PRIVATE);
+        return at->archive_userdata;
+}
+
+void tab_free_archive_userdata(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	if(at->archive_userdata) {
+		FreeVec(at->archive_userdata);
+		at->archive_userdata = NULL;
+	}
+}
+
 struct Node *tab_create(void *awin, struct List *tab_list)
 {
 	struct avalanche_tab *at = AllocVec(sizeof(struct avalanche_tab), MEMF_CLEAR | MEMF_PRIVATE);
@@ -414,6 +454,8 @@ void tab_reset(struct Node *tab_node)
 	FreeListBrowserList(&at->dir_tree);
 	FreeListBrowserList(&at->lblist);
 	tab_free_arc_array(at);
+	
+	module_free(tab_node);
 }
 
 BOOL tab_close(struct Node *tab_node)
@@ -429,9 +471,13 @@ BOOL tab_close(struct Node *tab_node)
 	FreeListBrowserList(&at->dir_tree);
 
 	tab_free_arc_array(at);
+	tab_free_archive_userdata(tab_node);
 
 	tab_set_archive(tab_node, NULL);
 	tab_set_dest(tab_node, NULL);
+
+	/* Release archive when tab is closed */
+	module_free(tab_node);
 
 	FreeVec(at);
 

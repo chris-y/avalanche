@@ -56,70 +56,70 @@ ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete)
 }
 
 /*** Extraction ***/
-const char *module_get_item_filename(void *awin, void *userdata)
+const char *module_get_item_filename(struct Node *tab_node, void *userdata)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->get_filename) return mf->get_filename(userdata, awin);
+	if(mf->get_filename) return mf->get_filename(userdata, tab_node);
 
 	return NULL;
 }
 
-LONG *module_get_crunched_size(void *awin, void *userdata)
+LONG *module_get_crunched_size(struct Node *tab_node, void *userdata)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->get_crunchsize) return mf->get_crunchsize(userdata, awin);
+	if(mf->get_crunchsize) return mf->get_crunchsize(userdata, tab_node);
 
 	return NULL;
 }
 
-BOOL module_is_crypted(void *awin, void *userdata)
+BOOL module_is_crypted(struct Node *tab_node, void *userdata)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->is_crypted) return mf->is_crypted(userdata, awin);
+	if(mf->is_crypted) return mf->is_crypted(userdata, tab_node);
 
 	return FALSE;
 }
 
-void module_free(void *awin)
+void module_free(struct Node *tab_node)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->free) mf->free(awin);
+	if(mf->free) mf->free(tab_node);
 }
 
-const char *module_get_format(void *awin)
+const char *module_get_format(struct Node *tab_node)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->get_format) return mf->get_format(awin);
+	if(mf->get_format) return mf->get_format(tab_node);
 
 	return NULL;
 }
 
-const char *module_get_subformat(void *awin)
+const char *module_get_subformat(struct Node *tab_node)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->get_subformat) return mf->get_subformat(awin);
+	if(mf->get_subformat) return mf->get_subformat(tab_node);
 
 	return NULL;
 }
 
-const char *module_get_error(void *awin, long code)
+const char *module_get_error(struct Node *tab_node, long code)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->get_error) return mf->get_error(awin, code);
+	if(mf->get_error) return mf->get_error(tab_node, code);
 
 	return NULL;
 }
 
-const char *module_get_read_module(void *awin)
+const char *module_get_read_module(struct Node *tab_node)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
 	return mf->module;
 }
@@ -131,20 +131,20 @@ long module_extract(void *awin, void *tab_node, void *node, void *archive, void 
 	switch(tab_get_format(tab_node)) {
 		case ARC_XAD:
 			if(node == NULL) {
-				ret = xad_extract(awin, archive, newdest, tab_get_listbrowser_list(tab_node), window_get_lbnode);
+				ret = xad_extract(awin, tab_node, archive, newdest, tab_get_listbrowser_list(tab_node), window_get_lbnode);
 			} else {
 				ULONG pud = 0;
-				ret = xad_extract_file(awin, archive, newdest, node, window_get_lbnode, &pud);
+				ret = xad_extract_file(awin, tab_node, archive, newdest, node, window_get_lbnode, &pud);
 			}
 		break;
 		case ARC_XFD:
-			ret = xfd_extract(awin, archive, newdest);
+			ret = xfd_extract(awin, tab_node, archive, newdest);
 		break;
 		case ARC_DEARK:
 			if(node == NULL) {
-				ret = deark_extract(awin, archive, newdest, tab_get_listbrowser_list(tab_node), window_get_lbnode);
+				ret = deark_extract(awin, tab_node, archive, newdest, tab_get_listbrowser_list(tab_node), window_get_lbnode);
 			} else {
-				ret = deark_extract_file(awin, archive, newdest, node, window_get_lbnode);
+				ret = deark_extract_file(awin, tab_node, archive, newdest, node, window_get_lbnode);
 			}
 		break;
 	}
@@ -158,10 +158,10 @@ long module_extract_array(void *awin, void *tab_node, void **array, ULONG total_
 	
 	switch(tab_get_format(tab_node)) {
 		case ARC_XAD:
-			ret = xad_extract_array(awin, total_items, dest, array, array_get_userdata);
+			ret = xad_extract_array(awin, tab_node, total_items, dest, array, array_get_userdata);
 		break;
 		case ARC_DEARK:
-			ret = deark_extract_array(awin, total_items, dest, array, array_get_userdata);
+			ret = deark_extract_array(awin, tab_node, total_items, dest, array, array_get_userdata);
 		break;
 	}
 	
@@ -187,7 +187,7 @@ BOOL module_recog(void* fullfilename)
 	return found;
 }
 
-static void module_extract_register(void *awin, struct Node *tab_node, struct module_functions *mf)
+static void module_extract_register(struct Node *tab_node, struct module_functions *mf)
 {
 	/* Remove existing registration */
 	mf->module[0] = 'N';
@@ -218,19 +218,49 @@ static void module_extract_register(void *awin, struct Node *tab_node, struct mo
 
 /*** Editing ***/
 
-BOOL module_has_add(void *awin)
+BOOL module_has_add(struct Node *tab_node)
 {
-	struct module_functions *mf = window_get_module_funcs(awin);
-	
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
+
 	if(mf->add != NULL) return TRUE;
 	return FALSE;
 }
 
-void module_register(void *awin, struct Node *tab_node, struct module_functions *mf)
+BOOL module_has_del(struct Node *tab_node)
 {
-	module_extract_register(awin, tab_node, mf);
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	const char *format = module_get_format(awin);
+	if(mf->del != NULL) return TRUE;
+	return FALSE;
+}
+
+BOOL module_add(void *awin, struct Node *tab_node, char *file, char *dir, const char *root)
+{
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
+
+	if(mf->add == NULL) return FALSE;
+
+	return mf->add(awin, tab_get_archive(tab_node), file, dir, root);
+}
+
+BOOL module_del(void *awin, struct Node *tab_node, char **files, ULONG count)
+{
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
+
+	if(mf->del == NULL) return FALSE;
+
+	return mf->del(awin, tab_get_archive(tab_node), files, count);
+}
+
+
+
+void module_register(struct Node *tab_node)
+{
+	struct module_functions *mf = tab_get_module_funcs(tab_node);
+
+	module_extract_register(tab_node, mf);
+
+	const char *format = module_get_format(tab_node);
 
 	/* TODO: close libs if possible, see module_close() */
 

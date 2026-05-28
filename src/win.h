@@ -22,8 +22,6 @@
 #include "avalanche.h"
 
 struct MsgPort;
-struct module_functions;
-
 
 /* Basic window functions */
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
@@ -49,11 +47,11 @@ Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
 void *array_get_userdata(void *awin, void *arc_entry);
-struct module_functions *window_get_module_funcs(void *awin);
 BOOL window_get_disabled(void *awin);
 BYTE window_get_exit_sig(void *awin);
 const char *window_req_new_lha(void *awin, char *drawer);
 struct Node *window_get_current_tab(void *awin);
+BOOL window_module_has_add(void *awin);
 
 /* Modify archive */
 BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
@@ -69,9 +67,4 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 void add_to_delete_list(void *awin, char *fn);
 void window_update_fuelgauge_text(void *awin, struct Node *tab_node);
 
-/* Archiver userdata */
-void *window_get_archive_userdata(void *awin);
-void window_set_archive_userdata(void *awin, void *userdata);
-void *window_alloc_archive_userdata(void *awin, ULONG size);
-void window_free_archive_userdata(void *awin);
 #endif

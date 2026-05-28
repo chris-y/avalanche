@@ -16,6 +16,8 @@
 #define AVALANCHE_TAB_H 1
 #include <exec/lists.h>
 
+struct module_functions;
+
 struct arc_entries {
 	char *name;
 	ULONG *size;
@@ -62,6 +64,7 @@ const ULONG tab_get_format(struct Node *tab_node);
 const ULONG tab_get_current_item(struct Node *tab_node);
 const ULONG tab_get_total_items(struct Node *tab_node);
 const ULONG tab_get_total_selectable(struct Node *tab_node);
+struct module_functions *tab_get_module_funcs(struct Node *tab_node);
 const ULONG tab_get_dir_tree_size(struct Node *tab_node);
 struct List *tab_get_listbrowser_list(struct Node *tab_node);
 struct List *tab_get_dirtree_list(struct Node *tab_node);
@@ -80,6 +83,12 @@ struct arc_entries *tab_get_dir_entry(struct Node *tab_node, ULONG entry, BOOL a
 
 /* Get the window the tab is in */
 void *tab_get_window(struct Node *tab_node);
+
+/* archive_userdata */
+void *tab_get_archive_userdata(struct Node *tab_node);
+void tab_set_archive_userdata(struct Node *tab_node, void *userdata);
+void *tab_alloc_archive_userdata(struct Node *tab_node, ULONG size);
+void tab_free_archive_userdata(struct Node *tab_node);
 
 #endif
 

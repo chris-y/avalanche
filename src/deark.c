@@ -26,7 +26,7 @@
 #include "libs.h"
 #include "misc.h"
 #include "module.h"
-#include "win.h"
+#include "tab.h"
 #include "deark.h"
 
 #ifdef __amigaos4__
@@ -58,9 +58,9 @@ static void free_list(char **list, long items)
 	if(list) FreeVec(list);
 }
 
-static void deark_free(void *awin)
+static void deark_free(struct Node *tab_node)
 {
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 
 	if(du) {
 		if(du->tmpfile) FreeVec(du->tmpfile);
@@ -71,26 +71,26 @@ static void deark_free(void *awin)
 		if(du->list) free_list(du->list, du->total);
 	}
 
-	window_free_archive_userdata(awin);
+	tab_free_archive_userdata(tab_node);
 }
 
-static const char *deark_error(void *awin, long code)
+static const char *deark_error(struct Node *tab_node, long code)
 {
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 
 	if(du == NULL) return NULL;
 
 	return(du->last_error);
 }
 
-static long deark_send_command(void *awin, char *file, int command, char ***list, char *dest, ULONG index)
+static long deark_send_command(struct Node *tab_node, const char *file, int command, char ***list, const char *dest, ULONG index)
 {
 	BPTR fh = 0;
 	int err = 1;
 	char cmd[1024];
 
 	struct avalanche_config *config = get_config();
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 
 	if(du == NULL) return -1;
 
@@ -182,17 +182,17 @@ static long deark_send_command(void *awin, char *file, int command, char ***list
 	return 0;
 }
 
-static const char *deark_get_arc_format(void *awin)
+static const char *deark_get_arc_format(struct Node *tab_node)
 {
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 	if(!du) return NULL;
 
 	return(du->arctype + 7);
 }
 
-static const char *deark_get_filename(void *userdata, void *awin)
+static const char *deark_get_filename(void *userdata, struct Node *tab_node)
 {
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 	
 	if(du) {
 		long i = (long)userdata;
@@ -207,13 +207,13 @@ long deark_info(const char *file, struct avalanche_config *config, void *awin, s
 {
 	int err = 1;
 	BPTR fh = 0;
-	struct deark_userdata *du = (struct deark_userdata *)window_alloc_archive_userdata(awin, sizeof(struct deark_userdata));
+	struct deark_userdata *du = (struct deark_userdata *)tab_alloc_archive_userdata(tab_node, sizeof(struct deark_userdata));
 	if(du == NULL) return -1;
 
 	du->file = strdup_vec(file);
 
 	char **list = NULL;
-	long entries = deark_send_command(awin, file, DEARK_RECOG, &list, NULL, 0);
+	long entries = deark_send_command(tab_node, file, DEARK_RECOG, &list, NULL, 0);
 	if(entries > 0) {
 		if(strncmp(list[0], "Module:", 7) == 0) {
 			du->arctype = strdup_vec(list[0]);
@@ -223,7 +223,7 @@ long deark_info(const char *file, struct avalanche_config *config, void *awin, s
 		}
 	}
 
-	du->total = deark_send_command(awin, file, DEARK_LIST, &du->list, NULL, 0);
+	du->total = deark_send_command(tab_node, file, DEARK_LIST, &du->list, NULL, 0);
 
 	if(du->total > 0) {
 		ULONG i = 0;
@@ -240,13 +240,13 @@ long deark_info(const char *file, struct avalanche_config *config, void *awin, s
 	return err;
 }
 
-static long deark_extract_file_private(void *awin, const char *dest, struct deark_userdata *du, long idx)
+static long deark_extract_file_private(struct Node *tab_node, const char *dest, struct deark_userdata *du, long idx)
 {
 	char **list = NULL;
 	long err = 1;
 	long entries = 0;
 	if(idx < 0) return err;
-	entries = deark_send_command(awin, du->file, DEARK_EXTRACT, &list, dest, idx);
+	entries = deark_send_command(tab_node, du->file, DEARK_EXTRACT, &list, dest, idx);
 	if(entries >= 0) {
 		if(list) free_list(list, entries);
 		return 0;
@@ -255,25 +255,25 @@ static long deark_extract_file_private(void *awin, const char *dest, struct dear
 }
 
 
-long deark_extract_file(void *awin, const char *file, const char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node))
+long deark_extract_file(void *awin, struct Node *tab_node, const char *file, const char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node))
 {
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 	long idx = (long)getnode(awin, node);
 	
-	return deark_extract_file_private(awin, dest, du, idx);
+	return deark_extract_file_private(tab_node, dest, du, idx);
 }
 
 /* returns 0 on success */
-long deark_extract(void *awin, const char *file, const char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
+long deark_extract(void *awin, struct Node *tab_node, const char *file, const char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node))
 {
 	long err = 0;
 	struct Node *fnode;
 
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 
 	if(du) {
 		for(fnode = list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
-			err = deark_extract_file(awin, file, dest, fnode, getnode);
+			err = deark_extract_file(awin, tab_node, file, dest, fnode, getnode);
 			if(err != 0) {
 				return err;
 			}
@@ -283,16 +283,16 @@ long deark_extract(void *awin, const char *file, const char *dest, struct List *
 	return err;
 }
 
-long deark_extract_array(void *awin, ULONG total_items, const char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
+long deark_extract_array(void *awin, struct Node *tab_node, ULONG total_items, const char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry))
 {
 	long err = 0;
 
-	struct deark_userdata *du = (struct deark_userdata *)window_get_archive_userdata(awin);
+	struct deark_userdata *du = (struct deark_userdata *)tab_get_archive_userdata(tab_node);
 
 	if(du) {
 		for(int i = 0; i < total_items; i++) {
 			long idx = (long)getuserdata(awin, array[i]);
-			err = deark_extract_file_private(awin, dest, du, idx);
+			err = deark_extract_file_private(tab_node, dest, du, idx);
 			if(err != 0) {
 				return err;
 			}

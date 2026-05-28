@@ -430,7 +430,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								break;
 
 								case 1: // listbrowser
-									if(module_has_add((void *)appmsg->am_UserData)) {
+									if(window_module_has_add((void *)appmsg->am_UserData)) {
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
 											BOOL ret = window_edit_add_wbarg((void *)appmsg->am_UserData, wbarg);
 											if(ret == FALSE) break; /* FALSE = Abort */
