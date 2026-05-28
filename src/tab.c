@@ -504,11 +504,6 @@ void tab_signal_wait(struct Node *tab_node)
 	Wait(1 << at->process_exit_sig);
 }
 
-void tab_signal_signal(const ULONG sig, struct Task *process)
-{
-	Signal(process, sig);
-}
-
 struct Node *tab_create(void *awin, struct List *tab_list)
 {
 	struct avalanche_tab *at = AllocVec(sizeof(struct avalanche_tab), MEMF_CLEAR | MEMF_PRIVATE);

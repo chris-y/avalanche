@@ -49,6 +49,9 @@ ULONG ask_quit(void *awin);
 void savesettings(Object *win);
 void free_dest_path(void);
 
+/* signal our own process */
+void avalanche_signal(ULONG sigmask);
+
 /* window list */
 void add_to_window_list(void *awin);
 void del_from_window_list(void *awin);

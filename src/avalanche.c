@@ -62,6 +62,7 @@ static struct avalanche_config config;
 static struct Locale *locale = NULL;
 static struct MinList win_list;
 ULONG window_count = 0;
+static struct Task *avalanche_process = NULL;
 
 void free_dest_path(void)
 {
@@ -709,6 +710,11 @@ static void gettooltypes(struct WBArg *wbarg)
 	}
 }
 
+void avalanche_signal(ULONG sigmask)
+{
+	Signal(avalanche_process, sigmask);
+}
+
 /** Main program **/
 int main(int argc, char **argv)
 {
@@ -729,6 +735,7 @@ int main(int argc, char **argv)
 		return RETURN_ERROR;
 	}
 
+	avalanche_process = FindTask(NULL); /* Store our task ptr */
 
 	/* Initialise config default values */
 	config.progname = NULL;

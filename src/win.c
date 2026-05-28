@@ -149,8 +149,6 @@ static struct List winlist;
 
 /** Extract process **/
 
-static struct Task* avalanche_process = NULL;
-
 struct avalanche_extract_userdata {
 	void *awin;
 	const char *archive;
@@ -701,7 +699,7 @@ static void __saveds extract_p(void)
 #endif
 {
 	/* Tell the main process we are started */
-	Signal(avalanche_process, SIGBREAKF_CTRL_F);
+	avalanche_signal(SIGBREAKF_CTRL_F);
 	
 	/* Wait for UserData */
 	Wait(SIGBREAKF_CTRL_E);
@@ -718,7 +716,7 @@ static void __saveds extract_p(void)
 	FreeVec(aeu);
 	
 	/* Signal that we've finished */
-	tab_signal_signal(aeu->sig, avalanche_process);
+	avalanche_signal(aeu->sig);
 }
 
 
@@ -740,8 +738,7 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 	
 	/* Ensure there are no pending signals for this already */
 	tab_signal_clear(aw->tab_node);
-	
-	avalanche_process = FindTask(NULL);
+
 	struct Process *extract_process = CreateNewProcTags(NP_Entry, extract_p,
 						NP_Name, "Avalanche extract process",
 						NP_Priority, -1,
@@ -2429,7 +2426,7 @@ static void __saveds window_req_open_archive_p(void)
 #endif
 {
 	/* Tell the main process we are started */
-	Signal(avalanche_process, SIGBREAKF_CTRL_F);
+	avalanche_signal(SIGBREAKF_CTRL_F);
 	
 	/* Wait for UserData */
 	Wait(SIGBREAKF_CTRL_E);
@@ -2446,7 +2443,7 @@ static void __saveds window_req_open_archive_p(void)
 	FreeVec(aeu);
 	
 	/* Signal that we've finished */
-	tab_signal_signal(aeu->sig, avalanche_process);
+	avalanche_signal(aeu->sig);
 	
 }
 
@@ -2478,8 +2475,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	
 	/* Ensure there are no pending signals for this already */
 	tab_signal_clear(aw->tab_node);
-	
-	avalanche_process = FindTask(NULL);
+
 	struct Process *list_process = CreateNewProcTags(NP_Entry, window_req_open_archive_p,
 						NP_Name, "Avalanche list process",
 						NP_Priority, -1,

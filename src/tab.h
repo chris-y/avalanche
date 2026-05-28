@@ -56,9 +56,6 @@ void tab_signal_wait(struct Node *tab_node);
 /* Get signal for the below, so the process doesn't go poking about in clicktab nodes */
 const ULONG tab_get_signal(struct Node *tab_node);
 
-/* Send the tab process_exit_signal to a process */
-void tab_signal_signal(const ULONG sig, struct Task *process);
-
 /** Setters **/
 
 /* Set archive/dest, or NULL to free */
