@@ -455,7 +455,7 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 		}
 
 		if(err != 0) {
-			xad_free(awin);
+			xad_free(tab_node);
 			return XADERR_BREAK;
 		}
 
@@ -531,12 +531,12 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 		}
 	}
 
-	if(err != 0) xad_free(awin);
+	if(err != 0) xad_free(tab_node);
 
 	return err;
 }
 
-static long xad_extract_file_private(void *awin, const char *dest, struct xad_userdata *xu, struct xadDiskInfo *di, struct xadFileInfo *fi, ULONG *pud)
+static long xad_extract_file_private(void *awin, struct Node *tab_node, const char *dest, struct xad_userdata *xu, struct xadDiskInfo *di, struct xadFileInfo *fi, ULONG *pud)
 {
 	long err = 0;
 		
@@ -609,7 +609,7 @@ static long xad_extract_file_private(void *awin, const char *dest, struct xad_us
 				}
 
 				if(err != XADERR_OK) {
-					if(err == XADERR_PASSWORD) xad_free_pw(awin);
+					if(err == XADERR_PASSWORD) xad_free_pw(tab_node);
 					FreeVec(destfile);
 					return err;
 				}
@@ -637,7 +637,7 @@ static long xad_extract_file_private(void *awin, const char *dest, struct xad_us
 						return err;
 					}
 					
-					SetProtection(destfile, xad_get_fileprotection(fi, awin));
+					SetProtection(destfile, xad_get_fileprotection(fi, tab_node));
 					SetFileDate(destfile, &ds);
 					if(fi->xfi_Comment) SetComment(destfile, fi->xfi_Comment);
 				}
@@ -661,7 +661,7 @@ long xad_extract_file(void *awin, struct Node *tab_node, const char *file, const
 		fi = (struct xadFileInfo *)getnode(awin, node);
 	}
 	
-	return xad_extract_file_private(awin, dest, xu, di, fi, pud);
+	return xad_extract_file_private(awin, tab_node, dest, xu, di, fi, pud);
 }
 
 /* returns 0 on success */
@@ -704,7 +704,7 @@ long xad_extract_array(void *awin, struct Node *tab_node, ULONG total_items, con
 	
 			if((di == NULL) && (fi == NULL)) continue;
 
-			err = xad_extract_file_private(awin, dest, xu, di, fi, &pud);
+			err = xad_extract_file_private(awin, tab_node, dest, xu, di, fi, &pud);
 			if(err != XADERR_OK) {
 				return err;
 			}

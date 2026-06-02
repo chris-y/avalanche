@@ -578,7 +578,7 @@ BOOL tab_close(struct Node *tab_node)
 	if((at->disabled == TRUE)) {
 		//SetSignal(0L, aw->process_exit_sig);
 		at->abort_requested = TRUE;
-		Wait(at->process_exit_sig);
+		tab_signal_wait(tab_node);
 	}
 
 	Remove(tab_node);
