@@ -1380,9 +1380,9 @@ static const char *get_item_filename(void *awin, struct Node *node)
 
 	if(aw->flat_mode) {
 		struct arc_entries *arc_entry = (struct arc_entries *)userdata;
-		return module_get_item_filename(awin, arc_entry->userdata);
+		return module_get_item_filename(aw->tab_node, arc_entry->userdata);
 	} else {
-		return module_get_item_filename(awin, userdata);
+		return module_get_item_filename(aw->tab_node, userdata);
 	}
 }
 
