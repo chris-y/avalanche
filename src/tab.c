@@ -443,12 +443,15 @@ void tab_set_disabled(struct Node *tab_node, BOOL disable)
 	
 	at->disabled = disable;
 	
+	/* Clear the state of the Abort flag */
+	at->abort_requested = FALSE;
+#if 0	
 	if(disable) {
 		/* TODO: set tab flag */
 	} else {
-		/* Clear the state of the Abort flag */
-		at->abort_requested = FALSE;
+		/* TODO: clear tab flag */
 	}
+#endif
 }
 
 void *tab_get_archive_userdata(struct Node *tab_node)
@@ -549,13 +552,20 @@ void tab_abort(struct Node *tab_node)
 }
 
 /* Check if abort button is pressed - only called from xad hook */
-const BOOL tab_check_abort(struct Node *tab_node)
+BOOL tab_check_abort(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
 	/* This flag is set in the main loop
 	 * if ESC is pressed or Abort is clicked */
 	return at->abort_requested;
+}
+
+void tab_clear_abort(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+	
+	at->abort_requested = FALSE;
 }
 
 void tab_reset(struct Node *tab_node)

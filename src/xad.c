@@ -548,6 +548,7 @@ static long xad_extract_file_private(void *awin, struct Node *tab_node, const ch
 	struct xad_hookdata xhd;
 	xhd.pud = pud;
 	xhd.awin = awin;
+	xhd.tab = tab_node;
 
 	struct Hook progress_hook;
 	progress_hook.h_Entry = xad_progress;

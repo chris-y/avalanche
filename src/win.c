@@ -725,6 +725,8 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	struct avalanche_extract_userdata *aeu = AllocVec(sizeof(struct avalanche_extract_userdata), MEMF_CLEAR);
 	
+	tab_clear_abort(aw->tab_node);
+		
 	if(aeu == NULL) return -2;
 	
 	aeu->awin = awin;
@@ -2451,6 +2453,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 
+	tab_clear_abort(aw->tab_node);
+
 	if(refresh_only == FALSE) {
 		BOOL ret = window_req_archive(aw, config);
 		if(ret == FALSE) return;
@@ -2804,7 +2808,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_ABORT:
-					tab_abort(aw->tab_node);
+					if(tab_get_disabled(aw->tab_node)) tab_abort(aw->tab_node);
 				break;
 				
 				case GID_LIST:

@@ -39,7 +39,10 @@ void tab_close_all(struct List *tab_list);
 void tab_abort(struct Node *tab_node);
 
 /* Check if abort has been pressed */
-const BOOL tab_check_abort(struct Node *tab_node);
+BOOL tab_check_abort(struct Node *tab_node);
+
+/* Clear abort flag */
+void tab_clear_abort(struct Node *tab_node);
 
 /* Reset list etc */
 void tab_reset(struct Node *tab_node);
