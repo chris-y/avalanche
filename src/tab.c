@@ -34,6 +34,7 @@
 #include "misc.h"
 #include "module.h"
 #include "tab.h"
+#include "win.h"
 
 #include <string.h>
 
@@ -445,12 +446,15 @@ void tab_set_disabled(struct Node *tab_node, BOOL disable)
 	
 	/* Clear the state of the Abort flag */
 	at->abort_requested = FALSE;
-#if 0	
+#if __amigaos4__
+
+	window_tab_detach(at->awin); /* Do we need to detach for flag? */
 	if(disable) {
-		/* TODO: set tab flag */
+		SetClickTabNodeAttrs(tab_node, TNA_Flagged, TRUE, TAG_DONE);
 	} else {
-		/* TODO: clear tab flag */
+		SetClickTabNodeAttrs(tab_node, TNA_Flagged, FALSE, TAG_DONE);
 	}
+	window_tab_refresh(at->awin);
 #endif
 }
 
@@ -522,9 +526,10 @@ struct Node *tab_create(void *awin, struct List *tab_list)
 	at->awin = awin;
 	at->archive = NULL;
 
-	/* Create tab node.
-	 * Currently we put the tab structure into userdata but
-	 * maybe it's more efficient to extend the ClickTabNode? */
+	/* Detach tabs from window */
+	window_tab_detach(awin);
+
+	/* Create tab node. */
 	struct Node *tab_node = AllocClickTabNode(TNA_Text, "Avalanche",
 						TNA_Number, 0,
 						TNA_UserData, at,
@@ -540,6 +545,13 @@ struct Node *tab_create(void *awin, struct List *tab_list)
 	/* Set local dest */
 	tab_set_dest(tab_node, CONFIG_GET_LOCK(dest));
         CONFIG_UNLOCK;
+
+	window_tab_set(at->awin, tab_node);
+
+	/* Add and refresh the tab bar */
+	window_tab_refresh(at->awin);
+	
+	window_tab_count(awin, +1);
 
 	return tab_node;
 }
@@ -579,11 +591,13 @@ void tab_reset(struct Node *tab_node)
 	module_free(tab_node);
 }
 
-BOOL tab_close(struct Node *tab_node)
+static BOOL tab_close_internal(struct Node *tab_node, BOOL close_all)
 {
 	if(tab_node == NULL) return FALSE;
 	
 	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	void *awin = at->awin; /* store for later */
 
 	if((at->disabled == TRUE)) {
 		//SetSignal(0L, aw->process_exit_sig);
@@ -591,8 +605,14 @@ BOOL tab_close(struct Node *tab_node)
 		tab_signal_wait(tab_node);
 	}
 
+	/* Detach tab bar from window */
+	window_tab_detach(awin);
+
+	/* Get a nearby tab */
+	struct Node *p_tab = GetSucc(tab_node);
+	if(!p_tab) p_tab = GetPred(tab_node);
+
 	Remove(tab_node);
-	FreeClickTabNode(tab_node);
 
 	FreeListBrowserList(&at->lblist);
 	FreeListBrowserList(&at->dir_tree);
@@ -609,11 +629,38 @@ BOOL tab_close(struct Node *tab_node)
 	/* Release archive when tab is closed */
 	module_free(tab_node);
 
+	/* Free the tab node */
+	FreeClickTabNode(tab_node);
+
 	FreeSignal(at->process_exit_sig);
 	
 	FreeVec(at);
 
-	return TRUE; /* return TRUE if last tab closed */
+	if(close_all) {
+		window_tab_count(awin, -1);
+		return TRUE;
+	}
+
+	if(window_tab_count(awin, -1) > 0) {
+		/* Set a new current tab - possibly need to check if we closed the current tab here */
+		window_tab_set(awin, p_tab);
+		/* Reattach and refresh tabs */
+		window_tab_refresh(awin);
+	} else {
+		/* If we have closed the last tab, create a new blank one.
+		 * This will reattach and refresh the tab bar afterwards */
+		if(window_tab_create(awin) == FALSE) {
+			/* No choice but to dispose anyway */
+			return TRUE;
+		}
+	}
+	
+	return FALSE; /* return TRUE if last tab closed */
+}
+
+BOOL tab_close(struct Node *tab_node)
+{
+	return tab_close_internal(tab_node, FALSE);
 }
 
 void tab_close_all(struct List *tab_list)
@@ -621,7 +668,7 @@ void tab_close_all(struct List *tab_list)
 	struct Node *fnode = NULL;
 
 	for(fnode = tab_list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
-		tab_close(fnode);
+		tab_close_internal(fnode, TRUE);
 	}
 }
 

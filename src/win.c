@@ -123,6 +123,7 @@ struct avalanche_window {
 	char title[TITLE_MAX_SIZE];
 	struct List tab_list;
 	struct Node *tab_node; /* current tab */
+	ULONG tab_count;
 #ifndef __amigaos4__
 	struct HintInfo hi;
 	struct Hook idcmphook;
@@ -1514,6 +1515,16 @@ static void __saveds idcmp_hook_func(__reg("a0") struct Hook *h, __reg("a2") Obj
 #endif
 
 /* Window functions */
+BOOL window_tab_create(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	aw->tab_node = tab_create(aw, &aw->tab_list);
+	
+	if(aw->tab_node == NULL) return FALSE;
+	
+	return TRUE;
+}
 
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport)
 {
@@ -1650,8 +1661,13 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	NewList(&aw->tab_list);
 
-	aw->tab_node = tab_create(aw, &aw->tab_list);
-	if(aw->tab_node == NULL) {
+
+	// open a second tab for testing
+	window_tab_create(aw);
+
+
+
+	if(window_tab_create(aw) == FALSE) {
 		/* Initial tab creation failed - this is fatal */
 		FreeVec(aw);
 		return NULL;
@@ -1725,7 +1741,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					CHILD_NominalSize, TRUE,
 				LayoutEnd,
 				CHILD_WeightedWidth, 0,
-								LAYOUT_AddChild, aw->gadgets[GID_TABS] = ClickTabObj,
+					LAYOUT_AddChild, aw->gadgets[GID_TABS] = ClickTabObj,
 					GA_ID, GID_TABS,
 					GA_RelVerify, TRUE,
 					GA_Underscore, 13, // disable kb shortcuts
@@ -1736,6 +1752,8 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 					CLICKTAB_AutoFit, TRUE,
 #ifndef __amigaos4__
 					ICA_TARGET, ICTARGET_IDCMP,
+#else
+					CLICKTAB_FlagImage, glyph_get(AVALANCHE_GLYPH_BUSY),
 #endif
 				ClickTabEnd,
 			LayoutEnd,
@@ -2124,6 +2142,7 @@ it's incompatible with double-clicking as it resets the listview */
 			if(ret == 0) {
 				tab_signal_wait(aw->tab_node);
 				AddPart(dest_path, get_item_filename(aw, node), dest_path_len);
+				
 				tab_add_to_delete_list(aw->tab_node, dest_path);
 				OpenWorkbenchObjectA(dest_path, NULL);
 			} else {
@@ -3070,3 +3089,99 @@ struct Node *window_get_current_tab(void *awin)
 
 	return aw->tab_node;
 }
+
+void window_tab_detach(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->gadgets[GID_TABS] == NULL) return;
+	
+	SetGadgetAttrs(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL,
+		CLICKTAB_Labels, ~0,
+		CLICKTAB_MinorLabelChange, TRUE,
+		TAG_DONE);
+}
+
+void window_tab_set(void *awin, struct Node *tab_node)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->gadgets[GID_TABS] == NULL) return;
+	
+	SetGadgetAttrs(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL,
+		CLICKTAB_Labels, &aw->tab_list,
+		CLICKTAB_CurrentNode, tab_node,
+		TAG_DONE);
+		
+	aw->tab_node = tab_node;
+	
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+				LISTBROWSER_Labels, tab_get_listbrowser_list(tab_node),
+				LISTBROWSER_SortColumn, 1,
+				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
+			TAG_DONE);
+
+	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
+
+	if(aw->flat_mode) {
+		highlight_current_dir(aw, tab_node);
+	}
+
+	window_update_title(aw, tab_node);
+
+	if(tab_get_disabled(tab_node)) {
+		window_disable_gadgets(awin, TRUE, TRUE);
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+							WA_PointerType, POINTERTYPE_PROGRESS,
+							TAG_DONE);
+	} else {
+		window_disable_gadgets(awin, FALSE, FALSE);
+		window_count_selected(awin, tab_node);
+		
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+							WA_BusyPointer, FALSE,
+							TAG_DONE);
+	}
+}
+
+static void window_tab_switch(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	struct Node *tab_node = NULL;
+	
+	GetAttr(CLICKTAB_CurrentNode, aw->gadgets[GID_TABS], (ULONG *)&tab_node);
+	
+	if(aw->tab_node != tab_node) {
+		window_tab_set(awin, tab_node);
+	}
+}
+
+void window_tab_refresh(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->gadgets[GID_TABS] == NULL) return;
+
+	window_tab_switch(awin);
+
+	SetGadgetAttrs(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL,
+		CLICKTAB_Labels, &aw->tab_list,
+		TAG_DONE);
+	
+	RefreshGList(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL, 1);
+}
+
+const ULONG window_tab_count(void *awin, int change)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	aw->tab_count += change;
+	
+	return aw->tab_count;
+}
+

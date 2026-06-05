@@ -29,6 +29,9 @@ void window_open(void *awin, struct MsgPort *appwin_mp);
 void window_close(void *awin, BOOL iconify);
 void window_dispose(void *awin);
 
+/* Create a tab in the specified window and make it current */
+BOOL window_tab_create(void *awin);
+
 /* Update window */
 void window_update_archive(void *awin, char *archive);
 void window_update_sourcedir(void *awin, char *sourcedir);
@@ -64,4 +67,15 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 void add_to_delete_list(void *awin, char *fn);
 void window_update_fuelgauge_text(void *awin, struct Node *tab_node);
 
+/* Detach the tab bar so changes can be made */
+void window_tab_detach(void *awin);
+
+/* Refresh the tab bar (also reattaches it) */
+void window_tab_refresh(void *awin);
+
+/* Modify and return the current number of tabs */
+const ULONG window_tab_count(void *awin, int change);
+
+/* Set current tab to the one specified */
+void window_tab_set(void *awin, struct Node *tab_node);
 #endif

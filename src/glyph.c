@@ -343,6 +343,26 @@ static struct DrawList dl_abort[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_busy[] = {
+	{DLST_AMOVE, 20, 10, 0, 0, 0},
+	{DLST_ADRAW, 70, 10, 0, 0, 0},
+	{DLST_ADRAW, 70, 20, 0, 0, 0},
+	{DLST_ADRAW, 50, 40, 0, 0, 0},
+	{DLST_ADRAW, 50, 50, 0, 0, 0},
+	{DLST_ADRAW, 70, 70, 0, 0, 0},
+	{DLST_ADRAW, 70, 80, 0, 0, 0},
+	{DLST_ADRAW, 20, 80, 0, 0, 0},
+	{DLST_ADRAW, 20, 70, 0, 0, 0},
+	{DLST_ADRAW, 40, 50, 0, 0, 0},
+	{DLST_ADRAW, 40, 40, 0, 0, 0},
+	{DLST_ADRAW, 20, 20, 0, 0, 0},
+	{DLST_ADRAW, 20, 10, 0, 0, 0},
+	{DLST_AFILL, 0, 0, 0, 0, 0},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
+
 #ifndef __amigaos4__ /* OS4 has a built-in image */
 static struct DrawList dl_closetab[] = {
 	{DLST_RECT, 35, 30, 65, 70, 2},
@@ -460,6 +480,14 @@ Object *glyph_get(ULONG glyph)
 #endif
 			break;
 
+			case AVALANCHE_GLYPH_BUSY:
+#ifdef __amigaos4__
+				img = "TBimages:list_flagyellow";
+#else
+				img = "TBimages:list_time";
+#endif
+			break;
+
 			case GLYPH_RIGHTARROW:
 				img = "TBimages:autobutton_rtarrow";
 			break;
@@ -551,6 +579,9 @@ Object *glyph_get(ULONG glyph)
 #endif
 				case AVALANCHE_GLYPH_DISK:
 					dl = &dl_disk;
+				break;
+				case AVALANCHE_GLYPH_BUSY:
+					dl = &dl_busy;
 				break;
 				case AVALANCHE_GLYPH_NONE:
 					dl = &dl_none;
