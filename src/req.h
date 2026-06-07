@@ -26,6 +26,6 @@ void show_dos_error(long code, void *awin);
 void show_about(void *awin);
 int open_error_req(const char *message, const char *button, void *awin);
 void open_info_req(const char *message, const char *buttons, void *awin);
-void req_show_arc_info(void *awin);
+void req_show_arc_info(void *awin, struct Node *tab_node);
 ULONG warning_req(void *awin, const char *message);
 #endif

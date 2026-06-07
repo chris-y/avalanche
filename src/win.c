@@ -3014,7 +3014,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 
 							case 4: //info
-								req_show_arc_info(awin);
+								req_show_arc_info(awin, aw->tab_node);
 							break;
 
 							case 5: //about

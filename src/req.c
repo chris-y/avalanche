@@ -220,19 +220,19 @@ ULONG ask_password(void *awin, const char *pw, ULONG pwlen)
 	return ret;
 }
 
-void req_show_arc_info(void *awin)
+void req_show_arc_info(void *awin, struct Node *tab_node)
 {
 	char message[100];
-	const char *modname = module_get_read_module(awin);
+	const char *modname = module_get_read_module(tab_node);
 	
 	if(modname == NULL) return;
 
-	const char *subf = module_get_subformat(awin);
+	const char *subf = module_get_subformat(tab_node);
 	
 	if(subf) {
-		snprintf(message, 100, "%s (%s) - %s", module_get_format(awin), subf, modname);	
+		snprintf(message, 100, "%s (%s) - %s", module_get_format(tab_node), subf, modname);	
 	} else {
-		snprintf(message, 100, "%s - %s", module_get_format(awin), modname);	
+		snprintf(message, 100, "%s - %s", module_get_format(tab_node), modname);	
 	}
 	
 	open_info_req(message, locale_get_string(MSG_OK), awin);
