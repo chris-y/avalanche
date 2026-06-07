@@ -682,6 +682,7 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 		if((ret == 0) && (config->openwb == TRUE)) window_open_dest(awin);
 		CONFIG_UNLOCK;
 		
+		tab_set_disabled(tab_node, FALSE); // TODO should this call window_disable_gadgets?
 		window_disable_gadgets(awin, FALSE, TRUE);
 		window_count_selected(awin, tab_node);
 
@@ -737,6 +738,7 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 	aeu->tab_node = aw->tab_node;
 	aeu->sig = tab_get_signal(aw->tab_node);
 	
+	tab_set_disabled(aw->tab_node, TRUE);
 	window_disable_gadgets(awin, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
@@ -1513,6 +1515,89 @@ static void __saveds idcmp_hook_func(__reg("a0") struct Hook *h, __reg("a2") Obj
 	}
 }
 #endif
+
+/* Some tab handling functions */
+void window_tab_set(void *awin, struct Node *tab_node)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->gadgets[GID_TABS] == NULL) return;
+	
+	SetGadgetAttrs(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL,
+		CLICKTAB_Labels, &aw->tab_list,
+		CLICKTAB_CurrentNode, tab_node,
+		TAG_DONE);
+		
+	aw->tab_node = tab_node;
+	
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+				LISTBROWSER_Labels, tab_get_listbrowser_list(tab_node),
+				LISTBROWSER_SortColumn, 1,
+				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
+			TAG_DONE);
+
+	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
+
+	if(aw->flat_mode) {
+		highlight_current_dir(aw, tab_node);
+	}
+
+	window_update_title(aw, tab_node);
+
+	if(tab_get_disabled(tab_node)) {
+		window_disable_gadgets(awin, TRUE, TRUE);
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+							WA_PointerType, POINTERTYPE_PROGRESS,
+							TAG_DONE);
+	} else {
+		window_disable_gadgets(awin, FALSE, FALSE);
+		window_count_selected(awin, tab_node);
+		
+		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
+							WA_BusyPointer, FALSE,
+							TAG_DONE);
+	}
+}
+
+static void window_tab_switch(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	struct Node *tab_node = NULL;
+	
+	GetAttr(CLICKTAB_CurrentNode, aw->gadgets[GID_TABS], (ULONG *)&tab_node);
+	
+	if(aw->tab_node != tab_node) {
+		window_tab_set(awin, tab_node);
+	}
+}
+
+void window_tab_refresh(void *awin)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	if(aw->gadgets[GID_TABS] == NULL) return;
+
+	window_tab_switch(awin);
+
+	SetGadgetAttrs(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL,
+		CLICKTAB_Labels, &aw->tab_list,
+		TAG_DONE);
+	
+	RefreshGList(aw->gadgets[GID_TABS],
+		window_get_window(aw), NULL, 1);
+}
+
+const ULONG window_tab_count(void *awin, int change)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+	
+	aw->tab_count += change;
+	
+	return aw->tab_count;
+}
 
 /* Window functions */
 BOOL window_tab_create(void *awin)
@@ -2431,6 +2516,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 
 		window_update_title(aw, tab_node);
 
+		tab_set_disabled(tab_node, FALSE);
 		window_disable_gadgets(awin, FALSE, FALSE);
 		window_count_selected(awin, tab_node);
 
@@ -2494,6 +2580,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	aeu->tab_node = aw->tab_node;
 	aeu->sig = tab_get_signal(aw->tab_node);
 
+	tab_set_disabled(aw->tab_node, TRUE);
 	window_disable_gadgets(awin, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
@@ -2596,6 +2683,7 @@ BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 		if(file = AllocVec(1024, MEMF_CLEAR)) {
 			NameFromLock(wbarg->wa_Lock, file, 1024);
 
+			tab_set_disabled(window_get_current_tab(awin), TRUE);
 			window_disable_gadgets(awin, TRUE, FALSE);
 
 			if(*wbarg->wa_Name) {
@@ -2619,7 +2707,7 @@ BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 				UnLock(lock);
 			}
 #endif
-
+			tab_set_disabled(window_get_current_tab(awin), FALSE);
 			window_disable_gadgets(awin, FALSE, FALSE);
 
 			FreeVec(file);
@@ -2654,6 +2742,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 				strncpy(file, aslreq->fr_Drawer, len);
 				AddPart(file, aslreq->fr_File, len);
 
+				tab_set_disabled(window_get_current_tab(awin), TRUE);
 				window_disable_gadgets(awin, TRUE, FALSE);
 
 #ifdef __amigaos4__
@@ -2675,6 +2764,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 #endif
 
 				ok = window_edit_add(aw, file, NULL); /* TRUE = cont, FALSE = abort */
+				tab_set_disabled(window_get_current_tab(awin), FALSE);
 				window_disable_gadgets(awin, FALSE, FALSE);
 			}
 		}
@@ -2700,6 +2790,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 										TAG_DONE);
 
 	tab_set_current_item(aw->tab_node, 0);
+	tab_set_disabled(window_get_current_tab(awin), TRUE);
 	window_disable_gadgets(awin, TRUE, FALSE);
 
 	/* module_free(aw);
@@ -2744,6 +2835,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 		open_error_req(locale_get_string(MSG_ARCHIVEMUSTHAVEENTRIES), locale_get_string(MSG_OK), awin);
 	}
 
+	tab_set_disabled(window_get_current_tab(awin), FALSE);
 	window_disable_gadgets(awin, FALSE, FALSE);
 	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, FALSE,
@@ -2853,7 +2945,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 #endif
 					{
 						GetAttr(CLICKTAB_CurrentNode, (Object *)aw->gadgets[GID_TABS], (ULONG *)&tabnode);
-						/* Tab switched; we only have one tab so can't switch yet */
+						
+						if(window_tab_is_current(aw, tabnode) == FALSE) {
+							/* Tab switched */
+							window_tab_set(aw, tabnode);
+						}
 					}
 				}
 				break;
@@ -3103,85 +3199,4 @@ void window_tab_detach(void *awin)
 		TAG_DONE);
 }
 
-void window_tab_set(void *awin, struct Node *tab_node)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	if(aw->gadgets[GID_TABS] == NULL) return;
-	
-	SetGadgetAttrs(aw->gadgets[GID_TABS],
-		window_get_window(aw), NULL,
-		CLICKTAB_Labels, &aw->tab_list,
-		CLICKTAB_CurrentNode, tab_node,
-		TAG_DONE);
-		
-	aw->tab_node = tab_node;
-	
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-				LISTBROWSER_Labels, tab_get_listbrowser_list(tab_node),
-				LISTBROWSER_SortColumn, 1,
-				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
-			TAG_DONE);
-
-	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
-
-	if(aw->flat_mode) {
-		highlight_current_dir(aw, tab_node);
-	}
-
-	window_update_title(aw, tab_node);
-
-	if(tab_get_disabled(tab_node)) {
-		window_disable_gadgets(awin, TRUE, TRUE);
-		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
-							WA_PointerType, POINTERTYPE_PROGRESS,
-							TAG_DONE);
-	} else {
-		window_disable_gadgets(awin, FALSE, FALSE);
-		window_count_selected(awin, tab_node);
-		
-		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
-							WA_BusyPointer, FALSE,
-							TAG_DONE);
-	}
-}
-
-static void window_tab_switch(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	struct Node *tab_node = NULL;
-	
-	GetAttr(CLICKTAB_CurrentNode, aw->gadgets[GID_TABS], (ULONG *)&tab_node);
-	
-	if(aw->tab_node != tab_node) {
-		window_tab_set(awin, tab_node);
-	}
-}
-
-void window_tab_refresh(void *awin)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	if(aw->gadgets[GID_TABS] == NULL) return;
-
-	window_tab_switch(awin);
-
-	SetGadgetAttrs(aw->gadgets[GID_TABS],
-		window_get_window(aw), NULL,
-		CLICKTAB_Labels, &aw->tab_list,
-		TAG_DONE);
-	
-	RefreshGList(aw->gadgets[GID_TABS],
-		window_get_window(aw), NULL, 1);
-}
-
-const ULONG window_tab_count(void *awin, int change)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
-	aw->tab_count += change;
-	
-	return aw->tab_count;
-}
 
