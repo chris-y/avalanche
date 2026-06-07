@@ -502,7 +502,7 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 			di = ai->xai_DiskInfo;
 			while(di) {
 				size = di->xdi_SectorSize * di->xdi_TotalSectors;
-				if(strcmp(xad_get_arc_format(awin), "DMS") == 0) {
+				if(strcmp(xad_get_arc_format(tab_node), "DMS") == 0) {
 					strcpy(xu->xdisk_filename, "disk.adf");
 				} else {
 					strcpy(xu->xdisk_filename, "disk.img");

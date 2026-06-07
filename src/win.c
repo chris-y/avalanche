@@ -164,7 +164,7 @@ struct avalanche_extract_userdata {
 static struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
 	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
-	{NM_ITEM,   NULL,         "W", 0, 0, 0,}, // 1 New window
+	{NM_ITEM,   NULL,         "T", 0, 0, 0,}, // 1 New window**
 	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 2 Open
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
@@ -185,14 +185,15 @@ static struct NewMenu menu[] = {
 	{NM_ITEM,   NULL , "L", CHECKIT | MENUTOGGLE, 0, 0,}, // 7 Toggle drag lock
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Window
-	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 0 View mode
+	{NM_ITEM,   NULL,         "W", 0, 0, 0,}, // 0 New window
+	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 1 View mode
 	{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
 	{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
-	{NM_ITEM, NULL , 0, 0, 0, 0,}, // 1 Dir tree
+	{NM_ITEM, NULL , 0, 0, 0, 0,}, // 2 Dir tree
 	{NM_SUB,  NULL , "-", 0, 0, 0,}, // 0 Collapse all
 	{NM_SUB,  NULL , "=", 0, 0, 0,}, // 1 Expand all
 	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
-	{NM_ITEM, NULL , "K", 0, 0, 0,}, // 3 Close
+	{NM_ITEM, NULL , "K", 0, 0, 0,}, // 4 Close
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 3 Settings
 	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 0 Snapshot
@@ -202,8 +203,8 @@ static struct NewMenu menu[] = {
 };
 
 #define MENU_DRAGLOCK 18
-#define MENU_FLATMODE 21
-#define MENU_LISTMODE 22
+#define MENU_FLATMODE 22
+#define MENU_LISTMODE 23
 
 #ifdef __amigaos4__
 #define CLICKTAB_MinorLabelChange TAG_IGNORE
@@ -355,8 +356,8 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
 		//OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //viewmode1
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //viewmode2
 
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
@@ -378,11 +379,11 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		}
 		if(aw->flat_mode == TRUE) {
-			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
-			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,2,0)); //collapse
+			OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,2,1)); //expand
 		} else {
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,2,0)); //collapse
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,2,1)); //expand
 		}
 	} else {
 		if(busy == FALSE) {
@@ -391,8 +392,8 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
 			//OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,0)); //viewmode1
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,0,1)); //viewmode2
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //viewmode1
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //viewmode2
 		}
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
@@ -400,8 +401,8 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,4,0)); //edit/add
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,5,0)); //edit/del
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,7,0)); //draglock
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //collapse
-		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //expand
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,2,0)); //collapse
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,2,1)); //expand
 	}
 }
 
@@ -3076,7 +3077,13 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 					
 					case 2: //window
 						switch(ITEMNUM(code)) {
-							case 0: // view mode
+							case 0: // new window
+								new_awin = window_create(config, NULL, winport, AppPort);
+								if(new_awin == NULL) break;
+								window_open(new_awin, appwin_mp);
+							break;
+
+							case 1: // view mode
 								switch(SUBNUM(code)) {
 									case 0: //flat browser mode
 										toggle_flat_mode(aw, config, TRUE);
@@ -3087,7 +3094,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								}
 							break;
 
-							case 1: // dir tree
+							case 2: // dir tree
 								switch(SUBNUM(code)) {
 									case 0: // collapse
 										collapse_tree(aw, FALSE);
@@ -3098,7 +3105,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								}
 							break;
 
-							case 3: // close
+							case 4: // close
 								done = WIN_DONE_CLOSED;
 							break;
 						}
@@ -3167,16 +3174,17 @@ void fill_menu_labels(void)
 	menu[16].nm_Label = locale_get_string( MSG_DELFILES );
 	menu[18].nm_Label = locale_get_string( MSG_DRAGLOCK );
 	menu[19].nm_Label = locale_get_string( MSG_WINDOW );
-	menu[20].nm_Label = locale_get_string( MSG_VIEWMODE );
+	menu[20].nm_Label = locale_get_string( MSG_NEWWINDOW );
+	menu[21].nm_Label = locale_get_string( MSG_VIEWMODE );
 	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
 	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
-	menu[23].nm_Label = locale_get_string( MSG_DIR_TREE );
-	menu[24].nm_Label = locale_get_string( MSG_COLLAPSE_ALL );
-	menu[25].nm_Label = locale_get_string( MSG_EXPAND_ALL );
-	menu[27].nm_Label = locale_get_string( MSG_CLOSE );
-	menu[28].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[29].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[30].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[24].nm_Label = locale_get_string( MSG_DIR_TREE );
+	menu[25].nm_Label = locale_get_string( MSG_COLLAPSE_ALL );
+	menu[26].nm_Label = locale_get_string( MSG_EXPAND_ALL );
+	menu[28].nm_Label = locale_get_string( MSG_CLOSE );
+	menu[29].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[30].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[31].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 struct Node *window_get_current_tab(void *awin)
