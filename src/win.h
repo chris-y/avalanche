@@ -37,6 +37,7 @@ void window_update_archive(void *awin, char *archive);
 void window_update_sourcedir(void *awin, char *sourcedir);
 void window_fuelgauge_update(void *awin, struct Node *tab_node, ULONG size, ULONG total_size, const char *filename);
 void window_modify_all_list(void *awin, ULONG select);
+void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable);
 
 /* Handle events */
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);

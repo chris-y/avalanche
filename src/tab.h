@@ -70,7 +70,7 @@ void tab_set_total_items(struct Node *tab_node, ULONG total);
 void tab_set_total_selectable(struct Node *tab_node, ULONG total);
 void tab_set_dir_tree_size(struct Node *tab_node, ULONG size);
 void tab_set_current_dir(struct Node *tab_node, const char *dir);
-void tab_set_disabled(struct Node *tab_node, BOOL disable);
+void tab_set_disabled(struct Node *tab_node, BOOL disable, BOOL stoppable);
 
 /* returns FALSE if already at root, TRUE otherwise */
 BOOL tab_set_current_dir_to_parent(struct Node *tab_node);
@@ -84,6 +84,7 @@ const ULONG tab_get_current_item(struct Node *tab_node);
 const ULONG tab_get_total_items(struct Node *tab_node);
 const ULONG tab_get_total_selectable(struct Node *tab_node);
 const BOOL tab_get_disabled(struct Node *tab_node);
+const BOOL tab_get_stoppable(struct Node *tab_node);
 struct module_functions *tab_get_module_funcs(struct Node *tab_node);
 const ULONG tab_get_dir_tree_size(struct Node *tab_node);
 struct List *tab_get_listbrowser_list(struct Node *tab_node);
@@ -113,4 +114,3 @@ void tab_free_archive_userdata(struct Node *tab_node);
 /* delete list */
 void tab_add_to_delete_list(struct Node *tab_node, char *fn);
 #endif
-

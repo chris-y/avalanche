@@ -120,6 +120,7 @@ struct avalanche_window {
 	BOOL flat_mode;
 	BOOL drag_lock;
 	BOOL iconified;
+	BOOL has_dz;
 	char title[TITLE_MAX_SIZE];
 	struct List tab_list;
 	struct Node *tab_node; /* current tab */
@@ -294,12 +295,15 @@ static struct List *window_get_dirtree_list(void *awin)
 
 static void window_remove_dropzones(struct avalanche_window *aw)
 {
+	if(aw->has_dz == FALSE) return;
+
 	if(aw->appwindz) {
 		for(int i=0; i<AVALANCHE_DROPZONES; i++) {
 			RemoveAppWindowDropZone(aw->appwin, aw->appwindz[i]);
 			aw->appwindz[i] = NULL;
 		}
 	}
+	aw->has_dz = FALSE;
 }
 
 static void window_add_dropzones(struct avalanche_window *aw, BOOL edit)
@@ -308,6 +312,8 @@ static void window_add_dropzones(struct avalanche_window *aw, BOOL edit)
 	CONFIG_UNLOCK;
 
 	if(ndz) return;
+
+	if(aw->has_dz) window_remove_dropzones(aw);
 
 	if(aw->appwin) {
 		aw->appwindzhook.h_Entry = appwindzhookfunc;
@@ -340,6 +346,8 @@ static void window_add_dropzones(struct avalanche_window *aw, BOOL edit)
 										WBDZA_Height, aw->windows[WID_MAIN]->Height,						
 									TAG_END);
 	}
+
+	aw->has_dz = TRUE;
 }
 
 /* Activate/disable menus related to an open archive
@@ -417,11 +425,9 @@ static void window_menu_set_enable_state(void *awin)
 	}
 }
 
-static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
+void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	tab_set_disabled(aw->tab_node, disable);
 
 	if(aw->windows[WID_MAIN] == NULL) return;
 
@@ -431,18 +437,16 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, TRUE,
 				TAG_DONE);
-				
+
 		if(stoppable) {
 			SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, FALSE,
 				TAG_DONE);
-		} else {
-
 		}
 	} else {
 		window_add_dropzones(aw, !aw->drag_lock);
 
-			SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
+		SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, TRUE,
 				TAG_DONE);
 
@@ -464,8 +468,11 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 			GA_Disabled, disable,
 		TAG_DONE);
 
-	window_menu_activation(aw, !disable, TRUE);
-
+	if(tab_get_format(aw->tab_node) == ARC_NONE) {
+		window_menu_activation(aw, FALSE, FALSE);
+	} else {
+		window_menu_activation(aw, !disable, TRUE);
+	}
 
 	if(aw->flat_mode == FALSE) disable = TRUE;
 
@@ -476,9 +483,9 @@ static void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 
 
 static BOOL window_open_dest(void *awin)
-{	
+{
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
-	
+
 	return OpenWorkbenchObjectA(tab_get_dest(aw->tab_node), NULL);
 }
 
@@ -683,8 +690,7 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 		if((ret == 0) && (config->openwb == TRUE)) window_open_dest(awin);
 		CONFIG_UNLOCK;
 		
-		tab_set_disabled(tab_node, FALSE); // TODO should this call window_disable_gadgets?
-		window_disable_gadgets(awin, FALSE, TRUE);
+		tab_set_disabled(tab_node, FALSE, TRUE);
 		window_count_selected(awin, tab_node);
 
 		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
@@ -739,8 +745,7 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 	aeu->tab_node = aw->tab_node;
 	aeu->sig = tab_get_signal(aw->tab_node);
 	
-	tab_set_disabled(aw->tab_node, TRUE);
-	window_disable_gadgets(awin, TRUE, TRUE);
+	tab_set_disabled(aw->tab_node, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
 	tab_signal_clear(aw->tab_node);
@@ -1548,12 +1553,12 @@ void window_tab_set(void *awin, struct Node *tab_node)
 	window_update_title(aw, tab_node);
 
 	if(tab_get_disabled(tab_node)) {
-		window_disable_gadgets(awin, TRUE, TRUE);
+		window_disable_gadgets(awin, TRUE, tab_get_stoppable(tab_node));
 		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 							WA_PointerType, POINTERTYPE_PROGRESS,
 							TAG_DONE);
 	} else {
-		window_disable_gadgets(awin, FALSE, FALSE);
+		window_disable_gadgets(awin, FALSE, tab_get_stoppable(tab_node));
 		window_count_selected(awin, tab_node);
 		
 		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
@@ -2461,9 +2466,9 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 	}
 
 	tab_reset(tab_node);
-	
+
 	tab_set_format(tab_node, ARC_XAD); /* Set in advance for flat browser tree use */
-	
+
 	ULONG active_modules = CONFIG_GET_LOCK(activemodules);
 	CONFIG_UNLOCK;
 
@@ -2517,8 +2522,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 
 		window_update_title(aw, tab_node);
 
-		tab_set_disabled(tab_node, FALSE);
-		window_disable_gadgets(awin, FALSE, FALSE);
+		tab_set_disabled(tab_node, FALSE, FALSE);
 		window_count_selected(awin, tab_node);
 
 		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
@@ -2581,8 +2585,7 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 	aeu->tab_node = aw->tab_node;
 	aeu->sig = tab_get_signal(aw->tab_node);
 
-	tab_set_disabled(aw->tab_node, TRUE);
-	window_disable_gadgets(awin, TRUE, TRUE);
+	tab_set_disabled(aw->tab_node, TRUE, TRUE);
 	
 	/* Ensure there are no pending signals for this already */
 	tab_signal_clear(aw->tab_node);
@@ -2684,8 +2687,7 @@ BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 		if(file = AllocVec(1024, MEMF_CLEAR)) {
 			NameFromLock(wbarg->wa_Lock, file, 1024);
 
-			tab_set_disabled(window_get_current_tab(awin), TRUE);
-			window_disable_gadgets(awin, TRUE, FALSE);
+			tab_set_disabled(window_get_current_tab(awin), TRUE, FALSE);
 
 			if(*wbarg->wa_Name) {
 				AddPart(file, wbarg->wa_Name, 1024);
@@ -2708,8 +2710,7 @@ BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg)
 				UnLock(lock);
 			}
 #endif
-			tab_set_disabled(window_get_current_tab(awin), FALSE);
-			window_disable_gadgets(awin, FALSE, FALSE);
+			tab_set_disabled(window_get_current_tab(awin), FALSE, FALSE);
 
 			FreeVec(file);
 		}
@@ -2743,8 +2744,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 				strncpy(file, aslreq->fr_Drawer, len);
 				AddPart(file, aslreq->fr_File, len);
 
-				tab_set_disabled(window_get_current_tab(awin), TRUE);
-				window_disable_gadgets(awin, TRUE, FALSE);
+				tab_set_disabled(window_get_current_tab(awin), TRUE, FALSE);
 
 #ifdef __amigaos4__
 				if(object_is_dir(file)) {
@@ -2765,8 +2765,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 #endif
 
 				ok = window_edit_add(aw, file, NULL); /* TRUE = cont, FALSE = abort */
-				tab_set_disabled(window_get_current_tab(awin), FALSE);
-				window_disable_gadgets(awin, FALSE, FALSE);
+				tab_set_disabled(window_get_current_tab(awin), FALSE, FALSE);
 			}
 		}
 		FreeAslRequest(aslreq);
@@ -2791,8 +2790,7 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 										TAG_DONE);
 
 	tab_set_current_item(aw->tab_node, 0);
-	tab_set_disabled(window_get_current_tab(awin), TRUE);
-	window_disable_gadgets(awin, TRUE, FALSE);
+	tab_set_disabled(window_get_current_tab(awin), TRUE, FALSE);
 
 	/* module_free(aw);
 	 * TODO: copy the files to delete into a list so we can release the archive */
@@ -2836,8 +2834,8 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 		open_error_req(locale_get_string(MSG_ARCHIVEMUSTHAVEENTRIES), locale_get_string(MSG_OK), awin);
 	}
 
-	tab_set_disabled(window_get_current_tab(awin), FALSE);
-	window_disable_gadgets(awin, FALSE, FALSE);
+	tab_set_disabled(window_get_current_tab(awin), FALSE, FALSE);
+
 	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, FALSE,
 											TAG_DONE);

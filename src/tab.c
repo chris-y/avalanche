@@ -59,6 +59,7 @@ struct avalanche_tab {
 	struct module_functions mf;
 	struct MinList deletelist;
 	BOOL disabled;
+	BOOL stoppable;
 	BOOL abort_requested;
 	BYTE process_exit_sig;
 };
@@ -229,7 +230,14 @@ const BOOL tab_get_disabled(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 
-	return at->disabled;
+	return (const BOOL)at->disabled;
+}
+
+const BOOL tab_get_stoppable(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return (const BOOL)at->stoppable;
 }
 
 struct module_functions *tab_get_module_funcs(struct Node *tab_node)
@@ -438,16 +446,22 @@ void tab_set_current_dir(struct Node *tab_node, const char *dir)
 	if(dir) at->current_dir = strdup_vec(dir);
 }
 
-void tab_set_disabled(struct Node *tab_node, BOOL disable)
+void tab_set_disabled(struct Node *tab_node, BOOL disable, BOOL stoppable)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
-	
+
 	at->disabled = disable;
-	
+	at->stoppable = stoppable;
+
 	/* Clear the state of the Abort flag */
 	at->abort_requested = FALSE;
-#if __amigaos4__
 
+	/* Disable the window if applicable */
+	if(window_get_current_tab(at->awin) == tab_node) {
+		window_disable_gadgets(at->awin, disable, stoppable);
+	}
+
+#if __amigaos4__
 	window_tab_detach(at->awin); /* Do we need to detach for flag? */
 	if(disable) {
 		SetClickTabNodeAttrs(tab_node, TNA_Flagged, TRUE, TAG_DONE);
