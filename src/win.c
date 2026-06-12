@@ -75,7 +75,6 @@
 enum {
 	GID_MAIN = 0,
 	GID_ARCHIVE,
-	GID_DEST,
 	GID_OPENWB,
 	GID_BROWSERLAYOUT,
 	GID_TREELAYOUT,
@@ -476,9 +475,6 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
-	SetGadgetAttrs(aw->gadgets[GID_DEST], aw->windows[WID_MAIN], NULL,
-			GA_Disabled, disable,
-		TAG_DONE);
 	SetGadgetAttrs(aw->gadgets[GID_OPENWB], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
@@ -488,6 +484,9 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 
 	if(tab_get_format(aw->tab_node) == ARC_NONE) {
 		window_menu_activation(aw, FALSE, FALSE);
+		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, TRUE,
+		TAG_DONE);
 		SetWindowPointer(aw->windows[WID_MAIN],
 							WA_BusyPointer, FALSE,
 							TAG_DONE);
