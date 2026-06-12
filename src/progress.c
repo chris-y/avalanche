@@ -119,6 +119,8 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 		win, NULL,
 		GA_Text, progress_msg,
 		GA_Image, gauge,
+		GAUGEIA_Level, 0,
+		GAUGEIA_Max, 100,
 		TAG_DONE);
 
 	RefreshGList((struct Gadget *)frame, win, NULL, 1);
@@ -139,6 +141,7 @@ void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG s
 #ifdef __amigaos4__
 		SetAttrs((Object *)gauge,
 				GAUGEIA_Level, 0,
+				GAUGEIA_Max, 100,
 				TAG_DONE);
 
         SetGadgetAttrs(frame,
