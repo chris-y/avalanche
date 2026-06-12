@@ -442,7 +442,21 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 			SetGadgetAttrs(aw->gadgets[GID_ABORT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, FALSE,
 				TAG_DONE);
+
+			if(tab_get_format(aw->tab_node) != ARC_NONE) {
+				SetWindowPointer(aw->windows[WID_MAIN],
+								WA_PointerType, POINTERTYPE_PROGRESS,
+								TAG_DONE);
+			}
+		} else {
+			if(tab_get_format(aw->tab_node) != ARC_NONE) {
+				SetWindowPointer(aw->windows[WID_MAIN],
+								WA_BusyPointer, TRUE,
+								WA_PointerDelay, TRUE,
+								TAG_DONE);
+			}	
 		}
+
 	} else {
 		window_add_dropzones(aw, !aw->drag_lock);
 
@@ -453,6 +467,10 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 		SetGadgetAttrs(aw->gadgets[GID_EXTRACT], aw->windows[WID_MAIN], NULL,
 				GA_Disabled, FALSE,
 				TAG_DONE);
+				
+		SetWindowPointer(aw->windows[WID_MAIN],
+							WA_BusyPointer, TRUE,
+							TAG_DONE);
 	}
 
 	SetGadgetAttrs(aw->gadgets[GID_ARCHIVE], aw->windows[WID_MAIN], NULL,
@@ -470,6 +488,9 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 
 	if(tab_get_format(aw->tab_node) == ARC_NONE) {
 		window_menu_activation(aw, FALSE, FALSE);
+		SetWindowPointer(aw->windows[WID_MAIN],
+							WA_BusyPointer, TRUE,
+							TAG_DONE);
 	} else {
 		window_menu_activation(aw, !disable, TRUE);
 	}
@@ -674,10 +695,6 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 	struct avalanche_config *config = get_config();
 
 	if(archive && newdest) {
-		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
-										WA_PointerType, POINTERTYPE_PROGRESS,
-										TAG_DONE);
-										
 		tab_set_current_item(tab_node, 0);
 
 		if((node == NULL) && (aw->flat_mode) && (tab_get_format(tab_node) != ARC_XFD)) {
@@ -692,10 +709,6 @@ static long extract_internal(void *awin, char *archive, char *newdest, struct No
 		
 		tab_set_disabled(tab_node, FALSE, TRUE);
 		window_count_selected(awin, tab_node);
-
-		if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
-								WA_BusyPointer, FALSE,
-								TAG_DONE);
 	}
 
 	return ret;
@@ -1554,16 +1567,9 @@ void window_tab_set(void *awin, struct Node *tab_node)
 
 	if(tab_get_disabled(tab_node)) {
 		window_disable_gadgets(awin, TRUE, tab_get_stoppable(tab_node));
-		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
-							WA_PointerType, POINTERTYPE_PROGRESS,
-							TAG_DONE);
 	} else {
 		window_disable_gadgets(awin, FALSE, tab_get_stoppable(tab_node));
 		window_count_selected(awin, tab_node);
-		
-		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
-							WA_BusyPointer, FALSE,
-							TAG_DONE);
 	}
 }
 
@@ -2450,8 +2456,9 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 	if(window_tab_is_current(aw, tab_node)) {
 		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
 										WA_BusyPointer, TRUE,
+										WA_PointerDelay, TRUE,
 										TAG_DONE);
-		
+
 		if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 											LISTBROWSER_Labels, ~0, TAG_DONE);
 											
@@ -2518,10 +2525,6 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 
 		tab_set_disabled(tab_node, FALSE, FALSE);
 		window_count_selected(awin, tab_node);
-
-		if(aw->windows[WID_MAIN]) SetWindowPointer(aw->windows[WID_MAIN],
-								WA_BusyPointer, FALSE,
-								TAG_DONE);
 	}
 }
 
@@ -2778,11 +2781,6 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 	
 	if(module_has_del(aw->tab_node) == FALSE) return;
 
-	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
-										WA_BusyPointer, TRUE,
-										WA_PointerDelay, TRUE,
-										TAG_DONE);
-
 	tab_set_current_item(aw->tab_node, 0);
 	tab_set_disabled(window_get_current_tab(awin), TRUE, FALSE);
 
@@ -2829,10 +2827,6 @@ static void window_edit_del(void *awin, struct avalanche_config *config)
 	}
 
 	tab_set_disabled(window_get_current_tab(awin), FALSE, FALSE);
-
-	if(window_get_window(awin)) SetWindowPointer(window_get_window(awin),
-											WA_BusyPointer, FALSE,
-											TAG_DONE);
 
 	/* Refresh the archive */
 	window_req_open_archive(aw, config, TRUE);
