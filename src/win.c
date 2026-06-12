@@ -469,7 +469,7 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 				TAG_DONE);
 				
 		SetWindowPointer(aw->windows[WID_MAIN],
-							WA_BusyPointer, TRUE,
+							WA_BusyPointer, FALSE,
 							TAG_DONE);
 	}
 
@@ -489,7 +489,7 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 	if(tab_get_format(aw->tab_node) == ARC_NONE) {
 		window_menu_activation(aw, FALSE, FALSE);
 		SetWindowPointer(aw->windows[WID_MAIN],
-							WA_BusyPointer, TRUE,
+							WA_BusyPointer, FALSE,
 							TAG_DONE);
 	} else {
 		window_menu_activation(aw, !disable, TRUE);
