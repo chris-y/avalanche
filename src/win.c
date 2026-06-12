@@ -1752,12 +1752,6 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 	
 	NewList(&aw->tab_list);
 
-
-	// open a second tab for testing
-	window_tab_create(aw);
-
-
-
 	if(window_tab_create(aw) == FALSE) {
 		/* Initial tab creation failed - this is fatal */
 		FreeVec(aw);
@@ -3003,9 +2997,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 							break;
 
 							case 1: // new window
-								new_awin = window_create(config, NULL, winport, AppPort);
-								if(new_awin == NULL) break;
-								window_open(new_awin, appwin_mp);
+								window_tab_create(aw);
 							break;
 							
 							case 2: //open
