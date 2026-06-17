@@ -680,8 +680,10 @@ BOOL tab_close(struct Node *tab_node)
 void tab_close_all(struct List *tab_list)
 {
 	struct Node *fnode = NULL;
+	struct Node *nnode = NULL;
 
-	for(fnode = tab_list->lh_Head; fnode->ln_Succ; fnode=fnode->ln_Succ) {
+	for(fnode = tab_list->lh_Head; fnode->ln_Succ; fnode=nnode) {
+		nnode = fnode->ln_Succ;
 		tab_close_internal(fnode, TRUE);
 	}
 }
