@@ -100,7 +100,6 @@ void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG
 			GA_Text, progress_msg,
 			FUELGAUGE_Percent, FALSE,
 			FUELGAUGE_Justification, FGJ_LEFT,
-			FUELGAUGE_Level, 0,
 			TAG_DONE);
 #endif
 
