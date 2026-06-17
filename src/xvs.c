@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ static long xvs_init(void *awin)
 			int len = strlen(locale_get_string( MSG_UNABLETOOPENLIBRARY )) + strlen(locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED )) + strlen("xvs.library") + 4;
 			if(msg = AllocVec(len, MEMF_CLEAR)) {
 				snprintf(msg, len, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xvs.library", 33);
-				strncat(msg, locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ), len);
+				strncat(msg, locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ), len - stolen(msg));
 				open_error_req(msg, locale_get_string( MSG_OK ), awin );
 				FreeVec(msg);
 			}
@@ -75,7 +75,7 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, BOOL delete, void 
 	result = xvsCheckFile(xvsfi);
 
 	if((result == XVSFT_DATAVIRUS) || (result == XVSFT_FILEVIRUS) || (result == XVSFT_LINKVIRUS)) {
-		char message[200];
+		char message[201];
 
 		if(file) {
 			if(delete == TRUE) {
@@ -83,10 +83,10 @@ static long xvs_scan_virus(char *file, UBYTE *buf, ULONG len, BOOL delete, void 
 
 				if(deleted) {
 					snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
-					strncat(message, locale_get_string(MSG_FILEHASBEENDELETED), 200);
+					strncat(message, locale_get_string(MSG_FILEHASBEENDELETED), 200 - strlen(message));
 				} else {
 					snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
-					strncat(message, locale_get_string(MSG_FILECOULDNOTBEDELETED), 200);
+					strncat(message, locale_get_string(MSG_FILECOULDNOTBEDELETED), 200 - strlen(message));
 				}
 			} else {
 				snprintf(message, 200, locale_get_string( MSG_VIRUSFOUNDETECTIONNAME ) , file, xvsfi->xvsfi_Name);
