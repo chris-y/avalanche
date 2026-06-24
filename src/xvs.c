@@ -34,7 +34,7 @@ static long xvs_init(void *awin)
 			int len = strlen(locale_get_string( MSG_UNABLETOOPENLIBRARY )) + strlen(locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED )) + strlen("xvs.library") + 4;
 			if(msg = AllocVec(len, MEMF_CLEAR)) {
 				snprintf(msg, len, locale_get_string( MSG_UNABLETOOPENLIBRARY ), "xvs.library", 33);
-				strncat(msg, locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ), len - stolen(msg));
+				strncat(msg, locale_get_string( MSG_VIRUSSCANNINGWILLBEDISABLED ), len - strlen(msg));
 				open_error_req(msg, locale_get_string( MSG_OK ), awin );
 				FreeVec(msg);
 			}
