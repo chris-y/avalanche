@@ -164,7 +164,7 @@ struct avalanche_extract_userdata {
 static struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
 	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
-	{NM_ITEM,   NULL,         "T", 0, 0, 0,}, // 1 New window**
+	{NM_ITEM,   NULL,         "T", 0, 0, 0,}, // 1 New tab
 	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 2 Open
 	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
 	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
@@ -3143,7 +3143,7 @@ void fill_menu_labels(void)
 {
 	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
 	menu[1].nm_Label = locale_get_string( MSG_NEWARCHIVE );
-	menu[2].nm_Label = locale_get_string( MSG_NEWWINDOW );
+	menu[2].nm_Label = locale_get_string( MSG_NEWTAB );
 	menu[3].nm_Label = locale_get_string( MSG_OPEN );
 	menu[5].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
 	menu[6].nm_Label = locale_get_string( MSG_ABOUT );

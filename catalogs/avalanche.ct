@@ -532,3 +532,7 @@ MSG_EXTRACTING_FILE
 Extracting %s ... %03lu%%
 ; Extracting %s ... %03lu%%
 ;
+MSG_NEWTAB
+New tab
+; New tab
+;

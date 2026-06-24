@@ -404,3 +404,6 @@ Selected %lu/%lu
 MSG_EXTRACTING_FILE
 Extracting %s ... %03lu%%
 ;
+MSG_NEWTAB
+New tab
+;
