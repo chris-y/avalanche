@@ -1,4 +1,5 @@
 CC := vc +newlib
+# Add -DWITH_ZIP_MOD to enable Zip modifications
 CFLAGS := -static -O3 -D__USE_INLINE__ -ISDK:local/common/include -ISDK:include/netinclude
 LIBS := 
 VPATH := ..

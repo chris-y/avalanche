@@ -40,6 +40,9 @@ static void mod_zip_show_error(void *awin, zip_t *zip)
 static BOOL mod_zip_del(void *awin, const char *archive, char **files, ULONG count)
 {
 	int err = 0;
+	
+	if(!libs_zip_init()) return FALSE;
+	
 	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
@@ -153,6 +156,10 @@ static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL
 static BOOL mod_zip_add(void *awin, const char *archive, char *file, char *dir, const char *root)
 {
 	int err = 0;
+	
+	libs_zip_exit();
+	if(!libs_zip_init()) return FALSE;
+	
 	zip_t *zip = zip_open(archive, 0, &err);
 
 	if(zip) {
@@ -202,7 +209,7 @@ BOOL mod_zip_new(void *awin, char *archive)
 
 void mod_zip_register(struct module_functions *funcs)
 {
-#ifdef __amigaos4__
+#if defined (__amigaos4__) && defined (WITH_ZIP_MOD)
 	if(libs_zip_init()) {
 		funcs->add = mod_zip_add;
 		funcs->del = mod_zip_del;
