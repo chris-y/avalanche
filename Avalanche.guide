@@ -156,6 +156,8 @@ This is mostly for internal use, but has the following commands:
 * More modern looking GUI
   - All gadgets have been moved to a new toolbar
   - Built-in list and toolbar images have been redesigned and colourised
+  - Tabs have been added
+  - Progress bar behaviour has been improved
 * Improved listview
   - Added extra fields (crunched size, comment, attributes)
   - Added icons for encrypted files, links and disk images
