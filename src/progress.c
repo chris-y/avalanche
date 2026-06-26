@@ -20,6 +20,8 @@
 #include <proto/intuition.h>
 
 #ifdef __amigaos4__
+#include <proto/graphics.h>
+
 #include <intuition/gui.h>
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
@@ -78,16 +80,26 @@ void progress_set_new_width(struct Window *win, void *frame, void *gauge)
 }
 #endif
 
-void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max, const char *filename)
+void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max, const char *filename, ULONG w, ULONG h)
 {
 	ULONG percent = (level * 100) / max;
 	char *fn = filename;
 	if(fn == NULL) fn = "";
-	if(strlen(fn) > 50) fn = FilePart(fn);
-	
-	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_EXTRACTING_FILE), fn, percent);
 
 #ifdef __amigaos4__
+	struct TextExtent te;
+
+	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_EXTRACTING_FILE), fn, percent);
+
+	ULONG chars = TextFit(win->RPort, progress_msg, strlen(progress_msg), &te, NULL, 1, w, h);
+
+	DebugPrintF("str: %s len: %ld new len: %ld\n", progress_msg, strlen(progress_msg), chars);
+
+	if(chars < strlen(progress_msg)) {
+		fn = FilePart(fn);
+		snprintf(progress_msg, chars, locale_get_string(MSG_EXTRACTING_FILE), fn, percent);
+	}
+
 	SetGadgetAttrs(frame,
 		win, NULL,
 		GA_Text, progress_msg,
@@ -96,6 +108,10 @@ void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG
 
 	RefreshGList((struct Gadget *)frame, win, NULL, 1);
 #else
+	if(strlen(fn) > 50) fn = FilePart(fn);
+	
+	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_EXTRACTING_FILE), fn, percent);
+
 	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
 			GA_Text, progress_msg,
 			FUELGAUGE_Percent, FALSE,

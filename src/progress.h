@@ -25,7 +25,7 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG selected, ULONG total);
 
 /* Set progress bar values for single file progress */
-void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max, const char *filename);
+void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG level, ULONG max, const char *filename, ULONG w, ULONG h);
 
 #ifdef __amigaos4__
 /* Get dimensions of bottom border */

@@ -128,6 +128,10 @@ struct avalanche_window {
 	struct HintInfo hi;
 	struct Hook idcmphook;
 	BOOL tab_closed;
+#else
+	ULONG p_width;
+	ULONG p_height;
+	ULONG p_sz_height;
 #endif
 };
 
@@ -146,6 +150,11 @@ static struct List winlist;
 #define EXDF_NO_EXECUTE FIBF_EXECUTE
 #define EXDF_NO_DELETE FIBF_DELETE
 
+#define P_WIDTH 0
+#define P_HEIGHT 0
+#else
+#define P_WIDTH aw->p_width
+#define P_HEIGHT aw->p_height
 #endif
 
 /** Extract process **/
@@ -1928,20 +1937,16 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 				struct Screen *scrn = LockPubScreen(NULL);
 				struct DrawInfo *dri = GetScreenDrawInfo(scrn);
 
-				ULONG width = 0;
-				ULONG height = 0;
-				ULONG sz_gad_height = 0;
-
-				progress_get_area(aw->windows[WID_MAIN], &width, &height, &sz_gad_height);
+				progress_get_area(aw->windows[WID_MAIN], &aw->p_width, &aw->p_height, &aw->p_sz_height);
 
 				aw->gadgets[GID_PROGRESSFR] = NewObject(
 					NULL,
 					"frbuttonclass", /* We need a gadgetclass object as a container to prevent lockup, this one works */
 					GA_Left, scrn->WBorLeft + 2,
-					GA_RelBottom, scrn->WBorBottom - (sz_gad_height/2),
+					GA_RelBottom, scrn->WBorBottom - (aw->p_sz_height/2),
 					GA_BottomBorder, TRUE,
-					GA_Width, width,
-					GA_Height, height,
+					GA_Width, aw->p_width,
+					GA_Height, aw->p_height,
 					GA_DrawInfo, dri,
 					GA_ReadOnly, TRUE,
 					GA_Disabled, TRUE,
@@ -1950,10 +1955,10 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 						"gaugeiclass",
 						GA_ID, GID_PROGRESS,
 						GAUGEIA_Level, 0,
-						IA_Top, (int)(- ceil((scrn->WBorBottom + sz_gad_height) / 2)),
+						IA_Top, (int)(- ceil((scrn->WBorBottom + aw->p_sz_height) / 2)),
 						IA_Left, -4,
-						IA_Height, 1 + height,
-						IA_Width, width,
+						IA_Height, 1 + aw->p_height,
+						IA_Width, aw->p_width,
 						IA_Label, NULL,
 						IA_InBorder, TRUE,
 						GAUGEIA_Ticks, 10,
@@ -1965,7 +1970,7 @@ void window_open(void *awin, struct MsgPort *appwin_mp)
 				
 				RefreshSetGadgetAttrs(aw->gadgets[GID_PROGRESSFR],
 					aw->windows[WID_MAIN], NULL,
-					GA_Width, width,
+					GA_Width, aw->p_width,
 				TAG_DONE);
 			
 				FreeScreenDrawInfo(scrn, dri);
@@ -2280,7 +2285,7 @@ void window_fuelgauge_update(void *awin, struct Node *tab_node, ULONG size, ULON
 	if(aw->windows[WID_MAIN] == NULL) return;
 	if(window_tab_is_current(aw, tab_node) == FALSE) return;
 
-	progress_set_file_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size, filename);
+	progress_set_file_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size, filename, P_WIDTH, P_HEIGHT);
 }
 
 /* select: 0 = deselect all, 1 = select all, 2 = toggle all */
@@ -2980,6 +2985,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 			}
 #ifdef __amigaos4__
 			progress_set_new_width(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESSFR], aw->gadgets[GID_PROGRESS]);
+			progress_get_area(aw->windows[WID_MAIN], &aw->p_width, &aw->p_height, &aw->p_sz_height);
 #endif
 		break;
 				
