@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2023-5 Chris Young
+ * (c) 2023-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -312,6 +312,7 @@ static BOOL http_check_version_internal(void)
 	ULONG bufsize = 1024;
 	char *buffer = AllocVec(bufsize + 1, MEMF_CLEAR);
 	BOOL update_available = FALSE;
+	BOOL thor_lha = FALSE;
 
 	static struct avalanche_version_numbers avn[] = {
 		{	.name = "Avalanche\0",
@@ -358,7 +359,12 @@ static BOOL http_check_version_internal(void)
 			.download_url = "https://aminet.net/util/arc/lha_68k.lha\0",
 #endif
 		},
-#ifdef __amigaos4__
+#ifndef __amigaos4__
+		{	.name = "Lha (Thor)\0",
+			.check_url = "https://aminet.net/util/arc/Lha_thor.readme\0",
+			.download_url = "https://aminet.net/util/arc/Lha_thor.lha\0",
+		}
+#else
 		{	.name = "zip.library\0",
 			.check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme\0",
 			.download_url = "https://os4depot.net/share/library/misc/zip_lib.lha\0",
@@ -407,8 +413,21 @@ static BOOL http_check_version_internal(void)
 				case ACHECKVER_LHA:
 					avn[ACHECKVER_LHA].current_version = 0;
 					avn[ACHECKVER_LHA].current_revision = 0;
-					mod_lha_get_ver(&avn[ACHECKVER_LHA].current_version, &avn[ACHECKVER_LHA].current_revision);
+					thor_lha = mod_lha_get_ver(&avn[ACHECKVER_LHA].current_version, &avn[ACHECKVER_LHA].current_revision);
 				break;
+				
+#ifndef __amigaos4__
+				case ACHECKVER_LHA_THOR:
+					if(thor_lha) {
+						avn[ACHECKVER_LHA_THOR].current_version = avn[ACHECKVER_LHA].current_version;
+						avn[ACHECKVER_LHA_THOR].current_revision = avn[ACHECKVER_LHA].current_revision;
+
+						avn[ACHECKVER_LHA].check_url = NULL;
+						avn[ACHECKVER_LHA].current_version = 0;
+						avn[ACHECKVER_LHA].current_revision = 0;
+					}
+				break;
+#endif					
 				
 #ifdef __amigaos4__
 				case ACHECKVER_ZIP:

@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2025 Chris Young
+ * (c) 2025-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -239,6 +239,10 @@ void update_gui(struct avalanche_version_numbers avn[])
 		NewList(&list);
 
 		for(int i = 0; i < ACHECKVER_MAX; i++) {
+#ifndef __amigaos4__
+			/* Skip LhA if not installed (we will show Lha) */
+			if((i == ACHECKVER_LHA) && ((avn[i].current_version == 0) && (avn[i].current_revision == 0))) continue;
+#endif
 			char installed_version[10];
 			char latest_version[10];
 			ULONG update_glyph = avn[i].update_available ? GLYPH_CHECKMARK : AVALANCHE_GLYPH_NONE;

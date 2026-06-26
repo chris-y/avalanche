@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2025 Chris Young
+ * (c) 2025-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,9 @@ enum {
         ACHECKVER_XVS,
         ACHECKVER_DEARK,
         ACHECKVER_LHA,
-#ifdef __amigaos4__
+#ifndef __amigaos4__
+        ACHECKVER_LHA_THOR,
+#else
         ACHECKVER_ZIP,
 #endif
         ACHECKVER_MAX

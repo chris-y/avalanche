@@ -160,9 +160,11 @@ BOOL mod_lha_new(void *awin, char *archive)
 #define AVALANCHE_LHA_VER_CMD "version c:lha"
 #endif
 
-ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
+BOOL mod_lha_get_ver(ULONG *ver, ULONG *rev)
 {
 	BPTR fh = 0;
+	BPTR thor = FALSE;
+	
 	CONFIG_LOCK;
 	ULONG tmpfile_len = CONFIG_GET(tmpdirlen) + 30;
 	char *tmpfile = AllocVec(tmpfile_len, MEMF_CLEAR);
@@ -198,6 +200,10 @@ ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
 			if(strncmp(p, "LhA ", 4) == 0) {
 				p += 4;
 				break;
+			} else if(strncmp(p, "Lha ", 4) == 0) {
+				thor = TRUE;
+				p += 4;
+				break;
 			}
 		}
 
@@ -210,7 +216,7 @@ ULONG mod_lha_get_ver(ULONG *ver, ULONG *rev)
 
 	FreeVec(tmpfile);
 
-	return *ver;
+	return thor;
 }
 
 void mod_lha_register(struct module_functions *funcs)
