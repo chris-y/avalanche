@@ -21,19 +21,19 @@
 
 void xad_exit(void);
 ULONG xad_get_ver(ULONG *ver, ULONG *rev);
-ULONG xad_get_filedate(void *xfi, struct ClockData *cd, void *awin);
-ULONG xad_get_fileprotection(void *xfi, void *awin);
-const char *xad_get_comment(void *xfi, void *awin);
-const char *xad_get_link(void *xfi, void *awin);
-BOOL xad_is_link(void *userdata, void *awin);
-BOOL xad_is_disk(void *awin); /* disk image (no fs) */
-BOOL xad_is_diskfile(void *awin); /* disk archive (fs) */
+ULONG xad_get_filedate(void *xfi, struct ClockData *cd, struct Node *tab_node);
+ULONG xad_get_fileprotection(void *xfi, struct Node *tab_node);
+const char *xad_get_comment(void *xfi, struct Node *tab_node);
+const char *xad_get_link(void *xfi, struct Node *tab_node);
+BOOL xad_is_link(void *userdata, struct Node *tab_node);
+BOOL xad_is_disk(struct Node *tab_node); /* disk image (no fs) */
+BOOL xad_is_diskfile(struct Node *tab_node); /* disk archive (fs) */
 BOOL xad_recog(char *file);
-long xad_info(char *file, struct avalanche_config *config, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));
+long xad_info(const char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node));
 
-long xad_extract(void *awin, char *file, char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node));
-long xad_extract_file(void *awin, char *file, char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud);
-long xad_extract_array(void *awin, ULONG total_items, char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry));
+long xad_extract(void *awin, struct Node *tab_node, const char *file, const char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node));
+long xad_extract_file(void *awin, struct Node *tab_node, const char *file, const char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud);
+long xad_extract_array(void *awin, struct Node *tab_node, ULONG total_items, const char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry));
 
 void xad_register(struct module_functions *funcs);
 #endif

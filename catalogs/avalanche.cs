@@ -396,5 +396,14 @@ MSG_COMMENT
 Comment
 ;
 MSG_STORED
-(stored)
+-
+;
+MSG_SELECTED
+Selected %lu/%lu
+;
+MSG_EXTRACTING_FILE
+Extracting %s ... %03lu%%
+;
+MSG_NEWTAB
+New tab
 ;

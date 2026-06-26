@@ -44,6 +44,7 @@
 #include "misc.h"
 #include "module.h"
 #include "new.h"
+#include "tab.h"
 #include "update.h"
 #include "win.h"
 
@@ -61,6 +62,7 @@ static struct avalanche_config config;
 static struct Locale *locale = NULL;
 static struct MinList win_list;
 ULONG window_count = 0;
+static struct Task *avalanche_process = NULL;
 
 void free_dest_path(void)
 {
@@ -198,7 +200,7 @@ static void close_all_windows()
 }
 
 /* Do not call this directly! */
-static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window, BOOL arexx,
+static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window, BOOL new_tab, BOOL arexx,
 				struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
 	if(wbarg->wa_Lock) {
@@ -215,7 +217,16 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 					return TRUE;
 				}
 				if(new_window == FALSE) {
-					window_update_archive(awin, appwin_archive);
+					if(new_tab == FALSE) {
+						window_update_archive(awin, appwin_archive);
+					} else {
+						if(tab_get_format(window_get_current_tab(awin)) != ARC_NONE) {
+							window_tab_create(awin);
+						}
+						
+						window_update_archive(awin, appwin_archive);
+							
+					}
 				} else {
 					awin = window_create(&config, appwin_archive, win_port, app_port);
 				}
@@ -244,19 +255,24 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 	return FALSE;
 }
 
+static BOOL open_archive_from_wbarg_new_or_existing_tab(void *awin, struct WBArg *wbarg)
+{
+	return open_archive_from_wbarg(awin, wbarg, FALSE, TRUE, FALSE, NULL, NULL, NULL);
+}
+
 static BOOL open_archive_from_wbarg_new(struct WBArg *wbarg, struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
-	return open_archive_from_wbarg(NULL, wbarg, TRUE, FALSE, win_port, app_port, appwin_mp);
+	return open_archive_from_wbarg(NULL, wbarg, TRUE, FALSE, FALSE, win_port, app_port, appwin_mp);
 }
 
 static BOOL open_archive_from_wbarg_existing(void *awin, struct WBArg *wbarg)
 {
-	return open_archive_from_wbarg(awin, wbarg, FALSE, FALSE, NULL, NULL, NULL);
+	return open_archive_from_wbarg(awin, wbarg, FALSE, FALSE, FALSE, NULL, NULL, NULL);
 }
 
 static BOOL open_archive_from_wbarg_arexx(struct WBArg *wbarg)
 {
-	return open_archive_from_wbarg(NULL, wbarg, FALSE, TRUE, NULL, NULL, NULL);
+	return open_archive_from_wbarg(NULL, wbarg, FALSE, FALSE, TRUE, NULL, NULL, NULL);
 }
 
 static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
@@ -403,12 +419,12 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								BOOL ndz = CONFIG_GET_LOCK(no_dropzones);
 								CONFIG_UNLOCK;
 
-								if(ndz && !window_get_disabled((void *)appmsg->am_UserData)) {
-									if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+								if(ndz && !tab_get_disabled(window_get_current_tab((void *)appmsg->am_UserData))) {
+									if(open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg)) {
 										if(appmsg->am_NumArgs > 1) {
 											for(int i = 1; i < appmsg->am_NumArgs; i++) {
 												wbarg++;
-												open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+												open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
 											}
 										}
 									}
@@ -418,18 +434,18 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 						case AMTYPE_APPWINDOWZONE:
 							switch(appmsg->am_ID) {
 								case 0: // full window
-									if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+									if(open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg)) {
 										if(appmsg->am_NumArgs > 1) {
 											for(int i = 1; i < appmsg->am_NumArgs; i++) {
 												wbarg++;
-												open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+												open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
 											}
 										}
 									}
 								break;
 
 								case 1: // listbrowser
-									if(module_has_add((void *)appmsg->am_UserData)) {
+									if(module_has_add(window_get_current_tab((void *)appmsg->am_UserData))) {
 										for(int i = 0; i < appmsg->am_NumArgs; i++) {
 											BOOL ret = window_edit_add_wbarg((void *)appmsg->am_UserData, wbarg);
 											if(ret == FALSE) break; /* FALSE = Abort */
@@ -438,11 +454,11 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 										window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 									} else {
-										if(open_archive_from_wbarg_existing((void *)appmsg->am_UserData, wbarg)) {
+										if(open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg)) {
 											if(appmsg->am_NumArgs > 1) {
 												for(int i = 1; i < appmsg->am_NumArgs; i++) {
 													wbarg++;
-													open_archive_from_wbarg_new(wbarg, winport, AppPort, appwin_mp);
+													open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
 												}
 											}
 										}
@@ -467,10 +483,10 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 													window_open(appmenu_awin, appwin_mp);
 													window_req_open_archive(appmenu_awin, &config, TRUE);
 													/* TODO: This needs reworking as it will inhibit the rest of the program */
-													Wait(window_get_exit_sig(appmenu_awin));
-													if(window_get_archiver(appmenu_awin) != ARC_NONE) {
+													tab_signal_wait(window_get_current_tab(appmenu_awin));
+													if(tab_get_format(window_get_current_tab(appmenu_awin)) != ARC_NONE) {
 														long ret = extract(appmenu_awin, am_archive, tempdest, NULL);
-														Wait(window_get_exit_sig(appmenu_awin));
+														tab_signal_wait(window_get_current_tab(appmenu_awin));
 													}
 													window_close(appmenu_awin, FALSE);
 													window_dispose(appmenu_awin);
@@ -494,14 +510,14 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 											}
 										}
 										
-										char *arc = window_req_new_lha(appmenu_awin, lock);
+										const char *arc = window_req_new_lha(appmenu_awin, lock);
 										if(lock) FreeVec(lock);
 										
 										if(arc) {
 											window_open(appmenu_awin, appwin_mp);
 											mod_lha_new(appmenu_awin, arc);
 											window_req_open_archive(appmenu_awin, &config, TRUE);
-											Wait(window_get_exit_sig(appmenu_awin));
+											tab_signal_wait(window_get_current_tab(appmenu_awin));
 											for(int i=0; i<appmsg->am_NumArgs; i++) {
 												window_edit_add_wbarg(appmenu_awin, wbarg);
 												wbarg++;
@@ -533,7 +549,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								window_open(arexx_awin, appwin_mp);
 								window_req_open_archive(arexx_awin, &config, TRUE);
 
-								if(del) add_to_delete_list(arexx_awin, arexx_fn);
+								if(del) tab_add_to_delete_list(window_get_current_tab(arexx_awin), arexx_fn);
 
 							}
 						}
@@ -708,6 +724,11 @@ static void gettooltypes(struct WBArg *wbarg)
 	}
 }
 
+void avalanche_signal(ULONG sigmask)
+{
+	Signal(avalanche_process, sigmask);
+}
+
 /** Main program **/
 int main(int argc, char **argv)
 {
@@ -728,6 +749,7 @@ int main(int argc, char **argv)
 		return RETURN_ERROR;
 	}
 
+	avalanche_process = FindTask(NULL); /* Store our task ptr */
 
 	/* Initialise config default values */
 	config.progname = NULL;

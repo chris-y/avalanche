@@ -17,12 +17,11 @@
 
 #include <exec/types.h>
 #include <intuition/intuition.h>
+#include <workbench/startup.h>
 
 #include "avalanche.h"
 
 struct MsgPort;
-struct module_functions;
-
 
 /* Basic window functions */
 void *window_create(struct avalanche_config *config, char *archive, struct MsgPort *winport, struct MsgPort *appport);
@@ -30,16 +29,19 @@ void window_open(void *awin, struct MsgPort *appwin_mp);
 void window_close(void *awin, BOOL iconify);
 void window_dispose(void *awin);
 
+/* Create a tab in the specified window and make it current */
+BOOL window_tab_create(void *awin);
+
 /* Update window */
 void window_update_archive(void *awin, char *archive);
 void window_update_sourcedir(void *awin, char *sourcedir);
-void window_toggle_hbrowser(void *awin, BOOL h_browser);
-void window_fuelgauge_update(void *awin, ULONG size, ULONG total_size);
+void window_fuelgauge_update(void *awin, struct Node *tab_node, ULONG size, ULONG total_size, const char *filename);
 void window_modify_all_list(void *awin, ULONG select);
+void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable);
 
 /* Handle events */
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
-char *window_req_dest(void *awin);
+const char *window_req_dest(void *awin);
 ULONG window_handle_input(void *awin, UWORD *code);
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort);
 
@@ -48,12 +50,9 @@ void *window_get_window(void *awin);
 Object *window_get_object(void *awin);
 void *window_get_lbnode(void *awin, struct Node *node);
 struct List *window_get_lblist(void *awin);
-ULONG window_get_archiver(void *awin);
 void *array_get_userdata(void *awin, void *arc_entry);
-struct module_functions *window_get_module_funcs(void *awin);
-BOOL window_get_disabled(void *awin);
-BYTE window_get_exit_sig(void *awin);
-char *window_req_new_lha(void *awin, char *drawer);
+const char *window_req_new_lha(void *awin, char *drawer);
+struct Node *window_get_current_tab(void *awin);
 
 /* Modify archive */
 BOOL window_edit_add_wbarg(void *awin, struct WBArg *wbarg);
@@ -61,15 +60,23 @@ BOOL window_edit_add(void *awin, char *file, char *root);
 
 /* Misc */
 BOOL check_abort(void *awin);
-void window_reset_count(void *awin);
+#ifndef __amigaos4__
+BOOL check_closetab(void *awin);
+#endif
 void fill_menu_labels(void);
-long extract(void *awin, char *archive, char *newdest, struct Node *node);
+long extract(void *awin, const char *archive, const char *newdest, struct Node *node);
 void add_to_delete_list(void *awin, char *fn);
-void window_update_fuelgauge_text(void *awin);
+void window_update_fuelgauge_text(void *awin, struct Node *tab_node);
 
-/* Archiver userdata */
-void *window_get_archive_userdata(void *awin);
-void window_set_archive_userdata(void *awin, void *userdata);
-void *window_alloc_archive_userdata(void *awin, ULONG size);
-void window_free_archive_userdata(void *awin);
+/* Detach the tab bar so changes can be made */
+void window_tab_detach(void *awin);
+
+/* Refresh the tab bar (also reattaches it) */
+void window_tab_refresh(void *awin);
+
+/* Modify and return the current number of tabs */
+const ULONG window_tab_count(void *awin, int change);
+
+/* Set current tab to the one specified */
+void window_tab_set(void *awin, struct Node *tab_node);
 #endif

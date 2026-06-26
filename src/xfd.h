@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-5 Chris Young
+ * (c) 2022-6 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 ULONG xfd_get_ver(ULONG *ver, ULONG *rev);
 void xfd_exit(void);
 BOOL xfd_recog(char *file);
-long xfd_info(char *file, void *awin, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin));
-long xfd_extract(void *awin, char *file, char *dest);
+long xfd_info(const char *file, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node));
+long xfd_extract(void *awin, struct Node *tab_node, const char *file, const char *dest);
 
 void xfd_register(struct module_functions *funcs);
 

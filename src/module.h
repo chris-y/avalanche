@@ -25,45 +25,48 @@ extern char *new_arc_text;
 struct module_functions {
 	/* Extraction */
 	char module[4];
-	const char *(*get_filename)(void *userdata, void *awin);
-	const LONG *(*get_crunchsize)(void *userdata, void *awin);
-	BOOL (*is_crypted)(void *userdata, void *awin);
-	const char *(*get_format)(void *awin);
-	const char *(*get_subformat)(void *awin);
-	const char *(*get_error)(void *awin, long code);
-	void (*free)(void *awin);
+	const char *(*get_filename)(void *userdata, struct Node *tab_node);
+	const LONG *(*get_crunchsize)(void *userdata, struct Node *tab_node);
+	BOOL (*is_crypted)(void *userdata, struct Node *tab_node);
+	const char *(*get_format)(struct Node *tab_node);
+	const char *(*get_subformat)(struct Node *tab_node);
+	const char *(*get_error)(struct Node *tab_node, long code);
+	void (*free)(struct Node *tab_node);
 
 	/* Editing */
-	BOOL (*add)(void *awin, char *archive, char *file, char *dir, const char *root); /* Returns TRUE on success */
-	BOOL (*del)(void *awin, char *archive, char **files, ULONG count); /* Returns TRUE on success */
+	BOOL (*add)(void *awin, const char *archive, char *file, char *dir, const char *root); /* Returns TRUE on success */
+	BOOL (*del)(void *awin, const char *archive, char **files, ULONG count); /* Returns TRUE on success */
 };
 
 /* Virus scan */
 ULONG module_vscan(void *awin, char *file, UBYTE *buf, ULONG len, BOOL delete);
 
 /* Extraction */
-const char *module_get_item_filename(void *awin, void *userdata);
-LONG *module_get_crunched_size(void *awin, void *userdata);
-void module_free(void *awin);
-const char *module_get_format(void *awin);
-const char *module_get_subformat(void *awin);
-const char *module_get_read_module(void *awin);
-const char *module_get_error(void *awin, long code);
-long module_extract(void *awin, void *node, void *archive, void *newdest);
-long module_extract_array(void *awin, void **array, ULONG total_items, void *dest);
+const char *module_get_item_filename(struct Node *tab_node, void *userdata);
+LONG *module_get_crunched_size(struct Node *tab_node, void *userdata);
+void module_free(struct Node *tab_node);
+const char *module_get_format(struct Node *tab_node);
+const char *module_get_subformat(struct Node *tab_node);
+const char *module_get_read_module(struct Node *tab_node);
+const char *module_get_error(struct Node *tab_node, long code);
+long module_extract(void *awin, void *tab_node, void *node, void *archive, void *newdest);
+long module_extract_array(void *awin, void *tab_node, void **array, ULONG total_items, void *dest);
 void module_exit(void);
 BOOL module_recog(void* fullfilename);
-BOOL module_is_crypted(void *awin, void *userdata);
+BOOL module_is_crypted(struct Node *tab_node, void *userdata);
 
 /* Editing */
-BOOL module_has_add(void *awin);
+BOOL module_has_add(struct Node *tab_node);
+BOOL module_has_del(struct Node *tab_node);
+BOOL module_add(void *awin, struct Node *tab_node, char *file, char *dir, const char *root); /* Returns TRUE on success */
+BOOL module_del(void *awin, struct Node *tab_node, char **files, ULONG count); /* Returns TRUE on success */
 
 /* Create new */
 BOOL mod_lha_new(void *awin, char *archive);
 BOOL mod_zip_new(void *awin, char *archive);
 
 /*** Register modules ***/
-void module_register(void *awin, struct module_functions *mf);
+void module_register(struct Node *tab_node);
 
 /*** Register extended modules ***/
 void mod_zip_register(struct module_functions *funcs);

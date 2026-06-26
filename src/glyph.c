@@ -343,6 +343,38 @@ static struct DrawList dl_abort[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_busy[] = {
+	{DLST_AMOVE, 20, 10, 0, 0, 0},
+	{DLST_ADRAW, 70, 10, 0, 0, 0},
+	{DLST_ADRAW, 70, 20, 0, 0, 0},
+	{DLST_ADRAW, 50, 40, 0, 0, 0},
+	{DLST_ADRAW, 50, 50, 0, 0, 0},
+	{DLST_ADRAW, 70, 70, 0, 0, 0},
+	{DLST_ADRAW, 70, 80, 0, 0, 0},
+	{DLST_ADRAW, 20, 80, 0, 0, 0},
+	{DLST_ADRAW, 20, 70, 0, 0, 0},
+	{DLST_ADRAW, 40, 50, 0, 0, 0},
+	{DLST_ADRAW, 40, 40, 0, 0, 0},
+	{DLST_ADRAW, 20, 20, 0, 0, 0},
+	{DLST_ADRAW, 20, 10, 0, 0, 0},
+	{DLST_AFILL, 0, 0, 0, 0, 0},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
+
+#ifndef __amigaos4__ /* OS4 has a built-in image */
+static struct DrawList dl_closetab[] = {
+	{DLST_RECT, 35, 30, 65, 70, 2},
+	{DLST_LINE, 35, 30, 65, 30, 1},
+	{DLST_LINE, 65, 30, 65, 70, 1},
+	{DLST_LINE, 65, 70, 35, 70, 1},
+	{DLST_LINE, 35, 70, 35, 30, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+#endif
+
 static struct DrawList dl_none[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
@@ -357,7 +389,7 @@ Object *glyph_get(ULONG glyph)
 
 	if(glyph_cache[glyph] != NULL) return glyph_cache[glyph];
 
-	if(get_config()->aiss) {
+	if((get_config()->aiss) && (glyph != AVALANCHE_GLYPH_TABCLOSE)) {
 		struct Screen *screen = LockPubScreen(NULL);
 
 		switch(glyph) {
@@ -448,6 +480,14 @@ Object *glyph_get(ULONG glyph)
 #endif
 			break;
 
+			case AVALANCHE_GLYPH_BUSY:
+#ifdef __amigaos4__
+				img = "TBimages:list_flagyellow";
+#else
+				img = "TBimages:list_time";
+#endif
+			break;
+
 			case GLYPH_RIGHTARROW:
 				img = "TBimages:autobutton_rtarrow";
 			break;
@@ -483,6 +523,18 @@ Object *glyph_get(ULONG glyph)
 
 		UnlockPubScreen(NULL, screen);
 
+#ifdef __amigaos4__
+	} else if(glyph == AVALANCHE_GLYPH_TABCLOSE) {
+		struct Screen *scrn = LockPubScreen(NULL);
+		struct DrawInfo *dri = GetScreenDrawInfo(scrn);
+		glyphobj = NewObject(NULL, "sysiclass",
+								SYSIA_Which, TABCLOSEIMAGE,
+								SYSIA_DrawInfo, dri,
+								TAG_DONE);
+
+		FreeScreenDrawInfo(scrn, dri);
+		UnlockPubScreen(NULL, scrn);
+#endif
 	} else {
 		if((glyph >= AVALANCHE_GLYPH_ROOT) &&
 			(glyph < AVALANCHE_GLYPH_MAX)) {
@@ -520,8 +572,16 @@ Object *glyph_get(ULONG glyph)
 				case AVALANCHE_GLYPH_STOP:
 					dl = &dl_abort;
 				break;
+#ifndef __amigaos4__ /* OS3 only, OS4 uses sysiclass image */
+				case AVALANCHE_GLYPH_TABCLOSE:
+					dl = &dl_closetab;
+				break;
+#endif
 				case AVALANCHE_GLYPH_DISK:
 					dl = &dl_disk;
+				break;
+				case AVALANCHE_GLYPH_BUSY:
+					dl = &dl_busy;
 				break;
 				case AVALANCHE_GLYPH_NONE:
 					dl = &dl_none;
