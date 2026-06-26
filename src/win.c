@@ -2026,7 +2026,13 @@ void window_dispose(void *awin)
 	
 	/* Dispose window object */
 	DisposeObject(aw->objects[OID_MAIN]);
-	
+
+#ifdef __amigaos4__
+	/* Ensure progress bar is disposed */
+	DisposeObject(aw->gadgets[GID_PROGRESSFR]);
+	DisposeObject(aw->gadgets[GID_PROGRESS]);
+#endif
+
 	/* Free archive browser list and column info */
 	if(aw->lbci) FreeLBColumnInfo(aw->lbci);
 	if(aw->dtci) FreeLBColumnInfo(aw->dtci);
