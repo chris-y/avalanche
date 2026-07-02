@@ -2532,10 +2532,9 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 		}
 
 		window_update_title(aw, tab_node);
-
-		tab_set_disabled(tab_node, FALSE, FALSE);
 		window_count_selected(awin, tab_node);
 	}
+	tab_set_disabled(tab_node, FALSE, FALSE);
 }
 
 #ifdef __amigaos4__
@@ -2546,24 +2545,23 @@ static void __saveds window_req_open_archive_p(void)
 {
 	/* Tell the main process we are started */
 	avalanche_signal(SIGBREAKF_CTRL_F);
-	
+
 	/* Wait for UserData */
 	Wait(SIGBREAKF_CTRL_E);
-	
+
 	/* Find our task */
 	struct Task *list_task = FindTask(NULL);
 	struct avalanche_extract_userdata *aeu = (struct avalanche_extract_userdata *)list_task->tc_UserData;
 	struct avalanche_window *aw = (struct avalanche_window *)aeu->awin;
-	
+
 	/* Call Open on our new process */
 	window_req_open_archive_internal(aeu->awin, aeu->tab_node, get_config());
-	
+
 	/* Free UserData */
 	FreeVec(aeu);
-	
+
 	/* Signal that we've finished */
 	avalanche_signal(aeu->sig);
-	
 }
 
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only)
