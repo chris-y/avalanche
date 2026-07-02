@@ -137,7 +137,6 @@ BOOL mod_lha_new(void *awin, char *archive)
 	if(tmpfile) {
 		BPTR fh = 0;
 		strncpy(tmpfile, CONFIG_GET(tmpdir), new_arc_size);
-		CONFIG_UNLOCK;
 		AddPart(tmpfile, NEW_ARC_NAME, new_arc_size);
 
 		if(fh = Open(tmpfile, MODE_NEWFILE)) {
@@ -148,9 +147,9 @@ BOOL mod_lha_new(void *awin, char *archive)
 
 			DeleteFile(tmpfile);
 		}
-	} else {
-		CONFIG_UNLOCK;
 	}
+
+	CONFIG_UNLOCK;
 	return ret;
 }
 
@@ -211,7 +210,7 @@ BOOL mod_lha_get_ver(ULONG *ver, ULONG *rev)
 		*rev = strtol(dot + 1, NULL, 10);
 			
 		Close(fh);
-		//DeleteFile(tmpfile);
+		DeleteFile(tmpfile);
 	}
 
 	FreeVec(tmpfile);

@@ -12,207 +12,198 @@
  * GNU General Public License for more details.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include <dos/dostags.h>
 #include <exec/types.h>
 
-#ifdef __amigaos4__
-#include <proto/zip.h>
-#include <libraries/zip.h>
-#endif
-
-#include "libs.h"
+#include "avalanche.h"
+#include "config.h"
 #include "locale.h"
 #include "module.h"
 #include "req.h"
 
-#include "Avalanche_rev.h"
-
 #ifdef __amigaos4__
-static void mod_zip_show_error(void *awin, zip_t *zip)
+#define DeleteFile Delete
+#endif
+
+static int mod_zip_error(void *awin, int err, char *file)
 {
-	open_error_req(zip_error_strerror(zip_get_error(zip)), locale_get_string(MSG_OK), awin);
+	char msg[100];
+
+	snprintf(msg, 100, locale_get_string(MSG_LHAERROR), file); /* This is intentionally MSG_LHAERROR */
+	return open_error_req(msg, locale_get_string(MSG_SKIPRETRYABORT), awin);
 }
 
 static BOOL mod_zip_del(void *awin, const char *archive, char **files, ULONG count)
 {
-	int err = 0;
+	int user_choice;
+	char cmd[1024];
 	
-	if(!libs_zip_init()) return FALSE;
-	
-	zip_t *zip = zip_open(archive, 0, &err);
+	for(int i = 0; i < count; i++) {
+		snprintf(cmd, 1024, "zip -qd \"%s\" \"%s\"", archive, files[i]);
 
-	if(zip) {
-		for(int i = 0; i < count; i++) {
-			zip_int64_t index = zip_name_locate(zip, files[i], 0);
-			if(index == -1) {
-				mod_zip_show_error(awin, zip);
-				zip_discard(zip);
-				return FALSE;
-			}
+		int err = SystemTags(cmd,
+					SYS_Input, NULL,
+					SYS_Output, NULL,
+					SYS_Error, NULL,
+					NP_Name, "Avalanche Zip Delete process",
+					TAG_DONE);
 
-			err = zip_delete(zip, index);
-			if(err == -1) {
-				mod_zip_show_error(awin, zip);
-				zip_discard(zip);
-				return FALSE;
-			}
-		}
-
-		err = zip_close(zip);
-		if(err == -1) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
-		}
-		return TRUE;
-	} else {
-		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
-	}
-
-	return FALSE;
-}
-
-static BOOL mod_zip_add_file(void *awin, zip_t *zip, char *file, char *dir, BOOL new, const char *root)
-{
-	int err = 0;
-	char *fullfile = NULL;
-	zip_source_t *src = NULL;
-
-	if(new == FALSE) {
-		src = zip_source_file(zip, file, 0, -1);
-		if(src == NULL) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
-		}
-	} else {
-		src = zip_source_buffer(zip, new_arc_text, strlen(new_arc_text), 0);
-		if(src == NULL) {
-			mod_zip_show_error(awin, zip);
-			zip_discard(zip);
-			return FALSE;
-		}
-	}
-
-	if(dir != NULL) {
-		if(root != NULL) {
-			ULONG fullfile_len = strlen(file) - strlen(root) + strlen(dir) + 2;
-			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
-
-			if(fullfile) {
-				strncpy(fullfile, dir, fullfile_len);
-				if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
-					/* Skip past the slash or colon so AddPart doesn't think we want a different dir */
-					AddPart(fullfile, file + strlen(root) + 1, fullfile_len);
-				} else {
-					AddPart(fullfile, file + strlen(root), fullfile_len);
-				}
-			}
-		} else {
-			ULONG fullfile_len = strlen(FilePart(file)) + strlen(dir) + 2;
-			fullfile = AllocVec(fullfile_len, MEMF_CLEAR);
-
-			if(fullfile) {
-				strncpy(fullfile, dir, fullfile_len);
-				AddPart(fullfile, FilePart(file), fullfile_len);
+		if(err != 0) {
+			user_choice = mod_zip_error(awin, err, files[i]);
+			
+			switch(user_choice) {
+				case 0: // abort
+					return FALSE;
+				break;
+				
+				case 1: // skip
+				break;
+				
+				case 2: // retry
+					i--;
+				break;
 			}
 		}
-	} else {
-		if(root != NULL) {
-			if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
-				/* Skip past the slash or colon so AddPart doesn't think we want a different dir */
-					fullfile = file + strlen(root) + 1;
-				} else {
-					fullfile = file + strlen(root);
-				}
-		} else {
-			fullfile = FilePart(file);
-		}
 	}
 
-	err = zip_file_add(zip, fullfile, src, 0);
-
-	if(dir && fullfile) FreeVec(fullfile);
-
-	if(err == -1) {
-		mod_zip_show_error(awin, zip);
-		zip_discard(zip);
-		return FALSE;
-	}
-
-	err = zip_close(zip);
-	if(err == -1) {
-		mod_zip_show_error(awin, zip);
-		zip_discard(zip);
-		return FALSE;
-	}
 	return TRUE;
 }
 
+/* Add files to Zip archive
+ * dir - directory user is currently in within the archive
+ * root - root of directory where the files are being added from
+ */
 static BOOL mod_zip_add(void *awin, const char *archive, char *file, char *dir, const char *root)
 {
-	int err = 0;
-	
-	libs_zip_exit();
-	if(!libs_zip_init()) return FALSE;
-	
-	zip_t *zip = zip_open(archive, 0, &err);
+	int err;
+	char cmd[1024];
 
-	if(zip) {
-		return mod_zip_add_file(awin, zip, file, dir, FALSE, root);
-	} else {
-		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
+	snprintf(cmd, 1024, "zip -qNj \"%s\" \"%s\"", archive, file);
+
+	//printf("%s\n", cmd);
+
+	err = SystemTags(cmd,
+				SYS_Input, NULL,
+				SYS_Output, NULL,
+				SYS_Error, NULL,
+				//NP_CurrentDir, root,
+				NP_Name, "Avalanche Zip Add process",
+				TAG_DONE);
+
+	if(err != 0) {
+		int user_choice = mod_zip_error(awin, err, file);
+
+		switch(user_choice) {
+			case 0: // abort
+				return FALSE;
+			break;
+
+			case 1: // skip
+			break;
+			
+			case 2: // retry
+				return mod_zip_add(awin, archive, file, dir, root);
+			break;
+		}
 	}
 
-	return FALSE;
-}
-#endif
-
-ULONG mod_zip_get_ver(ULONG *ver, ULONG *rev)
-{
-#ifdef __amigaos4__
-	if(!libs_zip_init()) return 0;
-	
-	struct Library *lib = (struct Library *)ZipBase;
-	if(ver) *ver = lib->lib_Version;
-	if(rev) *rev = lib->lib_Revision;
-	
-	return *ver;
-#else
-	*ver = 0;
-	*rev = 0;
-	return 0;
-#endif
+	return TRUE;
 }
 
 BOOL mod_zip_new(void *awin, char *archive)
 {
-#ifdef __amigaos4__
-	int err = 0;
+	BOOL ret = FALSE;
+	ULONG new_arc_size = strlen(CONFIG_GET_LOCK(tmpdir)) + strlen(NEW_ARC_NAME) + 2;
+	char *tmpfile = AllocVec(new_arc_size, MEMF_CLEAR);
 
-	if(!libs_zip_init()) return FALSE;
+	if(tmpfile) {
+		BPTR fh = 0;
+		strncpy(tmpfile, CONFIG_GET(tmpdir), new_arc_size);
+		AddPart(tmpfile, NEW_ARC_NAME, new_arc_size);
 
-	zip_t *zip = zip_open(archive, ZIP_CREATE, &err);
+		if(fh = Open(tmpfile, MODE_NEWFILE)) {
+			FPuts(fh, new_arc_text);
+			Close(fh);
 
-	if(zip) {
-		return mod_zip_add_file(awin, zip, NEW_ARC_NAME, NULL, TRUE, NULL);
-	} else {
-		open_error_req(zip_error_strerror(&err), locale_get_string(MSG_OK), awin);
+			ret = mod_zip_add(awin, archive, tmpfile, NULL, CONFIG_GET(tmpdir));
+
+			DeleteFile(tmpfile);
+		}
+
 	}
+	
+	CONFIG_UNLOCK;		
+	return ret;
+}
+
+#ifdef __amigaos4__
+#define AVALANCHE_ZIP_VER_CMD "version zip"
+#else
+#define AVALANCHE_ZIP_VER_CMD "version c:zip"
 #endif
-	return FALSE;
+
+void mod_zip_get_ver(ULONG *ver, ULONG *rev)
+{
+	BPTR fh = 0;
+	BPTR thor = FALSE;
+	
+	CONFIG_LOCK;
+	ULONG tmpfile_len = CONFIG_GET(tmpdirlen) + 30;
+	char *tmpfile = AllocVec(tmpfile_len, MEMF_CLEAR);
+	if(tmpfile == NULL) {
+		CONFIG_UNLOCK;
+		return 0;
+	}
+	strncpy(tmpfile, CONFIG_GET(tmpdir), tmpfile_len);
+	AddPart(tmpfile, "zip_tmp", tmpfile_len);
+	CONFIG_UNLOCK;
+
+	if(fh = Open(tmpfile, MODE_NEWFILE)) {
+		ULONG err = SystemTags(AVALANCHE_ZIP_VER_CMD,
+				SYS_Input, NULL,
+				SYS_Output, fh,
+				SYS_Error, NULL,
+				NP_Name, "Avalanche Zip version process",
+				TAG_DONE);
+
+		Close(fh);
+		
+	}
+	
+	char buf[20];
+	char *dot = NULL;
+	char *p = buf;
+			
+	if(fh = Open(tmpfile, MODE_OLDFILE)) {
+		char *res = (char *)&buf;
+		while(res != NULL) {
+			res = FGets(fh, buf, 20);
+
+			if(strncmp(p, "Zip ", 4) == 0) {
+				p += 4;
+				break;
+			}
+		}
+
+		*ver = strtol(p, &dot, 10);
+		*rev = strtol(dot + 1, NULL, 10);
+			
+		Close(fh);
+		DeleteFile(tmpfile);
+	}
+
+	FreeVec(tmpfile);
 }
 
 void mod_zip_register(struct module_functions *funcs)
 {
-#if defined (__amigaos4__) && defined (WITH_ZIP_MOD)
-	if(libs_zip_init()) {
-		funcs->add = mod_zip_add;
-		funcs->del = mod_zip_del;
-	}
-#endif
+	funcs->add = mod_zip_add;
+	funcs->del = mod_zip_del;
 }
