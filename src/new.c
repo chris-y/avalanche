@@ -72,7 +72,9 @@ enum {
 
 STRPTR type_opts[] = {
 		"LhA",
+#if !defined(__amigaos4__) || (defined (__amigaos4__) && defined(WITH_ZIP_MOD))
 		"Zip",
+#endif
 		NULL
 };
 

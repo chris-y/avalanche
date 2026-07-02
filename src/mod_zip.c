@@ -208,7 +208,7 @@ BOOL mod_zip_new(void *awin, char *archive)
 
 void mod_zip_register(struct module_functions *funcs)
 {
-#if defined (__amigaos4__)
+#if defined (__amigaos4__) && defined(WITH_ZIP_MOD)
 	if(libs_zip_init()) {
 		funcs->add = mod_zip_add;
 		funcs->del = mod_zip_del;
