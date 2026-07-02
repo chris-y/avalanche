@@ -200,7 +200,7 @@ static void close_all_windows()
 }
 
 /* Do not call this directly! */
-static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window, BOOL new_tab, BOOL arexx,
+static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_window, BOOL new_tab, BOOL force_new_tab, BOOL arexx,
 				struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
 	if(wbarg->wa_Lock) {
@@ -220,7 +220,7 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 					if((new_tab == FALSE) && (!tab_get_disabled(awin))) {
 						window_update_archive(awin, appwin_archive);
 					} else {
-						if((tab_get_disabled(awin)) || (tab_get_format(window_get_current_tab(awin)) != ARC_NONE)) {
+						if(force_new_tab || (tab_get_disabled(awin)) || (tab_get_format(window_get_current_tab(awin)) != ARC_NONE)) {
 							window_tab_create(awin);
 						}
 						window_update_archive(awin, appwin_archive);
@@ -255,22 +255,27 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 
 static BOOL open_archive_from_wbarg_new_or_existing_tab(void *awin, struct WBArg *wbarg)
 {
-	return open_archive_from_wbarg(awin, wbarg, FALSE, TRUE, FALSE, NULL, NULL, NULL);
+	return open_archive_from_wbarg(awin, wbarg, FALSE, TRUE, FALSE, FALSE, NULL, NULL, NULL);
+}
+
+static BOOL open_archive_from_wbarg_new_tab(void *awin, struct WBArg *wbarg)
+{
+	return open_archive_from_wbarg(awin, wbarg, FALSE, TRUE, TRUE, FALSE, NULL, NULL, NULL);
 }
 
 static BOOL open_archive_from_wbarg_new(struct WBArg *wbarg, struct MsgPort *win_port, struct MsgPort *app_port, struct MsgPort *appwin_mp)
 {
-	return open_archive_from_wbarg(NULL, wbarg, TRUE, FALSE, FALSE, win_port, app_port, appwin_mp);
+	return open_archive_from_wbarg(NULL, wbarg, TRUE, FALSE, FALSE, FALSE, win_port, app_port, appwin_mp);
 }
 
 static BOOL open_archive_from_wbarg_existing(void *awin, struct WBArg *wbarg)
 {
-	return open_archive_from_wbarg(awin, wbarg, FALSE, FALSE, FALSE, NULL, NULL, NULL);
+	return open_archive_from_wbarg(awin, wbarg, FALSE, FALSE, FALSE, FALSE, NULL, NULL, NULL);
 }
 
 static BOOL open_archive_from_wbarg_arexx(struct WBArg *wbarg)
 {
-	return open_archive_from_wbarg(NULL, wbarg, FALSE, FALSE, TRUE, NULL, NULL, NULL);
+	return open_archive_from_wbarg(NULL, wbarg, FALSE, FALSE, FALSE, TRUE, NULL, NULL, NULL);
 }
 
 static void avalanche_dnd_open(struct AppMessage *appmsg)
@@ -281,7 +286,7 @@ static void avalanche_dnd_open(struct AppMessage *appmsg)
 		if(appmsg->am_NumArgs > 1) {
 			for(int i = 1; i < appmsg->am_NumArgs; i++) {
 				wbarg++;
-				open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
+				open_archive_from_wbarg_new_tab((void *)appmsg->am_UserData, wbarg);
 			}
 		}
 	}
