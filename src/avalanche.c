@@ -362,7 +362,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 			/* OS4 runs this as a process, don't interfere here! */
 			ULONG uw_sig = 0;
 #endif
-			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig | uw_sig | SIGBREAKF_CTRL_E);
+			wait = Wait( signal | app | appwin_sig | cx_signal | rxsig | na_sig | uw_sig );
 			
 			if(wait & cx_signal) {
 				ULONG cx_msgid, cx_msgtype;
