@@ -2771,7 +2771,7 @@ static void window_edit_add_req(void *awin, struct avalanche_config *config)
 				}
 #endif
 
-				ok = window_edit_add(aw, file, NULL); /* TRUE = cont, FALSE = abort */
+				// why is this here? ok = window_edit_add(aw, file, NULL); /* TRUE = cont, FALSE = abort */
 				tab_set_disabled(window_get_current_tab(awin), FALSE, FALSE);
 			}
 		}

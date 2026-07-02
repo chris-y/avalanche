@@ -157,7 +157,6 @@ static BOOL mod_zip_add(void *awin, const char *archive, char *file, char *dir, 
 {
 	int err = 0;
 	
-	libs_zip_exit();
 	if(!libs_zip_init()) return FALSE;
 	
 	zip_t *zip = zip_open(archive, 0, &err);
