@@ -100,7 +100,7 @@ static BOOL mod_zip_add(void *awin, const char *archive, char *file, char *dir, 
 		np_currdir = NP_CurrentDir;
 	}
 	
-	printf("%s\n", cmd);
+	//printf("%s\n", cmd);
 
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
