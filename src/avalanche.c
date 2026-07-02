@@ -217,15 +217,13 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 					return TRUE;
 				}
 				if(new_window == FALSE) {
-					if(new_tab == FALSE) {
+					if((new_tab == FALSE) && (!tab_get_disabled(awin))) {
 						window_update_archive(awin, appwin_archive);
 					} else {
-						if(tab_get_format(window_get_current_tab(awin)) != ARC_NONE) {
+						if((tab_get_disabled(awin)) || (tab_get_format(window_get_current_tab(awin)) != ARC_NONE)) {
 							window_tab_create(awin);
 						}
-						
 						window_update_archive(awin, appwin_archive);
-							
 					}
 				} else {
 					awin = window_create(&config, appwin_archive, win_port, app_port);
@@ -273,6 +271,20 @@ static BOOL open_archive_from_wbarg_existing(void *awin, struct WBArg *wbarg)
 static BOOL open_archive_from_wbarg_arexx(struct WBArg *wbarg)
 {
 	return open_archive_from_wbarg(NULL, wbarg, FALSE, FALSE, TRUE, NULL, NULL, NULL);
+}
+
+static void avalanche_dnd_open(struct AppMessage *appmsg)
+{
+	struct WBArg *wbarg = appmsg->am_ArgList;
+	
+	if(open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg)) {
+		if(appmsg->am_NumArgs > 1) {
+			for(int i = 1; i < appmsg->am_NumArgs; i++) {
+				wbarg++;
+				open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
+			}
+		}
+	}
 }
 
 static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
@@ -420,28 +432,14 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 								CONFIG_UNLOCK;
 
 								if(ndz && !tab_get_disabled(window_get_current_tab((void *)appmsg->am_UserData))) {
-									if(open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg)) {
-										if(appmsg->am_NumArgs > 1) {
-											for(int i = 1; i < appmsg->am_NumArgs; i++) {
-												wbarg++;
-												open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
-											}
-										}
-									}
+									avalanche_dnd_open(appmsg);
 								}
 							}
 						break;
 						case AMTYPE_APPWINDOWZONE:
 							switch(appmsg->am_ID) {
 								case 0: // full window
-									if(open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg)) {
-										if(appmsg->am_NumArgs > 1) {
-											for(int i = 1; i < appmsg->am_NumArgs; i++) {
-												wbarg++;
-												open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
-											}
-										}
-									}
+									avalanche_dnd_open(appmsg);
 								break;
 
 								case 1: // listbrowser
@@ -454,14 +452,7 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 
 										window_req_open_archive((void *)appmsg->am_UserData, get_config(), TRUE);
 									} else {
-										if(open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg)) {
-											if(appmsg->am_NumArgs > 1) {
-												for(int i = 1; i < appmsg->am_NumArgs; i++) {
-													wbarg++;
-													open_archive_from_wbarg_new_or_existing_tab((void *)appmsg->am_UserData, wbarg);
-												}
-											}
-										}
+										avalanche_dnd_open(appmsg);
 									}
 								break;
 							}
