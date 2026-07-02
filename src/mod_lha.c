@@ -169,7 +169,7 @@ BOOL mod_lha_get_ver(ULONG *ver, ULONG *rev)
 	char *tmpfile = AllocVec(tmpfile_len, MEMF_CLEAR);
 	if(tmpfile == NULL) {
 		CONFIG_UNLOCK;
-		return 0;
+		return FALSE;
 	}
 	strncpy(tmpfile, CONFIG_GET(tmpdir), tmpfile_len);
 	AddPart(tmpfile, "lha_tmp", tmpfile_len);

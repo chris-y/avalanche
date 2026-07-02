@@ -73,6 +73,6 @@ void mod_zip_register(struct module_functions *funcs);
 void mod_lha_register(struct module_functions *funcs);
 
 /*** Get version info ***/
-ULONG mod_zip_get_ver(ULONG *ver, ULONG *rev);
+void mod_zip_get_ver(ULONG *ver, ULONG *rev);
 BOOL mod_lha_get_ver(ULONG *ver, ULONG *rev); /* Returns FALSE=Original, TRUE=Thor */
 #endif
