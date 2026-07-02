@@ -155,10 +155,6 @@ ALIB_STRUCT(XadMaster)
 ALIB_STRUCT(xadMaster)
 #endif
 
-#ifdef __amigaos4__
-ALIB_STRUCT(Zip)
-#endif
-
 CLASS_STRUCT(ARexx)
 CLASS_STRUCT(BitMap)
 CLASS_STRUCT(Button)
@@ -191,30 +187,6 @@ static void libs_xvs_exit(void)
 		ALIB_CLOSE(xvs);
 	}
 }
-
-BOOL libs_zip_init(void)
-{
-#ifdef __amigaos4__
-	if(ZipBase == NULL) {
-		ALIB_OPEN("zip.library",  54, Zip)
-	}
-	
-	return TRUE;
-#else
-	return FALSE;
-#endif
-
-}
-
-void libs_zip_exit(void)
-{
-#ifdef __amigaos4__
-	if(ZipBase != NULL) {
-		ALIB_CLOSE(Zip);
-	}
-#endif
-}
-
 
 BOOL libs_open(void)
 {
@@ -255,7 +227,6 @@ BOOL libs_open(void)
 void libs_close(void)
 {
 	libs_xvs_exit();
-	libs_zip_exit();
 
 	CLASS_CLOSE(BitMap)
 	CLASS_CLOSE(Button)
