@@ -363,13 +363,19 @@ static BOOL http_check_version_internal(void)
 		{	.name = "Lha (Thor)\0",
 			.check_url = "https://aminet.net/util/arc/Lha_thor.readme\0",
 			.download_url = "https://aminet.net/util/arc/Lha_thor.lha\0",
-		}
-#else
-		{	.name = "zip.library\0",
-			.check_url = "https://os4depot.net/share/library/misc/zip_lib_lha.readme\0",
-			.download_url = "https://os4depot.net/share/library/misc/zip_lib.lha\0",
-		}
+		},
 #endif
+		{	.name = "Zip\0",
+#ifdef __amigso4__
+			.check_url = "https://aminet.net/util/arc/zip-bin.readme\0",
+			.download_url = "https://aminet.net/util/arc/zip-bin.lha\0",
+#else
+			/* Don't like this filename with the version number in it, but it appears to be the latest */
+			.check_url = "https://aminet.net/util/arc/ZIP232.readme\0",
+			.download_url = "https://aminet.net/util/arc/ZIP232.lha\0",
+#endif
+		}
+
 	};
 	
 	if(buffer) {
@@ -429,13 +435,11 @@ static BOOL http_check_version_internal(void)
 				break;
 #endif					
 				
-#ifdef __amigaos4__
 				case ACHECKVER_ZIP:
 					avn[ACHECKVER_ZIP].current_version = 0;
 					avn[ACHECKVER_ZIP].current_revision = 0;
 					mod_zip_get_ver(&avn[ACHECKVER_ZIP].current_version, &avn[ACHECKVER_ZIP].current_revision);
 				break;
-#endif
 			}
 
 			if(avn[i].check_url) {
