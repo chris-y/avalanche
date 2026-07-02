@@ -896,7 +896,6 @@ int main(int argc, char **argv)
 	glyph_free();
 
 	module_exit();
-	libs_zip_exit();
 	libs_close();
 
 	return RETURN_OK;
