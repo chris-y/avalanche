@@ -331,12 +331,12 @@ void update_gui(struct avalanche_version_numbers avn[])
 		if(windows[WID_U_MAIN] == NULL) done = TRUE;
 
 		while(!done) {
-			ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+			ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_F);
 
 			if(wait & sigbit) {
 				done = update_handle_events();
 
-			} else if(wait & SIGBREAKF_CTRL_C) {
+			} else if(wait & SIGBREAKF_CTRL_D) {
 				done = TRUE;
 			} else if(wait & SIGBREAKF_CTRL_F) {
 				update_to_front();
@@ -351,5 +351,5 @@ void update_break(void)
 {
 	struct Process *check_ver_proc = http_get_process_check_version();
 	if(check_ver_proc == NULL) return;
-	Signal(check_ver_proc, SIGBREAKF_CTRL_C);
+	Signal(check_ver_proc, SIGBREAKF_CTRL_D);
 }

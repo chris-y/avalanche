@@ -476,13 +476,13 @@ static void config_window_open_internal(struct avalanche_config *config)
 				BOOL done = FALSE;
 
 				while(!done) {
-					ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_F);
+					ULONG wait = Wait(sigbit | SIGBREAKF_CTRL_D | SIGBREAKF_CTRL_F);
 
 					if(wait & sigbit) {
 						UWORD code;
 						ULONG result = RA_HandleInput(objects[OID_MAIN], &code);
 						done = config_window_handle_input_events(config, result, code);
-					} else if (wait & SIGBREAKF_CTRL_C) {
+					} else if (wait & SIGBREAKF_CTRL_D) {
 						config_window_close();
 						Signal(avalanche_process, SIGF_SINGLE);
 						done = TRUE;
@@ -530,7 +530,7 @@ void config_window_break(void)
 	if(config_process == NULL) return;
 
 	SetSignal(0L, SIGF_SINGLE);
-	Signal(config_process, SIGBREAKF_CTRL_C);
+	Signal(config_process, SIGBREAKF_CTRL_D);
 	Wait(SIGF_SINGLE);
 }
 

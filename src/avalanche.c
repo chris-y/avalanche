@@ -871,7 +871,7 @@ int main(int argc, char **argv)
 	struct Process *check_ver_proc = http_get_process_check_version();
 	if(check_ver_proc != NULL) {
 		/* Send break */
-		Signal(check_ver_proc, SIGBREAKF_CTRL_C);
+		Signal(check_ver_proc, SIGBREAKF_CTRL_D);
 		/* Wait for check version sub-process to exit */
 		Wait(SIGBREAKF_CTRL_E);
 	}
