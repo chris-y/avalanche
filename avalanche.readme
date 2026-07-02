@@ -10,8 +10,7 @@ This is a simple GUI for xadmaster.library using the ReAction
 gadget set, written as all the others on Aminet appear to
 require MUI. It also supports decrunching with xfdmaster.library,
 extracting various data with Deark, scanning for viruses with
-xvs.library, and simple editing of LhA/Zip archives (Zip needs
-zip.library - OS4 only).
+xvs.library, and simple editing of LhA/Zip archives.
 
 This is designed for AmigaOS 3.2.1+ (and tested on that and OS4). It
 probably won't work on older versions as it needs a new window.class :)

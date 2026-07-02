@@ -43,6 +43,12 @@ On OS3, there are two versions of xadmaster. v12 is on Aminet. There is a free k
 
 v13 is on GitHub (https://github.com/Hagbard-Celin/xadmaster_Amiga_68k).  This is an experimental version which needs copying over an existing v12 installation.  It solves some issues with certain LhA archives and if it works on your system it is recommended to use it.
 
+@{u}LhA and Zip editing@{uu}
+
+The LhA command-line tool (either the original or Thor version will work) is needed to modify LhA archives.
+
+For Zip archives, Zip 2.32 (on OS3.2) or zip.library (on OS4) is required.
+
 @endnode
 
 @node config "Configuration"
@@ -94,12 +100,12 @@ If an Lha or Zip archive is loaded, basic editing is enabled, see @{"editing" li
 @endnode
 
 @node editing "Editing"
-If an LhA or Zip archive is loaded, it is possible to do basic editing.  Note that currently Zip editing needs zip.library and therefore is only available on OS4.  LhA requires the LhA command line tool.
+If an LhA or Zip archive is loaded, it is possible to do basic editing.  On OS4, Zip editing needs zip.library, and on OS3.2 it needs the Zip command.  LhA requires the LhA command line tool.
 
 In the Edit menu the following new items are available:
 
 @{u}Add files@{uu}
-This opens an ASL requester to select files to add to the archive.  They will be added to the root directory (or the currently displayed directory for Zip archives if in browser mode).
+This opens an ASL requester to select files to add to the archive.  They will be added to the root directory (or the currently displayed directory for Zip archives on OS4 if in browser mode).
 
 It is also possible to add files by dragging into the file list (if not locked) - the area will be highlighted to indicate that files will be added.
 
@@ -166,6 +172,8 @@ This is mostly for internal use, but has the following commands:
   - New config to disable prompt and extract to a default location
 * Added a "Create LhA archive" option to WB Tools menu
   - Quick way to create a new archive with the selected items
+* Editing Zip archives now possible on OS3.2
+  - Using Zip 2.32 comand-line tool
 
 @{u}3.3 (15.03.2026)@{uu}
 * Tweak AISS to work on AISS Classic on OS3.2

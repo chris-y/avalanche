@@ -33,9 +33,8 @@ enum {
         ACHECKVER_LHA,
 #ifndef __amigaos4__
         ACHECKVER_LHA_THOR,
-#else
-        ACHECKVER_ZIP,
 #endif
+        ACHECKVER_ZIP,
         ACHECKVER_MAX
 };
 

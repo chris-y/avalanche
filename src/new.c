@@ -72,9 +72,7 @@ enum {
 
 STRPTR type_opts[] = {
 		"LhA",
-#ifdef __amigaos4__
 		"Zip",
-#endif
 		NULL
 };
 
