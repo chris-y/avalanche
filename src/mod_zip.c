@@ -84,18 +84,33 @@ static BOOL mod_zip_add(void *awin, const char *archive, char *file, char *dir, 
 {
 	int err;
 	char cmd[1024];
+	BPTR root_lock = 0;
+	ULONG np_currdir = TAG_IGNORE;
 
-	snprintf(cmd, 1024, "zip -qNj \"%s\" \"%s\"", archive, file);
-
-	//printf("%s\n", cmd);
+	if(root == NULL) {
+		snprintf(cmd, 1024, "zip -qNj \"%s\" \"%s\"", archive, file);
+	} else {
+		if((root[strlen(root)-1] != '/') && (root[strlen(root)-1] != ':')) {
+			snprintf(cmd, 1024, "zip -qNr \"%s\" \"%s\"", archive, file+strlen(root)+1);
+		} else {
+			snprintf(cmd, 1024, "zip -qNr \"%s\" \"%s\"", archive, file+strlen(root));
+		}
+		
+		root_lock = Lock(root, SHARED_LOCK);
+		np_currdir = NP_CurrentDir;
+	}
+	
+	printf("%s\n", cmd);
 
 	err = SystemTags(cmd,
 				SYS_Input, NULL,
 				SYS_Output, NULL,
 				SYS_Error, NULL,
-				//NP_CurrentDir, root,
+				np_currdir, root_lock,
 				NP_Name, "Avalanche Zip Add process",
 				TAG_DONE);
+
+	//if(root_lock) UnLock(root_lock);
 
 	if(err != 0) {
 		int user_choice = mod_zip_error(awin, err, file);
@@ -159,7 +174,7 @@ void mod_zip_get_ver(ULONG *ver, ULONG *rev)
 	char *tmpfile = AllocVec(tmpfile_len, MEMF_CLEAR);
 	if(tmpfile == NULL) {
 		CONFIG_UNLOCK;
-		return 0;
+		return;
 	}
 	strncpy(tmpfile, CONFIG_GET(tmpdir), tmpfile_len);
 	AddPart(tmpfile, "zip_tmp", tmpfile_len);
