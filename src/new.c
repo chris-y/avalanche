@@ -47,6 +47,7 @@
 #include "locale.h"
 #include "misc.h"
 #include "module.h"
+#include "tab.h"
 #include "win.h"
 
 #include "Avalanche_rev.h"
@@ -165,6 +166,12 @@ static void newarc_create(void)
 	}
 
 	if(ret) {
+		/* Open a new tab if current one is in use */
+		struct Node *tab_node = window_get_current_tab(newarc_parent);
+		if((tab_get_disabled(tab_node)) || (tab_get_format(tab_node) != ARC_NONE)) {
+			window_tab_create(newarc_parent);
+		}
+
 		if(arc_r) {
 			window_update_archive(newarc_parent, arc_r);
 			FreeVec(arc_r);
