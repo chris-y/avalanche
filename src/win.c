@@ -2533,6 +2533,8 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 
 		window_update_title(aw, tab_node);
 		window_count_selected(awin, tab_node);
+	} else {
+		window_update_tab_title(aw, tab_node);
 	}
 	tab_set_disabled(tab_node, FALSE, FALSE);
 }
