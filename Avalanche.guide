@@ -175,6 +175,11 @@ This is mostly for internal use, but has the following commands:
 * Editing Zip archives now possible on OS3.2
   - Using Zip 2.32 comand-line tool
   - REGRESSION: Zip modifications are currently disabled on OS4
+* Archive handling improvements
+  - Files with "encrypted info" should now open (untested)
+
+@{u}3.4beta (26.06.2026)@{uu}
+* Beta to test some of the functionality in the next release ^^
 
 @{u}3.3 (15.03.2026)@{uu}
 * Tweak AISS to work on AISS Classic on OS3.2
