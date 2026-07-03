@@ -185,6 +185,27 @@ BOOL xad_is_link(void *userdata, struct Node *tab_node)
 	return xad_is_xxx(userdata, tab_node, XADFIF_LINK);
 }
 
+static BOOL xad_arc_is_xxx(struct Node *tab_node, ULONG flag)
+{
+	struct xad_userdata *xu = (struct xad_userdata *)tab_get_archive_userdata(tab_node);
+
+	if((xu == NULL) && (xu->ai == NULL)) return FALSE;
+
+        if(xu->ai->xai_Flags & flag) return TRUE;
+        return FALSE;
+}
+
+BOOL xad_arc_is_crypted(struct Node *tab_node)
+{
+	return xad_arc_is_xxx(tab_node, XADAIF_CRYPTED);
+}
+
+BOOL xad_arc_is_corrupt(struct Node *tab_node)
+{
+	return xad_arc_is_xxx(tab_node, XADAIF_FILECORRUPT);
+}
+
+
 static const char *xad_get_arc_format(struct Node *tab_node)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)tab_get_archive_userdata(tab_node);

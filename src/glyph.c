@@ -142,6 +142,16 @@ static struct DrawList dl_file[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_corrupt[] = {
+	AVALANCHE_DRAWLIST_FILE,
+
+	{DLST_LINE, 20, 40, 40, 35, 1},
+	{DLST_LINE, 40, 35, 60, 45, 1},
+	{DLST_LINE, 60, 45, 80, 40, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
+
 static struct DrawList dl_cryptfile[] = {
 	AVALANCHE_DRAWLIST_FILE,
 
@@ -454,6 +464,12 @@ Object *glyph_get(ULONG glyph)
 				img_g = "TBimages:list_disk_g";
 			break;
 
+			case AVALANCHE_GLYPH_CORRUPT:
+				img = "TBimages:list_junk";
+				img_s = "TBimages:list_junk_s";
+				img_g = "TBimages:list_junk_g";
+			break;
+
 			case AVALANCHE_GLYPH_EXTRACT:
 				img = "TBimages:archiveextract";
 				img_s = "TBimages:archiveextract_s";
@@ -562,6 +578,9 @@ Object *glyph_get(ULONG glyph)
 				break;
 				case AVALANCHE_GLYPH_LINK:
 					dl = &dl_link;
+				break;
+				case AVALANCHE_GLYPH_CORRUPT:
+					dl = &dl_corrupt;
 				break;
 				case AVALANCHE_GLYPH_ROOT:
 					dl = &dl_archiveroot;

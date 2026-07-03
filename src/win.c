@@ -1156,8 +1156,14 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 
 	tab_set_dir_tree_size(tab_node, dir_entry);
 
-	if((tab_get_format(tab_node) == ARC_XAD) && (xad_is_diskfile(tab_node))) {
-		root_glyph = AVALANCHE_GLYPH_DISK;
+	if(tab_get_format(tab_node) == ARC_XAD) {
+		if(xad_arc_is_corrupt(tab_node)) {
+			root_glyph = AVALANCHE_GLYPH_CORRUPT;
+		} else if(xad_arc_is_crypted(tab_node)) {
+			root_glyph = AVALANCHE_GLYPH_CRYPTFILE;
+		} else if(xad_is_diskfile(tab_node)) {
+			root_glyph = AVALANCHE_GLYPH_DISK;
+		}
 	}
 
 	tab_dir_add_root_node(tab_node, root_glyph, dir_entry);

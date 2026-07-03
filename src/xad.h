@@ -31,6 +31,9 @@ BOOL xad_is_diskfile(struct Node *tab_node); /* disk archive (fs) */
 BOOL xad_recog(char *file);
 long xad_info(const char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node));
 
+BOOL xad_arc_is_crypted(struct Node *tab_node);
+BOOL xad_arc_is_corrupt(struct Node *tab_node);
+
 long xad_extract(void *awin, struct Node *tab_node, const char *file, const char *dest, struct List *list, void *(getnode)(void *awin, struct Node *node));
 long xad_extract_file(void *awin, struct Node *tab_node, const char *file, const char *dest, struct Node *node, void *(getnode)(void *awin, struct Node *node), ULONG *pud);
 long xad_extract_array(void *awin, struct Node *tab_node, ULONG total_items, const char *dest, void **array, void *(getuserdata)(void *awin, void *arc_entry));

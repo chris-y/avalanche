@@ -23,6 +23,7 @@ enum {
 	AVALANCHE_GLYPH_CRYPTFILE, /* Encrypted */
 	AVALANCHE_GLYPH_LINK, /* Link */
 	AVALANCHE_GLYPH_DISK, /* Disk image (no filesystem) */
+	AVALANCHE_GLYPH_CORRUPT, /* Corrupt archive (some files ok) */
 	AVALANCHE_GLYPH_DRAWER,
 	AVALANCHE_GLYPH_PARENT,
 	AVALANCHE_GLYPH_OPENFILE, /* Open button on toolbar */
