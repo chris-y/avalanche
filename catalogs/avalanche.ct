@@ -536,3 +536,7 @@ MSG_NEWTAB
 New tab
 ; New tab
 ;
+MSG_ADDING
+Adding %s...
+; Adding %s...
+;

@@ -21,6 +21,9 @@ void progress_set_archive_level(struct Window *win, void *gauge, void *frame, UL
 /* Set progress bar scanning progress */
 void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG total);
 
+/* Set progress bar adding status */
+void progress_set_adding(struct Window *win, void *gauge, void *frame, const char *filename);
+
 /* Set progress bar number of selected items */
 void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG selected, ULONG total);
 

@@ -149,6 +149,30 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 #endif
 }
 
+void progress_set_adding(struct Window *win, void *gauge, void *frame, const char *filename)
+{
+	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_ADDING), filename);
+
+#ifdef __amigaos4__
+	SetGadgetAttrs(frame,
+		win, NULL,
+		GA_Text, progress_msg,
+		GA_Image, gauge,
+		GAUGEIA_Level, 0,
+		GAUGEIA_Max, 100,
+		TAG_DONE);
+
+	RefreshGList((struct Gadget *)frame, win, NULL, 1);
+#else
+	SetGadgetAttrs((struct Gadget *)gauge, win, NULL,
+		GA_Text, progress_msg,
+		FUELGAUGE_Percent, FALSE,
+		FUELGAUGE_Justification, FGJ_LEFT,
+		FUELGAUGE_Level, 0,
+		TAG_DONE);
+#endif
+}
+
 void progress_set_selected(struct Window *win, void *gauge, void *frame, ULONG selected, ULONG total)
 {
 	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_SELECTED), selected, total);

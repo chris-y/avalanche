@@ -407,3 +407,6 @@ Extracting %s ... %03lu%%
 MSG_NEWTAB
 New tab
 ;
+MSG_ADDING
+Adding %s...
+;
