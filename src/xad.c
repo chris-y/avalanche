@@ -478,6 +478,9 @@ try_again:
 		}
 
 		if((err != XADERR_OK) && (err != XADERR_PASSWORD)) {
+#ifdef __amigaos4__
+			DebugPrintF("[Avalanche] XAD Error: %d\n", err);
+#endif
 			xad_free(tab_node);
 			return XADERR_BREAK;
 		}
