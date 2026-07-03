@@ -217,10 +217,11 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 					return TRUE;
 				}
 				if(new_window == FALSE) {
-					if((new_tab == FALSE) && (!tab_get_disabled(awin))) {
+					struct Node *tab_node = window_get_current_tab(awin);
+					if((new_tab == FALSE) && (!tab_get_disabled(tab_node))) {
 						window_update_archive(awin, appwin_archive);
 					} else {
-						if(force_new_tab || (tab_get_disabled(awin)) || (tab_get_format(window_get_current_tab(awin)) != ARC_NONE)) {
+						if(force_new_tab || (tab_get_disabled(tab_node)) || (tab_get_format(tab_node) != ARC_NONE)) {
 							window_tab_create(awin);
 						}
 						window_update_archive(awin, appwin_archive);
