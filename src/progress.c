@@ -93,8 +93,6 @@ void progress_set_file_level(struct Window *win, void *gauge, void *frame, ULONG
 
 	ULONG chars = TextFit(win->RPort, progress_msg, strlen(progress_msg), &te, NULL, 1, w, h);
 
-	DebugPrintF("str: %s len: %ld new len: %ld\n", progress_msg, strlen(progress_msg), chars);
-
 	if(chars < strlen(progress_msg)) {
 		fn = FilePart(fn);
 		snprintf(progress_msg, chars, locale_get_string(MSG_EXTRACTING_FILE), fn, percent);
@@ -154,6 +152,15 @@ void progress_set_adding(struct Window *win, void *gauge, void *frame, const cha
 	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_ADDING), filename);
 
 #ifdef __amigaos4__
+	struct TextExtent te;
+
+	ULONG chars = TextFit(win->RPort, progress_msg, strlen(progress_msg), &te, NULL, 1, w, h);
+
+	if(chars < strlen(progress_msg)) {
+		fn = FilePart(fn);
+		snprintf(progress_msg, chars, locale_get_string(MSG_ADDING), filename);
+	}
+
 	SetGadgetAttrs(frame,
 		win, NULL,
 		GA_Text, progress_msg,
