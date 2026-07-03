@@ -466,9 +466,11 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 	progress_hook.h_Data = &xhd;
 
 	if(ai) {
+try_again:
 		if((err = xadGetInfo(ai,
 				XAD_INFILENAME, file,
 				XAD_PROGRESSHOOK, &progress_hook,
+				XAD_PASSWORD, xu->pw,
 				TAG_DONE)) == 0) {
 			if(ai->xai_DiskInfo) xu->arctype = XDISK;
 			if(ai->xai_FileInfo) xu->arctype = XFILE; /* We only support one of file/disk so file preferred */
@@ -480,6 +482,18 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 			return XADERR_BREAK;
 		}
 
+		if((xu->arctype == XNONE) && (ai->xai_Flags & XADAIF_CRYPTED)) {
+			xu->pw = AllocVec(100, MEMF_CLEAR);
+			err = ask_password(awin, xu->pw, 100);
+			if(err == 0) {
+				FreeVec(xu->pw);
+				xu->pw = NULL;
+				xad_free(tab_node);
+				return XADERR_BREAK;
+			}
+			goto try_again; /* Aargh, a goto! Seemed to be the easiest option to do a retry here */
+		}
+
 		if(fs && ((xu->arctype == XNONE) || (xu->arctype == XDISK))) {
 			dai = xadAllocObjectA(XADOBJ_ARCHIVEINFO, NULL);
 
@@ -487,6 +501,7 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 				err = xadGetDiskInfo(dai,
 					XAD_INFILENAME, file,
 					XAD_PROGRESSHOOK, &progress_hook,
+					XAD_PASSWORD, xu->pw,
 					TAG_DONE);
 			} else {
 				struct TagItem ti[2];
@@ -497,6 +512,7 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 				err = xadGetDiskInfo(dai,
 					XAD_INDISKARCHIVE, &ti,
 					XAD_PROGRESSHOOK, &progress_hook,
+					XAD_PASSWORD, xu->pw,
 					TAG_DONE);
 			}
 
