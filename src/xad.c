@@ -477,12 +477,12 @@ try_again:
 
 		}
 
-		if(err != 0) {
+		if((err != XADERR_OK) && (err != XADERR_PASSWORD)) {
 			xad_free(tab_node);
 			return XADERR_BREAK;
 		}
 
-		if((xu->arctype == XNONE) && (ai->xai_Flags & XADAIF_CRYPTED)) {
+		if((xu->arctype == XNONE) && ((ai->xai_Flags & XADAIF_CRYPTED) || (err == XADERR_PASSWORD)) {
 			xu->pw = AllocVec(100, MEMF_CLEAR);
 			err = ask_password(awin, xu->pw, 100);
 			if(err == 0) {
