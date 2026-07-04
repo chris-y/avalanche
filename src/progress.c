@@ -147,18 +147,19 @@ void progress_set_scanning(struct Window *win, void *gauge, void *frame, ULONG t
 #endif
 }
 
-void progress_set_adding(struct Window *win, void *gauge, void *frame, const char *filename)
+void progress_set_adding(struct Window *win, void *gauge, void *frame, const char *filename, ULONG w, ULONG h)
 {
 	snprintf(progress_msg, PROGRESS_MSG_SIZE, locale_get_string(MSG_ADDING), filename);
 
 #ifdef __amigaos4__
 	struct TextExtent te;
+	char *fn = filename;
 
 	ULONG chars = TextFit(win->RPort, progress_msg, strlen(progress_msg), &te, NULL, 1, w, h);
 
 	if(chars < strlen(progress_msg)) {
 		fn = FilePart(fn);
-		snprintf(progress_msg, chars, locale_get_string(MSG_ADDING), filename);
+		snprintf(progress_msg, chars, locale_get_string(MSG_ADDING), fn);
 	}
 
 	SetGadgetAttrs(frame,

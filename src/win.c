@@ -2684,7 +2684,7 @@ BOOL window_edit_add(void *awin, char *file, char *root)
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	
 	if(module_vscan(awin, file, NULL, 0, FALSE) == 0) {
-		progress_set_adding(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], file);
+		progress_set_adding(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], file, P_WIDTH, P_HEIGHT);
 		module_free(aw->tab_node);
 		return module_add(aw, aw->tab_node, file, tab_get_current_dir(aw->tab_node), root);
 	}
