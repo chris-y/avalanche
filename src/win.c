@@ -1561,9 +1561,11 @@ void window_tab_set(void *awin, struct Node *tab_node)
 		CLICKTAB_Labels, &aw->tab_list,
 		CLICKTAB_CurrentNode, tab_node,
 		TAG_DONE);
-		
+
 	aw->tab_node = tab_node;
-	
+
+	if(aw->flat_mode) window_flat_browser_construct(aw, tab_node);
+
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, tab_get_listbrowser_list(tab_node),
 				LISTBROWSER_SortColumn, 1,
@@ -1573,9 +1575,7 @@ void window_tab_set(void *awin, struct Node *tab_node)
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
 
-	if(aw->flat_mode) {
-		highlight_current_dir(aw, tab_node);
-	}
+	if(aw->flat_mode) highlight_current_dir(aw, tab_node);
 
 	window_update_title(aw, tab_node);
 
@@ -2532,7 +2532,6 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 
 		if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
-
 		if(aw->flat_mode) {
 			highlight_current_dir(aw, tab_node);
 		}
@@ -2542,6 +2541,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 	} else {
 		window_update_tab_title(aw, tab_node);
 	}
+
 	tab_set_disabled(tab_node, FALSE, FALSE);
 }
 
