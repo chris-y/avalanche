@@ -153,12 +153,12 @@ void progress_set_adding(struct Window *win, void *gauge, void *frame, const cha
 
 #ifdef __amigaos4__
 	struct TextExtent te;
-	char *fn = filename;
+	char *fn;
 
 	ULONG chars = TextFit(win->RPort, progress_msg, strlen(progress_msg), &te, NULL, 1, w, h);
 
 	if(chars < strlen(progress_msg)) {
-		fn = FilePart(fn);
+		fn = FilePart(filename);
 		snprintf(progress_msg, chars, locale_get_string(MSG_ADDING), fn);
 	}
 
