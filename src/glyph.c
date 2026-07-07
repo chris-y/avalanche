@@ -396,6 +396,8 @@ Object *glyph_get(ULONG glyph)
 	char *img = NULL;
 	char *img_s = NULL;
 	char *img_g = NULL;
+	ULONG h = 16;
+	ULONG w = 16;
 
 	if(glyph_cache[glyph] != NULL) return glyph_cache[glyph];
 
@@ -587,6 +589,8 @@ Object *glyph_get(ULONG glyph)
 				break;
 				case AVALANCHE_GLYPH_EXTRACT:
 					dl = &dl_extract;
+					h = 32;
+					w = 32;
 				break;
 				case AVALANCHE_GLYPH_STOP:
 					dl = &dl_abort;
@@ -611,8 +615,8 @@ Object *glyph_get(ULONG glyph)
 					DRAWLIST_Directives, dl,
 					DRAWLIST_RefHeight, 100,
 					DRAWLIST_RefWidth, 100,
-					IA_Width, 16,
-					IA_Height, 16,
+					IA_Width, w,
+					IA_Height, h,
 				End;
 		} else {
 			glyphobj = GlyphObj,
