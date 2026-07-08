@@ -389,6 +389,13 @@ static struct DrawList dl_none[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+#ifdef __amigaos4__
+#define	AVALANCHE_TOOLBAR_BUTTON_SIZE \
+	h = 24; \
+	w = 24;
+#else
+#define	AVALANCHE_TOOLBAR_BUTTON_SIZE ;
+#endif
 
 Object *glyph_get(ULONG glyph)
 {
@@ -562,9 +569,11 @@ Object *glyph_get(ULONG glyph)
 			switch(glyph) {
 				case AVALANCHE_GLYPH_OPENFILE:
 					dl = &dl_openfile;
+					AVALANCHE_TOOLBAR_BUTTON_SIZE;
 				break;
 				case AVALANCHE_GLYPH_OPENDRAWER:
 					dl = &dl_opendrawer;
+					AVALANCHE_TOOLBAR_BUTTON_SIZE;
 				break;
 				case AVALANCHE_GLYPH_DRAWER:
 					dl = &dl_drawer;
@@ -589,11 +598,11 @@ Object *glyph_get(ULONG glyph)
 				break;
 				case AVALANCHE_GLYPH_EXTRACT:
 					dl = &dl_extract;
-					h = 32;
-					w = 32;
+					AVALANCHE_TOOLBAR_BUTTON_SIZE;
 				break;
 				case AVALANCHE_GLYPH_STOP:
 					dl = &dl_abort;
+					AVALANCHE_TOOLBAR_BUTTON_SIZE;
 				break;
 #ifndef __amigaos4__ /* OS3 only, OS4 uses sysiclass image */
 				case AVALANCHE_GLYPH_TABCLOSE:
