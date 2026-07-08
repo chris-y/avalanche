@@ -628,6 +628,9 @@ static BOOL tab_close_internal(struct Node *tab_node, BOOL close_all)
 
 	Remove(tab_node);
 
+	/* Release archive when tab is closed */
+	module_free(tab_node);
+
 	FreeListBrowserList(&at->lblist);
 	FreeListBrowserList(&at->dir_tree);
 
@@ -640,9 +643,6 @@ static BOOL tab_close_internal(struct Node *tab_node, BOOL close_all)
 	/* Delete items in the delete list */
 	tab_delete_delete_list(at);
 	
-	/* Release archive when tab is closed */
-	module_free(tab_node);
-
 	/* Free the tab node */
 	FreeClickTabNode(tab_node);
 
