@@ -43,6 +43,8 @@ On OS3, there are two versions of xadmaster. v12 is on Aminet. There is a free k
 
 v13 is on GitHub (https://github.com/Hagbard-Celin/xadmaster_Amiga_68k).  This is an experimental version which needs copying over an existing v12 installation.  It solves some issues with certain LhA archives and if it works on your system it is recommended to use it.
 
+OS4 comes with v13 of XAD.  However @{u}it is missing some of the external modules from the 68k version@{uu}.  Most prominently, there is an ISO9660 filesystem module which comes with v12 on Aminet but is not present on a default installation of OS4.  These can be extracted from Aminet:util/arc/xadmaster020 and copied to libs:xad.
+
 @{u}LhA and Zip editing@{uu}
 
 The LhA command-line tool (either the original or Thor version will work) is needed to modify LhA archives.
@@ -161,6 +163,7 @@ This is mostly for internal use, but has the following commands:
 * More modern looking GUI
   - All gadgets have been moved to a new toolbar
   - Built-in list and toolbar images have been redesigned and colourised
+  - Extract (the most used button) is highlighted on the left!
   - Tabs have been added
   - Progress bar behaviour has been improved
   - Better feedback and status text
@@ -176,6 +179,9 @@ This is mostly for internal use, but has the following commands:
   - Using Zip 2.32 comand-line tool
   - REGRESSION: Zip modifications are currently disabled on OS4
 * Archive handling improvements
+  - Can now open ADFs and other uncompressed disk formats
+    (subject to the availability of a @{"XAD filesystem module" link Install})
+    NB: Ignore Filesystems applies here too, so disable if needed
   - Files with "encrypted info" should now open (untested)
 
 @{u}3.4beta (26.06.2026)@{uu}

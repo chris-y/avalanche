@@ -477,12 +477,12 @@ try_again:
 
 		}
 
-		if((err != XADERR_OK) && (err != XADERR_PASSWORD)) {
+		if((err != XADERR_OK) && (err != XADERR_PASSWORD) && (err != XADERR_FILETYPE)) {
 #ifdef __amigaos4__
 			DebugPrintF("[Avalanche] XAD Error: %d\n", err);
 #endif
 			xad_free(tab_node);
-			return XADERR_BREAK;
+			return err;
 		}
 
 		if((xu->arctype == XNONE) && ((ai->xai_Flags & XADAIF_CRYPTED) || (err == XADERR_PASSWORD))) {

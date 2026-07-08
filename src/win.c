@@ -2500,7 +2500,7 @@ static void window_req_open_archive_internal(void *awin, struct Node *tab_node, 
 	if(active_modules & ARC_XAD) {
 		ret = xad_info(tab_get_archive(tab_node), config, aw, tab_node, addlbnode_cb);
 	} else {
-		ret = 1;
+		ret = 10;
 	}
 	if(ret != 0) { /* if xad failed try xfd */
 		tab_set_format(tab_node, ARC_XFD);
