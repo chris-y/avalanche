@@ -410,3 +410,12 @@ New tab
 MSG_ADDING
 Adding %s...
 ;
+MSG_M_OPEN
+Open
+;
+MSG_M_OPEN_ARCHIVE
+Archive...
+;
+MSG_M_OPEN_SPLIT
+Split archive...
+;

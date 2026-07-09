@@ -172,48 +172,50 @@ struct avalanche_extract_userdata {
 
 static struct NewMenu menu[] = {
 	{NM_TITLE,  NULL,           0,  0, 0, 0,}, // 0 Project
-	{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
-	{NM_ITEM,   NULL,         "T", 0, 0, 0,}, // 1 New tab
-	{NM_ITEM,   NULL,         "O", 0, 0, 0,}, // 2 Open
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
-	{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
-	{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 5 About
-	{NM_ITEM,   NULL ,        0, 0, 0, 0,}, // 6 Check version
+		{NM_ITEM,   NULL,         "N", 0, 0, 0,}, // 0 New archive
+		{NM_ITEM,   NULL,         "T", 0, 0, 0,}, // 1 New tab
+		{NM_ITEM,   NULL,         0, 0, 0, 0,}, // 2 Open
+			{NM_SUB,   NULL,        "O", 0, 0, 0,}, // 0 Archive
+			{NM_SUB,   NULL,         0, 0, 0, 0,}, // 1 Split
+		{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
+		{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
+		{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 5 About
+		{NM_ITEM,   NULL ,        0, 0, 0, 0,}, // 6 Check version
 
-	{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 7
-	{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 8 Quit
+		{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 7
+		{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 8 Quit
 
 	{NM_TITLE,  NULL,               0,  0, 0, 0,}, // 1 Edit
-	{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
-	{NM_ITEM,   NULL ,  "Z", NM_ITEMDISABLED, 0, 0,}, // 1 Clear Selection
-	{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
-	{NM_ITEM,   NULL,       ".", NM_ITEMDISABLED, 0, 0,}, // 4 Add files
-	{NM_ITEM,   NULL,       0, NM_ITEMDISABLED, 0, 0,}, // 5 Delete files
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 6
-	{NM_ITEM,   NULL , "L", CHECKIT | MENUTOGGLE, 0, 0,}, // 7 Toggle drag lock
+		{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
+		{NM_ITEM,   NULL ,  "Z", NM_ITEMDISABLED, 0, 0,}, // 1 Clear Selection
+		{NM_ITEM,   NULL , "I", NM_ITEMDISABLED, 0, 0,}, // 2 Invert
+		{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 3
+		{NM_ITEM,   NULL,       ".", NM_ITEMDISABLED, 0, 0,}, // 4 Add files
+		{NM_ITEM,   NULL,       0, NM_ITEMDISABLED, 0, 0,}, // 5 Delete files
+		{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 6
+		{NM_ITEM,   NULL , "L", CHECKIT | MENUTOGGLE, 0, 0,}, // 7 Toggle drag lock
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 2 Window
-	{NM_ITEM,   NULL,         "W", 0, 0, 0,}, // 0 New window
-	{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 1 View mode
-	{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
-	{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
-	{NM_ITEM, NULL , 0, 0, 0, 0,}, // 2 Dir tree
-	{NM_SUB,  NULL , "-", 0, 0, 0,}, // 0 Collapse all
-	{NM_SUB,  NULL , "=", 0, 0, 0,}, // 1 Expand all
-	{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
-	{NM_ITEM, NULL , "K", 0, 0, 0,}, // 4 Close
+		{NM_ITEM,   NULL,         "W", 0, 0, 0,}, // 0 New window
+		{NM_ITEM,	NULL , 0, 0, 0, 0,}, // 1 View mode
+			{NM_SUB,	NULL , 0, CHECKIT, ~1, 0,}, // 0 Browser
+			{NM_SUB,	NULL , 0, CHECKIT, ~2, 0,}, // 1 List
+		{NM_ITEM, NULL , 0, 0, 0, 0,}, // 2 Dir tree
+			{NM_SUB,  NULL , "-", 0, 0, 0,}, // 0 Collapse all
+			{NM_SUB,  NULL , "=", 0, 0, 0,}, // 1 Expand all
+		{NM_ITEM,   NM_BARLABEL,            0,  0, 0, 0,}, // 2
+		{NM_ITEM, NULL , "K", 0, 0, 0,}, // 4 Close
 
 	{NM_TITLE,  NULL ,              0,  0, 0, 0,}, // 3 Settings
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 0 Snapshot
-	{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 1 Preferences
+		{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 0 Snapshot
+		{NM_ITEM,   NULL ,        0,  0, 0, 0,}, // 1 Preferences
 
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
-#define MENU_DRAGLOCK 18
-#define MENU_FLATMODE 22
-#define MENU_LISTMODE 23
+#define MENU_DRAGLOCK 20
+#define MENU_FLATMODE 24
+#define MENU_LISTMODE 25
 
 #ifdef __amigaos4__
 #define CLICKTAB_MinorLabelChange TAG_IGNORE
@@ -3016,12 +3018,18 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								newarc_window_open(aw);
 							break;
 
-							case 1: // new window
+							case 1: // new tab
 								window_tab_create(aw);
 							break;
 							
 							case 2: //open
-								window_req_open_archive(awin, config, FALSE);
+								switch(SUBNUM(code)) {
+									case 0: //archive
+										window_req_open_archive(awin, config, FALSE);
+									break;
+									case 1: //split
+									break;
+								}
 							break;
 
 							case 4: //info
@@ -3171,30 +3179,32 @@ void fill_menu_labels(void)
 	menu[0].nm_Label = locale_get_string( MSG_PROJECT );
 	menu[1].nm_Label = locale_get_string( MSG_NEWARCHIVE );
 	menu[2].nm_Label = locale_get_string( MSG_NEWTAB );
-	menu[3].nm_Label = locale_get_string( MSG_OPEN );
-	menu[5].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
-	menu[6].nm_Label = locale_get_string( MSG_ABOUT );
-	menu[7].nm_Label = locale_get_string( MSG_CHECKVERSION );
-	menu[9].nm_Label = locale_get_string( MSG_QUIT );
-	menu[10].nm_Label = locale_get_string( MSG_EDIT );
-	menu[11].nm_Label = locale_get_string( MSG_SELECTALL );
-	menu[12].nm_Label = locale_get_string( MSG_CLEARSELECTION );
-	menu[13].nm_Label = locale_get_string( MSG_INVERTSELECTION );
-	menu[15].nm_Label = locale_get_string( MSG_ADDFILES );
-	menu[16].nm_Label = locale_get_string( MSG_DELFILES );
-	menu[18].nm_Label = locale_get_string( MSG_DRAGLOCK );
-	menu[19].nm_Label = locale_get_string( MSG_WINDOW );
-	menu[20].nm_Label = locale_get_string( MSG_NEWWINDOW );
-	menu[21].nm_Label = locale_get_string( MSG_VIEWMODE );
+	menu[3].nm_Label = locale_get_string( MSG_M_OPEN );
+	menu[4].nm_Label = locale_get_string( MSG_M_OPEN_ARCHIVE );
+	menu[5].nm_Label = locale_get_string( MSG_M_OPEN_SPLIT );
+	menu[7].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
+	menu[8].nm_Label = locale_get_string( MSG_ABOUT );
+	menu[9].nm_Label = locale_get_string( MSG_CHECKVERSION );
+	menu[11].nm_Label = locale_get_string( MSG_QUIT );
+	menu[12].nm_Label = locale_get_string( MSG_EDIT );
+	menu[13].nm_Label = locale_get_string( MSG_SELECTALL );
+	menu[14].nm_Label = locale_get_string( MSG_CLEARSELECTION );
+	menu[15].nm_Label = locale_get_string( MSG_INVERTSELECTION );
+	menu[17].nm_Label = locale_get_string( MSG_ADDFILES );
+	menu[18].nm_Label = locale_get_string( MSG_DELFILES );
+	menu[20].nm_Label = locale_get_string( MSG_DRAGLOCK );
+	menu[21].nm_Label = locale_get_string( MSG_WINDOW );
+	menu[22].nm_Label = locale_get_string( MSG_NEWWINDOW );
+	menu[23].nm_Label = locale_get_string( MSG_VIEWMODE );
 	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
 	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
-	menu[24].nm_Label = locale_get_string( MSG_DIR_TREE );
-	menu[25].nm_Label = locale_get_string( MSG_COLLAPSE_ALL );
-	menu[26].nm_Label = locale_get_string( MSG_EXPAND_ALL );
-	menu[28].nm_Label = locale_get_string( MSG_CLOSE );
-	menu[29].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[30].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[31].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[26].nm_Label = locale_get_string( MSG_DIR_TREE );
+	menu[27].nm_Label = locale_get_string( MSG_COLLAPSE_ALL );
+	menu[28].nm_Label = locale_get_string( MSG_EXPAND_ALL );
+	menu[30].nm_Label = locale_get_string( MSG_CLOSE );
+	menu[31].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[32].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[33].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 struct Node *window_get_current_tab(void *awin)
@@ -3216,5 +3226,3 @@ void window_tab_detach(void *awin)
 		CLICKTAB_MinorLabelChange, TRUE,
 		TAG_DONE);
 }
-
-
