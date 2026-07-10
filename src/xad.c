@@ -78,7 +78,7 @@ void xad_free_split(void *split)
 		if((char *)xs->xsf_Data != NULL) FreeVec((char *)xs->xsf_Data);
 		xs_next = xs->xsf_Next;
 		xadFreeObjectA(xs, NULL);
-	} while(xs_next != NULL);
+	} while(xs = xs_next);
 }
 
 static void xad_free_pw(struct Node *tab_node)

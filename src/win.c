@@ -3003,7 +3003,7 @@ static BOOL window_key_shift(struct avalanche_window *aw)
 {
 	ULONG quals = 0;
 
-	GetAttr(WINDOW_Qualifier, aw->windows[WID_MAIN], (ULONG *)&quals);
+	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&quals);
 
 	if(quals & ANY_SHIFT) return TRUE;
 	return FALSE;
