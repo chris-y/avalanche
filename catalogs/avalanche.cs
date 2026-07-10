@@ -79,7 +79,7 @@ MSG_DATE
 Date
 ;
 MSG_SELECTARCHIVE
-Select Archive
+Select archive
 ;
 MSG_ARCHIVE
 _Archive
@@ -418,4 +418,10 @@ Archive...
 ;
 MSG_M_OPEN_SPLIT
 Split archive...
+;
+MSG_SPLITARCHIVE
+Split archive
+;
+MSG_SELECTSPLITARCHIVE
+Select archive files to open as split archive
 ;

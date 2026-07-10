@@ -2496,7 +2496,7 @@ static BOOL window_req_archive_split(struct avalanche_window *aw, struct avalanc
 	if(aslreq) {
 		if(AslRequestTags(aslreq,
 							ASLFR_DoMultiSelect, TRUE,
-							ASLFR_TitleText, locale_get_string(MSG_SELECTARCHIVE) ,
+							ASLFR_TitleText, locale_get_string(MSG_SELECTSPLITARCHIVE) ,
 							ASLFR_InitialFile, arc,
 							ASLFR_InitialDrawer, sdir,
 					TAG_DONE)) {
@@ -3004,6 +3004,10 @@ static BOOL window_key_shift(struct avalanche_window *aw)
 	ULONG quals = 0;
 
 	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&quals);
+
+#ifdef __amigaos4__
+	DebugPrintF("[Avalanche] Quals: %ld\n", quals);
+#endif
 
 	if(quals & ANY_SHIFT) return TRUE;
 	return FALSE;
