@@ -3001,12 +3001,12 @@ static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_confi
 
 static BOOL window_key_shift(struct avalanche_window *aw)
 {
-	ULONG quals = 0;
+	UWORD quals = 0;
 
 	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&quals);
 
 #ifdef __amigaos4__
-	DebugPrintF("[Avalanche] Quals: %ld\n", quals);
+	DebugPrintF("[Avalanche] Quals: %d\n", quals);
 #endif
 
 	if(quals & ANY_SHIFT) return TRUE;
