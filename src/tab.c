@@ -309,7 +309,7 @@ struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir
 											LABEL_Image, glyph_get(glyph),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
-											LABEL_Text, FilePart(at->archive),
+											LABEL_Text, FilePart(tab_get_archive_name(tab_node)),
 										LabelEnd,
 									TAG_DONE);
 
