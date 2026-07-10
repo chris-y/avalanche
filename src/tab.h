@@ -27,6 +27,9 @@ struct arc_entries {
 	ULONG level;
 };
 
+/* Special return for tab_get_archive if archive is split */
+#define AVALANCHE_SPLIT_ARCHIVE (char *)1
+
 struct Node *tab_create(void *awin, struct List *tab_list);
 
 /* Close tab; returns TRUE if last tab */
@@ -63,6 +66,7 @@ const ULONG tab_get_signal(struct Node *tab_node);
 
 /* Set archive/dest, or NULL to free */
 void tab_set_archive(struct Node *tab_node, const char *archive);
+void tab_set_split(struct Node *tab_node, void *split);
 void tab_set_dest(struct Node *tab_node, const char *dest);
 void tab_set_format(struct Node *tab_node, ULONG format);
 void tab_set_current_item(struct Node *tab_node, ULONG item);
@@ -77,6 +81,8 @@ BOOL tab_set_current_dir_to_parent(struct Node *tab_node);
 
 /** Getters **/
 const char *tab_get_archive(struct Node *tab_node);
+void *tab_get_split(struct Node *tab_node);
+const char *tab_get_archive_name(struct Node *tab_node); /* Deals with split archives internally */
 const char *tab_get_dest(struct Node *tab_node);
 const char *tab_get_current_dir(struct Node *tab_node);
 const ULONG tab_get_format(struct Node *tab_node);

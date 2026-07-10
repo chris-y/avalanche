@@ -222,7 +222,7 @@ BOOL module_has_add(struct Node *tab_node)
 {
 	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->add != NULL) return TRUE;
+	if((mf->add != NULL) && (tab_get_archive(tab_node) != AVALANCHE_SPLIT_ARCHIVE)) return TRUE;
 	return FALSE;
 }
 
@@ -230,7 +230,7 @@ BOOL module_has_del(struct Node *tab_node)
 {
 	struct module_functions *mf = tab_get_module_funcs(tab_node);
 
-	if(mf->del != NULL) return TRUE;
+	if((mf->del != NULL) && (tab_get_archive(tab_node) != AVALANCHE_SPLIT_ARCHIVE)) return TRUE;
 	return FALSE;
 }
 
