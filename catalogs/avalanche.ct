@@ -99,8 +99,8 @@ Date
 ; Date
 ;
 MSG_SELECTARCHIVE
-Select Archive
-; Select Archive
+Select archive
+; Select archive
 ;
 MSG_ARCHIVE
 _Archive
@@ -539,4 +539,24 @@ New tab
 MSG_ADDING
 Adding %s...
 ; Adding %s...
+;
+MSG_M_OPEN
+Open
+; Open
+;
+MSG_M_OPEN_ARCHIVE
+Archive...
+; Archive...
+;
+MSG_M_OPEN_SPLIT
+Split archive...
+; Split archive...
+;
+MSG_SPLITARCHIVE
+Split archive
+; Split archive
+;
+MSG_SELECTSPLITARCHIVE
+Select archive files to open as split archive
+; Select archive files to open as split archive
 ;

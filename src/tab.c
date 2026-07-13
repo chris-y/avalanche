@@ -35,6 +35,7 @@
 #include "module.h"
 #include "tab.h"
 #include "win.h"
+#include "xad.h"
 
 #include <string.h>
 
@@ -46,6 +47,7 @@ struct avalanche_tab {
 	struct List dir_tree;
 	char *archive;
 	char *dest;
+	void *split;
 	ULONG format;
 	struct arc_entries **arc_array;
 	struct arc_entries **dir_array;
@@ -152,8 +154,37 @@ void tab_add_to_delete_list(struct Node *tab_node, char *fn)
 const char *tab_get_archive(struct Node *tab_node)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
-	
+
+	if((at->archive == NULL) && (at->split != NULL)) return AVALANCHE_SPLIT_ARCHIVE;
+
 	return (const char *)at->archive;
+}
+
+void *tab_get_split(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	return at->split;
+}
+
+static const char *tab_get_split_name(struct Node *tab_node)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	if(at->split == NULL) return NULL;
+
+	return xad_get_split_name(at->split);
+}
+
+const char *tab_get_archive_name(struct Node *tab_node)
+{
+	const char *fn = tab_get_archive(tab_node);
+	
+	if(fn == AVALANCHE_SPLIT_ARCHIVE) {
+		fn = tab_get_split_name(tab_node);
+	}
+	
+	return fn;
 }
 
 const char *tab_get_dest(struct Node *tab_node)
@@ -264,6 +295,7 @@ struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+	
 	if(dir_entries == 0) flags = 0;
 	
 	FreeListBrowserList(&at->dir_tree);
@@ -278,7 +310,7 @@ struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir
 											LABEL_Image, glyph_get(glyph),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
-											LABEL_Text, FilePart(at->archive),
+											LABEL_Text, FilePart(tab_get_archive_name(tab_node)),
 										LabelEnd,
 									TAG_DONE);
 
@@ -363,8 +395,23 @@ void tab_set_archive(struct Node *tab_node, const char *archive)
 	if(at->archive) FreeVec(at->archive);
 	at->archive = NULL;
 
+	/* We can't have archive *and* split */
+	if(archive != NULL) tab_set_split(tab_node, NULL);
+
 	/* Alloc new archive */
 	if(archive) at->archive = strdup_vec(archive);
+}
+
+void tab_set_split(struct Node *tab_node, void *xs)
+{
+	struct avalanche_tab *at = tab_get_tab(tab_node);
+
+	if(at->split) xad_free_split(at->split);
+
+	/* We can't have archive *and* split */
+	if(xs != NULL) tab_set_archive(tab_node, NULL);
+
+	at->split = xs;
 }
 
 void tab_set_dest(struct Node *tab_node, const char *dest)
@@ -539,6 +586,7 @@ struct Node *tab_create(void *awin, struct List *tab_list)
 
 	at->awin = awin;
 	at->archive = NULL;
+	at->split = NULL;
 
 	/* Detach tabs from window */
 	window_tab_detach(awin);
@@ -639,6 +687,7 @@ static BOOL tab_close_internal(struct Node *tab_node, BOOL close_all)
 
 	tab_set_archive(tab_node, NULL);
 	tab_set_dest(tab_node, NULL);
+	tab_set_split(tab_node, NULL);
 
 	/* Delete items in the delete list */
 	tab_delete_delete_list(at);

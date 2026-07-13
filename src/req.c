@@ -30,6 +30,7 @@
 #include "locale.h"
 #include "module.h"
 #include "req.h"
+#include "tab.h"
 #include "win.h"
 
 #include "Avalanche_rev.h"
@@ -224,15 +225,22 @@ void req_show_arc_info(void *awin, struct Node *tab_node)
 {
 	char message[100];
 	const char *modname = module_get_read_module(tab_node);
+	const char *splt = "";
 	
 	if(modname == NULL) return;
 
 	const char *subf = module_get_subformat(tab_node);
+
+	const char *fn = tab_get_archive(tab_node);
+	
+	if(fn == AVALANCHE_SPLIT_ARCHIVE) {
+		splt = locale_get_string(MSG_SPLITARCHIVE);
+	}
 	
 	if(subf) {
-		snprintf(message, 100, "%s (%s) - %s", module_get_format(tab_node), subf, modname);	
+		snprintf(message, 100, "%s (%s) - %s\n%s", module_get_format(tab_node), subf, modname, splt);	
 	} else {
-		snprintf(message, 100, "%s - %s", module_get_format(tab_node), modname);	
+		snprintf(message, 100, "%s - %s\n%s", module_get_format(tab_node), modname, splt);
 	}
 	
 	open_info_req(message, locale_get_string(MSG_OK), awin);

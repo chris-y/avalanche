@@ -67,6 +67,20 @@ static void xad_free_ai(struct xadArchiveInfo *a)
 	xadFreeObjectA(a, NULL);
 }
 
+void xad_free_split(void *split)
+{
+	if(split == NULL) return;
+
+	struct xadSplitFile *xs = (struct xadSplitFile *)split;
+	struct xadSplitFile *xs_next = NULL;
+
+	do {
+		if((char *)xs->xsf_Data != NULL) FreeVec((char *)xs->xsf_Data);
+		xs_next = xs->xsf_Next;
+		xadFreeObjectA(xs, NULL);
+	} while(xs = xs_next);
+}
+
 static void xad_free_pw(struct Node *tab_node)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)tab_get_archive_userdata(tab_node);
@@ -91,7 +105,6 @@ static void xad_free(struct Node *tab_node)
 		}
 
 		xad_free_pw(tab_node);
-
 	}
 
 	tab_free_archive_userdata(tab_node);
@@ -428,23 +441,56 @@ BOOL xad_recog(char *file)
 	return TRUE;
 }
 
-long xad_info(const char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
+void *xad_split(const char *filename, void *next)
+{
+	libs_xad_init();
+	if(xadMasterBase == NULL) return NULL;
+	
+	struct xadSplitFile *sf = xadAllocObjectA(XADOBJ_SPLITFILE, NULL);
+
+	if((sf == NULL) || (filename == NULL)) return NULL;
+
+	if(next) sf->xsf_Next = (struct xadSplitFile *)next;
+
+	sf->xsf_Type = XAD_INFILENAME;
+	sf->xsf_Data = (ULONG)filename;
+
+	return (void *)sf;
+}
+
+const char *xad_get_split_name(void *split)
+{
+	struct xadSplitFile *sf = (struct xadSplitFile *)split;
+	
+	return (const char *)sf->xsf_Data;
+}
+
+
+long xad_info(const char *file, void *split, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node))
 {
 	long err = 0;
 	struct xadFileInfo *fi;
 	struct xadDiskInfo *di;
 	struct xadArchiveInfo *dai = NULL;
 	struct xadArchiveInfo *ai = NULL;
+	struct xadSplitFile *xs = split;
 	ULONG total = 0;
 	ULONG i = 0;
 	static ULONG size;
 	ULONG pud = 0;
+	ULONG xad_intag = XAD_INFILENAME;
+	ULONG xad_indata = (ULONG)file;
 
 	BOOL fs = !CONFIG_GET_LOCK(ignorefs);
 	CONFIG_UNLOCK;
 	
 	libs_xad_init();
 	if(xadMasterBase == NULL) return -1;
+
+	if((file == AVALANCHE_SPLIT_ARCHIVE) && (split != NULL)) {
+		xad_intag = XAD_INSPLITTED;
+		xad_indata = (ULONG)xs;
+	}
 
 	xad_free(tab_node);
 
@@ -468,7 +514,7 @@ long xad_info(const char *file, struct avalanche_config *config, void *awin, str
 	if(ai) {
 try_again:
 		if((err = xadGetInfo(ai,
-				XAD_INFILENAME, file,
+				xad_intag, xad_indata,
 				XAD_PROGRESSHOOK, &progress_hook,
 				XAD_PASSWORD, xu->pw,
 				TAG_DONE)) == 0) {
@@ -502,7 +548,7 @@ try_again:
 
 			if(xu->arctype == XNONE) {
 				err = xadGetDiskInfo(dai,
-					XAD_INFILENAME, file,
+					xad_intag, xad_indata,
 					XAD_PROGRESSHOOK, &progress_hook,
 					XAD_PASSWORD, xu->pw,
 					TAG_DONE);

@@ -29,7 +29,11 @@ BOOL xad_is_link(void *userdata, struct Node *tab_node);
 BOOL xad_is_disk(struct Node *tab_node); /* disk image (no fs) */
 BOOL xad_is_diskfile(struct Node *tab_node); /* disk archive (fs) */
 BOOL xad_recog(char *file);
-long xad_info(const char *file, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node));
+long xad_info(const char *file, void *split, struct avalanche_config *config, void *awin, struct Node *tab_node, void(*addnode)(char *name, LONG *size, BOOL dir, ULONG item, ULONG total, void *userdata, struct avalanche_config *config, void *awin, struct Node *tab_node));
+
+void *xad_split(const char *filename, void *next);
+const char *xad_get_split_name(void *split);
+void xad_free_split(void *split);
 
 BOOL xad_arc_is_crypted(struct Node *tab_node);
 BOOL xad_arc_is_corrupt(struct Node *tab_node);
