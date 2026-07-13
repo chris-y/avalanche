@@ -966,7 +966,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 
 	if(title_needs_free) FreeVec(title);
 
-	AddTail(window_get_lblist(aw), node);
+	AddTail(tab_get_listbrowser_list(tab_node), node);
 }
 
 static ULONG count_dir_level(const char *filename)
@@ -1577,7 +1577,7 @@ void window_tab_set(void *awin, struct Node *tab_node)
 
 	aw->tab_node = tab_node;
 
-	if(aw->flat_mode) window_flat_browser_construct(aw, tab_node);
+	//if(aw->flat_mode) window_flat_browser_construct(aw, tab_node);
 
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 				LISTBROWSER_Labels, tab_get_listbrowser_list(tab_node),
@@ -1588,7 +1588,7 @@ void window_tab_set(void *awin, struct Node *tab_node)
 	if(aw->gadgets[GID_TREE]) SetGadgetAttrs(aw->gadgets[GID_TREE], aw->windows[WID_MAIN], NULL,
 			LISTBROWSER_Labels, tab_get_dirtree_list(tab_node), TAG_DONE);
 
-	if(aw->flat_mode) highlight_current_dir(aw, tab_node);
+	//if(aw->flat_mode) highlight_current_dir(aw, tab_node);
 
 	window_update_title(aw, tab_node);
 
