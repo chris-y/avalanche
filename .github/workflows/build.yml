@@ -1,0 +1,39 @@
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+ 
+jobs:
+  build_ppc:
+    runs-on: ubuntu-latest
+    container:
+      image: walkero/docker4amigavbcc:latest-ppc
+    name: build_os4
+    steps:
+      - uses: actions/checkout@v2
+      - name: build_os4
+        id: build_os4
+        run: |
+          cd ./src
+          make AvalanchePPC
+      - uses: actions/upload-artifact@v2
+        with:
+          name: AvalanchePPC
+          path: ./src/os4/AvalanchePPC
+  build_68k:
+    runs-on: ubuntu-latest
+    container:
+      image: walkero/docker4amigavbcc:latest-m68k
+    name: build_os3
+    steps:
+      - uses: actions/checkout@v2
+      - name: build_os3
+        id: build_os3
+        run: |
+          cd ./src
+          make Avalanche
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Avalanche
+          path: ./src/os3/Avalanche
