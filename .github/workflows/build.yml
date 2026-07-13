@@ -17,7 +17,7 @@ jobs:
         run: |
           cd ./src
           make AvalanchePPC
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: AvalanchePPC
           path: ./src/os4/AvalanchePPC
@@ -33,7 +33,7 @@ jobs:
         run: |
           cd ./src
           make Avalanche
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: Avalanche
           path: ./src/os3/Avalanche
