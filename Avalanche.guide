@@ -179,6 +179,7 @@ This is mostly for internal use, but has the following commands:
   - Using Zip 2.32 comand-line tool
   - REGRESSION: Zip modifications are currently disabled on OS4
 * Archive handling improvements
+  - Can now open split archives (via Project=>Open=>Split archive...)
   - Can now open ADFs and other uncompressed disk formats
     (subject to the availability of a @{"XAD filesystem module" link Install})
     NB: Ignore Filesystems applies here too, so disable if needed

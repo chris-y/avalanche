@@ -295,6 +295,7 @@ struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
+	
 	if(dir_entries == 0) flags = 0;
 	
 	FreeListBrowserList(&at->dir_tree);
