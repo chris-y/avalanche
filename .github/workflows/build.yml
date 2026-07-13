@@ -16,7 +16,7 @@ jobs:
         id: build_os4
         run: |
           cd ./src
-          make AvalanchePPC
+          make -f Makefile.cross AvalanchePPC
       - uses: actions/upload-artifact@v4
         with:
           name: AvalanchePPC
@@ -32,7 +32,7 @@ jobs:
         id: build_os3
         run: |
           cd ./src
-          make Avalanche
+          make -f Makefile.cross Avalanche
       - uses: actions/upload-artifact@v4
         with:
           name: Avalanche
