@@ -1,8 +1,8 @@
 on:
   push:
-    branches: [ master ]
+    branches: [ main, autobuild ]
   pull_request:
-    branches: [ master ]
+    branches: [ main, autobuild ]
  
 jobs:
   build_ppc:
