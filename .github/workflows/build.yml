@@ -11,7 +11,7 @@ jobs:
       image: walkero/docker4amigavbcc:latest-ppc
     name: build_os4
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: build_os4
         id: build_os4
         run: |
@@ -27,7 +27,7 @@ jobs:
       image: walkero/docker4amigavbcc:latest-m68k
     name: build_os3
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v7
       - name: build_os3
         id: build_os3
         run: |

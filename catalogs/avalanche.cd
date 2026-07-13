@@ -1,6 +1,6 @@
 ## header LOCALE_STRINGS_H
 ## array cat_strings
-## function locale_get_string
+;## function locale_get_string
 ;
 MSG_EXTRACT (//)
 E_xtract
