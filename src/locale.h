@@ -13,6 +13,7 @@
 
 /*************************************************************************/
 
+#define avalanche_NUMBERS 1
 #include "locale_strings.h" /* change name to correct locale header if needed */
 
 /*

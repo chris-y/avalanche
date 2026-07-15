@@ -7,7 +7,7 @@ AvalanchePPC: locale_strings.h
 	make -C os4
 
 locale_strings.h: ../catalogs/avalanche.cd
-	flexcat ../catalogs/avalanche.cd SOURCES locale_strings.h=../catalogs/catcomp_h.sd
+	flexcat ../catalogs/avalanche.cd locale_strings.h=CatComp_h.sd
 
 install: Avalanche AvalanchePPC
 	copy os3/Avalanche /
