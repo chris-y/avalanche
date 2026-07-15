@@ -1,6 +1,8 @@
 CC := vc +newlib
 # Add -DWITH_ZIP_MOD to enable Zip modifications
-CFLAGS := -static -O3 -D__USE_INLINE__ -ISDK:Include/Include_H -ISDK:local/common/include -ISDK:Include/netinclude
+#INCLUDES := -ISDK:local/common/include -ISDK:Include/netinclude
+INCLUDES := -I$(AOS4_SDK_INC) -I$(AOS4_NLIB_INC) -I$(AOS4_NET_INC)
+CFLAGS := -static -O3 -D__USE_INLINE__ $(INCLUDES)
 LIBS := 
 VPATH := ..
 

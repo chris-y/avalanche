@@ -1,5 +1,7 @@
 CC := vc +aos68k
-CFLAGS := -c99 -O3 -Inetinclude:
+#INCLUDES := -Inetinclude:
+INCLUDES := -I$(NDK32_INC) -I$(NET_INC) -I$(AMISSL_INC) 
+CFLAGS := -c99 -O3 $(INCLUDES)
 LIBS := -lamiga
 OBJDIR := objs_os3
 VPATH := ..
