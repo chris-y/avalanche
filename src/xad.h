@@ -26,6 +26,7 @@ ULONG xad_get_fileprotection(void *xfi, struct Node *tab_node);
 const char *xad_get_comment(void *xfi, struct Node *tab_node);
 const char *xad_get_link(void *xfi, struct Node *tab_node);
 BOOL xad_is_link(void *userdata, struct Node *tab_node);
+BOOL xad_is_partial(void *userdata, struct Node *tab_node);
 BOOL xad_is_disk(struct Node *tab_node); /* disk image (no fs) */
 BOOL xad_is_diskfile(struct Node *tab_node); /* disk archive (fs) */
 BOOL xad_recog(char *file);

@@ -823,6 +823,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	BOOL link = FALSE;
 	BOOL title_needs_free = FALSE;
 	BOOL disk = FALSE;
+	BOOL partial = FALSE;
 	void *xuserdata = userdata;
 	const char *comment = NULL;
 	const char *linkname = NULL;
@@ -846,6 +847,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		link = xad_is_link(xuserdata, tab_node);
 		linkname = xad_get_link(xuserdata, tab_node);
 		disk = xad_is_disk(tab_node);
+		partial = xad_is_partial(xuserdata, tab_node);
 	}
 
 	crunchsize = module_get_crunched_size(tab_node, xuserdata);
@@ -872,18 +874,22 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 
 		snprintf(datestr, 20, "\0");
 	} else {
-		if(disk == FALSE) {
-			if(crypted == FALSE) {
-				if(link == FALSE) {
-					glyph = glyph_get(AVALANCHE_GLYPH_POPFILE);
+		if(partial == FALSE) {
+			if(disk == FALSE) {
+				if(crypted == FALSE) {
+					if(link == FALSE) {
+						glyph = glyph_get(AVALANCHE_GLYPH_POPFILE);
+					} else {
+						glyph = glyph_get(AVALANCHE_GLYPH_LINK);
+					}
 				} else {
-					glyph = glyph_get(AVALANCHE_GLYPH_LINK);
+					glyph = glyph_get(AVALANCHE_GLYPH_CRYPTFILE);
 				}
 			} else {
-				glyph = glyph_get(AVALANCHE_GLYPH_CRYPTFILE);
+				glyph = glyph_get(AVALANCHE_GLYPH_DISK);
 			}
 		} else {
-			glyph = glyph_get(AVALANCHE_GLYPH_DISK);
+			glyph = glyph_get(AVALANCHE_GLYPH_CORRUPT);
 		}
 		
 		val1 = (ULONG)size;

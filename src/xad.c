@@ -198,6 +198,11 @@ BOOL xad_is_link(void *userdata, struct Node *tab_node)
 	return xad_is_xxx(userdata, tab_node, XADFIF_LINK);
 }
 
+BOOL xad_is_partial(void *userdata, struct Node *tab_node)
+{
+	return xad_is_xxx(userdata, tab_node, XADFIF_PARTIALFILE);
+}
+
 static BOOL xad_arc_is_xxx(struct Node *tab_node, ULONG flag)
 {
 	struct xad_userdata *xu = (struct xad_userdata *)tab_get_archive_userdata(tab_node);
