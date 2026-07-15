@@ -294,9 +294,12 @@ struct arc_entries **tab_alloc_dir_array(struct Node *tab_node)
 struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir_entries)
 {
 	struct avalanche_tab *at = tab_get_tab(tab_node);
+
 	ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
-	
 	if(dir_entries == 0) flags = 0;
+
+	const char *fn = tab_get_archive_name(tab_node);
+	if(fn) fn = FilePart(fn);
 	
 	FreeListBrowserList(&at->dir_tree);
 
@@ -310,7 +313,7 @@ struct Node *tab_dir_add_root_node(struct Node *tab_node, ULONG glyph, ULONG dir
 											LABEL_Image, glyph_get(glyph),
 											LABEL_Underscore, NULL,
 											LABEL_Text, " ",
-											LABEL_Text, FilePart(tab_get_archive_name(tab_node)),
+											LABEL_Text, fn,
 										LabelEnd,
 									TAG_DONE);
 
