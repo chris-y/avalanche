@@ -2477,6 +2477,9 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 			char *arc = AllocVec(len, MEMF_PRIVATE);
 			strncpy(arc, aslreq->fr_Drawer, len);
 			AddPart(arc, aslreq->fr_File, len);
+			if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
+				window_tab_create(aw);
+			}
 			tab_set_archive(aw->tab_node, arc);
 			FreeVec(arc);
 			ret = TRUE;
@@ -2527,6 +2530,9 @@ static BOOL window_req_archive_split(struct avalanche_window *aw, struct avalanc
 					}
 				}
 
+				if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
+					window_tab_create(aw);
+				}
 				tab_set_split(aw->tab_node, xs);
 
 			} else {
@@ -2534,6 +2540,9 @@ static BOOL window_req_archive_split(struct avalanche_window *aw, struct avalanc
 				char *arc = AllocVec(len, MEMF_PRIVATE);
 				strncpy(arc, aslreq->fr_Drawer, len);
 				AddPart(arc, aslreq->fr_File, len);
+				if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
+					window_tab_create(aw);
+				}
 				tab_set_archive(aw->tab_node, arc);
 				FreeVec(arc);
 			}
