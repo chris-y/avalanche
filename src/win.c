@@ -186,13 +186,14 @@ static struct NewMenu menu[] = {
 		{NM_ITEM,   NULL,         0, 0, 0, 0,}, // 2 Open
 			{NM_SUB,   NULL,        "O", 0, 0, 0,}, // 0 Archive
 			{NM_SUB,   NULL,        AVALANCHE_MS_SPLIT, MIF_SHIFTCOMMSEQ, 0, 0,}, // 1 Split
-		{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 3
-		{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 4 Archive Info
-		{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 5 About
-		{NM_ITEM,   NULL ,        0, 0, 0, 0,}, // 6 Check version
+		{NM_ITEM,   NULL,         "X", 0, 0, 0,}, // 3 Extract
+		{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 4
+		{NM_ITEM,   NULL , "!", NM_ITEMDISABLED, 0, 0,}, // 5 Archive Info
+		{NM_ITEM,   NULL ,        "?", 0, 0, 0,}, // 6 About
+		{NM_ITEM,   NULL ,        0, 0, 0, 0,}, // 7 Check version
 
-		{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 7
-		{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 8 Quit
+		{NM_ITEM,   NM_BARLABEL,        0,  0, 0, 0,}, // 8
+		{NM_ITEM,   NULL,         "Q", 0, 0, 0,}, // 9 Quit
 
 	{NM_TITLE,  NULL,               0,  0, 0, 0,}, // 1 Edit
 		{NM_ITEM,   NULL,       "A", NM_ITEMDISABLED, 0, 0,}, // 0 Select All
@@ -222,9 +223,9 @@ static struct NewMenu menu[] = {
 	{NM_END,   NULL,        0,  0, 0, 0,},
 };
 
-#define MENU_DRAGLOCK 20
-#define MENU_FLATMODE 24
-#define MENU_LISTMODE 25
+#define MENU_DRAGLOCK 21
+#define MENU_FLATMODE 25
+#define MENU_LISTMODE 26
 
 #ifdef __amigaos4__
 #define CLICKTAB_MinorLabelChange TAG_IGNORE
@@ -382,11 +383,11 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,8,0)); //draglock
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
-		//OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
+		//OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,9,0)); //quit
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //viewmode1
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //viewmode2
-
-		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,3,0)); //extract
+		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,5,0)); //arc info
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
 		OnMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
@@ -414,14 +415,15 @@ static void window_menu_activation(void *awin, BOOL enable, BOOL busy)
 		}
 	} else {
 		if(busy == FALSE) {
-			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,4,0)); //arc info
+			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,5,0)); //arc info
 		} else {
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,2,0)); //open arc
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,0,0)); //new arc
-			//OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,8,0)); //quit
+			//OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,9,0)); //quit
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,0)); //viewmode1
 			OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(2,1,1)); //viewmode2
 		}
+		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(0,3,0)); //extract
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,0,0)); //edit/select all
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,1,0)); //edit/clear
 		OffMenu(aw->windows[WID_MAIN], FULLMENUNUM(1,2,0)); //edit/invert
@@ -2406,16 +2408,18 @@ const char *window_req_new_lha(void *awin, char *drawer)
 	return tab_get_archive(aw->tab_node);
 }
 
-const char *window_req_dest(void *awin)
+const char *window_req_dest(void *awin, BOOL force_req)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	char *dest = NULL;
 
-	BOOL npe = CONFIG_GET_LOCK(no_prompt_extract);
-	if(npe) dest = CONFIG_GET(dest);
-	CONFIG_UNLOCK;
+	if(force_req == FALSE) {
+		BOOL npe = CONFIG_GET_LOCK(no_prompt_extract);
+		if(npe) dest = CONFIG_GET(dest);
+		CONFIG_UNLOCK;
 
-	if(npe) return(dest);
+		if(npe) return(dest);
+	}
 
 	struct FileRequester *aslreq = AllocAslRequest(ASL_FileRequest, NULL);
 	if(aslreq) {
@@ -3062,7 +3066,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 				case GID_EXTRACT:
 				{
-					char *dest = window_req_dest(aw);
+					char *dest = window_req_dest(aw, FALSE);
 					if(dest != NULL) {
 						ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 						if(ret != 0) show_error(ret, awin);
@@ -3171,15 +3175,25 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 								}
 							break;
 
-							case 4: //info
+							case 3: //extract
+							{
+								char *dest = window_req_dest(aw, TRUE);
+								if(dest != NULL) {
+									ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
+									if(ret != 0) show_error(ret, awin);
+								}
+							}
+							break;
+
+							case 5: //info
 								req_show_arc_info(awin, aw->tab_node);
 							break;
 
-							case 5: //about
+							case 6: //about
 								show_about(awin);
 							break;
 
-							case 6: //check version
+							case 7: //check version
 								if(window_get_window(awin))
 									SetWindowPointer(window_get_window(awin),
 											WA_BusyPointer, TRUE,
@@ -3196,7 +3210,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 											TAG_DONE);
 							break;
 							
-							case 8: //quit
+							case 9: //quit
 								if(ask_quit(awin)) {
 									done = WIN_DONE_QUIT;
 								}
@@ -3321,29 +3335,30 @@ void fill_menu_labels(void)
 	menu[3].nm_Label = locale_get_string( MSG_M_OPEN );
 	menu[4].nm_Label = locale_get_string( MSG_M_OPEN_ARCHIVE );
 	menu[5].nm_Label = locale_get_string( MSG_M_OPEN_SPLIT );
-	menu[7].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
-	menu[8].nm_Label = locale_get_string( MSG_ABOUT );
-	menu[9].nm_Label = locale_get_string( MSG_CHECKVERSION );
-	menu[11].nm_Label = locale_get_string( MSG_QUIT );
-	menu[12].nm_Label = locale_get_string( MSG_EDIT );
-	menu[13].nm_Label = locale_get_string( MSG_SELECTALL );
-	menu[14].nm_Label = locale_get_string( MSG_CLEARSELECTION );
-	menu[15].nm_Label = locale_get_string( MSG_INVERTSELECTION );
-	menu[17].nm_Label = locale_get_string( MSG_ADDFILES );
-	menu[18].nm_Label = locale_get_string( MSG_DELFILES );
-	menu[20].nm_Label = locale_get_string( MSG_DRAGLOCK );
-	menu[21].nm_Label = locale_get_string( MSG_WINDOW );
-	menu[22].nm_Label = locale_get_string( MSG_NEWWINDOW );
-	menu[23].nm_Label = locale_get_string( MSG_VIEWMODE );
+	menu[6].nm_Label = locale_get_string(MSG_M_EXTRACT);
+	menu[8].nm_Label = locale_get_string( MSG_ARCHIVEINFO );
+	menu[9].nm_Label = locale_get_string( MSG_ABOUT );
+	menu[10].nm_Label = locale_get_string( MSG_CHECKVERSION );
+	menu[12].nm_Label = locale_get_string( MSG_QUIT );
+	menu[13].nm_Label = locale_get_string( MSG_EDIT );
+	menu[14].nm_Label = locale_get_string( MSG_SELECTALL );
+	menu[15].nm_Label = locale_get_string( MSG_CLEARSELECTION );
+	menu[16].nm_Label = locale_get_string( MSG_INVERTSELECTION );
+	menu[18].nm_Label = locale_get_string( MSG_ADDFILES );
+	menu[19].nm_Label = locale_get_string( MSG_DELFILES );
+	menu[21].nm_Label = locale_get_string( MSG_DRAGLOCK );
+	menu[22].nm_Label = locale_get_string( MSG_WINDOW );
+	menu[23].nm_Label = locale_get_string( MSG_NEWWINDOW );
+	menu[24].nm_Label = locale_get_string( MSG_VIEWMODE );
 	menu[MENU_FLATMODE].nm_Label = locale_get_string( MSG_VIEWMODEBROWSER );
 	menu[MENU_LISTMODE].nm_Label = locale_get_string( MSG_VIEWMODELIST );
-	menu[26].nm_Label = locale_get_string( MSG_DIR_TREE );
-	menu[27].nm_Label = locale_get_string( MSG_COLLAPSE_ALL );
-	menu[28].nm_Label = locale_get_string( MSG_EXPAND_ALL );
-	menu[30].nm_Label = locale_get_string( MSG_CLOSE );
-	menu[31].nm_Label = locale_get_string( MSG_SETTINGS );
-	menu[32].nm_Label = locale_get_string( MSG_SNAPSHOT );
-	menu[33].nm_Label = locale_get_string( MSG_PREFERENCES );
+	menu[27].nm_Label = locale_get_string( MSG_DIR_TREE );
+	menu[28].nm_Label = locale_get_string( MSG_COLLAPSE_ALL );
+	menu[29].nm_Label = locale_get_string( MSG_EXPAND_ALL );
+	menu[31].nm_Label = locale_get_string( MSG_CLOSE );
+	menu[32].nm_Label = locale_get_string( MSG_SETTINGS );
+	menu[33].nm_Label = locale_get_string( MSG_SNAPSHOT );
+	menu[34].nm_Label = locale_get_string( MSG_PREFERENCES );
 }
 
 struct Node *window_get_current_tab(void *awin)

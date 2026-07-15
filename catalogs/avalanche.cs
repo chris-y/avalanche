@@ -425,3 +425,6 @@ Split archive
 MSG_SELECTSPLITARCHIVE
 Select archive files to open as split archive
 ;
+MSG_M_EXTRACT
+Extract...
+;
