@@ -627,7 +627,7 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 
 	if(detach_list && aw->flat_mode) {
 		GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&userdata, TAG_DONE);
-		if(userdata == NULL) return;
+		if(userdata->userdata == NULL) return;
 	}
 
 	if(select == 2) {
@@ -801,7 +801,7 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 	return 0;
 }
 
-static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw, struct Node *tab_node)
+static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, int selected, struct avalanche_window *aw, struct Node *tab_node)
 {
 	BOOL dir_seen = FALSE;
 	ULONG flags = 0;
@@ -826,6 +826,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 	BOOL title_needs_free = FALSE;
 	BOOL disk = FALSE;
 	BOOL partial = FALSE;
+	BOOL dir_sel = FALSE;
 	void *xuserdata = userdata;
 	const char *comment = NULL;
 	const char *linkname = NULL;
@@ -868,7 +869,15 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		Amiga2Date(0, &cd);
 
 	if(dir) {
+		if(aw->flat_mode) {
+			dir_sel = TRUE;
+			
+			/* Clear checkbox for partial selections */
+			if(selected == 2) selected = FALSE;
+		}
+
 		glyph = glyph_get(AVALANCHE_GLYPH_DRAWER);
+
 		tag1 = LBNCA_CopyText;
 		val1 = TRUE;
 		tag2 = LBNCA_Text;
@@ -944,7 +953,7 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 #else
 	struct Node *node = AllocListBrowserNode(7,
 		LBNA_UserData, userdata,
-		LBNA_CheckBox, !dir,
+		LBNA_CheckBox, (!dir || dir_sel),
 		LBNA_Checked, selected,
 		LBNA_Flags, flags,
 		LBNA_Generation, gen,
@@ -1098,6 +1107,35 @@ static void window_update_title(struct avalanche_window *aw, struct Node *tab_no
 	}
 }
 
+/* Enumerate select state of dir "dir"
+ * returns 0 = none selected, 1 = all selected, 2 = some selected
+ * Browser mode only!
+ */
+static int window_enum_dir(struct Node *tab_node, const char *dir)
+{
+	int sel_state = 2;
+	ULONG count_sel = 0;
+	ULONG count_unsel = 0;
+
+	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
+		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
+		if(arc_e->dir == TRUE) continue;
+
+		if((dir == NULL) || (strncmp(arc_e->name, dir, strlen(dir)) == 0)) {
+			if(arc_e->selected) {
+				count_sel++;
+			} else {
+				count_unsel++;
+			}
+		}
+	}
+	
+	if((count_sel == 0) && (count_unsel > 0)) sel_state = 0;
+	if((count_unsel == 0) && (count_sel > 0)) sel_state = 1;
+
+	return sel_state;
+}
+
 static void window_flat_browser_tree_construct(struct avalanche_window *aw, struct Node *tab_node)
 {
 	ULONG root_glyph = AVALANCHE_GLYPH_ROOT;
@@ -1152,7 +1190,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 			
 			dir_e->name = dir_name;
 			dir_e->level = slash;
-			dir_e->dir = FALSE;
+			dir_e->dir = TRUE;
+			dir_e->dirtree_dir = FALSE;
 
 			dir_entry++;
 
@@ -1169,9 +1208,9 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 	for(int i = 0; i < dir_entry; i++) {
 		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i, FALSE);
 		if((check_if_subdir(tab_node, dir_entry, dir_e->name))) {
-			dir_e->dir = TRUE;  //LBFLG_HASCHILDREN
+			dir_e->dirtree_dir = TRUE;  //LBFLG_HASCHILDREN
 		} else {
-			dir_e->dir = FALSE;
+			dir_e->dirtree_dir = FALSE;
 		}
 	}
 
@@ -1193,7 +1232,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 		ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i, FALSE);
 		if(dir_e == NULL) break;
-		if(dir_e->dir == FALSE) flags = 0;
+		if(dir_e->dirtree_dir == FALSE) flags = 0;
 
 		struct Node *node = AllocListBrowserNode(1,
 									LBNA_UserData, dir_e->name,
@@ -1293,7 +1332,14 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 			const char *c_dir = tab_get_current_dir(tab_node);
 			if((dir_e && ((dir_e->level - 1) == level)) &&
 				((c_dir == NULL) || (strncmp(dir_e->name, c_dir, skip_dir_len) == 0))) {
-				addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw, tab_node);
+					int sel = 2;
+					char *cdir = AllocVec(strlen(dir_e->name) + 2, MEMF_CLEAR);
+					if(cdir) {
+						snprintf(cdir, strlen(dir_e->name) + 2, "%s/", dir_e->name); // copy with trailing slash
+						sel = window_enum_dir(tab_node, cdir);
+						FreeVec(cdir);
+					}
+					addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, dir_e, sel, aw, tab_node);
 			}
 		}
 	}
@@ -2104,6 +2150,53 @@ static void parent_dir(struct avalanche_window *aw, struct Node *tab_node)
 	}
 }
 
+
+static void window_modify_dir(struct Node *tab_node, ULONG select, const char *dir)
+{
+	BOOL selected = FALSE;
+	if(select == 1) selected = TRUE;
+	
+	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
+		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
+		if((dir == NULL) || (strncmp(arc_e->name, dir, strlen(dir)) == 0)) {
+			if(select == 2) {
+				arc_e->selected = !arc_e->selected;
+			} else {
+				arc_e->selected = selected;
+			}
+		}
+	}
+}
+
+/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
+void window_modify_all_list(void *awin, ULONG select)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	struct Node *node;
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	if(aw->flat_mode) {
+		const char *c_dir = tab_get_current_dir(aw->tab_node);
+		window_modify_dir(aw->tab_node, select, c_dir);
+	}
+
+	struct List *lblist = window_get_lblist(aw);
+
+	for(node = lblist->lh_Head; node->ln_Succ; node=node->ln_Succ) {
+		toggle_item(aw, node, select, FALSE);
+	}
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+				LISTBROWSER_Labels, lblist,
+				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
+			TAG_DONE);
+
+	window_count_selected(aw, aw->tab_node);
+}
+
 static void window_tree_handle(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -2173,7 +2266,19 @@ static void window_list_handle(void *awin)
 
 				if(userdata != NULL) {
 					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
-					arc_entry->selected = TRUE;
+					
+					if(arc_entry->dir) {
+						char *cdir = AllocVec(strlen(arc_entry->name) + 2, MEMF_CLEAR);
+						if(!cdir) return;
+						
+						snprintf(cdir, strlen(arc_entry->name) + 2, "%s/", arc_entry->name); // copy with trailing slash
+
+						window_modify_dir(aw->tab_node, 1, cdir);
+
+						FreeVec(cdir);
+					} else {
+						arc_entry->selected = TRUE;
+					}
 				}
 			}
 			window_count_selected(aw, aw->tab_node);
@@ -2191,7 +2296,19 @@ static void window_list_handle(void *awin)
 
 				if(userdata != NULL) {
 					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
-					arc_entry->selected = FALSE;
+					
+					if(arc_entry->dir) {
+						char *cdir = AllocVec(strlen(arc_entry->name) + 2, MEMF_CLEAR);
+						if(!cdir) return;
+						
+						snprintf(cdir, strlen(arc_entry->name) + 2, "%s/", arc_entry->name); // copy with trailing slash
+
+						window_modify_dir(aw->tab_node, 0, cdir);
+
+						FreeVec(cdir);
+					} else {
+						arc_entry->selected = FALSE;
+					}
 				}
 			}
 			window_count_selected(aw, aw->tab_node);
@@ -2215,37 +2332,25 @@ it's incompatible with double-clicking as it resets the listview */
 					LBNA_UserData, &userdata,
 				TAG_DONE);
 
-				if(userdata == NULL) {
-					/* this is currently one of our fake dir nodes
-					 * NB: this is likely to change to point to the array! */
+				struct arc_entries *arc_e = (struct arc_entries *)userdata;
 
-					char *dir = NULL;
+				if((userdata == NULL) || (arc_e->dir)) {
+					/* this is one of our fake dir nodes */
 
-					/* this will be easier with the array pointer -
-					 * we need to get the full path which isn't here! */
-					GetListBrowserNodeAttrs(node,
-						LBNA_Column, 1,
-						LBNCA_Text, &dir, 
-					TAG_DONE);
-
-					/* Special case: parent dir */
-					if(strcmp(dir, "/") == 0) return parent_dir(aw, aw->tab_node);
-
-					ULONG cdir_len = 0;
-					const char *c_dir = tab_get_current_dir(aw->tab_node);
-					if(c_dir) cdir_len = strlen(c_dir);
-					
-					char *cdir = AllocVec(cdir_len + 1 + strlen(dir) + 2, MEMF_CLEAR);
-					
-					if(c_dir) {
-						strncpy(cdir, c_dir, cdir_len);
+					if(userdata == NULL) {
+						/* Parent */
+						return parent_dir(aw, aw->tab_node);
 					}
+
+					char *cdir = AllocVec(strlen(arc_e->name) + 2, MEMF_CLEAR);
+					if(!cdir) return;
 					
-					AddPart(cdir, dir, cdir_len + 1 + strlen(dir) + 2);
-					strcat(cdir, "/"); // add trailing slash
-					tab_set_current_dir(aw->tab_node, cdir);
+					snprintf(cdir, strlen(arc_e->name) + 2, "%s/", arc_e->name); // copy with trailing slash
 
 					/* switch to dir */
+					tab_set_current_dir(aw->tab_node, cdir);
+					FreeVec(cdir);
+
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
@@ -2325,47 +2430,6 @@ void window_fuelgauge_update(void *awin, struct Node *tab_node, ULONG size, ULON
 	progress_set_file_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size, filename, P_WIDTH, P_HEIGHT);
 }
 
-/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
-void window_modify_all_list(void *awin, ULONG select)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	struct Node *node;
-	BOOL selected = FALSE;
-
-	if(select == 1) selected = TRUE;
-
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, ~0, TAG_DONE);
-
-	if(aw->flat_mode) {
-		for(int i = 0; i < tab_get_total_items(aw->tab_node); i++) {
-			struct arc_entries *arc_e = tab_get_arc_entry(aw->tab_node, i);
-			const char *c_dir = tab_get_current_dir(aw->tab_node);
-			if((c_dir == NULL) || (strncmp(arc_e->name, c_dir, strlen(c_dir)) == 0)) {
-				if(select == 2) {
-					arc_e->selected = !arc_e->selected;
-				} else {
-					arc_e->selected = selected;
-				}
-			}
-		}
-	}
-
-	struct List *lblist = window_get_lblist(aw);
-
-	for(node = lblist->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-		toggle_item(aw, node, select, FALSE);
-	}
-
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-				LISTBROWSER_Labels, lblist,
-				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
-			TAG_DONE);
-
-	window_count_selected(aw, aw->tab_node);
-}
-
 const char *window_req_new_lha(void *awin, char *drawer)
 {	
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -2408,7 +2472,7 @@ const char *window_req_new_lha(void *awin, char *drawer)
 	return tab_get_archive(aw->tab_node);
 }
 
-const char *window_req_dest(void *awin, BOOL force_req)
+static const char *window_req_dest(void *awin, BOOL force_req)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	char *dest = NULL;
@@ -3066,7 +3130,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 				case GID_EXTRACT:
 				{
-					char *dest = window_req_dest(aw, FALSE);
+					const char *dest = window_req_dest(aw, FALSE);
 					if(dest != NULL) {
 						ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 						if(ret != 0) show_error(ret, awin);
@@ -3177,7 +3241,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 							case 3: //extract
 							{
-								char *dest = window_req_dest(aw, TRUE);
+								const char *dest = window_req_dest(aw, TRUE);
 								if(dest != NULL) {
 									ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 									if(ret != 0) show_error(ret, awin);

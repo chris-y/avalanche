@@ -23,6 +23,7 @@ struct arc_entries {
 	ULONG *size;
 	BOOL selected;
 	BOOL dir;
+	BOOL dirtree_dir;
 	void *userdata;
 	ULONG level;
 };
