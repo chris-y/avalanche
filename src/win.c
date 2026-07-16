@@ -627,7 +627,7 @@ static void toggle_item(struct avalanche_window *aw, struct Node *node, ULONG se
 
 	if(detach_list && aw->flat_mode) {
 		GetListBrowserNodeAttrs(node, LBNA_UserData, (struct arc_entries *)&userdata, TAG_DONE);
-		if(userdata == NULL) return;
+		if(userdata->userdata == NULL) return;
 	}
 
 	if(select == 2) {
@@ -1190,7 +1190,8 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 			
 			dir_e->name = dir_name;
 			dir_e->level = slash;
-			dir_e->dir = FALSE;
+			dir_e->dir = TRUE;
+			dir_e->dirtree_dir = FALSE;
 
 			dir_entry++;
 
@@ -1207,9 +1208,9 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 	for(int i = 0; i < dir_entry; i++) {
 		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i, FALSE);
 		if((check_if_subdir(tab_node, dir_entry, dir_e->name))) {
-			dir_e->dir = TRUE;  //LBFLG_HASCHILDREN
+			dir_e->dirtree_dir = TRUE;  //LBFLG_HASCHILDREN
 		} else {
-			dir_e->dir = FALSE;
+			dir_e->dirtree_dir = FALSE;
 		}
 	}
 
@@ -1231,7 +1232,7 @@ static void window_flat_browser_tree_construct(struct avalanche_window *aw, stru
 		ULONG flags = LBFLG_HASCHILDREN | LBFLG_SHOWCHILDREN;
 		struct arc_entries *dir_e = tab_get_dir_entry(tab_node, i, FALSE);
 		if(dir_e == NULL) break;
-		if(dir_e->dir == FALSE) flags = 0;
+		if(dir_e->dirtree_dir == FALSE) flags = 0;
 
 		struct Node *node = AllocListBrowserNode(1,
 									LBNA_UserData, dir_e->name,
@@ -1331,7 +1332,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 			const char *c_dir = tab_get_current_dir(tab_node);
 			if((dir_e && ((dir_e->level - 1) == level)) &&
 				((c_dir == NULL) || (strncmp(dir_e->name, c_dir, skip_dir_len) == 0))) {
-				addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, NULL, window_enum_dir(tab_node, dir_e->name), aw, tab_node);
+				addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, dir_e, window_enum_dir(tab_node, dir_e->name), aw, tab_node);
 			}
 		}
 	}
@@ -2253,37 +2254,25 @@ it's incompatible with double-clicking as it resets the listview */
 					LBNA_UserData, &userdata,
 				TAG_DONE);
 
-				if(userdata == NULL) {
-					/* this is currently one of our fake dir nodes
-					 * NB: this is likely to change to point to the array! */
+				struct arc_entries *arc_e = (struct arc_entries *)userdata;
 
-					char *dir = NULL;
+				if((userdata == NULL) || (arc_e->dir)) {
+					/* this is one of our fake dir nodes */
 
-					/* this will be easier with the array pointer -
-					 * we need to get the full path which isn't here! */
-					GetListBrowserNodeAttrs(node,
-						LBNA_Column, 1,
-						LBNCA_Text, &dir, 
-					TAG_DONE);
-
-					/* Special case: parent dir */
-					if(strcmp(dir, "/") == 0) return parent_dir(aw, aw->tab_node);
-
-					ULONG cdir_len = 0;
-					const char *c_dir = tab_get_current_dir(aw->tab_node);
-					if(c_dir) cdir_len = strlen(c_dir);
-					
-					char *cdir = AllocVec(cdir_len + 1 + strlen(dir) + 2, MEMF_CLEAR);
-					
-					if(c_dir) {
-						strncpy(cdir, c_dir, cdir_len);
+					if(userdata == NULL) {
+						/* Parent */
+						return parent_dir(aw, aw->tab_node);
 					}
+
+					char *cdir = AllocVec(strlen(arc_e->name) + 2, MEMF_CLEAR);
+					if(!cdir) return;
 					
-					AddPart(cdir, dir, cdir_len + 1 + strlen(dir) + 2);
-					strcat(cdir, "/"); // add trailing slash
-					tab_set_current_dir(aw->tab_node, cdir);
+					snprintf(cdir, strlen(arc_e->name) + 2, "%s/", arc_e->name); // copy with trailing slash
 
 					/* switch to dir */
+					tab_set_current_dir(aw->tab_node, cdir);
+					FreeVec(cdir);
+
 					SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 						LISTBROWSER_Labels, ~0, TAG_DONE);
 
