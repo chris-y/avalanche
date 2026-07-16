@@ -38,7 +38,7 @@
 #include <proto/locale.h>
 #include <proto/exec.h>
 
-#define CATCOMP_BLOCK 1     /* enable CATCOMP_BLOCK */
+#define avalanche_BLOCK 1     /* enable CATCOMP_BLOCK */
 #include "locale.h" /* prototypes and catcomp block */
 
 /*************************************************************************/
@@ -116,7 +116,7 @@ STRPTR locale_get_string(long id)
 LONG   *l;
 STRPTR  builtin;
 
-	l = (LONG *)CatCompBlock;
+	l = (LONG *)avalanche_Block;
 
     while (*l != id ) {
         UWORD *w = (UWORD *)((ULONG)l + 4);

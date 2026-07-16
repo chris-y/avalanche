@@ -7,7 +7,7 @@ AvalanchePPC: locale_strings.h
 	make -C os4
 
 locale_strings.h: ../catalogs/avalanche.cd
-	catcomp /catalogs/avalanche.cd CFILE locale_strings.h NOCODE NOARRAY
+	flexcat ../catalogs/avalanche.cd locale_strings.h=../catalogs/CatComp_h.sd
 
 install: Avalanche AvalanchePPC
 	copy os3/Avalanche /
