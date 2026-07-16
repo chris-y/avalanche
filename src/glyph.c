@@ -17,10 +17,12 @@
 #include <proto/bitmap.h>
 #include <proto/drawlist.h>
 #include <proto/glyph.h>
+#include <proto/label.h>
 
 #include <images/bitmap.h>
 #include <images/drawlist.h>
 #include <images/glyph.h>
+#include <images/label.h>
 
 #include <reaction/reaction.h>
 #include <reaction/reaction_macros.h>
@@ -31,7 +33,7 @@
 
 
 /** Glyphs **/
-Object *glyph_cache[AVALANCHE_GLYPH_MAX];
+static Object *glyph_cache[AVALANCHE_GLYPH_MAX];
 
 #define AVALANCHE_DRAWLIST_FILE \
 	{DLST_AMOVE, 20, 10, 60, 10, 1}, \
@@ -634,6 +636,49 @@ Object *glyph_get(ULONG glyph)
 		}
 	}
 
+	glyph_cache[glyph] = glyphobj;
+	return glyphobj;
+}
+
+Object *glyph_label_get(ULONG glyph)
+{
+	ULONG select_glyph = AVALANCHE_GLYPH_NONE;
+
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] Requested comp glyph %ld\n", glyph);
+#endif
+
+	Object *glyphobj = NULL;
+	if(glyph_cache[glyph] != NULL) return glyph_cache[glyph];
+	
+	switch(glyph) {
+		case AVALANCHE_GLYPH_COMP_DIR_SEL:
+			select_glyph = GLYPH_CHECKMARK; // temp, should be AVALANCHE_GLYPH_SELECTED;
+		break;
+		case AVALANCHE_GLYPH_COMP_DIR_UNSEL:
+			select_glyph = AVALANCHE_GLYPH_NONE; // temp, should be AVALANCHE_GLYPH_UNSELECTED;
+		break;
+		case AVALANCHE_GLYPH_COMP_DIR_PARSEL:
+		default:
+			select_glyph = GLYPH_RIGHTARROW; // temp, should be AVALANCHE_GLYPH_PARTIALSELECTED;
+		break;
+	}
+	
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] Select glyph %ld\n", select_glyph);
+#endif
+	
+	glyphobj = LabelObj,
+			LABEL_DisposeImage, FALSE,
+			LABEL_Image, glyph_get(select_glyph),
+			LABEL_DisposeImage, FALSE,
+			LABEL_Image, glyph_get(AVALANCHE_GLYPH_DRAWER),
+		LabelEnd;
+	
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] glyphobj %lx\n", glyphobj);
+#endif
+	
 	glyph_cache[glyph] = glyphobj;
 	return glyphobj;
 }

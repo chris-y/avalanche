@@ -33,11 +33,22 @@ enum {
 	AVALANCHE_GLYPH_STOP,
 	AVALANCHE_GLYPH_TABCLOSE,
 	AVALANCHE_GLYPH_BUSY, /* For tab flag */
+	
+	AVALANCHE_GLYPH_SELECTED,
+	AVALANCHE_GLYPH_UNSELECTED,
+	AVALANCHE_GLYPH_PARTIALSELECTED,
+	
+	/* Composite label objects */
+	AVALANCHE_GLYPH_COMP_DIR_SEL,
+	AVALANCHE_GLYPH_COMP_DIR_UNSEL,
+	AVALANCHE_GLYPH_COMP_DIR_PARSEL,
+	
 	AVALANCHE_GLYPH_MAX
 };
 
 
 Object *glyph_get(ULONG glyph);
+Object *glyph_label_get(ULONG glyph); /* For AVALANCHE_GLYPH_COMP_#? */
 void glyph_init(void);
 void glyph_free(void);
 

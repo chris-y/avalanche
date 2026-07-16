@@ -801,7 +801,7 @@ long extract(void *awin, const char *archive, const char *newdest, struct Node *
 	return 0;
 }
 
-static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL selected, struct avalanche_window *aw, struct Node *tab_node)
+static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, int selected, struct avalanche_window *aw, struct Node *tab_node)
 {
 	BOOL dir_seen = FALSE;
 	ULONG flags = 0;
@@ -868,7 +868,22 @@ static void addlbnode(char *name, LONG *size, BOOL dir, void *userdata, BOOL sel
 		Amiga2Date(0, &cd);
 
 	if(dir) {
-		glyph = glyph_get(AVALANCHE_GLYPH_DRAWER);
+		if(aw->flat_mode) {
+			switch(selected) {
+				case 0:
+					glyph = glyph_label_get(AVALANCHE_GLYPH_COMP_DIR_UNSEL);
+				break;
+				case 1:
+					glyph = glyph_label_get(AVALANCHE_GLYPH_COMP_DIR_SEL);
+				break;
+				case 2:
+				default:
+					glyph = glyph_label_get(AVALANCHE_GLYPH_COMP_DIR_PARSEL);
+				break;
+			}
+		} else {
+			glyph = glyph_get(AVALANCHE_GLYPH_DRAWER);
+		}
 		tag1 = LBNCA_CopyText;
 		val1 = TRUE;
 		tag2 = LBNCA_Text;
@@ -1098,6 +1113,53 @@ static void window_update_title(struct avalanche_window *aw, struct Node *tab_no
 	}
 }
 
+/* Enumerate select state of dir "dir"
+ * returns 0 = none selected, 1 = all selected, 2 = some selected
+ * Browser mode only!
+ */
+static int window_enum_dir(struct Node *tab_node, const char *dir)
+{
+	int sel_state = 2;
+	ULONG count_sel = 0;
+	ULONG count_unsel = 0;
+
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] Dir %s\n", dir);
+#endif
+
+	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
+		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
+		if(arc_e->dir == TRUE) continue;
+
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] Checking %s against %s\n", arc_e->name, dir);
+#endif
+
+		if((dir == NULL) || (strncmp(arc_e->name, dir, strlen(dir)) == 0)) {
+			if(arc_e->selected) {
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] Matched - selected\n");
+#endif
+				count_sel++;
+			} else {
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] Matched - not selected\n");
+#endif
+				count_unsel++;
+			}
+		}
+	}
+	
+	if((count_sel == 0) && (count_unsel > 0)) sel_state = 0;
+	if((count_unsel == 0) && (count_sel > 0)) sel_state = 1;
+
+#ifdef __amigaos4__
+DebugPrintF("[Avalanche] Returning state %d\n", sel_state);
+#endif
+
+	return sel_state;
+}
+
 static void window_flat_browser_tree_construct(struct avalanche_window *aw, struct Node *tab_node)
 {
 	ULONG root_glyph = AVALANCHE_GLYPH_ROOT;
@@ -1293,7 +1355,7 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 			const char *c_dir = tab_get_current_dir(tab_node);
 			if((dir_e && ((dir_e->level - 1) == level)) &&
 				((c_dir == NULL) || (strncmp(dir_e->name, c_dir, skip_dir_len) == 0))) {
-				addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, NULL, FALSE, aw, tab_node);
+				addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, NULL, window_enum_dir(tab_node, dir_e->name), aw, tab_node);
 			}
 		}
 	}
@@ -3066,7 +3128,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 				case GID_EXTRACT:
 				{
-					char *dest = window_req_dest(aw, FALSE);
+					const char *dest = window_req_dest(aw, FALSE);
 					if(dest != NULL) {
 						ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 						if(ret != 0) show_error(ret, awin);
@@ -3177,7 +3239,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 							case 3: //extract
 							{
-								char *dest = window_req_dest(aw, TRUE);
+								const char *dest = window_req_dest(aw, TRUE);
 								if(dest != NULL) {
 									ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 									if(ret != 0) show_error(ret, awin);
