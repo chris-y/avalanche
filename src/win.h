@@ -41,7 +41,6 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable);
 
 /* Handle events */
 void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL refresh_only);
-const char *window_req_dest(void *awin);
 ULONG window_handle_input(void *awin, UWORD *code);
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort);
 

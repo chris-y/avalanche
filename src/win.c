@@ -2446,7 +2446,7 @@ const char *window_req_new_lha(void *awin, char *drawer)
 	return tab_get_archive(aw->tab_node);
 }
 
-const char *window_req_dest(void *awin, BOOL force_req)
+static const char *window_req_dest(void *awin, BOOL force_req)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
 	char *dest = NULL;
