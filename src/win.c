@@ -1332,7 +1332,14 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 			const char *c_dir = tab_get_current_dir(tab_node);
 			if((dir_e && ((dir_e->level - 1) == level)) &&
 				((c_dir == NULL) || (strncmp(dir_e->name, c_dir, skip_dir_len) == 0))) {
-				addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, dir_e, window_enum_dir(tab_node, dir_e->name), aw, tab_node);
+					int sel = 2;
+					char *cdir = AllocVec(strlen(dir_e->name) + 2, MEMF_CLEAR);
+					if(cdir) {
+						snprintf(cdir, strlen(dir_e->name) + 2, "%s/", dir_e->name); // copy with trailing slash
+						sel = window_enum_dir(tab_node, cdir);
+						FreeVec(cdir);
+					}
+					addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, dir_e, sel, aw, tab_node);
 			}
 		}
 	}
@@ -2143,6 +2150,53 @@ static void parent_dir(struct avalanche_window *aw, struct Node *tab_node)
 	}
 }
 
+
+static void window_modify_dir(struct Node *tab_node, ULONG select, const char *dir)
+{
+	BOOL selected = FALSE;
+	if(select == 1) selected = TRUE;
+	
+	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
+		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
+		if((dir == NULL) || (strncmp(arc_e->name, dir, strlen(dir)) == 0)) {
+			if(select == 2) {
+				arc_e->selected = !arc_e->selected;
+			} else {
+				arc_e->selected = selected;
+			}
+		}
+	}
+}
+
+/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
+void window_modify_all_list(void *awin, ULONG select)
+{
+	struct avalanche_window *aw = (struct avalanche_window *)awin;
+
+	struct Node *node;
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+			LISTBROWSER_Labels, ~0, TAG_DONE);
+
+	if(aw->flat_mode) {
+		const char *c_dir = tab_get_current_dir(aw->tab_node);
+		window_modify_dir(aw->tab_node, select, c_dir);
+	}
+
+	struct List *lblist = window_get_lblist(aw);
+
+	for(node = lblist->lh_Head; node->ln_Succ; node=node->ln_Succ) {
+		toggle_item(aw, node, select, FALSE);
+	}
+
+	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
+				LISTBROWSER_Labels, lblist,
+				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
+			TAG_DONE);
+
+	window_count_selected(aw, aw->tab_node);
+}
+
 static void window_tree_handle(void *awin)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -2212,7 +2266,19 @@ static void window_list_handle(void *awin)
 
 				if(userdata != NULL) {
 					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
-					arc_entry->selected = TRUE;
+					
+					if(arc_entry->dir) {
+						char *cdir = AllocVec(strlen(arc_entry->name) + 2, MEMF_CLEAR);
+						if(!cdir) return;
+						
+						snprintf(cdir, strlen(arc_entry->name) + 2, "%s/", arc_entry->name); // copy with trailing slash
+
+						window_modify_dir(aw->tab_node, 1, cdir);
+
+						FreeVec(cdir);
+					} else {
+						arc_entry->selected = TRUE;
+					}
 				}
 			}
 			window_count_selected(aw, aw->tab_node);
@@ -2230,7 +2296,19 @@ static void window_list_handle(void *awin)
 
 				if(userdata != NULL) {
 					struct arc_entries *arc_entry = (struct arc_entries *)userdata;
-					arc_entry->selected = FALSE;
+					
+					if(arc_entry->dir) {
+						char *cdir = AllocVec(strlen(arc_entry->name) + 2, MEMF_CLEAR);
+						if(!cdir) return;
+						
+						snprintf(cdir, strlen(arc_entry->name) + 2, "%s/", arc_entry->name); // copy with trailing slash
+
+						window_modify_dir(aw->tab_node, 0, cdir);
+
+						FreeVec(cdir);
+					} else {
+						arc_entry->selected = FALSE;
+					}
 				}
 			}
 			window_count_selected(aw, aw->tab_node);
@@ -2350,47 +2428,6 @@ void window_fuelgauge_update(void *awin, struct Node *tab_node, ULONG size, ULON
 	if(window_tab_is_current(aw, tab_node) == FALSE) return;
 
 	progress_set_file_level(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], size, total_size, filename, P_WIDTH, P_HEIGHT);
-}
-
-/* select: 0 = deselect all, 1 = select all, 2 = toggle all */
-void window_modify_all_list(void *awin, ULONG select)
-{
-	struct avalanche_window *aw = (struct avalanche_window *)awin;
-
-	struct Node *node;
-	BOOL selected = FALSE;
-
-	if(select == 1) selected = TRUE;
-
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-			LISTBROWSER_Labels, ~0, TAG_DONE);
-
-	if(aw->flat_mode) {
-		for(int i = 0; i < tab_get_total_items(aw->tab_node); i++) {
-			struct arc_entries *arc_e = tab_get_arc_entry(aw->tab_node, i);
-			const char *c_dir = tab_get_current_dir(aw->tab_node);
-			if((c_dir == NULL) || (strncmp(arc_e->name, c_dir, strlen(c_dir)) == 0)) {
-				if(select == 2) {
-					arc_e->selected = !arc_e->selected;
-				} else {
-					arc_e->selected = selected;
-				}
-			}
-		}
-	}
-
-	struct List *lblist = window_get_lblist(aw);
-
-	for(node = lblist->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-		toggle_item(aw, node, select, FALSE);
-	}
-
-	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
-				LISTBROWSER_Labels, lblist,
-				LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
-			TAG_DONE);
-
-	window_count_selected(aw, aw->tab_node);
 }
 
 const char *window_req_new_lha(void *awin, char *drawer)
