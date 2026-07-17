@@ -169,6 +169,9 @@ This is mostly for internal use, but has the following commands:
   - Better feedback and status text
 * Improved listview
   - Added extra fields (crunched size, comment, attributes)
+  - Added checkboxes for directory items in browser mode
+    NB: As AmigaOS does not have a "partially selected" checkbox state,
+        a directory with some items selected will show as unchecked
   - Added icons for encrypted files, links and disk images
   - Amiga disk images (DMS) will now show as ADF if filesystem ignored
 * Extract button now prompts for destination
