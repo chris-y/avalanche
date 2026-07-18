@@ -3091,7 +3091,7 @@ static BOOL window_key_shift(struct avalanche_window *aw)
 	return FALSE;
 }
 
-static BOOL window_key_quals_update(struct avalanche_window *aw)
+static void window_key_quals_update(struct avalanche_window *aw)
 {
 	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&aw->quals);
 
