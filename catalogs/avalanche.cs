@@ -318,7 +318,7 @@ MSG_UPDATE_INFO
 Double-click on an entry with an update\navailable to download and extract.
 ;
 MSG_HI_ARCHIVE
-Select archive to open
+Select archive to open\nShift-click to open a split archive
 ;
 MSG_HI_DEST
 Select destination drawer to extract archive to
@@ -330,7 +330,7 @@ MSG_HI_LIST
 Double-click a file to view
 ;
 MSG_HI_EXTRACT
-Extract selected files
+Extract selected files\nShift-click to force destination requester
 ;
 MSG_HI_TREE
 Select a directory to view contents
