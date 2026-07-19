@@ -124,6 +124,7 @@ struct avalanche_window {
 	struct List tab_list;
 	struct Node *tab_node; /* current tab */
 	ULONG tab_count;
+	ULONG quals;
 #ifndef __amigaos4__
 	struct HintInfo hi;
 	struct Hook idcmphook;
@@ -3086,16 +3087,17 @@ static void toggle_flat_mode(struct avalanche_window *aw, struct avalanche_confi
 
 static BOOL window_key_shift(struct avalanche_window *aw)
 {
-	UWORD quals = 0;
+	if(aw->quals & ANY_SHIFT) return TRUE;
+	return FALSE;
+}
 
-	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&quals);
+static void window_key_quals_update(struct avalanche_window *aw)
+{
+	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&aw->quals);
 
 #ifdef __amigaos4__
-	DebugPrintF("[Avalanche] Quals: %d\n", quals);
+	DebugPrintF("[Avalanche] Quals: %d\n", aw->quals);
 #endif
-
-	if(quals & ANY_SHIFT) return TRUE;
-	return FALSE;
 }
 
 ULONG window_handle_input_events(void *awin, struct avalanche_config *config, ULONG result, struct MsgPort *appwin_mp, UWORD code, struct MsgPort *winport, struct MsgPort *AppPort)
@@ -3130,7 +3132,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 				case GID_EXTRACT:
 				{
-					const char *dest = window_req_dest(aw, FALSE);
+					const char *dest = window_req_dest(aw, window_key_shift(aw));
 					if(dest != NULL) {
 						ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 						if(ret != 0) show_error(ret, awin);
@@ -3174,9 +3176,13 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				}
 				break;
 			}
-			break;
+			
+			aw->quals = 0; /* reset qualifier state after gadget up event */
+		break;
 
 		case WMHI_RAWKEY:
+			window_key_quals_update(aw); /* Only works here so store result for later */
+			
 			switch(result & WMHI_GADGETMASK) {
 				case RAWKEY_ESC:
 					if(tab_get_disabled(aw->tab_node)) {
