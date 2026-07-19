@@ -3132,7 +3132,7 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 
 				case GID_EXTRACT:
 				{
-					const char *dest = window_req_dest(aw, FALSE);
+					const char *dest = window_req_dest(aw, window_key_shift(aw));
 					if(dest != NULL) {
 						ret = extract(awin, tab_get_archive(aw->tab_node), dest, NULL);
 						if(ret != 0) show_error(ret, awin);
