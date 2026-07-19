@@ -1,10 +1,13 @@
 all: install
 
-Avalanche: locale_strings.h
+Avalanche: locale_strings.h ../catalogs/avalanche.ct
 	make -C os3
 
-AvalanchePPC: locale_strings.h
+AvalanchePPC: locale_strings.h ../catalogs/avalanche.ct
 	make -C os4
+
+../catalogs/avalanche.ct: ../catalogs/avalanche.cd
+	catcomp /catalogs/avalanche.cd CTFILE /catalogs/avalanche.ct
 
 locale_strings.h: ../catalogs/avalanche.cd
 	catcomp /catalogs/avalanche.cd CFILE locale_strings.h NOCODE NOARRAY
