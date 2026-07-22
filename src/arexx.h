@@ -23,11 +23,13 @@ enum {
 	RXEVT_SHOW
 };
 
+#define AREXX_FLAGS 2
+
 BOOL ami_arexx_init(ULONG *rxsig);
 ULONG ami_arexx_handle(void);
 void ami_arexx_send(const char *);
 void ami_arexx_cleanup(void);
 
-char *arexx_get_event(BOOL *flag);
+char *arexx_get_event(BOOL *flag[]);
 void arexx_free_event(void);
 #endif

@@ -108,7 +108,7 @@ static BOOL update_update(struct avalanche_version_numbers *vn)
 				ULONG cmd_len = fn_len + 22;
 				char *cmd = AllocVec(cmd_len, MEMF_PRIVATE);
 				if(cmd) {
-					snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE", dl_filename);
+					snprintf(cmd, cmd_len, "OPEN \"%s\" DELETEONCLOSE TAB", dl_filename);
 					ami_arexx_send(cmd);
 					FreeVec(cmd);
 				} else {

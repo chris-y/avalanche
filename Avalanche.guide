@@ -147,9 +147,10 @@ The 68k version appears to be very unstable.
 Avalanche has an ARexx port called "AVALANCHE".
 This is mostly for internal use, but has the following commands:
 
-@{b}OPEN@{ub} FILE/A DELETEONCLOSE/S
+@{b}OPEN@{ub} FILE/A DELETEONCLOSE/S TAB/S
  - Open FILE in a new window
  - DELETEONCLOSE will delete FILE on exit. Use with caution!
+ - TAB will open the file in a new tab instead (if a window is open)
 @{b}SHOW@{ub}
  - Show Avalanche or bring window to front
 @{b}VERSION@{ub}
@@ -187,6 +188,7 @@ This is mostly for internal use, but has the following commands:
     (subject to the availability of a @{"XAD filesystem module" link Install})
     NB: Ignore Filesystems applies here too, so disable if needed
   - Files with "encrypted info" should now open (untested)
+* ARexx can now open in a new tab too
 
 @{u}3.4beta (26.06.2026)@{uu}
 * Beta to test some of the functionality in the next release ^^

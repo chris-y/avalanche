@@ -211,7 +211,7 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 				AddPart(appwin_archive, wbarg->wa_Name, 512);
 				if(arexx) {
 					char cmd[1024];
-					snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
+					snprintf(cmd, 1024, "OPEN \"%s\" TAB", appwin_archive);
 					FreeVec(appwin_archive);
 					ami_arexx_send(cmd);
 					return TRUE;
@@ -539,16 +539,22 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				switch(evt) {
 					case RXEVT_OPEN: /* Archive set on OPEN */
 						{
-							BOOL del = FALSE;
-							char *arexx_fn = arexx_get_event(&del);
-							void *arexx_awin = window_create(&config, arexx_fn, winport, AppPort);
-							if(arexx_awin) {
-								window_open(arexx_awin, appwin_mp);
-								window_req_open_archive(arexx_awin, &config, TRUE);
-
-								if(del) tab_add_to_delete_list(window_get_current_tab(arexx_awin), arexx_fn);
-
+							BOOL *flags;
+							char *arexx_fn = arexx_get_event(&flags);
+							void *arexx_awin;
+							
+							if(flags[1] && (IsMinListEmpty((struct MinList *)&win_list) == FALSE)) {
+									arexx_awin = (void *)GetHead((struct List *)&win_list);
+									if(!window_tab_create(arexx_awin)) break;
+									window_update_archive(arexx_awin, arexx_fn);
+							} else {
+								arexx_awin = window_create(&config, arexx_fn, winport, AppPort);
+								if(arexx_awin) {
+									window_open(arexx_awin, appwin_mp);
+								} else break;
 							}
+							window_req_open_archive(arexx_awin, &config, TRUE);
+							if(flags[0]) tab_add_to_delete_list(window_get_current_tab(arexx_awin), arexx_fn);
 						}
 					break;
 					
@@ -857,7 +863,7 @@ int main(int argc, char **argv)
 			}
 		} else if(archive) {
 			char cmd[1024];
-			snprintf(cmd, 1024, "OPEN \"%s\"", archive);
+			snprintf(cmd, 1024, "OPEN \"%s\" TAB", archive);
 			FreeVec(archive);
 			ami_arexx_send(cmd);
 			arc_opened = TRUE;

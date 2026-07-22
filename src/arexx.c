@@ -1,5 +1,5 @@
 /* Avalanche
- * (c) 2022-2025 Chris Young
+ * (c) 2022-2026 Chris Young
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,11 +41,17 @@ enum
 	RX_VERSION,
 };
 
+struct avalanche_arexx_event {
+	ULONG event;
+	char *param;
+	BOOL flag[AREXX_FLAGS];
+};
+
+
 static Object *arexx_obj = NULL;
 STATIC char result[100];
-static ULONG event = RXEVT_NONE;
-static char *event_param = NULL;
-static BOOL event_flag = FALSE;
+
+static struct avalanche_arexx_event rxev;
 
 #ifdef __amigaos4__
 #define RXHOOKF(func) static VOID func(struct ARexxCmd *cmd, struct RexxMsg *rxm __attribute__((unused)))
@@ -70,7 +76,7 @@ RXHOOKF(rx_version);
 
 STATIC struct ARexxCmd Commands[] =
 {
-	{"OPEN", RX_OPEN, rx_open, "FILE/A,DELETEONCLOSE/S", 		0, 	NULL, 	0, 	0, 	NULL },
+	{"OPEN", RX_OPEN, rx_open, "FILE/A,DELETEONCLOSE/S,TAB/S", 		0, 	NULL, 	0, 	0, 	NULL },
 	{"SHOW", RX_SHOW, rx_show, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{"VERSION", RX_VERSION, rx_version, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{ NULL, 		0, 				NULL, 		NULL, 		0, 	NULL, 	0, 	0, 	NULL }
@@ -78,6 +84,9 @@ STATIC struct ARexxCmd Commands[] =
 
 BOOL ami_arexx_init(ULONG *rxsig)
 {
+	rxev.event = RXEVT_NONE;
+	rxev.param = NULL;
+
 	if((arexx_obj = ARexxObj,
 			AREXX_HostName, "AVALANCHE",
 			AREXX_Commands, Commands,
@@ -108,7 +117,7 @@ ULONG ami_arexx_handle(void)
 {
 	RA_HandleRexx(arexx_obj);
 
-	return event;
+	return rxev.event;
 }
 
 static void ami_arexx_command(const char *cmd, const char *port)
@@ -129,46 +138,49 @@ void ami_arexx_cleanup(void)
 
 void arexx_free_event(void)
 {
-	if(event_param) FreeVec(event_param);
-	event_param = NULL;
-	event_flag = FALSE;
-	event = RXEVT_NONE;
+	if(rxev.param) FreeVec(rxev.param);
+	rxev.param = NULL;
+	rxev.event = RXEVT_NONE;
 }
 
-static void arexx_set_event(ULONG evt, char *param, BOOL flag)
+static void arexx_set_event(ULONG evt, char *param, BOOL flag[])
 {
-	if(event_param) {
+	if(rxev.param) {
 		arexx_free_event();
-		event_param = NULL;
-		event_flag = FALSE;
+		rxev.param = NULL;
 	}
-	if(param) event_param = strdup_vec(param);
-	event_flag = flag;
-	event = evt;
+	if(param) rxev.param = strdup_vec(param);
+	rxev.flag[0] = flag[0];
+	rxev.flag[1] = flag[1];
+	rxev.event = evt;
 }
 
-char *arexx_get_event(BOOL *flag)
+char *arexx_get_event(BOOL *flag[])
 {
-	*flag = event_flag;
-	return event_param;
+	*flag = rxev.flag;
+	return rxev.param;
 }
 
 
 RXHOOKF(rx_open)
 {
-	BOOL del = FALSE;
+	BOOL flag[AREXX_FLAGS];
 	cmd->ac_RC = 0;
 
-	if(cmd->ac_ArgList[1]) del = TRUE;
-
-	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0], del);
+	if(cmd->ac_ArgList[1]) flag[0] = TRUE;
+		else flag[0] = FALSE;
+	if(cmd->ac_ArgList[2]) flag[1] = TRUE;
+		else flag[0] = FALSE;
+	
+	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0], flag);
 }
 
 RXHOOKF(rx_show)
 {
+	BOOL flag[AREXX_FLAGS] = {FALSE, FALSE};
 	cmd->ac_RC = 0;
 
-	arexx_set_event(RXEVT_SHOW, NULL, FALSE);
+	arexx_set_event(RXEVT_SHOW, NULL, flag);
 }
 
 RXHOOKF(rx_version)
