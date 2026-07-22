@@ -211,7 +211,7 @@ static BOOL open_archive_from_wbarg(void *awin, struct WBArg *wbarg, BOOL new_wi
 				AddPart(appwin_archive, wbarg->wa_Name, 512);
 				if(arexx) {
 					char cmd[1024];
-					snprintf(cmd, 1024, "OPEN \"%s\"", appwin_archive);
+					snprintf(cmd, 1024, "OPEN \"%s\" TAB", appwin_archive);
 					FreeVec(appwin_archive);
 					ami_arexx_send(cmd);
 					return TRUE;
@@ -863,7 +863,7 @@ int main(int argc, char **argv)
 			}
 		} else if(archive) {
 			char cmd[1024];
-			snprintf(cmd, 1024, "OPEN \"%s\"", archive);
+			snprintf(cmd, 1024, "OPEN \"%s\" TAB", archive);
 			FreeVec(archive);
 			ami_arexx_send(cmd);
 			arc_opened = TRUE;
