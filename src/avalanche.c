@@ -539,16 +539,22 @@ static void gui(struct WBStartup *WBenchMsg, ULONG rxsig, char *initial_archive)
 				switch(evt) {
 					case RXEVT_OPEN: /* Archive set on OPEN */
 						{
-							BOOL del = FALSE;
-							char *arexx_fn = arexx_get_event(&del);
-							void *arexx_awin = window_create(&config, arexx_fn, winport, AppPort);
-							if(arexx_awin) {
-								window_open(arexx_awin, appwin_mp);
-								window_req_open_archive(arexx_awin, &config, TRUE);
-
-								if(del) tab_add_to_delete_list(window_get_current_tab(arexx_awin), arexx_fn);
-
+							BOOL *flags;
+							char *arexx_fn = arexx_get_event(&flags);
+							void *arexx_awin;
+							
+							if(flags[1] && (IsMinListEmpty((struct MinList *)&win_list) == FALSE)) {
+									arexx_awin = (void *)GetHead((struct List *)&win_list);
+									if(!window_tab_create(arexx_awin)) break;
+									window_update_archive(arexx_awin, arexx_fn);
+							} else {
+								arexx_awin = window_create(&config, arexx_fn, winport, AppPort);
+								if(arexx_awin) {
+									window_open(arexx_awin, appwin_mp);
+								} else break;
 							}
+							window_req_open_archive(arexx_awin, &config, TRUE);
+							if(flags[0]) tab_add_to_delete_list(window_get_current_tab(arexx_awin), arexx_fn);
 						}
 					break;
 					

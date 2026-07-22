@@ -44,7 +44,7 @@ enum
 struct avalanche_arexx_event {
 	ULONG event;
 	char *param;
-	BOOL flag;
+	BOOL flag[AREXX_FLAGS];
 };
 
 
@@ -76,7 +76,7 @@ RXHOOKF(rx_version);
 
 STATIC struct ARexxCmd Commands[] =
 {
-	{"OPEN", RX_OPEN, rx_open, "FILE/A,DELETEONCLOSE/S", 		0, 	NULL, 	0, 	0, 	NULL },
+	{"OPEN", RX_OPEN, rx_open, "FILE/A,DELETEONCLOSE/S,TAB/S", 		0, 	NULL, 	0, 	0, 	NULL },
 	{"SHOW", RX_SHOW, rx_show, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{"VERSION", RX_VERSION, rx_version, NULL, 		0, 	NULL, 	0, 	0, 	NULL },
 	{ NULL, 		0, 				NULL, 		NULL, 		0, 	NULL, 	0, 	0, 	NULL }
@@ -85,8 +85,7 @@ STATIC struct ARexxCmd Commands[] =
 BOOL ami_arexx_init(ULONG *rxsig)
 {
 	rxev.event = RXEVT_NONE;
-        rxev.param = NULL;
-        rxev.flag = FALSE;
+	rxev.param = NULL;
 
 	if((arexx_obj = ARexxObj,
 			AREXX_HostName, "AVALANCHE",
@@ -141,23 +140,22 @@ void arexx_free_event(void)
 {
 	if(rxev.param) FreeVec(rxev.param);
 	rxev.param = NULL;
-	rxev.flag = FALSE;
 	rxev.event = RXEVT_NONE;
 }
 
-static void arexx_set_event(ULONG evt, char *param, BOOL flag)
+static void arexx_set_event(ULONG evt, char *param, BOOL flag[])
 {
 	if(rxev.param) {
 		arexx_free_event();
 		rxev.param = NULL;
-		rxev.flag = FALSE;
 	}
 	if(param) rxev.param = strdup_vec(param);
-	rxev.flag = flag;
+	rxev.flag[0] = flag[0];
+	rxev.flag[1] = flag[1];
 	rxev.event = evt;
 }
 
-char *arexx_get_event(BOOL *flag)
+char *arexx_get_event(BOOL *flag[])
 {
 	*flag = rxev.flag;
 	return rxev.param;
@@ -166,19 +164,23 @@ char *arexx_get_event(BOOL *flag)
 
 RXHOOKF(rx_open)
 {
-	BOOL del = FALSE;
+	BOOL flag[AREXX_FLAGS];
 	cmd->ac_RC = 0;
 
-	if(cmd->ac_ArgList[1]) del = TRUE;
-
-	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0], del);
+	if(cmd->ac_ArgList[1]) flag[0] = TRUE;
+		else flag[0] = FALSE;
+	if(cmd->ac_ArgList[2]) flag[1] = TRUE;
+		else flag[0] = FALSE;
+	
+	arexx_set_event(RXEVT_OPEN, (char *)cmd->ac_ArgList[0], flag);
 }
 
 RXHOOKF(rx_show)
 {
+	BOOL flag[AREXX_FLAGS] = {FALSE, FALSE};
 	cmd->ac_RC = 0;
 
-	arexx_set_event(RXEVT_SHOW, NULL, FALSE);
+	arexx_set_event(RXEVT_SHOW, NULL, flag);
 }
 
 RXHOOKF(rx_version)
