@@ -2556,13 +2556,15 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 									window_tab_create(aw);
 								}
 								tab_set_archive(aw->tab_node, file);
-								
 								FreeVec(file);
+								
+								window_req_open_archive(aw, &config, TRUE);
 								
 								ret = TRUE;
 							}
 						}
 					}
+					frargs++;
 				}
 			} else {
 				
@@ -2575,6 +2577,9 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 				}
 				tab_set_archive(aw->tab_node, arc);
 				FreeVec(arc);
+				
+				window_req_open_archive(aw, &config, TRUE);
+				
 				ret = TRUE;
 			}
 		}
@@ -2646,7 +2651,7 @@ static BOOL window_req_archive_split(struct avalanche_window *aw, struct avalanc
 		FreeAslRequest(aslreq);
 	}
 	if(sdir) FreeVec(sdir);
-	
+
 	return ret;
 }
 
@@ -2826,6 +2831,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		if(aw->flat_mode) {
 			tab_set_current_dir(aw->tab_node, NULL);
 		}
+		
+		return;
 	}
 
 	window_req_open_archive_any(aw, config);
