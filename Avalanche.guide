@@ -188,6 +188,7 @@ This is mostly for internal use, but has the following commands:
     (subject to the availability of a @{"XAD filesystem module" link Install})
     NB: Ignore Filesystems applies here too, so disable if needed
   - Files with "encrypted info" should now open (untested)
+  - Multiple files can now be selected to be opened in the ASL requester
 * ARexx can now open in a new tab too
 
 @{u}3.4beta (26.06.2026)@{uu}
