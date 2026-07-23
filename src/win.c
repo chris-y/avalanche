@@ -2627,6 +2627,7 @@ static BOOL window_req_archive_split(struct avalanche_window *aw, struct avalanc
 							}
 						}
 					}
+					frargs++;
 				}
 
 				if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
