@@ -2535,23 +2535,53 @@ static BOOL window_req_archive(struct avalanche_window *aw, struct avalanche_con
 		}
 		
 		if(AslRequestTags(aslreq,
-				ASLFR_DoMultiSelect, FALSE,
+				ASLFR_DoMultiSelect, TRUE,
 				ASLFR_TitleText,  locale_get_string( MSG_SELECTARCHIVE ) ,
 				ASLFR_InitialFile, arc,
 				ASLFR_InitialDrawer, srcdir,
 				ASLFR_FilterFunc, asl_hook,
 			TAG_DONE)) {
-		
-			ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
-			char *arc = AllocVec(len, MEMF_PRIVATE);
-			strncpy(arc, aslreq->fr_Drawer, len);
-			AddPart(arc, aslreq->fr_File, len);
-			if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
-				window_tab_create(aw);
+
+			if(aslreq->fr_NumArgs) {
+				struct WBArg *frargs = aslreq->fr_ArgList;
+				for(int i = 0; i < aslreq->fr_NumArgs; i++) {
+					if(frargs->wa_Lock) {
+						char *file = NULL;
+						if(file = AllocVec(1024, MEMF_CLEAR)) {
+							NameFromLock(frargs->wa_Lock, file, 1024);
+							if(*frargs->wa_Name) {
+								AddPart(file, frargs->wa_Name, 1024);
+
+								if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
+									window_tab_create(aw);
+								}
+								tab_set_archive(aw->tab_node, file);
+								FreeVec(file);
+								
+								window_req_open_archive(aw, &config, TRUE);
+								
+								ret = TRUE;
+							}
+						}
+					}
+					frargs++;
+				}
+			} else {
+				
+				ULONG len = strlen(aslreq->fr_Drawer) + strlen(aslreq->fr_File) + 5;
+				char *arc = AllocVec(len, MEMF_PRIVATE);
+				strncpy(arc, aslreq->fr_Drawer, len);
+				AddPart(arc, aslreq->fr_File, len);
+				if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
+					window_tab_create(aw);
+				}
+				tab_set_archive(aw->tab_node, arc);
+				FreeVec(arc);
+				
+				window_req_open_archive(aw, &config, TRUE);
+				
+				ret = TRUE;
 			}
-			tab_set_archive(aw->tab_node, arc);
-			FreeVec(arc);
-			ret = TRUE;
 		}
 		
 		if(srcdir) FreeVec(srcdir);
@@ -2597,6 +2627,7 @@ static BOOL window_req_archive_split(struct avalanche_window *aw, struct avalanc
 							}
 						}
 					}
+					frargs++;
 				}
 
 				if((tab_get_disabled(aw->tab_node)) || (tab_get_format(aw->tab_node) != ARC_NONE)) {
@@ -2621,7 +2652,7 @@ static BOOL window_req_archive_split(struct avalanche_window *aw, struct avalanc
 		FreeAslRequest(aslreq);
 	}
 	if(sdir) FreeVec(sdir);
-	
+
 	return ret;
 }
 
@@ -2801,6 +2832,8 @@ void window_req_open_archive(void *awin, struct avalanche_config *config, BOOL r
 		if(aw->flat_mode) {
 			tab_set_current_dir(aw->tab_node, NULL);
 		}
+		
+		return;
 	}
 
 	window_req_open_archive_any(aw, config);
