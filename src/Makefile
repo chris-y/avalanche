@@ -36,6 +36,7 @@ clean:
 	make -i -C os3 clean
 	make -i -C os4 clean
 	delete locale_strings.h
+	delete /catalogs/avalanche.ct
 
 version:
 	bumprev 3 Avalanche
