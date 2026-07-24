@@ -621,7 +621,7 @@ Object *glyph_get(ULONG glyph)
 					dl = &dl_busy;
 				break;
 				case AVALANCHE_GLYPH_PARTIALSELECT:
-					dl = &dl_partialsselect;
+					dl = &dl_partialselect;
 				break;
 				case AVALANCHE_GLYPH_NONE:
 					dl = &dl_none;
