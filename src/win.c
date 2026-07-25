@@ -3217,7 +3217,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				case GID_ABORT:
 					if(tab_get_disabled(aw->tab_node)) tab_abort(aw->tab_node);
 				break;
-				
+
+				case GID_SELECT:
+					window_modify_all_list(aw, aw->select_op);
+				break;
+
 				case GID_LIST:
 					window_list_handle(awin);
 				break;
