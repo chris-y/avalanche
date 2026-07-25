@@ -126,6 +126,7 @@ struct avalanche_window {
 	struct Node *tab_node; /* current tab */
 	ULONG tab_count;
 	ULONG quals;
+	ULONG select_op;
 #ifndef __amigaos4__
 	struct HintInfo hi;
 	struct Hook idcmphook;
@@ -649,15 +650,18 @@ static ULONG window_count_selected(void *awin, struct Node *tab_node)
 			switch(s) {
 				case 0:
 					glyph = AVALANCHE_GLYPH_NONE;
+					aw->select_op = 1;
 				break;
 				
 				case 1:
 					glyph = GLYPH_CHECKMARK;
+					aw->select_op = 0;
 				break;
 				
 				case 2:
 				default:
 					glyph =AVALANCHE_GLYPH_PARTIALSELECT;
+					aw->select_op = 1;
 				break;
 			}
 		}
@@ -2274,6 +2278,8 @@ static void window_tree_handle(void *awin)
 					LISTBROWSER_Labels, window_get_lblist(aw),
 					LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 				TAG_DONE);
+
+				window_count_selected(aw, aw->tab_node);
 			}
 		break;
 	}
