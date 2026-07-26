@@ -655,20 +655,22 @@ static ULONG window_count_selected(void *awin, struct Node *tab_node)
 					glyph = AVALANCHE_GLYPH_NONE;
 					aw->select_op = 1;
 				break;
-				
+
 				case 1:
 					glyph = GLYPH_CHECKMARK;
 					aw->select_op = 0;
 				break;
-				
+
 				case 2:
 				default:
 					glyph =AVALANCHE_GLYPH_PARTIALSELECT;
 					aw->select_op = 1;
 				break;
 			}
+		} else {
+			// if selected = get total selectable
 		}
-		
+
 		SetGadgetAttrs(aw->gadgets[GID_SELECT], aw->windows[WID_MAIN], NULL,
 				GA_Image, glyph_get(glyph),
 			TAG_DONE);
@@ -1956,10 +1958,10 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 						ButtonEnd,
 						CHILD_NominalSize, TRUE,
 						LAYOUT_AddChild,  aw->gadgets[GID_SELECT] = ButtonObj,
-							GA_ID, GID_ABORT,
+							GA_ID, GID_SELECT,
 							GA_RelVerify, TRUE,
 							GA_Image, glyph_get(AVALANCHE_GLYPH_NONE),
-							//HINTINFO, locale_get_string(MSG_HI_ABORT),
+							//HINTINFO, locale_get_string(MSG_HI_SELECT),
 							GA_Disabled, TRUE,
 						ButtonEnd,
 						CHILD_NominalSize, TRUE,
@@ -1984,7 +1986,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
 
-			LAYOUT_AddChild, LayoutVObj,		
+			LAYOUT_AddChild, LayoutVObj,
 				LAYOUT_AddChild, aw->gadgets[GID_BROWSERLAYOUT] = LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
 					EndGroup,
