@@ -125,7 +125,7 @@ struct avalanche_window {
 	struct List tab_list;
 	struct Node *tab_node; /* current tab */
 	ULONG tab_count;
-	ULONG quals;
+	UWORD quals;
 	ULONG select_op;
 #ifndef __amigaos4__
 	struct HintInfo hi;
@@ -3181,10 +3181,12 @@ static BOOL window_key_shift(struct avalanche_window *aw)
 
 static void window_key_quals_update(struct avalanche_window *aw)
 {
-	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&aw->quals);
-
+	ULONG q = 0;
+	GetAttr(WINDOW_Qualifier, aw->objects[OID_MAIN], (ULONG *)&q);
+	aw->quals = q & 0xFFFF;
+	
 #ifdef __amigaos4__
-	DebugPrintF("[Avalanche] Quals: %d\n", aw->quals);
+	//DebugPrintF("[Avalanche] Quals: %d\n", aw->quals);
 #endif
 }
 
