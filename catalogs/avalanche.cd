@@ -424,3 +424,6 @@ Select archive files to open as split archive
 MSG_M_EXTRACT (//)
 Extract...
 ;
+MSG_HI_SELECT (//)
+Click to select/clear all files\nShift-click to invert selection\nButton shows current selected state
+;

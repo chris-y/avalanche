@@ -372,6 +372,11 @@ static struct DrawList dl_busy[] = {
 	{DLST_END, 0, 0, 0, 0, 0},
 };
 
+static struct DrawList dl_partialselect[] = {
+	{DLST_RECT, 30, 45, 70, 55, 1},
+
+	{DLST_END, 0, 0, 0, 0, 0},
+};
 
 #ifndef __amigaos4__ /* OS4 has a built-in image */
 static struct DrawList dl_closetab[] = {
@@ -408,7 +413,7 @@ Object *glyph_get(ULONG glyph)
 
 	if(glyph_cache[glyph] != NULL) return glyph_cache[glyph];
 
-	if((get_config()->aiss) && (glyph != AVALANCHE_GLYPH_TABCLOSE)) {
+	if((get_config()->aiss) && (glyph < AVALANCHE_GLYPH_NO_AISS)) {
 		struct Screen *screen = LockPubScreen(NULL);
 
 		switch(glyph) {
@@ -614,6 +619,9 @@ Object *glyph_get(ULONG glyph)
 				break;
 				case AVALANCHE_GLYPH_BUSY:
 					dl = &dl_busy;
+				break;
+				case AVALANCHE_GLYPH_PARTIALSELECT:
+					dl = &dl_partialselect;
 				break;
 				case AVALANCHE_GLYPH_NONE:
 					dl = &dl_none;

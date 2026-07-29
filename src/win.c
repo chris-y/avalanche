@@ -85,6 +85,7 @@ enum {
 	GID_PROGRESSFR,
 	GID_ABORT,
 	GID_TABS,
+	GID_SELECT,
 	GID_LAST
 };
 
@@ -125,6 +126,7 @@ struct avalanche_window {
 	struct Node *tab_node; /* current tab */
 	ULONG tab_count;
 	ULONG quals;
+	ULONG select_op;
 #ifndef __amigaos4__
 	struct HintInfo hi;
 	struct Hook idcmphook;
@@ -501,6 +503,9 @@ void window_disable_gadgets(void *awin, BOOL disable, BOOL stoppable)
 	SetGadgetAttrs(aw->gadgets[GID_OPENWB], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
+	SetGadgetAttrs(aw->gadgets[GID_SELECT], aw->windows[WID_MAIN], NULL,
+			GA_Disabled, disable,
+		TAG_DONE);
 	SetGadgetAttrs(aw->gadgets[GID_LIST], aw->windows[WID_MAIN], NULL,
 			GA_Disabled, disable,
 		TAG_DONE);
@@ -596,6 +601,35 @@ static ULONG list_count_selected_items(struct Node *tab_node)
 	return selected;
 }
 
+/* Enumerate select state of dir "dir"
+ * returns 0 = none selected, 1 = all selected, 2 = some selected
+ * Browser mode only!
+ */
+static int window_enum_dir(struct Node *tab_node, const char *dir)
+{
+	int sel_state = 2;
+	ULONG count_sel = 0;
+	ULONG count_unsel = 0;
+
+	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
+		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
+		if(arc_e->dir == TRUE) continue;
+
+		if((dir == NULL) || (strncmp(arc_e->name, dir, strlen(dir)) == 0)) {
+			if(arc_e->selected) {
+				count_sel++;
+			} else {
+				count_unsel++;
+			}
+		}
+	}
+	
+	if((count_sel == 0) && (count_unsel > 0)) sel_state = 0;
+	if((count_unsel == 0) && (count_sel > 0)) sel_state = 1;
+
+	return sel_state;
+}
+
 static ULONG window_count_selected(void *awin, struct Node *tab_node)
 {
 	struct avalanche_window *aw = (struct avalanche_window *)awin;
@@ -609,6 +643,46 @@ static ULONG window_count_selected(void *awin, struct Node *tab_node)
 
 	if(window_tab_is_current(aw, tab_node)) {
 		progress_set_selected(aw->windows[WID_MAIN], aw->gadgets[GID_PROGRESS], aw->gadgets[GID_PROGRESSFR], selected, tab_get_total_selectable(tab_node));
+		
+		ULONG glyph = AVALANCHE_GLYPH_PARTIALSELECT;
+		
+		if(aw->flat_mode) {
+			const char *c_dir = tab_get_current_dir(aw->tab_node);
+			int s = window_enum_dir(tab_node, c_dir);
+
+			switch(s) {
+				case 0:
+					glyph = AVALANCHE_GLYPH_NONE;
+					aw->select_op = 1;
+				break;
+
+				case 1:
+					glyph = GLYPH_CHECKMARK;
+					aw->select_op = 0;
+				break;
+
+				case 2:
+				default:
+					glyph = AVALANCHE_GLYPH_PARTIALSELECT;
+					aw->select_op = 1;
+				break;
+			}
+		} else {
+			if(selected == tab_get_total_selectable(tab_node)) {
+				glyph = GLYPH_CHECKMARK;
+				aw->select_op = 0;
+			} else if(selected == 0) {
+				glyph = AVALANCHE_GLYPH_NONE;
+				aw->select_op = 1;
+			} else {
+				glyph = AVALANCHE_GLYPH_PARTIALSELECT;
+				aw->select_op = 1;
+			}
+		}
+
+		SetGadgetAttrs(aw->gadgets[GID_SELECT], aw->windows[WID_MAIN], NULL,
+				GA_Image, glyph_get(glyph),
+			TAG_DONE);
 	}
 	
 	return selected;
@@ -1106,35 +1180,6 @@ static void window_update_title(struct avalanche_window *aw, struct Node *tab_no
 	} else {
 		SetWindowTitles(window_get_window(aw), (UBYTE *) ~0, VERS);
 	}
-}
-
-/* Enumerate select state of dir "dir"
- * returns 0 = none selected, 1 = all selected, 2 = some selected
- * Browser mode only!
- */
-static int window_enum_dir(struct Node *tab_node, const char *dir)
-{
-	int sel_state = 2;
-	ULONG count_sel = 0;
-	ULONG count_unsel = 0;
-
-	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
-		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
-		if(arc_e->dir == TRUE) continue;
-
-		if((dir == NULL) || (strncmp(arc_e->name, dir, strlen(dir)) == 0)) {
-			if(arc_e->selected) {
-				count_sel++;
-			} else {
-				count_unsel++;
-			}
-		}
-	}
-	
-	if((count_sel == 0) && (count_unsel > 0)) sel_state = 0;
-	if((count_unsel == 0) && (count_sel > 0)) sel_state = 1;
-
-	return sel_state;
 }
 
 static void window_flat_browser_tree_construct(struct avalanche_window *aw, struct Node *tab_node)
@@ -1913,6 +1958,14 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 							HINTINFO, locale_get_string(MSG_OPENINWB),
 						ButtonEnd,
 						CHILD_NominalSize, TRUE,
+						LAYOUT_AddChild,  aw->gadgets[GID_SELECT] = ButtonObj,
+							GA_ID, GID_SELECT,
+							GA_RelVerify, TRUE,
+							GA_Image, glyph_get(AVALANCHE_GLYPH_NONE),
+							HINTINFO, locale_get_string(MSG_HI_SELECT),
+							GA_Disabled, TRUE,
+						ButtonEnd,
+						CHILD_NominalSize, TRUE,
 						LAYOUT_AddChild,  aw->gadgets[GID_ABORT] = ButtonObj,
 							GA_ID, GID_ABORT,
 							GA_RelVerify, TRUE,
@@ -1942,7 +1995,7 @@ void *window_create(struct avalanche_config *config, char *archive, struct MsgPo
 			LayoutEnd,
 			CHILD_WeightedHeight, 0,
 
-			LAYOUT_AddChild, LayoutVObj,		
+			LAYOUT_AddChild, LayoutVObj,
 				LAYOUT_AddChild, aw->gadgets[GID_BROWSERLAYOUT] = LayoutHObj,
 					LAYOUT_AddChild, aw->gadgets[GID_TREELAYOUT] = LayoutHObj,
 					EndGroup,
@@ -2239,6 +2292,8 @@ static void window_tree_handle(void *awin)
 					LISTBROWSER_Labels, window_get_lblist(aw),
 					LISTBROWSER_AutoFit, AVALANCHE_AUTOFIT,
 				TAG_DONE);
+
+				window_count_selected(aw, aw->tab_node);
 			}
 		break;
 	}
@@ -3176,7 +3231,15 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				case GID_ABORT:
 					if(tab_get_disabled(aw->tab_node)) tab_abort(aw->tab_node);
 				break;
-				
+
+				case GID_SELECT:
+					if(window_key_shift(aw)) {
+						window_modify_all_list(aw, 2);
+					} else {
+						window_modify_all_list(aw, aw->select_op);
+					}
+				break;
+
 				case GID_LIST:
 					window_list_handle(awin);
 				break;
