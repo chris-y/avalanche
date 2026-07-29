@@ -413,7 +413,7 @@ Object *glyph_get(ULONG glyph)
 
 	if(glyph_cache[glyph] != NULL) return glyph_cache[glyph];
 
-	if((get_config()->aiss) && (glyph < AVALANCHE_GLYPH_NO_AISS)) {
+	if((get_config()->aiss) && (glyph < AVALANCHE_GLYPH_NO_AISS) && (glyph != GLYPH_CHECKMARK)) {
 		struct Screen *screen = LockPubScreen(NULL);
 
 		switch(glyph) {
@@ -524,14 +524,6 @@ Object *glyph_get(ULONG glyph)
 
 			case GLYPH_DOWNARROW:
 				img = "TBimages:autobutton_dnarrow";
-			break;
-
-			case GLYPH_CHECKMARK:
-#ifdef __amigaos4__
-				img = "TBimages:list_checkmark";
-#else
-				img = "TBimages:autobutton_checkbox";
-#endif
 			break;
 
 			default: // also AVALANCHE_GLYPH_NONE
