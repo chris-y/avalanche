@@ -683,6 +683,10 @@ static ULONG window_count_selected(void *awin, struct Node *tab_node)
 		SetGadgetAttrs(aw->gadgets[GID_SELECT], aw->windows[WID_MAIN], NULL,
 				GA_Image, glyph_get(glyph),
 			TAG_DONE);
+#ifndef __amigaos4__
+		RefreshGList(aw->gadgets[GID_SELECT],
+			window_get_window(aw), NULL, 1);
+#endif
 	}
 	
 	return selected;
