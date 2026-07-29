@@ -3233,7 +3233,11 @@ ULONG window_handle_input_events(void *awin, struct avalanche_config *config, UL
 				break;
 
 				case GID_SELECT:
-					window_modify_all_list(aw, aw->select_op);
+					if(window_key_shift(aw)) {
+						window_modify_all_list(aw, 2);
+					} else {
+						window_modify_all_list(aw, aw->select_op);
+					}
 				break;
 
 				case GID_LIST:
