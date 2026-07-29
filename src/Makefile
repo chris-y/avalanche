@@ -39,4 +39,4 @@ clean:
 	delete /catalogs/avalanche.ct
 
 version:
-	bumprev 3 Avalanche
+	bumprev 4 Avalanche

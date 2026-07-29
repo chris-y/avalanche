@@ -2,7 +2,7 @@ Short: ReAction unarchive GUI for xfd/xadmaster
 Uploader: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Author: chris@unsatisfactorysoftware.co.uk (Chris Young)
 Type: util/arc
-Version: 3.3
+Version: 4.1
 Architecture: m68k-amigaos >= 3.2.1; ppc-amigaos >= 4.1.0
 Requires: util/arc/xadmaster000.lha
 
@@ -22,13 +22,37 @@ No AI generated code has been used in this application.
 AI has occasionally been used to aid debugging.
 
 Changes in this version:
-* Tweak AISS to work on AISS Classic on OS3.2
-  (Aminet:util/misc/aissclassic.lha)
-  - After installation, enable the AISS tooltype to use!
-* Cache glyphs
-  - Improved performance especially when using AISS
-  - Reduce memory usage
-  - Resolves some potential memory leaks
+* More modern looking GUI
+  - All gadgets have been moved to a new toolbar
+  - Built-in list and toolbar images have been redesigned and colourised
+  - Extract (the most used button) is highlighted on the left!
+  - Tabs have been added
+  - Progress bar behaviour has been improved
+  - Better feedback and status text
+  - Button to select all on page
+* Improved listview
+  - Added extra fields (crunched size, comment, attributes)
+  - Added checkboxes for directory items in browser mode
+    NB: As AmigaOS does not have a "partially selected" checkbox state,
+        a directory with some items selected will show as unchecked
+  - Added icons for encrypted files, links and disk images
+  - Amiga disk images (DMS) will now show as ADF if filesystem ignored
+* Extract button now prompts for destination
+  - New config to disable prompt and extract to a default location
+* Added a "Create LhA archive" option to WB Tools menu
+  - Quick way to create a new archive with the selected items
+* Editing Zip archives now possible on OS3.2
+  - Using Zip 2.32 comand-line tool
+  - REGRESSION: Zip modifications are currently disabled on OS4
+* Archive handling improvements
+  - Can now open split archives (via Project=>Open=>Split archive...)
+  - Can now open ADFs and other uncompressed disk formats
+    (subject to the availability of a XAD filesystem module)
+    NB: Ignore Filesystems applies here too, so disable if needed
+  - Files with "encrypted info" should now open (untested)
+  - Multiple files can now be selected to be opened in the ASL requester
+* ARexx can now open in a new tab too
+
 
 Note that due to a bug in v2.5 the "download updated version"
 option is unlikely to work.  This was fixed in v3.1.
