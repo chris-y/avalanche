@@ -663,12 +663,21 @@ static ULONG window_count_selected(void *awin, struct Node *tab_node)
 
 				case 2:
 				default:
-					glyph =AVALANCHE_GLYPH_PARTIALSELECT;
+					glyph = AVALANCHE_GLYPH_PARTIALSELECT;
 					aw->select_op = 1;
 				break;
 			}
 		} else {
-			// if selected = get total selectable
+			if(selected == tab_get_total_selectable(tab_node)) {
+				glyph = GLYPH_CHECKMARK;
+				aw->select_op = 0;
+			} else if(selected == 0) {
+				glyph = AVALANCHE_GLYPH_NONE;
+				aw->select_op = 1;
+			} else {
+				glyph = AVALANCHE_GLYPH_PARTIALSELECT;
+				aw->select_op = 1;
+			}
 		}
 
 		SetGadgetAttrs(aw->gadgets[GID_SELECT], aw->windows[WID_MAIN], NULL,
