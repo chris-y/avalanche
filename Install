@@ -22,6 +22,7 @@
 		(set #arc-7zip  "")
 		(set #arc-arj   "")
 		(set #arc-bz2   "")
+		(set #arc-dms   "dms")
 		(set #arc-gzip  "")
 		(set #arc-lha   "")
 		(set #arc-lharc "")
@@ -46,6 +47,7 @@
 		(set #arc-7zip  "7zip")
 		(set #arc-arj   "arj")
 		(set #arc-bz2   "bz2")
+		(set #arc-dms   "dms")
 		(set #arc-gzip  "gzip")
 		(set #arc-lha   "lha")
 		(set #arc-lharc "lharc")
@@ -164,6 +166,7 @@
 					#arc-7zip
 					#arc-arj
 					#arc-bz2
+					#arc-dms
 					#arc-gzip
 					#arc-lha
 					#arc-lharc
