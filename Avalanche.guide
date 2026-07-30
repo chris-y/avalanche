@@ -160,7 +160,7 @@ This is mostly for internal use, but has the following commands:
 
 @node history "Changelog"
 @rem keep this to <80 chars for readme
-@{u}4.1 (29.07.2026)@{uu}
+@{u}4.1 (30.07.2026)@{uu}
 * More modern looking GUI
   - All gadgets have been moved to a new toolbar
   - Built-in list and toolbar images have been redesigned and colourised
