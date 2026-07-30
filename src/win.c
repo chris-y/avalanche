@@ -1389,6 +1389,10 @@ static void window_flat_browser_construct(struct avalanche_window *aw, struct No
 						sel = window_enum_dir(tab_node, cdir);
 						FreeVec(cdir);
 					}
+					
+					/* Ensure everything here is correctly marked as a dir */
+					dir_e->dir = TRUE;
+
 					addlbnode(dir_e->name + skip_dir_len, &zero, TRUE, dir_e, sel, aw, tab_node);
 			}
 		}
