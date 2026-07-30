@@ -2220,9 +2220,7 @@ static void window_modify_dir(struct Node *tab_node, ULONG select, const char *d
 	
 	for(int i = 0; i < tab_get_total_items(tab_node); i++) {
 		struct arc_entries *arc_e = tab_get_arc_entry(tab_node, i);
-#ifdef __amigaos4__
-DebugPrintF("[Avalanche] %s == %s (%d)\n", arc_e->name, dir, strlen(dir));
-#endif
+
 		if((dir == NULL) || (strncmp(arc_e->name, dir, strlen(dir)) == 0)) {
 			if(select == 2) {
 				arc_e->selected = !arc_e->selected;
